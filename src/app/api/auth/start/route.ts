@@ -45,6 +45,10 @@ const authStartSchema = z.discriminatedUnion("method", [
     redirect: z.string().max(500).optional(),
   }),
   z.object({
+    method: z.literal("pilot_access_otp"),
+    email,
+  }),
+  z.object({
     method: z.literal("resend_signup"),
     email,
     redirect: z.string().max(500).optional(),
@@ -151,8 +155,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (parsed.data.method === "email_otp") {
-      const redirect = sanitizeInternalRedirect(parsed.data.redirect, "/");
+    if (parsed.data.method === "email_otp" || parsed.data.method === "pilot_access_otp") {
+      const isPilotApplicant = parsed.data.method === "pilot_access_otp";
+      const redirect = isPilotApplicant
+        ? "/pilot-access"
+        : sanitizeInternalRedirect("redirect" in parsed.data ? parsed.data.redirect : undefined, "/");
       const callbackUrl = createCanonicalAppUrl(
         `/api/auth/callback?next=${encodeURIComponent(redirect)}`,
         request.url
@@ -162,7 +169,7 @@ export async function POST(request: Request) {
         options: {
           shouldCreateUser: true,
           emailRedirectTo: callbackUrl,
-          data: { entry_context: "viewer_interest" },
+          data: { entry_context: isPilotApplicant ? "pilot_applicant" : "viewer_interest" },
         },
       });
       if (error) throw error;

@@ -118,7 +118,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
             <a href="#how">How it works</a><a href="#control">Your control</a><a href="#beta">Beta access</a><a href="#questions">Questions</a>
           </div>
           <Link href="/login" className={styles.signIn}>Sign in</Link>
-          <Link href="/signup" className={styles.primaryButton}>Pilot access</Link>
+          <Link href="/pilot-access" className={styles.primaryButton}>Pilot access</Link>
         </nav>
       </header>
 
@@ -129,7 +129,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
             <h1>{concept.headline}</h1>
             <p className={styles.heroLead}>{concept.lead}</p>
             <div className={styles.heroActions}>
-              <Link href="/signup" className={styles.primaryButton}>{concept.primary} <ArrowRight aria-hidden="true" /></Link>
+              <Link href="/pilot-access" className={styles.primaryButton}>{concept.primary} <ArrowRight aria-hidden="true" /></Link>
               <a href={variant === "control" ? "#control" : "#samples"} className={styles.secondaryButton}>{concept.secondary}</a>
             </div>
             <p className={styles.heroNote}><Check aria-hidden="true" /> Free beta for invited creators. Didit identity verification is required before publication.</p>
@@ -179,7 +179,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
             <span><RefreshCw aria-hidden="true" /><strong>Free pilot</strong>No payment or plan purchase is required. Public portfolio links are active for 30 days by default.</span>
           </div>
           <div className={styles.betaActions}>
-            <Link href="/signup" className={styles.primaryButton}>I have a pilot invitation <ArrowRight aria-hidden="true" /></Link>
+            <Link href="/pilot-access" className={styles.primaryButton}>Request pilot access <ArrowRight aria-hidden="true" /></Link>
             <Link href="/login" className={styles.secondaryButton}>Sign in to Nakshatra</Link>
           </div>
         </section>
@@ -191,7 +191,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
 
         <section className={styles.finalCta}>
           <div><p className={styles.eyebrow}>Private beta</p><h2>Your introduction deserves more than another file.</h2><p>If you have a pilot invitation, create privately, complete identity verification, preview every view, and publish when you are ready.</p></div>
-          <div className={styles.finalAction}><Link href="/signup" className={styles.lightButton}>Use my pilot invitation <ArrowRight aria-hidden="true" /></Link><span>Free for invited pilot participants.</span></div>
+          <div className={styles.finalAction}><Link href="/pilot-access" className={styles.lightButton}>Request pilot access <ArrowRight aria-hidden="true" /></Link><span>Free for approved pilot participants.</span></div>
         </section>
       </main>
 

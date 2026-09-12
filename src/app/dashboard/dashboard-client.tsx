@@ -50,10 +50,12 @@ import {
   Settings,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 
 interface Props {
   portfolio: Portfolio | null;
   canCreatePortfolio: boolean;
+  pilotAccessState?: PilotAccessState | null;
   viewCount: number;
   userEmail: string;
   shareUrl: string | null;
@@ -85,6 +87,7 @@ const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
 export default function DashboardClient({
   portfolio,
   canCreatePortfolio,
+  pilotAccessState = null,
   viewCount,
   userEmail,
   shareUrl,
@@ -489,7 +492,24 @@ export default function DashboardClient({
                   We are opening creation to a small group of pilot participants while we learn and improve. You can still open portfolio links shared with you, verify your email, express interest, and receive Full View when the portfolio owner approves it.
                 </p>
               </div>
-              <Link href="/" className="dashboard-secondary-action">
+              {pilotAccessState?.application?.status === "pending" ? (
+                <div className="rounded-xl border border-[#c9bc91] bg-[#f4efdf] px-4 py-3 text-sm text-[#725d2b]">
+                  Your creator-access request is under review. We will email you when a decision is made.
+                </div>
+              ) : pilotAccessState?.application?.status === "declined" ? (
+                <div className="rounded-xl border border-[#d6aaaa] bg-[#fff3f0] px-4 py-3 text-sm text-[#873a3a]">
+                  Creator access is not available for this account yet. Your viewer access remains active.
+                </div>
+              ) : pilotAccessState?.application?.status === "revoked" ? (
+                <div className="rounded-xl border border-[#d6aaaa] bg-[#fff3f0] px-4 py-3 text-sm text-[#873a3a]">
+                  Creator access for this account has been paused. Your saved information remains protected.
+                </div>
+              ) : (
+                <Link href="/pilot-access" className="dashboard-primary-action">
+                  Request pilot access
+                </Link>
+              )}
+              <Link href="/" className="text-sm font-semibold text-[#315f57]">
                 Learn about the private beta
               </Link>
             </section>

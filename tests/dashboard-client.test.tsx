@@ -306,10 +306,11 @@ describe("dashboard client", () => {
     renderDashboard({ initialEditorOpen: true });
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    await waitFor(() => expect(document.body.style.overflow).toBe("hidden"));
     expect(mocks.save).toHaveBeenCalledTimes(1);
     expect(mocks.publish).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument());
     expect(mocks.publish).not.toHaveBeenCalled();
   });
 

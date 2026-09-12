@@ -27,8 +27,8 @@ describe("LandingExperience pilot messaging", () => {
   it("uses invitation-aware creator calls to action and keeps sign-in available", () => {
     render(<LandingExperience variant="clarity" />);
 
-    for (const link of screen.getAllByRole("link", { name: /pilot invitation/i })) {
-      expect(link).toHaveAttribute("href", "/signup");
+    for (const link of screen.getAllByRole("link", { name: /pilot invitation|request pilot access/i })) {
+      expect(link).toHaveAttribute("href", "/pilot-access");
     }
     expect(screen.getByRole("link", { name: "Sign in to Nakshatra" })).toHaveAttribute("href", "/login");
   });

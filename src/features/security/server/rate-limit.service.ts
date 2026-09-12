@@ -30,6 +30,8 @@ export const rateLimitActionSchema = z.enum([
   "identity_verification_start",
   "identity_verification_status",
   "identity_verification_retry",
+  "pilot_access_submit",
+  "pilot_access_review",
   "brokerdesk_bootstrap",
   "brokerdesk_workspace_create",
   "brokerdesk_onboarding_read",

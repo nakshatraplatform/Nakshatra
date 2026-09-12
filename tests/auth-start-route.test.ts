@@ -90,6 +90,24 @@ describe("authentication start route", () => {
     });
   });
 
+  it("starts pilot OTP verification with a fixed applicant continuation", async () => {
+    const response = await POST(request({
+      method: "pilot_access_otp",
+      email: "Applicant@Example.com",
+      redirect: "/dashboard",
+    }));
+    expect(response.status).toBe(200);
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "applicant@example.com",
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fpilot-access`,
+        data: { entry_context: "pilot_applicant" },
+      },
+    });
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
+  });
+
   it("creates a password account and requests signup verification", async () => {
     const response = await POST(request({
       method: "password_signup",

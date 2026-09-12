@@ -14,7 +14,7 @@ import { isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/securi
 import { createClient } from "@/lib/supabase/server";
 
 const verificationSchema = z.object({
-  purpose: z.enum(["owner_signup", "viewer_interest"]),
+  purpose: z.enum(["owner_signup", "viewer_interest", "pilot_access"]),
   email: z.string().trim().email().max(180),
   token: z.string().trim().regex(/^\d{6}$/),
   redirect: z.string().max(500).optional(),
@@ -58,7 +58,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const redirect = sanitizeInternalRedirect(parsed.data.redirect);
+    const redirect = parsed.data.purpose === "pilot_access"
+      ? "/pilot-access"
+      : sanitizeInternalRedirect(parsed.data.redirect);
     if (parsed.data.purpose === "owner_signup" && !isBrokerdeskAuthRedirect(redirect)) {
       await ensureOwnerPortfolio(supabase, data.user.id);
     }

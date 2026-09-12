@@ -81,6 +81,18 @@ describe("authentication verification routes", () => {
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
+  it("verifies a pilot applicant without creating a portfolio or accepting another redirect", async () => {
+    const response = await verifyPost(request("/api/auth/verify", {
+      purpose: "pilot_access",
+      email: "reader@example.com",
+      token: "123456",
+      redirect: "/dashboard",
+    }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ redirect: "/pilot-access" });
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
+  });
+
   it("verifies signup codes and creates the owner's draft portfolio", async () => {
     verifyOtp.mockResolvedValueOnce({
       data: {
