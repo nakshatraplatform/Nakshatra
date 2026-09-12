@@ -162,6 +162,10 @@ describe("dashboard client", () => {
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /share on whatsapp/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
+    const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's Nakshatra wedding portfolio");
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the First View");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Full details are shared only after the profile owner approves");
     fireEvent.click(screen.getByRole("button", { name: /renew/i }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
@@ -200,6 +204,11 @@ describe("dashboard client", () => {
         requester_user_id: "viewer-1",
         metadata: { profile_for: "self", country: "Canada", state: "Ontario", city: "Toronto" },
         created_at: "2026-08-09T12:00:00.000Z",
+        email_verified: true,
+        source_type: "direct",
+        broker_name: null,
+        broker_representative_name: null,
+        requester_portfolio_token: "rohan-portfolio-token",
       }],
     });
 
@@ -302,6 +311,58 @@ describe("dashboard client", () => {
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
 
+  it("distinguishes direct and broker introductions and only links authenticated portfolios", () => {
+    renderDashboard({
+      interests: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          viewer_name: "Maya Shah",
+          viewer_phone: "+1 555 010 3300",
+          viewer_email: "maya@example.com",
+          viewer_family_context: "Our families share similar values.",
+          message: "I would be glad to connect.",
+          status: "new",
+          requester_user_id: "22222222-2222-4222-8222-222222222222",
+          metadata: { profile_for: "self", city: "Boston" },
+          created_at: "2026-08-10T12:00:00.000Z",
+          email_verified: true,
+          source_type: "direct",
+          broker_name: null,
+          broker_representative_name: null,
+          requester_portfolio_token: "maya-authenticated-token",
+        },
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          viewer_name: "Arjun Nair",
+          viewer_phone: "+91 90000 10000",
+          viewer_email: "arjun@example.com",
+          viewer_family_context: null,
+          message: "Introduced with the family's permission.",
+          status: "new",
+          requester_user_id: "44444444-4444-4444-8444-444444444444",
+          metadata: { profile_for: "son", city: "Bengaluru" },
+          created_at: "2026-08-11T12:00:00.000Z",
+          email_verified: true,
+          source_type: "broker",
+          broker_name: "Sanskriti Introductions",
+          broker_representative_name: "Priya Menon",
+          requester_portfolio_token: null,
+        },
+      ],
+    });
+
+    expect(screen.getByText(/Direct introduction · For themselves/i)).toBeInTheDocument();
+    expect(screen.getByText(/Via Sanskriti Introductions · For their son/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Maya Shah"));
+    expect(screen.getByRole("link", { name: "View their Nakshatra portfolio" })).toHaveAttribute(
+      "href",
+      "/p/maya-authenticated-token"
+    );
+    fireEvent.click(screen.getByText("Arjun Nair"));
+    expect(screen.getByText("Priya Menon")).toBeInTheDocument();
+    expect(screen.getAllByText("Verified")).toHaveLength(2);
+  });
+
   it("cancels publication review without changing the public portfolio", async () => {
     renderDashboard({ initialEditorOpen: true });
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -330,6 +391,11 @@ describe("dashboard client", () => {
         requester_user_id: "viewer-2",
         metadata: null,
         created_at: "2026-08-10T12:00:00.000Z",
+        email_verified: true,
+        source_type: "direct",
+        broker_name: null,
+        broker_representative_name: null,
+        requester_portfolio_token: null,
       }],
       accessSummary: {
         grants: [],
@@ -343,7 +409,7 @@ describe("dashboard client", () => {
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Interests to review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Introductions to review" })).toBeInTheDocument();
     expect(screen.getByText("Maya Shah")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Access history"));
     expect(screen.getByText("Portfolio unpublished")).toBeInTheDocument();

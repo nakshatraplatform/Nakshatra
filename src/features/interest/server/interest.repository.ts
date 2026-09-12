@@ -21,20 +21,18 @@ export class InterestRepository {
       p_location: location,
       p_family_context: input.familyContext ?? null,
       p_message: input.message ?? null,
-      p_portfolio_url: input.portfolioUrl || null,
+      p_portfolio_url: null,
       p_country: input.country ?? null,
       p_state: input.state ?? null,
       p_city: input.city ?? null,
     });
   }
 
-  /** Lists the newest owner-visible requests without exposing verification internals. */
-  listForPortfolio(portfolioId: string, limit = 12) {
-    return this.supabase
-      .from("interest_requests")
-      .select("id, viewer_name, viewer_phone, viewer_email, viewer_family_context, message, status, requester_user_id, metadata, created_at")
-      .eq("portfolio_id", portfolioId)
-      .order("created_at", { ascending: false })
-      .limit(limit);
+  /**
+   * Lists owner-visible relationships through the database-owned projection.
+   * Requester portfolio links are resolved from authenticated ownership, never metadata.
+   */
+  listForPortfolio(_portfolioId: string, limit = 12) {
+    return this.supabase.rpc("list_dashboard_interests", { p_limit: limit });
   }
 }

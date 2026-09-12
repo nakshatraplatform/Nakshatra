@@ -60,6 +60,24 @@ const row = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const projectedInterest = {
+  id: "11111111-1111-4111-8111-111111111111",
+  viewer_name: "Rohan Mehta",
+  viewer_phone: "+1 555 010 2200",
+  viewer_email: "rohan@example.com",
+  viewer_family_context: null,
+  message: null,
+  status: "new",
+  requester_user_id: "22222222-2222-4222-8222-222222222222",
+  metadata: { city: "Boston" },
+  created_at: "2026-08-09T12:00:00.000Z",
+  email_verified: true,
+  source_type: "direct",
+  broker_name: null,
+  broker_representative_name: null,
+  requester_portfolio_token: null,
+};
+
 describe("dashboard view service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +92,7 @@ describe("dashboard view service", () => {
     repositories.media.findPortfolioPhotos.mockResolvedValue({ data: [{ id: "media-1" }], error: null });
     repositories.horoscope.findByPortfolio.mockResolvedValue({ data: { id: "horoscope-1" }, error: null });
     repositories.interest.listForPortfolio.mockResolvedValue({
-      data: [{ id: "interest-1", metadata: { city: "Boston" } }], error: null,
+      data: [projectedInterest], error: null,
     });
     repositories.access.mockResolvedValue({ grants: [{ id: "grant-1" }], events: [] });
     repositories.mediaUrls.mockResolvedValue({ "media-1": "https://signed.test/media-1" });
@@ -107,6 +125,18 @@ describe("dashboard view service", () => {
     expect(repositories.media.findPortfolioPhotos).not.toHaveBeenCalled();
   });
 
+  it("keeps the dashboard available when the optional pilot status read fails", async () => {
+    repositories.dashboard.findDashboardPortfolioForUser.mockResolvedValue({ data: null, error: null });
+    loadPilotAccessState.mockRejectedValue(new Error("pilot status unavailable"));
+
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" }))
+      .resolves.toMatchObject({
+        portfolio: null,
+        canCreatePortfolio: true,
+        pilotAccessState: null,
+      });
+  });
+
   it("loads and validates the complete dashboard projection", async () => {
     const result = await loadDashboardView({ supabase: {} as never, userId: "owner-1" });
 
@@ -116,7 +146,7 @@ describe("dashboard view service", () => {
       viewCount: 7,
       mediaUrls: { "media-1": "https://signed.test/media-1" },
       horoscope: { id: "horoscope-1" },
-      interests: [{ id: "interest-1", metadata: { city: "Boston" } }],
+      interests: [{ id: projectedInterest.id, metadata: { city: "Boston" } }],
     });
     expect(repositories.interest.listForPortfolio).toHaveBeenCalledWith("portfolio-1");
     expect(repositories.mediaUrls).toHaveBeenCalledWith(expect.objectContaining({ media: [{ id: "media-1" }] }));
@@ -134,7 +164,7 @@ describe("dashboard view service", () => {
     repositories.media.findPortfolioPhotos.mockResolvedValue({ data: null, error: null });
     repositories.horoscope.findByPortfolio.mockResolvedValue({ data: null, error: null });
     repositories.interest.listForPortfolio.mockResolvedValue({
-      data: [{ id: "interest-1", metadata: "legacy-value" }],
+      data: [{ ...projectedInterest, metadata: "legacy-value" }],
       error: null,
     });
     repositories.mediaUrls.mockResolvedValue({});
@@ -146,7 +176,7 @@ describe("dashboard view service", () => {
         media: [],
         mediaUrls: {},
         horoscope: null,
-        interests: [{ id: "interest-1", metadata: null }],
+        interests: [{ id: projectedInterest.id, metadata: null }],
       });
     expect(repositories.mediaUrls).toHaveBeenCalledWith(expect.objectContaining({ media: [] }));
   });

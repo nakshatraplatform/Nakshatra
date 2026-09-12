@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
+import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 
 interface Props {
   portfolio: Portfolio | null;
@@ -65,21 +66,8 @@ interface Props {
   mediaUrls?: Record<string, string>;
   horoscope?: PortfolioHoroscope | null;
   initialEditorOpen?: boolean;
-  interests?: InterestSummary[];
+  interests?: DashboardInterest[];
   accessSummary?: PortfolioAccessSummary;
-}
-
-interface InterestSummary {
-  id: string;
-  viewer_name: string | null;
-  viewer_phone: string | null;
-  viewer_email: string | null;
-  viewer_family_context: string | null;
-  message: string | null;
-  status: string;
-  requester_user_id: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -180,7 +168,14 @@ export default function DashboardClient({
 
   async function shareWhatsApp() {
     if (!shareUrl) return;
-    const text = encodeURIComponent(`View this wedding portfolio: ${shareUrl}`);
+    const profileName = portfolio?.published_data?.personal?.name
+      || portfolio?.draft_data?.personal?.name
+      || "this profile";
+    const text = encodeURIComponent(
+      `Sharing ${profileName}'s Nakshatra wedding portfolio.\n\n`
+      + `View the introduction: ${shareUrl}\n\n`
+      + "This link opens the First View. Full details are shared only after the profile owner approves an introduction."
+    );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
 
@@ -617,7 +612,7 @@ export default function DashboardClient({
           {portfolio?.is_published && shareUrl ? (
                 <div className="dashboard-glass p-4">
                   <p className="mb-3 text-sm font-semibold text-[#18272e]">Portfolio link</p>
-                  <div className="flex items-center gap-2">
+                  <div className="dashboard-share-link-row">
                     <code className="flex-1 overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
                       {shareUrl}
                     </code>
@@ -991,7 +986,7 @@ function InterestInbox({
   disclosedCategories,
   onDecision,
 }: {
-  interests: InterestSummary[];
+  interests: DashboardInterest[];
   disclosedCategories: string[];
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
 }) {
@@ -999,7 +994,7 @@ function InterestInbox({
   const rejectedInterests = interests.filter((interest) => interest.status === "rejected");
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [approvalCandidate, setApprovalCandidate] = useState<InterestSummary | null>(null);
+  const [approvalCandidate, setApprovalCandidate] = useState<DashboardInterest | null>(null);
   const approvalTitleId = useId();
   const approvalConfirmRef = useRef<HTMLButtonElement>(null);
 
@@ -1024,7 +1019,7 @@ function InterestInbox({
     };
   }, [approvalCandidate, workingId]);
 
-  async function decide(interest: InterestSummary, decision: "approved" | "rejected" | "reopened") {
+  async function decide(interest: DashboardInterest, decision: "approved" | "rejected" | "reopened") {
     setWorkingId(interest.id);
     setActionError(null);
     try {
@@ -1052,8 +1047,8 @@ function InterestInbox({
     <section className="dashboard-glass dashboard-interest-inbox">
       <div className="dashboard-section-heading">
         <div>
-          <h2>Interests to review</h2>
-          <p>Read each introduction before deciding what to do next.</p>
+          <h2>Introductions to review</h2>
+          <p>Review each person&apos;s verified contact, source, and context before sharing Full View.</p>
         </div>
         <span>{newInterests.length} waiting</span>
       </div>
@@ -1062,23 +1057,37 @@ function InterestInbox({
       ) : (
         <div>
           {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
-          {newInterests.slice(0, 5).map((interest) => {
+          {newInterests.map((interest) => {
             const profileFor = typeof interest.metadata?.profile_for === "string" ? interest.metadata.profile_for : "self";
             const location = formatInterestLocation(interest.metadata);
-            const portfolioUrl = typeof interest.metadata?.portfolio_url === "string" ? interest.metadata.portfolio_url : "";
+            const requesterPortfolioPath = interest.requester_portfolio_token
+              ? `/p/${encodeURIComponent(interest.requester_portfolio_token)}`
+              : null;
+            const sourceLabel = interest.source_type === "broker"
+              ? `Via ${interest.broker_name || "broker network"}`
+              : "Direct introduction";
             return (
               <details key={interest.id} className="dashboard-interest-row">
                 <summary>
-                  <span><strong>{interest.viewer_name || "Unnamed viewer"}</strong><small>For {profileFor} {location ? `· ${location}` : ""} · {formatInterestDate(interest.created_at)}</small></span>
-                  <span className="dashboard-interest-status">New</span>
+                  <span>
+                    <strong>{interest.viewer_name || "Unnamed viewer"}</strong>
+                    <small>{sourceLabel} · For {formatProfileFor(profileFor)} {location ? `· ${location}` : ""} · {formatInterestDate(interest.created_at)}</small>
+                  </span>
+                  <span className="dashboard-interest-status">Awaiting review</span>
                 </summary>
                 <div className="dashboard-interest-details">
+                  <div className="dashboard-interest-facts">
+                    <p><strong>Introduced by</strong>{sourceLabel}</p>
+                    {interest.broker_representative_name && <p><strong>Representative</strong>{interest.broker_representative_name}</p>}
+                    <p><strong>Email</strong>{interest.viewer_email || "Not provided"} {interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</p>
+                    {interest.viewer_phone && <p><strong>Phone</strong>{interest.viewer_phone}</p>}
+                  </div>
                   {interest.viewer_family_context && <p><strong>Family introduction</strong>{interest.viewer_family_context}</p>}
                   {interest.message && <p><strong>Message</strong>{interest.message}</p>}
                   <div className="dashboard-interest-actions">
                     {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
                     {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
-                    {portfolioUrl && <a href={portfolioUrl} target="_blank" rel="noreferrer" className="dashboard-secondary-action">Open their portfolio</a>}
+                    {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their Nakshatra portfolio</Link>}
                     <button type="button" className="dashboard-secondary-action" disabled={workingId === interest.id} onClick={() => void decide(interest, "rejected")}>Not right now</button>
                     {interest.requester_user_id ? (
                       <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Review Full View access</button>
@@ -1095,7 +1104,7 @@ function InterestInbox({
       {rejectedInterests.length > 0 && (
         <div className="dashboard-past-interests">
           <h3>Requests set aside</h3>
-          {rejectedInterests.slice(0, 5).map((interest) => (
+          {rejectedInterests.map((interest) => (
             <div key={interest.id} className="dashboard-access-row">
               <span>
                 <strong>{interest.viewer_name || "Unnamed viewer"}</strong>
@@ -1199,20 +1208,21 @@ function AccessControls({
     <section className="dashboard-glass dashboard-access-controls">
       <div className="dashboard-section-heading">
         <div>
-          <h2>Full portfolio access</h2>
-          <p>Approvals expire after seven days. You can renew or end access at any time.</p>
+          <h2>People with Full View</h2>
+          <p>See who can open protected details, when access ends, and whether they have used it.</p>
         </div>
         <UserRoundCheck className="h-5 w-5" aria-hidden="true" />
       </div>
       {error && <p className="dashboard-action-error" role="alert">{error}</p>}
       {grants.length === 0 ? (
-        <p className="dashboard-empty-state">No full portfolio access has been granted yet.</p>
+        <p className="dashboard-empty-state">Nobody has Full View yet. Approve a verified introduction above to grant seven-day access.</p>
       ) : (
         <div className="dashboard-access-list">
           {grants.map((grant) => (
             <div key={grant.id} className="dashboard-access-row">
               <span>
                 <strong>{grant.viewerName || "Verified viewer"}</strong>
+                <small>{grant.sourceType === "broker" ? `Introduced via ${grant.brokerName || "broker network"}` : "Direct introduction"}{grant.viewerEmail ? ` · ${grant.viewerEmail}` : ""}</small>
                 <small>
                   {grant.status === "active"
                     ? `Active until ${formatAccessDate(grant.expiresAt)}`
@@ -1220,6 +1230,7 @@ function AccessControls({
                       ? `Expired ${formatAccessDate(grant.expiresAt)}`
                       : "Access ended"}
                 </small>
+                <small>{grant.lastAccessedAt ? `Last opened ${formatAccessDate(grant.lastAccessedAt)}` : "Not opened yet"}</small>
               </span>
               {grant.status !== "revoked" && (
                 <div className="dashboard-interest-actions">
@@ -1301,6 +1312,17 @@ function formatInterestLocation(metadata: Record<string, unknown> | null) {
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
   if (parts.length) return parts.join(", ");
   return typeof metadata.location === "string" ? metadata.location : "";
+}
+
+function formatProfileFor(value: string) {
+  const labels: Record<string, string> = {
+    self: "themselves",
+    son: "their son",
+    daughter: "their daughter",
+    sibling: "their sibling",
+    relative: "a relative",
+  };
+  return labels[value] || "themselves";
 }
 
 function trapDialogFocus(event: KeyboardEvent, dialog: HTMLElement | null) {

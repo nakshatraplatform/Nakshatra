@@ -2598,6 +2598,10 @@ export type Database = {
         Args: { p_portfolio_id: string }
         Returns: boolean
       }
+      list_dashboard_interests: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       resolve_brokerdesk_bootstrap: { Args: never; Returns: Json }
       resolve_brokerdesk_onboarding: {
         Args: { p_workspace_ref: string }

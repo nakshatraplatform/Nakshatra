@@ -17,7 +17,6 @@ type InterestPayload = {
   city: FormDataEntryValue | null;
   familyContext: FormDataEntryValue | null;
   message: FormDataEntryValue | null;
-  portfolioUrl: FormDataEntryValue | null;
 };
 
 export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, isOwner = false }: {
@@ -105,7 +104,6 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       city: formData.get("city"),
       familyContext: formData.get("familyContext"),
       message: formData.get("message"),
-      portfolioUrl: formData.get("portfolioUrl"),
     };
     setRequestPayload(payload);
     setEmail(payload.email);
@@ -268,7 +266,7 @@ function DetailsForm({ sessionEmail, pending, error, onSubmit }: {
           </label>
         </div>
         <details className="interest-optional">
-          <summary><span><strong>Add more details</strong><small>Location, family introduction, message or portfolio link (optional)</small></span><ChevronDown aria-hidden="true" /></summary>
+          <summary><span><strong>Add more details</strong><small>Location, family introduction, or message (optional)</small></span><ChevronDown aria-hidden="true" /></summary>
           <div className="interest-optional-content">
             <div className="interest-form-intro"><strong>Location</strong><span>Optional</span></div>
             <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" /><Field label="State or province" name="state" autoComplete="address-level1" /><Field label="City" name="city" autoComplete="address-level2" /></div>
@@ -276,15 +274,6 @@ function DetailsForm({ sessionEmail, pending, error, onSubmit }: {
               <label className="interest-field"><span>Brief family introduction</span><textarea name="familyContext" rows={2} maxLength={600} placeholder="A short introduction about your family" /></label>
               <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} placeholder="Anything you would like the family to know" /></label>
             </div>
-            <Field
-              label="Your portfolio link"
-              name="portfolioUrl"
-              type="url"
-              autoComplete="url"
-              placeholder="https://"
-              pattern="https://.*"
-              title="Use a secure link beginning with https://"
-            />
           </div>
         </details>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
@@ -302,7 +291,7 @@ function Field({ label, name, type = "text", required = false, autoComplete, inp
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]; placeholder?: string;
   pattern?: string; title?: string;
 }) {
-  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} maxLength={type === "url" ? 500 : 180} /></label>;
+  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} maxLength={180} /></label>;
 }
 
 function firstName(name: string) {

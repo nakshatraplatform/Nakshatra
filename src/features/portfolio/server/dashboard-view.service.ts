@@ -13,6 +13,7 @@ import {
 import { getPortfolioAccessSummary } from "@/features/access/server/access.service";
 import { HoroscopeRepository } from "@/features/horoscope/server/horoscope.repository";
 import { InterestRepository } from "@/features/interest/server/interest.repository";
+import { dashboardInterestsSchema } from "@/features/interest/server/interest-dashboard.contract";
 import { PortfolioMediaRepository } from "@/features/media/server/media.repository";
 import { createOwnerPortfolioMediaPreviewUrls } from "@/features/media/server/photo-url.service";
 import { DashboardRepository } from "./dashboard.repository";
@@ -81,10 +82,8 @@ export async function loadDashboardView({
   ]);
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
-  const interests = (interestsResult.data ?? []).map((interest) => ({
-    ...interest,
-    metadata: jsonObject(interest.metadata),
-  }));
+  const parsedInterests = dashboardInterestsSchema.safeParse(interestsResult.data ?? []);
+  const interests = parsedInterests.success ? parsedInterests.data : [];
 
   return {
     portfolio,

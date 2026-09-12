@@ -152,6 +152,10 @@
 .dashboard-interest-details { padding: 0 0.2rem 1rem; }
 .dashboard-interest-details p { display: grid; gap: 0.2rem; margin-bottom: 0.8rem; color: #5b696e; font-size: 0.88rem; line-height: 1.55; }
 .dashboard-interest-details strong { color: #30464e; }
+.dashboard-interest-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.25rem; margin-bottom: 0.35rem; border-radius: 9px; padding: 0.8rem; background: #f5f5ef; }
+.dashboard-interest-facts p { margin-bottom: 0; }
+.dashboard-verified-label { display: inline-flex; align-items: center; gap: 0.25rem; color: #315f57; font-size: 0.75rem; font-weight: 700; }
+.dashboard-verified-label svg { width: 0.9rem; height: 0.9rem; }
 .dashboard-interest-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.55rem; }
 .dashboard-action-note { max-width: 44ch; color: #6a777b; font-size: 0.78rem; line-height: 1.45; }
 .dashboard-action-error { margin-bottom: 0.65rem; border-radius: 8px; padding: 0.65rem 0.75rem; background: #fbeceb; color: #873a3a; font-size: 0.82rem; }
@@ -167,6 +171,7 @@
 .dashboard-access-history ol { margin-top: 0.75rem; }
 .dashboard-access-history li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.55rem 0; color: #4f6065; font-size: 0.8rem; }
 .dashboard-access-history time { flex: 0 0 auto; color: #78868a; }
+.dashboard-share-link-row { display: flex; align-items: center; gap: 0.5rem; }
 
 .dashboard-editor-surface { background: #f8f6f0; color: #18272e; }
 .dashboard-editor [class*="text-white"] { color: #33474f !important; }
@@ -188,7 +193,14 @@
   .dashboard-welcome { flex-direction: column; }
   .dashboard-welcome .dashboard-primary-action { width: 100%; }
   .dashboard-interest-actions > a { flex: 1; }
+  .dashboard-interest-row summary { align-items: stretch; flex-direction: column; gap: 0.55rem; }
+  .dashboard-interest-status { align-self: flex-start; }
+  .dashboard-interest-facts { grid-template-columns: 1fr; gap: 0.65rem; }
+  .dashboard-interest-actions > * { width: 100%; }
   .dashboard-access-row { align-items: flex-start; flex-direction: column; }
+  .dashboard-access-row .dashboard-interest-actions { width: 100%; }
+  .dashboard-share-link-row { align-items: stretch; flex-direction: column; }
+  .dashboard-share-link-row code { width: 100%; }
   .dashboard-access-history li { flex-direction: column; gap: 0.15rem; }
   .dashboard-editor .fixed.bottom-5 { left: 0.75rem; right: 0.75rem; width: calc(100% - 1.5rem); }
 }

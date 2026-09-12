@@ -102,15 +102,16 @@ describe("DashboardRepository", () => {
 });
 
 describe("dashboard read repositories", () => {
-  it("builds bounded interest and horoscope owner reads", async () => {
+  it("builds guarded interest and horoscope owner reads", async () => {
     const q = query({ data: { id: "row" }, error: null });
     const createSignedUrl = vi.fn().mockResolvedValue({
       data: { signedUrl: "https://signed.test/horoscope" },
       error: null,
     });
+    const rpc = vi.fn().mockResolvedValue({ data: [], error: null });
     const supabase = {
       from: vi.fn(() => q),
-      rpc: vi.fn(),
+      rpc,
       storage: { from: vi.fn(() => ({ createSignedUrl })) },
     } as never;
 
@@ -121,8 +122,7 @@ describe("dashboard read repositories", () => {
     await horoscopes.findByPortfolio("portfolio");
     await horoscopes.createSignedUrl("owner/chart.webp", 300, "horoscope.webp");
 
-    expect(q.limit).toHaveBeenCalledWith(12);
-    expect(q.order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(rpc).toHaveBeenCalledWith("list_dashboard_interests", { p_limit: 12 });
     expect(createSignedUrl).toHaveBeenCalledWith(
       "owner/chart.webp",
       300,

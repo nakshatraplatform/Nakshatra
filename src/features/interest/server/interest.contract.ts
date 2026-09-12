@@ -16,13 +16,6 @@ export const interestRequestSchema = z.object({
   city: optionalText(120),
   familyContext: optionalText(600),
   message: optionalText(600),
-  portfolioUrl: z.preprocess(
-    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
-    z.string().trim().url().max(500).refine(
-      (value) => new URL(value).protocol === "https:",
-      "Portfolio links must use HTTPS"
-    ).optional()
-  ),
 });
 
 export type InterestRequestInput = z.infer<typeof interestRequestSchema>;
@@ -38,9 +31,5 @@ export function interestRequestValidationMessage(error: z.ZodError) {
   if (invalidFields.has("profileFor")) return "Choose who you are contacting for.";
   if (invalidFields.has("phone")) return "Enter a valid phone number.";
   if (invalidFields.has("email")) return "Enter a valid email address.";
-  if (invalidFields.has("portfolioUrl")) {
-    return "Use a secure portfolio link beginning with https://, or leave this optional field blank. Localhost links cannot be shared.";
-  }
-
   return "One of the optional details is too long. Shorten it and try again.";
 }
