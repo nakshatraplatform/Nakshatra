@@ -32,13 +32,13 @@ describe("pilot access service", () => {
     await submitPilotAccessRequest({ rpc } as never, {
       displayName: "Pilot Applicant",
       phoneE164: null,
-      contactConsentVersion: "pilot_access_v1",
+      contactConsentVersion: "launch_waitlist_v1",
       idempotencyKey: "pilot-submit:00000001",
     });
     expect(rpc).toHaveBeenCalledWith("submit_pilot_access_request", {
       p_display_name: "Pilot Applicant",
       p_phone_e164: null,
-      p_contact_consent_version: "pilot_access_v1",
+      p_contact_consent_version: "launch_waitlist_v1",
       p_idempotency_key: "pilot-submit:00000001",
     });
   });
@@ -70,7 +70,7 @@ describe("pilot access service", () => {
     await expect(submitPilotAccessRequest({ rpc } as never, {
       displayName: "Existing Creator",
       phoneE164: null,
-      contactConsentVersion: "pilot_access_v1",
+      contactConsentVersion: "launch_waitlist_v1",
       idempotencyKey: "pilot-submit:already01",
     })).resolves.toEqual({ status: "already_creator" });
   });

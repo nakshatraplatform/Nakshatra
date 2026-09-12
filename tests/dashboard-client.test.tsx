@@ -415,7 +415,7 @@ describe("dashboard client", () => {
 
     expect(screen.getByText("Private beta testing")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Portfolio creation is currently invite-only." })).toBeInTheDocument();
-    expect(screen.getByText(/open portfolio links shared with you/i)).toBeInTheDocument();
+    expect(screen.getByText(/continue using portfolio links shared with you/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /start with the basics/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /portfolio details/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /interests to review/i })).not.toBeInTheDocument();

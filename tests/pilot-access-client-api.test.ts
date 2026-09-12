@@ -33,7 +33,7 @@ describe("pilot access client API", () => {
     const command = {
       displayName: "Aditi Rao",
       phoneE164: null,
-      contactConsentVersion: "pilot_access_v1" as const,
+      contactConsentVersion: "launch_waitlist_v1" as const,
       idempotencyKey: "pilot-submit:00000001",
     };
     expect((await submitPilotAccess(command)).ok).toBe(true);

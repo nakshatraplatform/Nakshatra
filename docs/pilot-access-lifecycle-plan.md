@@ -1,6 +1,19 @@
 # Pilot Access Lifecycle Implementation Plan
 
-## Decision
+## 2026-09-12 superseding waitlist decision
+
+The self-service pilot application and approval model below is retained as historical context but is no longer the active launch contract. Until public launch:
+
+- `/pilot-access` is a verified-contact launch waitlist, not a creator-access application.
+- A waitlist entry never grants creator capability and administrators cannot approve one into access.
+- Public B2C password signup is closed; existing creators may continue signing in. BrokerDesk onboarding remains separately authorized.
+- The administrator waitlist surface is read-only.
+- A Nakshatra application administrator automatically has creator capability. Supabase project ownership is not used as application authorization.
+- Future signup invitations must be single-use and bound to the exact verified recipient email; that invitation-delivery package remains deferred.
+
+Migration `20260912150000_waitlist_and_admin_creator_access.sql` enforces the capability changes and revokes the former authenticated review command.
+
+## Historical decision
 
 Nakshatra authorization is capability-based. A Supabase Auth account proves identity, but it does not grant portfolio-creation or administration rights.
 

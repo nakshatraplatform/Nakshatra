@@ -489,12 +489,12 @@ export default function DashboardClient({
                   Portfolio creation is currently invite-only.
                 </h2>
                 <p className="mx-auto mt-3 max-w-xl text-slate-600">
-                  We are opening creation to a small group of pilot participants while we learn and improve. You can still open portfolio links shared with you, verify your email, express interest, and receive Full View when the portfolio owner approves it.
+                  New portfolio creation is closed while we prepare for launch. You can join the waitlist for updates, or continue using portfolio links shared with you.
                 </p>
               </div>
               {pilotAccessState?.application?.status === "pending" ? (
                 <div className="rounded-xl border border-[#c9bc91] bg-[#f4efdf] px-4 py-3 text-sm text-[#725d2b]">
-                  Your creator-access request is under review. We will email you when a decision is made.
+                  You are on the Nakshatra launch waitlist. This does not provide portfolio creation access.
                 </div>
               ) : pilotAccessState?.application?.status === "declined" ? (
                 <div className="rounded-xl border border-[#d6aaaa] bg-[#fff3f0] px-4 py-3 text-sm text-[#873a3a]">
@@ -506,7 +506,7 @@ export default function DashboardClient({
                 </div>
               ) : (
                 <Link href="/pilot-access" className="dashboard-primary-action">
-                  Request pilot access
+                  Join the waitlist
                 </Link>
               )}
               <Link href="/" className="text-sm font-semibold text-[#315f57]">

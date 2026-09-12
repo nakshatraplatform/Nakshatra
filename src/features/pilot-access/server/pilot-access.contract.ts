@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 
-export const PILOT_CONTACT_CONSENT_VERSION = "pilot_access_v1";
+export const PILOT_CONTACT_CONSENT_VERSION = "launch_waitlist_v1";
 
 export const pilotRequestRefSchema = z.string().regex(/^par_[0-9a-f]{32}$/);
 export const pilotAccessStatusSchema = z.enum(["pending", "approved", "declined", "revoked"]);

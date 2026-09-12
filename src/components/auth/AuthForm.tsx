@@ -28,8 +28,8 @@ const COPY = {
     body: "Use your email and password, or continue with Google.",
     primaryAction: "Sign in",
     altPrompt: "New to Nakshatra?",
-    altCta: "Create an account",
-    altHref: "/signup",
+    altCta: "Join the waitlist",
+    altHref: "/pilot-access",
   },
   signup: {
     eyebrow: "Invite-only private beta",
@@ -62,6 +62,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           eyebrow: "Nakshatra BrokerDesk",
           title: "Sign in to your broker workspace",
           body: "Use your Nakshatra account to continue. Your business workspace stays private while verification is completed.",
+          altPrompt: "New to BrokerDesk?",
+          altCta: "Create a broker account",
+          altHref: "/signup",
         }
       : {
           ...COPY.signup,

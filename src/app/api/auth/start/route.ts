@@ -97,6 +97,12 @@ export async function POST(request: Request) {
     if (parsed.data.method === "password_signup") {
       const redirect = sanitizeInternalRedirect(parsed.data.redirect);
       const isBrokerdeskContinuation = isBrokerdeskAuthRedirect(redirect);
+      if (!isBrokerdeskContinuation) {
+        return NextResponse.json(
+          { code: "SIGNUP_CLOSED", error: "Public signup is not open yet. Join the waitlist for launch updates." },
+          { status: 403, headers: { "Cache-Control": "private, no-store" } }
+        );
+      }
       const callbackUrl = createCanonicalAppUrl(
         `/api/auth/callback?next=${encodeURIComponent(redirect)}`,
         request.url

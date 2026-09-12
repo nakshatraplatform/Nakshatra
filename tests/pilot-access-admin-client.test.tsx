@@ -21,29 +21,27 @@ describe("pilot access administrator experience", () => {
     vi.stubGlobal("crypto", { randomUUID: () => "11111111-1111-4111-8111-111111111111" });
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
-  it("confirms and submits an approval before refreshing the queue", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ requests: [request] }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "approved" }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ requests: [] }), { status: 200 }));
+  it("lists verified waitlist entries without creator approval controls", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ requests: [request] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const user = userEvent.setup();
     render(<PilotAccessAdminClient />);
     expect(await screen.findByText("aditi@example.com")).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/Internal review note/), "Cohort one");
-    await user.click(screen.getByRole("button", { name: "Approve" }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("aditi@example.com"));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toMatchObject({
-      decision: "approve",
-      reviewNote: "Cohort one",
-      idempotencyKey: "pilot-review:11111111-1111-4111-8111-111111111111",
-    });
+    expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/pilot-access?status=pending", { cache: "no-store" });
   });
 
   it("shows a safe error when the queue cannot load", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "Pilot administration is unavailable." }), { status: 403 })));
     render(<PilotAccessAdminClient />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Pilot administration is unavailable.");
+  });
+
+  it("shows an empty waitlist and lets the administrator refresh it", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ requests: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PilotAccessAdminClient />);
+    expect(await screen.findByRole("heading", { name: "No waitlist entries yet" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Refresh waitlist" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 });

@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(31);
+select plan(19);
 
 select pg_temp.create_auth_actor(
   '81000000-0000-4000-8000-000000000001',
@@ -47,7 +47,7 @@ select is(
 );
 select is(
   public.submit_pilot_access_request(
-    'Pilot Applicant', '+14155550100', 'pilot_access_v1',
+    'Pilot Applicant', '+14155550100', 'launch_waitlist_v1',
     'pilot-submit:00000001'
   ) ->> 'status',
   'pending',
@@ -85,7 +85,7 @@ select is(
 );
 select throws_ok(
   $$select public.submit_pilot_access_request(
-    'Different Applicant', '+14155550100', 'pilot_access_v1',
+    'Different Applicant', '+14155550100', 'launch_waitlist_v1',
     'pilot-submit:00000001'
   )$$,
   '22023',
@@ -114,137 +114,23 @@ select is(
   'an authorized operator sees the verified email projection'
 );
 
-reset role;
-update auth.users set email = 'changed@pilot.test'
-where id = '81000000-0000-4000-8000-000000000001';
-create temporary table pilot_request_ref as
-select request_ref from app_private.pilot_access_requests
-where applicant_user_id = '81000000-0000-4000-8000-000000000001';
-grant select on pilot_request_ref to authenticated;
-
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '81000000-0000-4000-8000-000000000002',
   '82000000-0000-4000-8000-000000000002'
-);
-select throws_ok(
-  format(
-    'select public.review_pilot_access_request(%L,%L,%L,%L)',
-    (select request_ref from pilot_request_ref), 'approve', null,
-    'pilot-review:00000001'
-  ),
-  '42501',
-  'applicant email changed; a new verified request is required',
-  'approval fails when the verified email changed after submission'
-);
-
-reset role;
-update auth.users set email = 'applicant@pilot.test'
-where id = '81000000-0000-4000-8000-000000000001';
-
-set local role authenticated;
-select pg_temp.set_authenticated_claims(
-  '81000000-0000-4000-8000-000000000002',
-  '82000000-0000-4000-8000-000000000002'
-);
-select is(
-  public.review_pilot_access_request(
-    (select request_ref from pilot_request_ref), 'approve', 'Pilot cohort one',
-    'pilot-review:00000002'
-  ) ->> 'status',
-  'approved',
-  'an operator can approve the verified application'
-);
-
-reset role;
-select ok(
-  exists (
-    select 1 from app_private.b2c_creator_entitlements
-    where email_hash = app_private.normalized_email_hash('applicant@pilot.test')
-      and revoked_at is null
-  ),
-  'approval grants creator entitlement in the same transaction'
-);
-select is(
-  (select count(*)::integer from app_private.notification_outbox
-   where notification_type = 'pilot_access_approved'),
-  1,
-  'approval queues exactly one approval notification'
-);
-select ok(
-  exists (
-    select 1 from app_private.pilot_access_audit_events
-    where event_name = 'pilot.application.approved' and outcome = 'succeeded'
-  ),
-  'approval appends an audit event'
-);
-
-set local role authenticated;
-select pg_temp.set_authenticated_claims(
-  '81000000-0000-4000-8000-000000000002',
-  '82000000-0000-4000-8000-000000000002'
-);
-select is(
-  public.review_pilot_access_request(
-    (select request_ref from pilot_request_ref), 'approve', 'Pilot cohort one',
-    'pilot-review:00000002'
-  ) ->> 'status',
-  'approved',
-  'an exact approval retry returns its recorded result'
-);
-
-reset role;
-select is(
-  (select count(*)::integer from app_private.notification_outbox
-   where notification_type = 'pilot_access_approved'),
-  1,
-  'an idempotent approval retry does not duplicate notification work'
-);
-
-set local role authenticated;
-select pg_temp.set_authenticated_claims(
-  '81000000-0000-4000-8000-000000000001',
-  '82000000-0000-4000-8000-000000000001'
 );
 select is(
   public.get_current_pilot_access_state() ->> 'canCreatePortfolio',
   'true',
-  'the approved applicant receives creator capability'
+  'a Nakshatra administrator automatically has creator capability'
 );
-
-set local role authenticated;
-select pg_temp.set_authenticated_claims(
-  '81000000-0000-4000-8000-000000000002',
-  '82000000-0000-4000-8000-000000000002'
-);
-select is(
-  public.review_pilot_access_request(
-    (select request_ref from pilot_request_ref), 'revoke', 'Pilot access ended',
-    'pilot-review:00000003'
-  ) ->> 'status',
-  'revoked',
-  'an operator can revoke approved pilot access'
-);
-
-reset role;
 select ok(
-  exists (
-    select 1 from app_private.b2c_creator_entitlements
-    where email_hash = app_private.normalized_email_hash('applicant@pilot.test')
-      and revoked_at is not null
+  not has_function_privilege(
+    'authenticated',
+    'public.review_pilot_access_request(text,text,text,text)',
+    'EXECUTE'
   ),
-  'revocation disables the creator entitlement'
-);
-select is(
-  (select count(*)::integer from app_private.notification_outbox),
-  2,
-  'revocation queues a separate notification'
-);
-select throws_ok(
-  $$update app_private.pilot_access_audit_events set outcome = 'failed'$$,
-  '55000',
-  'pilot access audit events are append-only',
-  'pilot audit history cannot be rewritten'
+  'authenticated clients cannot turn waitlist entries into creator access'
 );
 
 set local role authenticated;
@@ -255,28 +141,15 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.get_current_pilot_access_state() ->> 'canCreatePortfolio',
   'false',
-  'revocation removes creator capability without deleting the account'
+  'joining the waitlist does not grant creator capability'
 );
 
 reset role;
-select is(
-  (select count(*)::integer from app_private.pilot_access_audit_events
-   where request_id = (select id from app_private.pilot_access_requests
-     where request_ref = (select request_ref from pilot_request_ref))),
-  3,
-  'submission, approval, and revocation history remains durable'
-);
-select is(
-  (select status from app_private.pilot_access_requests
-   where request_ref = (select request_ref from pilot_request_ref)),
-  'revoked',
-  'the application retains its final reviewed state'
-);
-select is(
-  (select count(*)::integer from app_private.pilot_command_idempotency
-   where actor_user_id = '81000000-0000-4000-8000-000000000002'),
-  2,
-  'operator decisions keep independent idempotency receipts'
+select throws_ok(
+  $$update app_private.pilot_access_audit_events set outcome = 'failed'$$,
+  '55000',
+  'pilot access audit events are append-only',
+  'pilot audit history cannot be rewritten'
 );
 
 select * from finish();

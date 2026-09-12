@@ -23,7 +23,7 @@ const actor = {
 const command = {
   displayName: "Pilot Applicant",
   phoneE164: "+14155550100",
-  contactConsentVersion: "pilot_access_v1",
+  contactConsentVersion: "launch_waitlist_v1",
   idempotencyKey: "pilot-submit:00000001",
 };
 

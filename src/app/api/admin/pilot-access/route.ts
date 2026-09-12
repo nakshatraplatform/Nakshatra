@@ -1,21 +1,10 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
-import {
-  AUTH_BODY_LIMIT,
-  readJsonBody,
-  requestSecurityErrorResponse,
-  requireSameOrigin,
-} from "@/lib/api/request-security";
-import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
-import {
-  pilotAdminFilterSchema,
-  reviewPilotAccessSchema,
-} from "@/features/pilot-access/server/pilot-access.contract";
+import { pilotAdminFilterSchema } from "@/features/pilot-access/server/pilot-access.contract";
 import {
   listPilotAccessRequests,
   PilotAccessServiceError,
-  reviewPilotAccessRequest,
 } from "@/features/pilot-access/server/pilot-access.service";
 
 const noStore = { "Cache-Control": "private, no-store" };
@@ -44,21 +33,9 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    requireSameOrigin(request);
-  } catch (error) {
-    return requestSecurityErrorResponse(error);
-  }
-  const auth = await getApiUser();
-  if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
-  const limited = await enforceRateLimit(auth.supabase, request, "pilot_access_review");
-  if (limited) return limited;
-  const parsed = reviewPilotAccessSchema.safeParse(await readJsonBody(request, AUTH_BODY_LIMIT));
-  if (!parsed.success) return NextResponse.json({ code: "PILOT_DECISION_INVALID", error: "Check the decision and note." }, { status: 400, headers: noStore });
-  try {
-    return NextResponse.json(await reviewPilotAccessRequest(auth.supabase, parsed.data), { headers: noStore });
-  } catch (error) {
-    return failure(error);
-  }
+export async function POST() {
+  return NextResponse.json(
+    { code: "WAITLIST_READ_ONLY", error: "Waitlist entries do not grant product access." },
+    { status: 405, headers: { ...noStore, Allow: "GET" } }
+  );
 }

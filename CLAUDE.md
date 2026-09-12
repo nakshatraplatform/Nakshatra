@@ -316,11 +316,11 @@ Do not treat these local results as proof of deployed configuration. This checko
 
 The original assessment list below is historical prioritization. The creator-entitlement boundary, disclosure review, seven-day Full View confirmation, 30-day public-link policy, expired-link state, and non-destructive unpublish were implemented on `main` in the 2026-09-11 pilot launch changes.
 
-The approved package is documented in `docs/pilot-access-lifecycle-plan.md`. NAK-70 implements the separate verified applicant lifecycle, passwordless `/pilot-access` request flow, independently provisioned `/admin/pilot-access` queue, atomic approval-to-creator entitlement, append-only decision audit, and provider-neutral notification outbox. Neither email OTP nor Google applicant authentication may provision a portfolio before approval. These additions are not operational until their migration is deployed. Notification delivery remains pending a production email provider and verified sender domain.
+The approved package and its superseding waitlist decision are documented in `docs/pilot-access-lifecycle-plan.md`. `/pilot-access` now records verified launch interest only and never grants creator access. The administrator surface is a read-only waitlist, public B2C password signup is closed, existing creators can still sign in, and a Nakshatra application administrator automatically receives creator capability. Supabase project ownership is deliberately separate from in-product authority. These changes require migration `20260912150000_waitlist_and_admin_creator_access.sql`. Future email-bound signup invitation delivery remains deferred.
 
 1. Add a single-use, email-bound creator invitation/entitlement and enforce it in signup, OAuth callback, verification, portfolio bootstrap, dashboard, and owner APIs.
 2. Ensure viewer/Auth identity can never self-elevate into creator entitlement.
-3. Deploy and rehearse the NAK-70 applicant-to-creator lifecycle. Pilot-facing CTAs now lead to the verified request flow; creator capability remains enforced at the authorization boundary.
+3. Deploy and rehearse the NAK-70 verified waitlist lifecycle. Public CTAs collect launch interest only; creator capability remains enforced independently at the database boundary.
 4. Disable payments and BrokerDesk server-side and remove payment claims from the pilot.
 5. Keep the Didit publication requirement, verify its production configuration, and provide clear consent, failure, retry, and support states for every pilot creator.
 6. Add a real publication disclosure review; the current “Review and publish” action publishes directly.

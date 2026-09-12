@@ -23,18 +23,18 @@ function messageForState(state: PilotAccessState) {
   if (state.canCreatePortfolio) {
     return {
       icon: CheckCircle2,
-      eyebrow: "Access approved",
-      title: "You can start your portfolio.",
-      body: "Your creator access is active. Build and preview freely; identity verification is required before publishing.",
+      eyebrow: "Existing creator",
+      title: "Your Nakshatra access is already active.",
+      body: "Continue to your dashboard to create, update, and manage your portfolio.",
     };
   }
   switch (state.application?.status) {
     case "pending":
       return {
         icon: Clock3,
-        eyebrow: "Request received",
-        title: "Your pilot request is under review.",
-        body: "We will email you after an administrator reviews your request. You can still view shared portfolios while you wait.",
+      eyebrow: "You're on the list",
+      title: "Your place on the launch waitlist is confirmed.",
+      body: "We will contact your verified email when signup opens. Joining the waitlist does not create portfolio access.",
       };
     case "declined":
       return {
@@ -73,7 +73,7 @@ export default function PilotAccessClient() {
       return;
     }
     if (!result.ok || !result.state) {
-      setError(result.failure?.error ?? "Pilot access is temporarily unavailable.");
+      setError(result.failure?.error ?? "The waitlist is temporarily unavailable.");
       setStep("identify");
       return;
     }
@@ -133,7 +133,7 @@ export default function PilotAccessClient() {
   async function submitDetails(event: FormEvent) {
     event.preventDefault();
     if (!consent) {
-      setError("Confirm that we may contact you about this pilot request.");
+      setError("Confirm that we may contact you about the Nakshatra launch.");
       return;
     }
     setBusy(true);
@@ -146,7 +146,7 @@ export default function PilotAccessClient() {
     });
     if (!result.ok) {
       setBusy(false);
-      setError(result.failure?.error ?? "We could not submit your request.");
+      setError(result.failure?.error ?? "We could not add you to the waitlist.");
       return;
     }
     await refreshState();
@@ -161,7 +161,7 @@ export default function PilotAccessClient() {
       <div className="mx-auto max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
           <Link href="/" className="text-sm font-bold tracking-[0.16em] text-[#244854]">NAKSHATRA</Link>
-          <span className="rounded-full bg-[#e9e2cf] px-3 py-1.5 text-xs font-semibold text-[#725d2b]">Private pilot</span>
+          <span className="rounded-full bg-[#e9e2cf] px-3 py-1.5 text-xs font-semibold text-[#725d2b]">Launch waitlist</span>
         </header>
 
         <section className="rounded-xl border border-[#d0d3ce] bg-[#fffdf8] p-6 shadow-[0_18px_50px_rgb(29_52_58/0.08)] sm:p-10">
@@ -180,9 +180,9 @@ export default function PilotAccessClient() {
             </div>
           ) : (
             <>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#477b77]">Selected creator access</p>
-              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Request access to the Nakshatra pilot.</h1>
-              <p className="mt-4 max-w-xl leading-7 text-slate-600">Verify your email and share a few basic details. An administrator reviews every creator request before portfolio creation is enabled.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#477b77]">Launching soon</p>
+              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Join the Nakshatra waitlist.</h1>
+              <p className="mt-4 max-w-xl leading-7 text-slate-600">Verify your email and leave a few basic details. We will send your signup invitation when Nakshatra opens—joining now does not create portfolio access.</p>
 
               {error ? <div role="alert" className="mt-6 border-l-4 border-[#b7483e] bg-[#f8e6e2] p-4 text-sm text-[#7d302b]">{error}</div> : null}
 
@@ -194,9 +194,9 @@ export default function PilotAccessClient() {
                       <input required type="email" autoComplete="email" maxLength={180} value={email} onChange={(event) => setEmail(event.target.value)} className="min-w-0 flex-1 bg-transparent py-3 outline-none" placeholder="you@example.com" />
                     </span>
                   </label>
-                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Sending code…" : "Verify email to continue"}</button>
+                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Sending code…" : "Verify email to join"}</button>
                   <div className="flex items-center gap-3 text-sm text-slate-500"><span className="h-px flex-1 bg-[#d8d8d2]" />or<span className="h-px flex-1 bg-[#d8d8d2]" /></div>
-                  <button type="button" disabled={busy} onClick={continueWithGoogle} className="dashboard-secondary-action w-full">Continue with Google</button>
+                  <button type="button" disabled={busy} onClick={continueWithGoogle} className="dashboard-secondary-action w-full">Verify with Google</button>
                 </form>
               ) : null}
 
@@ -213,22 +213,22 @@ export default function PilotAccessClient() {
 
               {step === "details" ? (
                 <form onSubmit={submitDetails} className="mt-8 grid gap-5">
-                  <div className="flex gap-3 rounded-lg bg-[#e8f1ed] p-4 text-sm leading-6 text-[#315f57]"><ShieldCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0" /><span>Your email is verified through your signed-in account. It cannot be replaced by the form.</span></div>
+                  <div className="flex gap-3 rounded-lg bg-[#e8f1ed] p-4 text-sm leading-6 text-[#315f57]"><ShieldCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0" /><span>Your email is verified and cannot be replaced by this form. Verification does not grant product access.</span></div>
                   <label className="grid gap-2 text-sm font-semibold">Your name
                     <input required minLength={2} maxLength={120} autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="min-h-12 rounded-lg border border-[#adb8ba] bg-white px-4 outline-none focus:border-[#477b77] focus:ring-2 focus:ring-[#477b77]/20" />
                   </label>
                   <label className="grid gap-2 text-sm font-semibold">Phone number <span className="font-normal text-slate-500">Optional, international format</span>
                     <input type="tel" autoComplete="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+14155550100" value={phone} onChange={(event) => setPhone(event.target.value)} className="min-h-12 rounded-lg border border-[#adb8ba] bg-white px-4 outline-none focus:border-[#477b77] focus:ring-2 focus:ring-[#477b77]/20" />
                   </label>
-                  <label className="flex items-start gap-3 text-sm leading-6 text-slate-600"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#315f57]" /><span>Nakshatra may contact me by email, and by phone if provided, about this pilot request. This is not marketing consent.</span></label>
-                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Submitting…" : "Submit for review"}</button>
+                  <label className="flex items-start gap-3 text-sm leading-6 text-slate-600"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#315f57]" /><span>Nakshatra may contact me by email, and by phone if provided, about launch access. I can ask to be removed at any time.</span></label>
+                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Joining…" : "Join the waitlist"}</button>
                 </form>
               ) : null}
             </>
           )}
         </section>
 
-        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-slate-600"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>A pilot request never grants access automatically. Portfolio publishing also requires identity verification.</p></div>
+        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-slate-600"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>The waitlist does not grant creator or portfolio access. We will send signup instructions separately when launch access is available.</p></div>
       </div>
     </main>
   );

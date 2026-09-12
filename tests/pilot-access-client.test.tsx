@@ -22,7 +22,7 @@ vi.mock("@/features/pilot-access/client/pilot-access.api", () => ({
 
 import PilotAccessClient from "../src/app/pilot-access/pilot-access-client";
 
-describe("pilot access applicant experience", () => {
+describe("launch waitlist experience", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("crypto", { randomUUID: () => "11111111-1111-4111-8111-111111111111" });
@@ -58,7 +58,7 @@ describe("pilot access applicant experience", () => {
 
     const user = userEvent.setup();
     render(<PilotAccessClient />);
-    expect(await screen.findByRole("heading", { name: /request access/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /join the nakshatra waitlist/i })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Email address"), "Applicant@Example.com");
     await user.click(screen.getByRole("button", { name: /verify email/i }));
@@ -79,14 +79,14 @@ describe("pilot access applicant experience", () => {
     await user.type(await screen.findByLabelText("Your name"), "Aditi Rao");
     await user.type(screen.getByLabelText(/Phone number/), "+14155550100");
     await user.click(screen.getByRole("checkbox"));
-    fireEvent.submit(screen.getByRole("button", { name: "Submit for review" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "Join the waitlist" }).closest("form")!);
     expect(submitPilotAccess).toHaveBeenCalledWith({
       displayName: "Aditi Rao",
       phoneE164: "+14155550100",
-      contactConsentVersion: "pilot_access_v1",
+      contactConsentVersion: "launch_waitlist_v1",
       idempotencyKey: "pilot-submit:11111111-1111-4111-8111-111111111111",
     });
-    expect(await screen.findByRole("heading", { name: /under review/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /waitlist is confirmed/i })).toBeInTheDocument();
   });
 
   it("shows approved access and begins Google authentication safely", async () => {
@@ -103,7 +103,7 @@ describe("pilot access applicant experience", () => {
     getPilotAccessState.mockResolvedValueOnce({ ok: false, unauthenticated: true, state: null, failure: null });
     startAuthentication.mockResolvedValueOnce({ ok: true, body: { url: "https://accounts.google.test" } });
     render(<PilotAccessClient />);
-    await userEvent.click(await screen.findByRole("button", { name: "Continue with Google" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Verify with Google" }));
     await waitFor(() => expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test"));
   });
 
@@ -117,6 +117,14 @@ describe("pilot access applicant experience", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Email delivery paused.");
   });
 
+  it("keeps Google verification recoverable when the provider cannot start", async () => {
+    getPilotAccessState.mockResolvedValueOnce({ ok: false, unauthenticated: true, state: null, failure: null });
+    startAuthentication.mockResolvedValueOnce({ ok: false, body: { error: "Google is unavailable." } });
+    render(<PilotAccessClient />);
+    await userEvent.click(await screen.findByRole("button", { name: "Verify with Google" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Google is unavailable.");
+  });
+
   it("requires explicit contact consent after an authenticated return", async () => {
     getPilotAccessState.mockResolvedValueOnce({
       ok: true,
@@ -127,12 +135,12 @@ describe("pilot access applicant experience", () => {
     const user = userEvent.setup();
     render(<PilotAccessClient />);
     await user.type(await screen.findByLabelText("Your name"), "Aditi Rao");
-    fireEvent.submit(screen.getByRole("button", { name: "Submit for review" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "Join the waitlist" }).closest("form")!);
     expect(await screen.findByRole("alert")).toHaveTextContent(/confirm that we may contact/i);
     expect(submitPilotAccess).not.toHaveBeenCalled();
   });
 
-  it("renders declined and revoked capabilities without exposing creator controls", async () => {
+  it("keeps legacy non-approved entries non-entitled", async () => {
     getPilotAccessState.mockResolvedValueOnce({
       ok: true,
       unauthenticated: false,
