@@ -59,7 +59,7 @@ as $$
     ) requester_portfolio on true
     where public.can_manage_portfolio(request_record.portfolio_id)
     order by request_record.created_at desc
-    limit pg_catalog.least(pg_catalog.greatest(coalesce(p_limit, 12), 1), 50)
+    limit least(greatest(coalesce(p_limit, 12), 1), 50)
   ) row_data;
 $$;
 
