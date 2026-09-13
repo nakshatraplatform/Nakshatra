@@ -124,4 +124,19 @@ describe("saveDashboardDraft", () => {
       saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft })
     ).rejects.toMatchObject({ code: "DASHBOARD_DATA_REJECTED", status: 400 });
   });
+
+  it("does not misreport a database runtime defect as an unapplied migration", async () => {
+    repository.saveDashboardDraftTransaction.mockResolvedValue({
+      data: null,
+      error: { code: "42703", message: "record has no field" },
+    });
+
+    await expect(
+      saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft })
+    ).rejects.toMatchObject({
+      code: "DASHBOARD_SAVE_FAILED",
+      status: 500,
+      message: expect.not.stringContaining("database update"),
+    });
+  });
 });

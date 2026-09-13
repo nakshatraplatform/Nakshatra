@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Portfolio, PortfolioData, PortfolioMedia } from "../src/types/portfolio";
 
@@ -505,6 +505,32 @@ describe("dashboard client", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: "Try saving again" }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not loop autosave requests after a failed attempt", async () => {
+    vi.useFakeTimers();
+    mocks.save.mockResolvedValue({
+      ok: false,
+      error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable", status: 500 },
+    });
+    renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Updated" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(2);
   });
 
   it("requires an explicit choice for legacy photo privacy without expanding access", () => {

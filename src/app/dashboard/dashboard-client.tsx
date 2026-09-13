@@ -127,6 +127,7 @@ export default function DashboardClient({
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
   const reviewPublishRef = useRef<HTMLButtonElement>(null);
   const draftRevisionRef = useRef(0);
+  const lastAutosaveAttemptRevisionRef = useRef(-1);
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const disclosedCategories = fullViewDisclosureCategories(
@@ -175,7 +176,10 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (draftSaveState !== "unsaved" || !canCreatePortfolio) return;
+    const revision = draftRevisionRef.current;
+    if (lastAutosaveAttemptRevisionRef.current === revision) return;
     const timer = window.setTimeout(() => {
+      lastAutosaveAttemptRevisionRef.current = revision;
       void persistDashboardDraft({ refresh: false, silent: true });
     }, 1400);
     return () => window.clearTimeout(timer);
