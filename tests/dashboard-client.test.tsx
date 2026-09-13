@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
+  updateProgress: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
@@ -33,6 +34,7 @@ vi.mock("@/features/portfolio/client/portfolio-dashboard.api", () => ({
   uploadPortfolioPhotoRequest: mocks.upload,
   updatePortfolioPhotoRequest: mocks.update,
   deletePortfolioPhotoRequest: mocks.remove,
+  updatePublicationProgressRequest: mocks.updateProgress,
 }));
 vi.mock("@/features/access/client/access-dashboard.api", () => ({
   manageAccessGrantRequest: mocks.manageAccess,
@@ -44,6 +46,41 @@ const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
   vitals: {}, astrology: { rashi: "kanya" }, education: {}, career: {}, family: {}, lifestyle: {}, contact: {},
   style: { template_name: "Royal Heritage" },
+};
+
+const readyData: PortfolioData = {
+  ...data,
+  personal: {
+    ...data.personal,
+    first_name: "Aditi",
+    last_name: "Rao",
+    current_location: "Boston",
+    place_of_birth: "Bengaluru",
+    short_bio: "A thoughtful introduction.",
+  },
+  career: { title: "Engineer" },
+  vitals: { gotra: "Kashyap" },
+  astrology: {
+    rashi: "kanya",
+    nakshatra: "Uttara Phalguni",
+    pada: "2",
+    time_of_birth: "09:15",
+    manglik_status: "No",
+  },
+};
+
+const readyPublicationReadiness = {
+  portfolioExists: true,
+  lastEditorSection: "privacy" as const,
+  previewedAt: "2026-01-01T00:00:00.000Z",
+  selectedPlanCode: "launch_30",
+  verificationStatus: "verified" as const,
+  paymentStatus: "paid" as const,
+  paymentExpiresAt: "2099-01-01T00:00:00.000Z",
+  paymentActive: true,
+  disclosureConfirmed: true,
+  published: true,
+  missingRequired: [],
 };
 
 const portfolio: Portfolio = {
@@ -68,6 +105,7 @@ function renderDashboard(overrides: Partial<React.ComponentProps<typeof Dashboar
 }
 
 function goToFoundation() {
+  if (screen.queryByRole("heading", { name: "Portfolio essentials" })) return;
   fireEvent.click(screen.getByRole("button", { name: "Next: Foundation" }));
 }
 
@@ -88,6 +126,10 @@ beforeEach(() => {
     ok: true,
     data: { media: { ...media, id: "media-2" }, previewUrl: "https://signed.test/media-2.webp" },
   });
+  mocks.updateProgress.mockResolvedValue({
+    ok: true,
+    data: { readiness: readyPublicationReadiness },
+  });
 });
 
 afterEach(() => {
@@ -106,15 +148,15 @@ describe("dashboard client", () => {
   it("opens the canonical editor when requested by an editing route", () => {
     renderDashboard({ initialEditorOpen: true });
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Privacy and sharing" })).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "1");
+    expect(screen.getByRole("heading", { name: "Portfolio essentials" })).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "2");
     goToFoundation();
     expect(screen.getByRole("heading", { name: "Portfolio essentials" })).toBeInTheDocument();
     expect(screen.queryByText("Rashi palette")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Music")).not.toBeInTheDocument();
   });
 
-  it("opens a new private draft, edits it, saves it, and publishes it", async () => {
+  it("opens a new private draft, edits it, saves it, and exposes the gated final review", async () => {
     renderDashboard({ portfolio: null, shareUrl: null, media: [] });
     expect(screen.getByText(/one clear introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
@@ -150,9 +192,8 @@ describe("dashboard client", () => {
     expect(screen.getByTitle("First View portfolio preview")).toHaveAttribute("src", "/preview");
     expect(screen.getByTitle("Full View portfolio preview")).toHaveAttribute("src", "/approved-preview");
     expect(mocks.publish).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Publish portfolio" }));
-    await waitFor(() => expect(mocks.publish).toHaveBeenCalled());
-    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Complete required details" })).toBeDisabled();
+    expect(mocks.publish).not.toHaveBeenCalled();
   }, 10_000);
 
   it("operates published-link controls and signs out", async () => {
@@ -300,11 +341,23 @@ describe("dashboard client", () => {
   it("redirects expired sessions and shows ordinary API failures", async () => {
     mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "AUTH_SESSION_MISSING", message: "Sign in" } });
     mocks.publish.mockResolvedValueOnce({ ok: false, error: { code: "PUBLISH_FAILED", message: "Complete required fields" } });
-    renderDashboard();
+    const first = renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_expired"));
+    first.unmount();
+    mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1" } });
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
@@ -420,6 +473,7 @@ describe("dashboard client", () => {
 
   it("updates field disclosure labels when Short introduction is selected", () => {
     renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
     fireEvent.click(screen.getByRole("button", { name: /Short introduction/i }));
     goToFoundation();
     expect(screen.getAllByText("Shown in: Short and Full").length).toBeGreaterThan(0);

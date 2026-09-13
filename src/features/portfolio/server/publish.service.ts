@@ -22,6 +22,7 @@ import { getCelestialBackground } from "@/features/portfolio/celestial-theme";
 import { createShareUrl } from "./share-url.service";
 import { ensurePortfolioPhotoPreviews } from "@/features/media/server/media.service";
 import { resolvePublicationExpiry } from "./lifecycle-policy";
+import { getPublicationReadiness } from "./publication-readiness.service";
 
 const publishTransactionResultSchema = z.object({
   status: z.enum([
@@ -84,6 +85,29 @@ export async function publishPortfolio({
     throw error;
   }
 
+  const publicationReadiness = await getPublicationReadiness(supabase);
+  if (publicationReadiness.verificationStatus !== "verified") {
+    throw new PortfolioPublishError(
+      "Complete identity verification before publishing your portfolio.",
+      "IDENTITY_VERIFICATION_REQUIRED",
+      409
+    );
+  }
+  if (!publicationReadiness.paymentActive) {
+    throw new PortfolioPublishError(
+      "Choose a plan and complete payment before publishing your portfolio.",
+      "PAYMENT_REQUIRED",
+      409
+    );
+  }
+  if (!publicationReadiness.disclosureConfirmed) {
+    throw new PortfolioPublishError(
+      "Confirm the final disclosure review before publishing your portfolio.",
+      "DISCLOSURE_REQUIRED",
+      409
+    );
+  }
+
   const canonicalData = {
     ...data,
     privacy_mode: normalizePortfolioPrivacyMode(data.privacy_mode),
@@ -119,7 +143,23 @@ export async function publishPortfolio({
       sunSign: data.astrology?.rashi || null,
     });
   const transaction = publishTransactionResultSchema.safeParse(transactionData);
-  if (transactionError || !transaction.success) {
+  if (transactionError) {
+    const databaseMessage = transactionError.message || "";
+    if (databaseMessage.includes("publication_verification_required")) {
+      throw new PortfolioPublishError("Complete identity verification before publishing your portfolio.", "IDENTITY_VERIFICATION_REQUIRED", 409);
+    }
+    if (databaseMessage.includes("publication_payment_required")) {
+      throw new PortfolioPublishError("An active paid plan is required before publishing your portfolio.", "PAYMENT_REQUIRED", 409);
+    }
+    if (databaseMessage.includes("publication_disclosure_required")) {
+      throw new PortfolioPublishError("Confirm the final disclosure review before publishing your portfolio.", "DISCLOSURE_REQUIRED", 409);
+    }
+    if (databaseMessage.includes("publication_content_required")) {
+      throw new PortfolioPublishError("Complete all required portfolio details before publishing.", "PORTFOLIO_NOT_READY", 400);
+    }
+    throw new PortfolioPublishError("We could not publish your portfolio. Please try again.", "PORTFOLIO_TRANSACTION_FAILED");
+  }
+  if (!transaction.success) {
     throw new PortfolioPublishError("We could not publish your portfolio. Please try again.", "PORTFOLIO_TRANSACTION_FAILED");
   }
   if (transaction.data.status === "not_ready") {

@@ -21,7 +21,10 @@ import {
   isShareablePrimaryPhoto,
   MAX_PORTFOLIO_PHOTOS,
 } from "@/features/media/portfolio-photo";
-import { BlueprintForm } from "@/components/portfolio/BlueprintForm";
+import {
+  BlueprintForm,
+  type PortfolioEditorSection,
+} from "@/components/portfolio/BlueprintForm";
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
 import {
   Eye,
@@ -48,10 +51,17 @@ import {
   History,
   UserRoundCheck,
   Settings,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
+import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import {
+  EMPTY_PUBLICATION_READINESS,
+  type PublicationReadiness,
+} from "@/features/portfolio/server/publication-readiness.contract";
 
 interface Props {
   portfolio: Portfolio | null;
@@ -68,6 +78,7 @@ interface Props {
   initialEditorOpen?: boolean;
   interests?: DashboardInterest[];
   accessSummary?: PortfolioAccessSummary;
+  publicationReadiness?: PublicationReadiness;
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -87,6 +98,7 @@ export default function DashboardClient({
   initialEditorOpen = false,
   interests = [],
   accessSummary = EMPTY_ACCESS_SUMMARY,
+  publicationReadiness = EMPTY_PUBLICATION_READINESS,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -109,16 +121,26 @@ export default function DashboardClient({
   const [activePortfolioId, setActivePortfolioId] = useState(portfolio?.id ?? null);
   const [interestItems, setInterestItems] = useState(interests);
   const [accessGrants, setAccessGrants] = useState(accessSummary.grants);
+  const [readinessState, setReadinessState] = useState(publicationReadiness);
   const accessEvents = accessSummary.events;
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
   const reviewPublishRef = useRef<HTMLButtonElement>(null);
+  const draftRevisionRef = useRef(0);
+  const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const disclosedCategories = fullViewDisclosureCategories(
     draftData,
     portfolioMedia,
     portfolioHoroscope
   );
+  const completion = calculatePortfolioCompletion(
+    draftData,
+    portfolioMedia.some(isShareablePrimaryPhoto)
+  );
+  const initialEditorSection = (
+    readinessState.lastEditorSection || completion.nextEditorSection
+  ) as PortfolioEditorSection;
 
   useEffect(() => {
     if (draftSaveState === "saved") return;
@@ -150,6 +172,20 @@ export default function DashboardClient({
       previous?.focus();
     };
   }, [reviewOpen, publishing]);
+
+  useEffect(() => {
+    if (draftSaveState !== "unsaved" || !canCreatePortfolio) return;
+    const timer = window.setTimeout(() => {
+      void persistDashboardDraft({ refresh: false, silent: true });
+    }, 1400);
+    return () => window.clearTimeout(timer);
+    // The save operation intentionally uses the latest render's draft snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftData, draftSaveState, canCreatePortfolio]);
+
+  useEffect(() => () => {
+    if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
+  }, []);
 
   function closePortfolioEditor() {
     if (
@@ -280,11 +316,17 @@ export default function DashboardClient({
     key: K,
     value: PortfolioData[K]
   ) {
+    draftRevisionRef.current += 1;
     setDraftData((current) => ({ ...current, [key]: value }));
     setDraftSaveState("unsaved");
+    setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
   }
 
-  async function persistDashboardDraft({ refresh = true }: { refresh?: boolean } = {}) {
+  async function persistDashboardDraft({
+    refresh = true,
+    silent = false,
+  }: { refresh?: boolean; silent?: boolean } = {}) {
+    const savingRevision = draftRevisionRef.current;
     setSavingDraft(true);
     setDraftSaveState("saving");
     setDraftError(null);
@@ -299,12 +341,14 @@ export default function DashboardClient({
         return false;
       }
       setActivePortfolioId(result.data.portfolioId);
-      setDraftSaveState("saved");
+      if (draftRevisionRef.current === savingRevision) setDraftSaveState("saved");
       if (refresh) router.refresh();
       return true;
     } catch {
       setDraftSaveState("unsaved");
-      setDraftError("Your changes could not be saved. Please check your connection and try again.");
+      if (!silent) {
+        setDraftError("Your changes could not be saved. Please check your connection and try again.");
+      }
       return false;
     } finally {
       setSavingDraft(false);
@@ -318,8 +362,63 @@ export default function DashboardClient({
   async function reviewPortfolio() {
     const saved = await persistDashboardDraft({ refresh: false });
     if (!saved) return;
+    await markPreviewed();
     setFormOpen(false);
     setReviewOpen(true);
+  }
+
+  async function markPreviewed() {
+    const { updatePublicationProgressRequest } = await import(
+      "@/features/portfolio/client/portfolio-dashboard.api"
+    );
+    const result = await updatePublicationProgressRequest({ action: "previewed" });
+    if (!result.ok) return void handlePortfolioApiFailure(result);
+    setReadinessState(result.data.readiness);
+  }
+
+  async function openEarlyPreview() {
+    const saved = await persistDashboardDraft({ refresh: false });
+    if (!saved) return;
+    await markPreviewed();
+    window.open("/preview", "_blank", "noopener,noreferrer");
+  }
+
+  function rememberEditorSection(section: PortfolioEditorSection) {
+    setReadinessState((current) => ({ ...current, lastEditorSection: section }));
+    if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
+    sectionSaveTimerRef.current = setTimeout(async () => {
+      const { updatePublicationProgressRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await updatePublicationProgressRequest({
+        action: "editor_section",
+        value: section,
+      });
+      if (result.ok) {
+        setReadinessState((current) => ({
+          ...current,
+          lastEditorSection: result.data.readiness.lastEditorSection,
+        }));
+      }
+    }, 300);
+  }
+
+  async function confirmDisclosure() {
+    setPublishing(true);
+    setDraftError(null);
+    try {
+      const { updatePublicationProgressRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await updatePublicationProgressRequest({
+        action: "confirm_disclosure",
+        value: "publication-disclosure-v1",
+      });
+      if (!result.ok) return void handlePortfolioApiFailure(result);
+      setReadinessState(result.data.readiness);
+    } finally {
+      setPublishing(false);
+    }
   }
 
   async function uploadPhotos(files: FileList | null) {
@@ -357,6 +456,7 @@ export default function DashboardClient({
       }
       setPortfolioMedia((current) => [...current, ...uploaded]);
       setMediaUrls((current) => ({ ...current, ...uploadedUrls }));
+      setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
       router.refresh();
     } catch (error) {
       setDraftError(error instanceof Error ? error.message : "Photo upload failed.");
@@ -384,6 +484,7 @@ export default function DashboardClient({
         return item;
       })
     );
+    setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
   }
 
   async function deletePhoto(mediaId: string) {
@@ -396,6 +497,7 @@ export default function DashboardClient({
     setMediaUrls((current) => Object.fromEntries(
       Object.entries(current).filter(([id]) => id !== mediaId)
     ));
+    setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
   }
 
   async function uploadHoroscopeFile(file: File | null, language: string) {
@@ -417,6 +519,7 @@ export default function DashboardClient({
       const result = await uploadHoroscopeRequest(formData);
       if (!result.ok) return void handlePortfolioApiFailure(result);
       setPortfolioHoroscope(result.data.horoscope);
+      setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
       router.refresh();
     } finally {
       setUploadingHoroscope(false);
@@ -437,6 +540,7 @@ export default function DashboardClient({
     const result = await deleteHoroscopeRequest(portfolioHoroscope.id);
     if (!result.ok) return void handlePortfolioApiFailure(result);
     setPortfolioHoroscope(null);
+    setReadinessState((current) => ({ ...current, disclosureConfirmed: false }));
     router.refresh();
   }
 
@@ -552,6 +656,15 @@ export default function DashboardClient({
           )}
 
           {(canCreatePortfolio || portfolio) && <>
+          {canCreatePortfolio && (
+            <CreatorReadinessTracker
+              completion={completion}
+              readiness={readinessState}
+              draftSaveState={draftSaveState}
+              onContinue={() => setFormOpen(true)}
+              onPreview={openEarlyPreview}
+            />
+          )}
           <InterestInbox
             interests={interestItems}
             disclosedCategories={disclosedCategories}
@@ -748,9 +861,32 @@ export default function DashboardClient({
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Cancel review</button>
-                <button ref={reviewPublishRef} type="button" className="dashboard-primary-action" disabled={publishing} onClick={publishPortfolio}>
+                <button
+                  ref={reviewPublishRef}
+                  type="button"
+                  className="dashboard-primary-action"
+                  disabled={
+                    publishing
+                    || !completion.readyToPublish
+                    || readinessState.verificationStatus !== "verified"
+                    || !readinessState.paymentActive
+                  }
+                  onClick={readinessState.disclosureConfirmed ? publishPortfolio : confirmDisclosure}
+                >
                   <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
-                  {publishing ? "Publishing..." : portfolio?.is_published ? "Publish reviewed changes" : "Publish portfolio"}
+                  {publishing
+                    ? "Working..."
+                    : !completion.readyToPublish
+                      ? "Complete required details"
+                      : readinessState.verificationStatus !== "verified"
+                        ? "Verification required"
+                        : !readinessState.paymentActive
+                          ? "Payment coming soon"
+                          : !readinessState.disclosureConfirmed
+                            ? "Confirm final disclosure"
+                            : portfolio?.is_published
+                              ? "Publish reviewed changes"
+                              : "Publish portfolio"}
                 </button>
               </div>
             </footer>
@@ -799,6 +935,8 @@ export default function DashboardClient({
                 <BlueprintForm
                   data={draftData}
                   onUpdate={updateSection}
+                  initialSection={initialEditorSection}
+                  onSectionChange={rememberEditorSection}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
                   photoManager={
                     <PhotoManager
@@ -846,6 +984,15 @@ export default function DashboardClient({
                   <div className="flex gap-2">
                     <button
                       type="button"
+                      onClick={openEarlyPreview}
+                      disabled={savingDraft || !completion.basicsComplete}
+                      className="dashboard-secondary-action flex-1 sm:flex-none"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
                       onClick={saveDashboardDraft}
                       disabled={savingDraft}
                       className="dashboard-secondary-action flex-1 sm:flex-none"
@@ -874,6 +1021,85 @@ export default function DashboardClient({
         </div>
       )}
     </div>
+  );
+}
+
+function CreatorReadinessTracker({
+  completion,
+  readiness,
+  draftSaveState,
+  onContinue,
+  onPreview,
+}: {
+  completion: ReturnType<typeof calculatePortfolioCompletion>;
+  readiness: PublicationReadiness;
+  draftSaveState: "saved" | "unsaved" | "saving";
+  onContinue: () => void;
+  onPreview: () => void;
+}) {
+  const steps = [
+    { label: "Basics", complete: completion.basicsComplete },
+    { label: "Portfolio details", complete: completion.detailsComplete },
+    { label: "Preview", complete: Boolean(readiness.previewedAt) },
+    { label: "Ready to publish", complete: completion.readyToPublish },
+    { label: "Verification", complete: readiness.verificationStatus === "verified", comingSoon: readiness.verificationStatus !== "verified" },
+    { label: "Payment", complete: readiness.paymentActive, comingSoon: !readiness.paymentActive },
+    { label: "Disclosure", complete: readiness.disclosureConfirmed },
+    { label: "Published", complete: readiness.published },
+  ];
+  const nextStep = steps.find((step) => !step.complete);
+
+  return (
+    <section className="dashboard-glass p-4 sm:p-5" aria-labelledby="creator-readiness-heading">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Your publishing journey</p>
+          <h2 id="creator-readiness-heading" className="mt-1 text-xl font-semibold text-[#18272e]">
+            {completion.percentage}% complete
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {nextStep ? `Next: ${nextStep.label}` : "Your portfolio is published."}
+            {draftSaveState === "saving" ? " · Saving changes…" : ""}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onContinue} className="dashboard-primary-action">
+            <Edit3 className="h-4 w-4" />
+            {completion.percentage ? "Continue portfolio" : "Start with basics"}
+          </button>
+          {completion.basicsComplete && (
+            <button type="button" onClick={onPreview} className="dashboard-secondary-action">
+              <Eye className="h-4 w-4" /> Preview
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+        <div className="h-full rounded-full bg-[#477b77] transition-[width]" style={{ width: `${completion.percentage}%` }} />
+      </div>
+
+      <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Publication steps">
+        {steps.map((step) => (
+          <li key={step.label} className={`flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-xs ${step.complete ? "border-[#a9cfc3] bg-[#e8f3ef] text-[#315f57]" : "border-slate-200 bg-white text-slate-600"}`}>
+            {step.complete
+              ? <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              : <Circle className="h-4 w-4 shrink-0" aria-hidden="true" />}
+            <span>
+              {step.label}
+              {step.comingSoon ? <span className="block text-[10px] text-slate-400">Coming soon</span> : null}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {!completion.readyToPublish && completion.missing.length > 0 ? (
+        <p className="mt-4 text-xs leading-5 text-slate-500">
+          Still needed: {completion.missing.slice(0, 4).map((item) => item.label).join(", ")}
+          {completion.missing.length > 4 ? ` and ${completion.missing.length - 4} more` : ""}.
+        </p>
+      ) : null}
+    </section>
   );
 }
 

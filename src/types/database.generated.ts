@@ -2622,6 +2622,37 @@ export type Database = {
         Returns: Json
       }
       list_portfolio_access: { Args: never; Returns: Json }
+      get_portfolio_publication_readiness: { Args: never; Returns: Json }
+      update_portfolio_onboarding_progress: {
+        Args: { p_action: string; p_value?: string | null }
+        Returns: Json
+      }
+      record_portfolio_payment_event: {
+        Args: {
+          p_portfolio_id: string
+          p_provider: string
+          p_provider_event_id: string
+          p_payload_hash: string
+          p_payment_status: string
+          p_plan_code: string
+          p_payment_reference?: string | null
+          p_payment_expires_at?: string | null
+        }
+        Returns: Json
+      }
+      enqueue_due_full_view_expiry_reminders: { Args: never; Returns: number }
+      claim_notification_outbox_v2: {
+        Args: { p_limit?: number }
+        Returns: {
+          notification_ref: string
+          recipient_user_id: string
+          notification_type: string
+          attempt_count: number
+          interest_request_id: string | null
+          grant_id: string | null
+          payload: Json
+        }[]
+      }
       manage_reveal_grant: {
         Args: { p_action: string; p_grant_id: string }
         Returns: Json

@@ -19,6 +19,7 @@ import { createOwnerPortfolioMediaPreviewUrls } from "@/features/media/server/ph
 import { DashboardRepository } from "./dashboard.repository";
 import { canCreatePortfolio } from "@/features/auth/server/portfolio-bootstrap";
 import { loadPilotAccessState } from "@/features/pilot-access/server/pilot-access.service";
+import { getPublicationReadiness } from "./publication-readiness.service";
 
 type PortfolioRow = Database["public"]["Tables"]["portfolios"]["Row"];
 
@@ -67,18 +68,20 @@ export async function loadDashboardView({
       horoscope: null as PortfolioHoroscope | null,
       interests: [],
       accessSummary: { grants: [], events: [] },
+      publicationReadiness: await getPublicationReadiness(supabase),
     };
   }
 
   const mediaRepository = new PortfolioMediaRepository(supabase);
   const horoscopeRepository = new HoroscopeRepository(supabase);
   const interestRepository = new InterestRepository(supabase);
-  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary] = await Promise.all([
+  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, publicationReadiness] = await Promise.all([
     dashboardRepository.countPortfolioViews(portfolio.id),
     mediaRepository.findPortfolioPhotos(portfolio.id),
     horoscopeRepository.findByPortfolio(portfolio.id),
     interestRepository.listForPortfolio(portfolio.id),
     getPortfolioAccessSummary(supabase),
+    getPublicationReadiness(supabase),
   ]);
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
@@ -95,5 +98,6 @@ export async function loadDashboardView({
     horoscope: (horoscopeResult.data as PortfolioHoroscope | null) ?? null,
     interests,
     accessSummary,
+    publicationReadiness,
   };
 }

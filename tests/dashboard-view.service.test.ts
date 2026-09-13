@@ -13,6 +13,7 @@ const repositories = vi.hoisted(() => ({
 }));
 const canCreatePortfolio = vi.hoisted(() => vi.fn());
 const loadPilotAccessState = vi.hoisted(() => vi.fn());
+const getPublicationReadiness = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/portfolio/server/dashboard.repository", () => ({
   DashboardRepository: class { constructor() { return repositories.dashboard; } },
@@ -34,6 +35,7 @@ vi.mock("@/features/media/server/photo-url.service", () => ({
 }));
 vi.mock("@/features/auth/server/portfolio-bootstrap", () => ({ canCreatePortfolio }));
 vi.mock("@/features/pilot-access/server/pilot-access.service", () => ({ loadPilotAccessState }));
+vi.mock("@/features/portfolio/server/publication-readiness.service", () => ({ getPublicationReadiness }));
 
 import {
   loadDashboardView,
@@ -87,6 +89,19 @@ describe("dashboard view service", () => {
       isPilotAdministrator: false,
       application: null,
     });
+    getPublicationReadiness.mockResolvedValue({
+      portfolioExists: true,
+      lastEditorSection: "foundation",
+      previewedAt: null,
+      selectedPlanCode: null,
+      verificationStatus: "required",
+      paymentStatus: "none",
+      paymentExpiresAt: null,
+      paymentActive: false,
+      disclosureConfirmed: false,
+      published: false,
+      missingRequired: [],
+    });
     repositories.dashboard.findDashboardPortfolioForUser.mockResolvedValue({ data: row, error: null });
     repositories.dashboard.countPortfolioViews.mockResolvedValue({ count: 7, error: null });
     repositories.media.findPortfolioPhotos.mockResolvedValue({ data: [{ id: "media-1" }], error: null });
@@ -106,6 +121,19 @@ describe("dashboard view service", () => {
       isPilotAdministrator: false,
       application: null,
     });
+    getPublicationReadiness.mockResolvedValue({
+      portfolioExists: false,
+      lastEditorSection: null,
+      previewedAt: null,
+      selectedPlanCode: null,
+      verificationStatus: "required",
+      paymentStatus: "none",
+      paymentExpiresAt: null,
+      paymentActive: false,
+      disclosureConfirmed: false,
+      published: false,
+      missingRequired: [],
+    });
 
     await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).resolves.toEqual({
       portfolio: null,
@@ -121,6 +149,19 @@ describe("dashboard view service", () => {
       horoscope: null,
       interests: [],
       accessSummary: { grants: [], events: [] },
+      publicationReadiness: {
+        portfolioExists: false,
+        lastEditorSection: null,
+        previewedAt: null,
+        selectedPlanCode: null,
+        verificationStatus: "required",
+        paymentStatus: "none",
+        paymentExpiresAt: null,
+        paymentActive: false,
+        disclosureConfirmed: false,
+        published: false,
+        missingRequired: [],
+      },
     });
     expect(repositories.media.findPortfolioPhotos).not.toHaveBeenCalled();
   });

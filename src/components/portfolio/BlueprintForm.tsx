@@ -55,7 +55,7 @@ type UpdatePortfolioSection = <K extends keyof PortfolioData>(
   value: PortfolioData[K]
 ) => void;
 
-type SectionId =
+export type PortfolioEditorSection =
   | "foundation"
   | "story"
   | "work"
@@ -66,7 +66,7 @@ type SectionId =
   | "astrology"
   | "privacy";
 
-const SECTIONS: Array<{ id: SectionId; label: string; optional?: boolean }> = [
+const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: boolean }> = [
   { id: "privacy", label: "Privacy & sharing" },
   { id: "foundation", label: "Foundation" },
   { id: "story", label: "About you", optional: true },
@@ -123,14 +123,18 @@ export function BlueprintForm({
   photoManager,
   horoscopeManager,
   hasShareablePrimaryPhoto = false,
+  initialSection = "privacy",
+  onSectionChange,
 }: {
   data: PortfolioData;
   onUpdate: UpdatePortfolioSection;
   photoManager?: ReactNode;
   horoscopeManager?: ReactNode;
   hasShareablePrimaryPhoto?: boolean;
+  initialSection?: PortfolioEditorSection;
+  onSectionChange?: (section: PortfolioEditorSection) => void;
 }) {
-  const [activeSection, setActiveSection] = useState<SectionId>("privacy");
+  const [activeSection, setActiveSection] = useState<PortfolioEditorSection>(initialSection);
   const activeIndex = SECTIONS.findIndex((section) => section.id === activeSection);
   const nameParts = resolvePortfolioNameParts(data.personal);
   const foundationFields = [
@@ -221,8 +225,9 @@ export function BlueprintForm({
     });
   }
 
-  function goTo(section: SectionId) {
+  function goTo(section: PortfolioEditorSection) {
     setActiveSection(section);
+    onSectionChange?.(section);
     const stage = document.getElementById("blueprint-stage");
     if (stage && typeof stage.scrollIntoView === "function") {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -290,7 +295,7 @@ export function BlueprintForm({
             <select
             aria-label="Go to portfolio section"
               value={activeSection}
-              onChange={(event) => goTo(event.target.value as SectionId)}
+              onChange={(event) => goTo(event.target.value as PortfolioEditorSection)}
               className="biodata-field min-h-12"
             >
               {SECTIONS.map((section, index) => (

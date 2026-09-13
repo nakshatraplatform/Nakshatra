@@ -8,6 +8,7 @@ const repository = vi.hoisted(() => ({
   renewPortfolioTransaction: vi.fn(),
 }));
 const ensurePortfolioPhotoPreviews = vi.hoisted(() => vi.fn());
+const getPublicationReadiness = vi.hoisted(() => vi.fn());
 
 vi.mock("../src/features/portfolio/server/dashboard.repository", () => ({
   DashboardRepository: class {
@@ -19,6 +20,9 @@ vi.mock("../src/features/portfolio/server/dashboard.repository", () => ({
 
 vi.mock("../src/features/media/server/media.service", () => ({
   ensurePortfolioPhotoPreviews,
+}));
+vi.mock("../src/features/portfolio/server/publication-readiness.service", () => ({
+  getPublicationReadiness,
 }));
 
 import {
@@ -69,6 +73,19 @@ describe("portfolio lifecycle services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     ensurePortfolioPhotoPreviews.mockResolvedValue(undefined);
+    getPublicationReadiness.mockResolvedValue({
+      portfolioExists: true,
+      lastEditorSection: null,
+      previewedAt: "2026-01-01T00:00:00.000Z",
+      selectedPlanCode: "launch_30",
+      verificationStatus: "verified",
+      paymentStatus: "paid",
+      paymentExpiresAt: "2099-01-01T00:00:00.000Z",
+      paymentActive: true,
+      disclosureConfirmed: true,
+      published: false,
+      missingRequired: [],
+    });
     repository.findPortfolioForUser.mockResolvedValue({
       data: { id: "portfolio-id", is_published: false, share_token: null, expires_at: null },
       error: null,
@@ -206,6 +223,32 @@ describe("portfolio lifecycle services", () => {
     await expect(
       publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
     ).rejects.toMatchObject({ code: "PORTFOLIO_NOT_FOUND", status: 404 });
+  });
+
+  it.each([
+    [{ verificationStatus: "required" }, "IDENTITY_VERIFICATION_REQUIRED"],
+    [{ paymentActive: false }, "PAYMENT_REQUIRED"],
+    [{ disclosureConfirmed: false }, "DISCLOSURE_REQUIRED"],
+  ])("blocks publication when a durable gate is incomplete", async (override, code) => {
+    getPublicationReadiness.mockResolvedValue({
+      portfolioExists: true,
+      lastEditorSection: null,
+      previewedAt: null,
+      selectedPlanCode: "launch_30",
+      verificationStatus: "verified",
+      paymentStatus: "paid",
+      paymentExpiresAt: "2099-01-01T00:00:00.000Z",
+      paymentActive: true,
+      disclosureConfirmed: true,
+      published: false,
+      missingRequired: [],
+      ...override,
+    });
+
+    await expect(
+      publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
+    ).rejects.toMatchObject({ code, status: 409 });
+    expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
   });
 
   it("renews for 30 days and returns a safe error on failure", async () => {

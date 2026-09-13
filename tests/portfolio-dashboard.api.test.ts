@@ -11,6 +11,7 @@ import {
   updatePortfolioPhotoRequest,
   uploadPortfolioPhotoRequest,
   uploadHoroscopeRequest,
+  updatePublicationProgressRequest,
 } from "../src/features/portfolio/client/portfolio-dashboard.api";
 
 const draft: PortfolioData = {
@@ -70,6 +71,21 @@ describe("portfolio dashboard API client", () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     await expect(request()).resolves.toMatchObject({ ok: true });
     expect(globalThis.fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method }));
+  });
+
+  it("sends a typed resumable publication transition", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, readiness: {} }), { status: 200 }));
+    await expect(updatePublicationProgressRequest({
+      action: "editor_section",
+      value: "astrology",
+    })).resolves.toMatchObject({ ok: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "/api/portfolio/onboarding",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ action: "editor_section", value: "astrology" }),
+      })
+    );
   });
 
   it("sends upload, update, and encoded delete requests", async () => {

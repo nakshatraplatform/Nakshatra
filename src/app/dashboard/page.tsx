@@ -59,6 +59,7 @@ export default async function DashboardPage({
       initialEditorOpen={query.edit === "1"}
       interests={dashboard.interests}
       accessSummary={dashboard.accessSummary}
+      publicationReadiness={dashboard.publicationReadiness}
     />
   );
 }
