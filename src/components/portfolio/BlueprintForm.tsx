@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { LocationFields, type LocationValue } from "@/components/portfolio/LocationFields";
 import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
+import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
   composePortfolioName,
   resolvePortfolioNameParts,
@@ -25,7 +26,8 @@ import {
   COMMUNITY_OPTIONS,
   CURRENCY_OPTIONS,
   DIET_OPTIONS,
-  FREQUENCY_OPTIONS,
+  ALCOHOL_USE_OPTIONS,
+  TOBACCO_USE_OPTIONS,
   GENDER_OPTIONS,
   FAMILY_RESPONSIBILITY_OPTIONS,
   HEIGHT_OPTIONS,
@@ -66,17 +68,21 @@ export type PortfolioEditorSection =
   | "astrology"
   | "privacy";
 
-const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: boolean }> = [
-  { id: "privacy", label: "Privacy & sharing" },
-  { id: "foundation", label: "Foundation" },
-  { id: "story", label: "About you", optional: true },
-  { id: "work", label: "Education & work", optional: true },
-  { id: "family", label: "Family", optional: true },
-  { id: "astrology", label: "Astrology" },
-  { id: "lifestyle", label: "Lifestyle", optional: true },
-  { id: "preferences", label: "Partner preferences", optional: true },
-  { id: "future", label: "Future plans", optional: true },
+const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: boolean; time: string }> = [
+  { id: "foundation", label: "Basics", time: "3 min" },
+  { id: "story", label: "About & lifestyle", optional: true, time: "4 min" },
+  { id: "work", label: "Education & work", optional: true, time: "3 min" },
+  { id: "family", label: "Family", optional: true, time: "4 min" },
+  { id: "preferences", label: "Match & future", optional: true, time: "4 min" },
+  { id: "astrology", label: "Astrology & traditions", optional: true, time: "3 min" },
+  { id: "privacy", label: "Privacy & contact", time: "2 min" },
 ];
+
+function navigableSection(section: PortfolioEditorSection): PortfolioEditorSection {
+  if (section === "lifestyle") return "story";
+  if (section === "future") return "preferences";
+  return SECTIONS.some((item) => item.id === section) ? section : "foundation";
+}
 
 const PortfolioPrivacyModeContext = createContext<"private" | "balanced">("balanced");
 
@@ -123,7 +129,7 @@ export function BlueprintForm({
   photoManager,
   horoscopeManager,
   hasShareablePrimaryPhoto = false,
-  initialSection = "privacy",
+  initialSection = "foundation",
   onSectionChange,
 }: {
   data: PortfolioData;
@@ -134,29 +140,10 @@ export function BlueprintForm({
   initialSection?: PortfolioEditorSection;
   onSectionChange?: (section: PortfolioEditorSection) => void;
 }) {
-  const [activeSection, setActiveSection] = useState<PortfolioEditorSection>(initialSection);
+  const [activeSection, setActiveSection] = useState<PortfolioEditorSection>(() => navigableSection(initialSection));
   const activeIndex = SECTIONS.findIndex((section) => section.id === activeSection);
   const nameParts = resolvePortfolioNameParts(data.personal);
-  const foundationFields = [
-    nameParts.first_name,
-    nameParts.last_name,
-    data.personal.dob,
-    data.personal.country && data.personal.city ? `${data.personal.city}, ${data.personal.country}` : "",
-    data.career?.title,
-    data.personal.short_bio || data.personal.profile_summary,
-  ];
-  const requiredFields = [
-    ...foundationFields,
-    data.astrology?.time_of_birth,
-    data.personal.place_of_birth,
-    data.astrology?.rashi,
-    data.astrology?.nakshatra,
-    data.astrology?.pada,
-    data.vitals?.gotra,
-    data.astrology?.manglik_status,
-    hasShareablePrimaryPhoto ? "primary-photo-ready" : "",
-  ];
-  const requiredReady = requiredFields.filter(hasValue).length;
+  const completion = calculatePortfolioCompletion(data, hasShareablePrimaryPhoto);
   const contacts = data.contact?.contacts?.length
     ? data.contact.contacts
     : data.contact?.contact_person || data.contact?.phone || data.contact?.email
@@ -242,12 +229,12 @@ export function BlueprintForm({
         <div className="biodata-editor-sidebar rounded-2xl p-3">
           <div className="biodata-editor-progress mb-3 rounded-xl p-3">
             <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">
-              {requiredReady === requiredFields.length ? "Required details complete" : "Complete required details"}
+              {completion.readyToPublish ? "Required details complete" : "Complete required details"}
             </p>
             <p className="mt-1 text-sm leading-5 text-[color:var(--workspace-ink-muted)]">
-              {requiredReady === requiredFields.length
+              {completion.readyToPublish
                 ? "Recommended fields can be finished now or later."
-                : `${requiredReady} of ${requiredFields.length} required details complete`}
+                : `${completion.completedCount} of ${completion.totalCount} required details complete`}
             </p>
           </div>
           <nav aria-label="Portfolio form sections" className="space-y-1">
@@ -266,7 +253,10 @@ export function BlueprintForm({
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs ${selected ? "border-[color:var(--workspace-teal)] text-[color:var(--workspace-teal)]" : "border-[color:var(--workspace-border)]"}`}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-sm font-semibold">{section.label}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{section.label}</span>
+                    <span className="block text-xs font-normal text-[color:var(--workspace-ink-muted)]">{section.optional ? "Optional · " : ""}{section.time}</span>
+                  </span>
                 </button>
               );
             })}
@@ -278,7 +268,7 @@ export function BlueprintForm({
         <div className="biodata-editor-mobile-nav sticky top-0 z-30 mb-4 rounded-xl p-3 lg:hidden">
           <div className="mb-2 flex items-center justify-between gap-3 text-sm">
             <strong className="text-[color:var(--workspace-ink)]">Section {activeIndex + 1} of {SECTIONS.length}</strong>
-            <span className="text-[color:var(--workspace-ink-muted)]">{requiredReady} of {requiredFields.length} required</span>
+            <span className="text-[color:var(--workspace-ink-muted)]">{completion.completedCount} of {completion.totalCount} required</span>
           </div>
           <div
             className="mb-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--workspace-border)]"
@@ -299,7 +289,7 @@ export function BlueprintForm({
               className="biodata-field min-h-12"
             >
               {SECTIONS.map((section, index) => (
-                <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>
+                <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""} · {section.time}</option>
               ))}
             </select>
           </label>
@@ -309,36 +299,36 @@ export function BlueprintForm({
         </p>
         {SECTIONS[activeIndex].optional && (
           <p className="mb-3 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">
-            This section is optional. Add what feels useful, or move on and return later.
+            Optional section · Answer only what feels useful. You can continue now and return at any time.
           </p>
         )}
         {activeSection === "foundation" && (
-          <FormSection eyebrow="Start here" title="Portfolio essentials" description="Complete these first. You can save your draft and return to the remaining sections later.">
-            <InfoCard title="Required, recommended, and optional" audience="Private draft" text="Required details must be complete before publishing. Recommended details help families understand the portfolio. Optional details add context only when they feel useful." />
-              <SelectInput label="Who are you creating this portfolio for?" value={data.personal.profile_for || ""} options={PROFILE_FOR_OPTIONS} onChange={(value) => updatePersonal({ profile_for: value })} requirement="Recommended" audience="Only you" />
+          <FormSection eyebrow="Quick start" title="The essentials" description="Start with the facts people need for a useful introduction. This section unlocks your first preview.">
+            <InfoCard title="A short first step" audience="Private draft" text="Only seven items are needed for publishing. Everything after this section is optional and can be added when you are ready." />
+              <SelectInput label="Who is this portfolio for?" value={data.personal.profile_for || ""} options={PROFILE_FOR_OPTIONS} onChange={(value) => updatePersonal({ profile_for: value })} requirement="Recommended" audience="Only you" hint="This helps us use the right wording. It is never shown in the portfolio." />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <TextInput label="First name" value={nameParts.first_name} onChange={(value) => updateNamePart("first_name", value)} required requirement="Required" audience="All portfolio views" />
-              <TextInput label="Middle name" value={nameParts.middle_name} onChange={(value) => updateNamePart("middle_name", value)} requirement="Optional" audience="Standard and Full" />
-              <TextInput label="Last name" value={nameParts.last_name} onChange={(value) => updateNamePart("last_name", value)} required requirement="Required" audience="Standard and Full" hint="Short introduction displays your first name only." />
+              <TextInput label="First name" value={nameParts.first_name} onChange={(value) => updateNamePart("first_name", value)} required requirement="Required" audience="All portfolio views" autoComplete="given-name" />
+              <TextInput label="Middle name" value={nameParts.middle_name} onChange={(value) => updateNamePart("middle_name", value)} requirement="Optional" audience="Standard and Full" autoComplete="additional-name" />
+              <TextInput label="Last name" value={nameParts.last_name} onChange={(value) => updateNamePart("last_name", value)} required requirement="Required" audience="Standard and Full" hint="Short introduction displays your first name only." autoComplete="family-name" />
             </div>
-            <TextArea label="Short introduction" value={data.personal.short_bio || ""} onChange={(value) => updatePersonal({ short_bio: value })} maxLength={240} required requirement="Required" audience="All portfolio views" hint="Write one or two warm sentences shown beside the main photo. A fuller story can come later." />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in initial views · Exact date in Full" hint="Used to calculate age. The exact date is not public." />
+              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in initial views · Exact date in Full" hint="You must be at least 18. Initial views show age, not the exact date." max={latestAdultBirthDate()} autoComplete="bday" />
               <SelectInput label="Gender" value={data.personal.gender || ""} options={GENDER_OPTIONS} onChange={(value) => updatePersonal({ gender: value ? value as PortfolioData["personal"]["gender"] : undefined })} requirement="Recommended" audience="Standard and Full" hint="Optional. It is not shown in the Short introduction." />
-              <TextInput label="Profession or role" value={data.career?.title || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), title: value })} required requirement="Required" audience="All portfolio views" hint="A broad role is enough; employer details can come later." />
               <SelectInput label="Height" value={data.vitals?.height || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), height: value })} requirement="Recommended" audience="All portfolio views" />
               <SelectInput label="Marital status" value={data.personal.marital_status || ""} options={MARITAL_STATUS_OPTIONS} onChange={(value) => updatePersonal({ marital_status: value })} requirement="Recommended" audience="All portfolio views" />
             </div>
             <LocationFields value={{ country: data.personal.country, countryCode: data.personal.country_code, region: data.personal.region, regionCode: data.personal.region_code, city: data.personal.city, cityGeonameId: data.personal.city_geoname_id }} onChange={updateResidence} labels={{ country: "Current country", region: "Current state or region", city: "Current city" }} requireCountryAndCity />
-            {photoManager && <EmbeddedPanel title="Photos" description="Choose a portrait and gallery moments.">{photoManager}</EmbeddedPanel>}
+            <TextInput label="Profession or role" value={data.career?.title || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), title: value })} required requirement="Required" audience="All portfolio views" hint="Keep it broad, such as Product designer, Physician, Business owner, Student, or Between roles." autoComplete="organization-title" />
+            <TextArea label="Short introduction" value={data.personal.short_bio || ""} onChange={(value) => updatePersonal({ short_bio: value })} maxLength={240} required requirement="Required" audience="All portfolio views" hint="One or two natural sentences are enough. You can write a longer story later." placeholder="For example: I’m a thoughtful, family-oriented person who enjoys cooking, weekend hikes, and building a meaningful life with curiosity and warmth." />
+            {photoManager && <EmbeddedPanel title="Photos" description="Choose a clear primary portrait first. Gallery photos can be added now or later.">{photoManager}</EmbeddedPanel>}
           </FormSection>
         )}
 
         {activeSection === "story" && (
           <FormSection eyebrow="Your voice" title="About you" description="Use your own words. A warm, specific answer is more helpful than a formal résumé-style summary.">
-            <TextArea label="What would you like someone to understand about you?" value={data.personal.profile_summary || ""} onChange={(value) => updatePersonal({ profile_summary: value })} maxLength={1600} requirement="Recommended" audience="Standard and Full" hint="A natural personal story, not a resume summary. The Short introduction uses the shorter answer from Foundation." />
-            <TextArea label="What kind of life are you building?" value={data.personal.long_term_goals || ""} onChange={(value) => updatePersonal({ long_term_goals: value })} maxLength={1200} requirement="Optional" audience="Full portfolio" hint="Share the direction that matters to you: family, work, learning, community, or something else." />
-            <TextArea label="What would you enjoy doing together?" value={data.personal.shared_life_plans || ""} onChange={(value) => updatePersonal({ shared_life_plans: value })} maxLength={1200} requirement="Optional" audience="Standard and Full" hint="The Standard introduction uses a concise version. Full access shows your complete answer." />
+            <TextArea label="What would you like someone to understand about you?" value={data.personal.profile_summary || ""} onChange={(value) => updatePersonal({ profile_summary: value })} maxLength={1600} requirement="Recommended" audience="Standard and Full" hint="Write as you would speak to a kind new person—not like a résumé." placeholder="You might mention what friends value about you, what a good weekend looks like, and what keeps you grounded." />
+            <TextArea label="What kind of life are you building?" value={data.personal.long_term_goals || ""} onChange={(value) => updatePersonal({ long_term_goals: value })} maxLength={1200} requirement="Optional" audience="Full portfolio" hint="Share the direction that matters to you: family, work, learning, community, or something else." placeholder="For example: a warm home, meaningful work, close family relationships, and room to keep learning and travelling." />
+            <TextArea label="What would you enjoy doing together?" value={data.personal.shared_life_plans || ""} onChange={(value) => updatePersonal({ shared_life_plans: value })} maxLength={1200} requirement="Optional" audience="Standard and Full" hint="The Standard introduction uses a concise version. Full access shows your complete answer." placeholder="Think about everyday life: meals, travel, family time, traditions, quiet evenings, or shared goals." />
           </FormSection>
         )}
 
@@ -354,8 +344,8 @@ export function BlueprintForm({
               <TextInput label="Work location" value={data.career?.location || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), location: value })} requirement="Recommended" audience="All portfolio views" />
               <SelectInput label="Visa or residency status" value={data.personal.immigration_status || ""} options={VISA_OPTIONS} onChange={(value) => updatePersonal({ immigration_status: value })} requirement="Optional" audience="Standard and Full" />
               <TextInput label="Citizenship" value={data.personal.citizenship || ""} onChange={(value) => updatePersonal({ citizenship: value })} requirement="Recommended" audience="All portfolio views" />
-              <SelectInput label="Annual income range" value={data.career?.annual_income || ""} options={INCOME_RANGE_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), annual_income: value })} audience="Full portfolio" hint="Shown only after you approve a viewer." />
-              {hasValue(data.career?.annual_income) && data.career?.annual_income !== "Prefer not to say" && <SelectInput label="Income currency" value={data.career?.income_currency || ""} options={CURRENCY_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), income_currency: value })} audience="Full portfolio" />}
+              <SelectInput label="Income currency" value={data.career?.income_currency || ""} options={CURRENCY_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), income_currency: value })} requirement="Optional" audience="Full portfolio" hint="Choose a currency only if you want to share an income range." />
+              <SelectInput label="Annual income range" value={data.career?.annual_income || ""} options={INCOME_RANGE_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), annual_income: value, ...(value === "Prefer not to say" && { income_currency: "" }) })} requirement="Optional" audience="Full portfolio" hint="Never shown in the public introduction. Exact income is not requested." />
             </div>
             <TextArea label="Where would you like your career to grow?" value={data.career?.career_goals || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), career_goals: value })} maxLength={800} requirement="Optional" audience="Standard and Full" />
           </FormSection>
@@ -365,9 +355,9 @@ export function BlueprintForm({
           <FormSection eyebrow="Roots" title="Family and background" description="Introduce your family in a warm, respectful way. Personal contact details remain protected.">
             <TextArea label="How would you describe your family?" value={data.family?.public_summary || ""} onChange={(value) => updateFamily({ public_summary: value })} maxLength={600} requirement="Recommended" audience="All portfolio views" hint="Describe the family without phone numbers, exact addresses, or private documents. The Short introduction uses a concise version." />
             <div className="grid gap-4 sm:grid-cols-2">
-              <SelectInput label="Religion or outlook" value={data.personal.religion || ""} options={RELIGION_OPTIONS} onChange={(value) => updatePersonal({ religion: value })} requirement="Recommended" audience="All portfolio views" />
-              <TextInput label="Community" value={data.personal.community || ""} onChange={(value) => updatePersonal({ community: value })} list="community-options" requirement="Recommended" audience="All portfolio views" />
-              <TextInput label="Sub-community" value={data.personal.sub_community || ""} onChange={(value) => updatePersonal({ sub_community: value })} requirement="Recommended" audience="All portfolio views" />
+              <SelectInput label="Religion or outlook" value={data.personal.religion || ""} options={RELIGION_OPTIONS} onChange={(value) => updatePersonal({ religion: value })} requirement="Optional" audience="All portfolio views" hint="Share this only if it is meaningful to you." />
+              <TextInput label="Community or cultural background" value={data.personal.community || ""} onChange={(value) => updatePersonal({ community: value })} list="community-options" requirement="Optional" audience="All portfolio views" hint="Start typing to use a suggestion, enter your own wording, or leave this blank." />
+              <TextInput label="Sub-community (if relevant)" value={data.personal.sub_community || ""} onChange={(value) => updatePersonal({ sub_community: value })} requirement="Optional" audience="All portfolio views" />
               <TextInput label="Parents' current location" value={data.family?.parents_location || ""} onChange={(value) => updateFamily({ parents_location: value })} requirement="Optional" audience="Full portfolio" />
               <TextInput label="Father or guardian name" value={data.family?.father?.name || ""} onChange={(value) => updateFamily({ father: { ...(data.family?.father || {}), name: value } })} requirement="Optional" audience="Full portfolio" />
               <TextInput label="Father or guardian profession" value={data.family?.father?.occupation || ""} onChange={(value) => updateFamily({ father: { ...(data.family?.father || {}), occupation: value } })} requirement="Optional" audience="Full portfolio" />
@@ -393,12 +383,12 @@ export function BlueprintForm({
           </FormSection>
         )}
 
-        {activeSection === "lifestyle" && (
+        {activeSection === "story" && (
           <FormSection eyebrow="Everyday life" title="Lifestyle and interests" description="Choose what genuinely reflects you.">
             <div className="grid gap-4 sm:grid-cols-3">
               <SelectInput label="Dietary preference" value={data.lifestyle?.diet || ""} options={DIET_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), diet: value })} requirement="Recommended" audience="All portfolio views" />
-              <SelectInput label="Alcohol use" value={data.lifestyle?.drinking || ""} options={FREQUENCY_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), drinking: value })} requirement="Optional" audience="Standard and Full" />
-              <SelectInput label="Tobacco use" value={data.lifestyle?.smoking || ""} options={FREQUENCY_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), smoking: value })} requirement="Optional" audience="Standard and Full" />
+              <SelectInput label="Alcohol use" value={data.lifestyle?.drinking || ""} options={ALCOHOL_USE_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), drinking: value })} requirement="Optional" audience="Standard and Full" />
+              <SelectInput label="Tobacco use" value={data.lifestyle?.smoking || ""} options={TOBACCO_USE_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), smoking: value })} requirement="Optional" audience="Standard and Full" />
             </div>
             <MultiSelectInput label="Languages" value={data.lifestyle?.languages || ""} options={LANGUAGE_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), languages: value })} requirement="Recommended" audience="All portfolio views" />
             <MultiSelectInput label="Interests and hobbies" value={data.lifestyle?.hobbies || ""} options={HOBBY_OPTIONS} onChange={(value) => onUpdate("lifestyle", { ...(data.lifestyle || {}), hobbies: value })} requirement="Recommended" audience="All portfolio views" />
@@ -407,8 +397,8 @@ export function BlueprintForm({
         )}
 
         {activeSection === "preferences" && (
-          <FormSection eyebrow="Compatibility" title="Partner preferences" description="Your written introduction may appear in the initial portfolio. Detailed preferences are shown only after approval.">
-            <TextArea label="What qualities would support a good partnership?" value={data.preferences?.narrative || ""} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), narrative: value })} maxLength={1200} requirement="Recommended" audience="All portfolio views" hint="The Short introduction uses a concise version." />
+          <FormSection eyebrow="Compatibility" title="Partner preferences" description="Lead with values rather than a checklist. Detailed filters stay visible only to people you approve.">
+            <TextArea label="What qualities would support a good partnership?" value={data.preferences?.narrative || ""} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), narrative: value })} maxLength={1200} requirement="Recommended" audience="All portfolio views" hint="Describe the relationship dynamic that matters to you. The Short introduction uses a concise version." placeholder="For example: kindness, emotional maturity, honest communication, and the ability to balance family connection with independence." />
             <div className="grid gap-4 sm:grid-cols-2">
               <RangeSelectInput label="Preferred age range" value={data.preferences?.age_range || ""} options={AGE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), age_range: value })} audience="Approved people" />
               <RangeSelectInput label="Preferred height range" value={data.preferences?.height_range || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), height_range: value })} audience="Approved people" />
@@ -420,7 +410,7 @@ export function BlueprintForm({
           </FormSection>
         )}
 
-        {activeSection === "future" && (
+        {activeSection === "preferences" && (
           <FormSection eyebrow="Looking ahead" title="Future plans" description="These are conversation starters, not commitments. Choose only what you are comfortable sharing.">
             <div className="grid gap-4 sm:grid-cols-2">
               <SelectInput label="When would you ideally like to marry?" value={data.preferences?.marriage_timeline || ""} options={MARRIAGE_TIMELINE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), marriage_timeline: value })} requirement="Optional" audience="Approved people" />
@@ -434,24 +424,25 @@ export function BlueprintForm({
         )}
 
         {activeSection === "astrology" && (
-          <FormSection eyebrow="Cultural alignment" title="Astrology" description="Complete the required birth and astrology details. Lagnam and maternal gotra remain optional. Sensitive details stay protected.">
+          <FormSection eyebrow="Cultural alignment" title="Astrology and traditions" description="This entire section is optional and never blocks publishing. Add only the details you know and want to share.">
+            <InfoCard title="No guessing required" audience="Optional" text="Leave unknown details blank. Exact birth time, place, Manglik status, and the horoscope remain in Full View only." />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <TextInput label="Time of birth" type="time" value={data.astrology?.time_of_birth || ""} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), time_of_birth: value })} required audience="Full portfolio" />
-              <TextInput label="Place of birth" value={data.personal.place_of_birth || ""} onChange={(value) => updatePersonal({ place_of_birth: value })} required audience="Full portfolio" />
-              <SelectInput label="Moon sign (Rashi)" value={data.astrology?.rashi || ""} options={RASHI_SELECT_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), rashi: value as NonNullable<PortfolioData["astrology"]>["rashi"] })} required audience="All portfolio views" hint="Your Vedic moon sign. The English zodiac equivalent appears in the option." />
-              <SelectInput label="Birth star (Nakshatra)" value={data.astrology?.nakshatra || ""} options={NAKSHATRA_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), nakshatra: value })} required audience="All portfolio views" hint="Nakshatra is your Vedic birth star, which is different from a zodiac sign." />
-              <SelectInput label="Pada" value={data.astrology?.pada || ""} options={PADA_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), pada: value as NonNullable<PortfolioData["astrology"]>["pada"] })} required audience="Full portfolio" />
+              <TextInput label="Time of birth" type="time" value={data.astrology?.time_of_birth || ""} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), time_of_birth: value })} requirement="Optional" audience="Full portfolio" hint="Leave blank if the recorded time is unknown." />
+              <TextInput label="Place of birth" value={data.personal.place_of_birth || ""} onChange={(value) => updatePersonal({ place_of_birth: value })} requirement="Optional" audience="Full portfolio" />
+              <SelectInput label="Moon sign (Rashi)" value={data.astrology?.rashi || ""} options={RASHI_SELECT_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), rashi: value as NonNullable<PortfolioData["astrology"]>["rashi"] })} requirement="Optional" audience="All portfolio views" hint="Your Vedic moon sign. Leave blank if you are unsure." />
+              <SelectInput label="Birth star (Nakshatra)" value={data.astrology?.nakshatra || ""} options={NAKSHATRA_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), nakshatra: value })} requirement="Optional" audience="All portfolio views" hint="Your Vedic birth star, which is different from a zodiac sign." />
+              <SelectInput label="Pada" value={data.astrology?.pada || ""} options={PADA_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), pada: value as NonNullable<PortfolioData["astrology"]>["pada"] })} requirement="Optional" audience="Full portfolio" />
               <TextInput label="Lagnam" value={data.astrology?.lagnam || ""} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), lagnam: value })} requirement="Optional" audience="Full portfolio" />
-              <TextInput label="Gotra" value={data.vitals?.gotra || ""} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), gotra: value })} required audience="Standard and Full" />
+              <TextInput label="Gotra" value={data.vitals?.gotra || ""} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), gotra: value })} requirement="Optional" audience="Standard and Full" />
               <TextInput label="Maternal gotra" value={data.astrology?.maternal_gotra || ""} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), maternal_gotra: value })} requirement="Optional" audience="Standard and Full" />
-              <SelectInput label="Manglik status" value={data.astrology?.manglik_status || ""} options={MANGLIK_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), manglik_status: value })} required audience="Full portfolio" />
+              <SelectInput label="Manglik status" value={data.astrology?.manglik_status || ""} options={MANGLIK_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), manglik_status: value })} requirement="Optional" audience="Full portfolio" />
             </div>
             {horoscopeManager && <EmbeddedPanel title="Original horoscope attachment" description="Only approved viewers can open it as a separate document.">{horoscopeManager}</EmbeddedPanel>}
           </FormSection>
         )}
 
         {activeSection === "privacy" && (
-          <FormSection eyebrow="Start with control" title="Privacy and sharing" description="Choose what kind of introduction people receive before you add personal details. You can change this at any time.">
+          <FormSection eyebrow="You stay in control" title="Privacy and contact" description="Choose what people see in the shared introduction and optionally add protected contact details. You can change this later.">
             <InfoCard title="Sensitive details stay protected" audience="Never public" text="Exact birth details, contact information, income, and the horoscope are not shown in the public introduction." />
             <div>
               <p className="mb-1 text-base font-semibold text-[color:var(--workspace-ink)]">Portfolio appearance</p>
@@ -501,8 +492,8 @@ export function BlueprintForm({
           <button type="button" disabled={activeIndex === 0} onClick={() => goTo(SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-white px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
           <p className="hidden text-sm text-[color:var(--workspace-ink-muted)] sm:block">You can change saved answers at any time.</p>
           {activeIndex < SECTIONS.length - 1 ? (
-            <button type="button" onClick={() => goTo(SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-5">Next: {SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
-          ) : <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--workspace-teal)]"><Check className="h-4 w-4" aria-hidden="true" /> Ready to save</span>}
+            <button type="button" onClick={() => goTo(SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-5">Continue: {SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+          ) : <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--workspace-teal)]"><Check className="h-4 w-4" aria-hidden="true" /> Details saved automatically</span>}
         </div>
       </div>
     </div>
@@ -529,21 +520,23 @@ function FieldLabel({ label, hint, required, requirement, audience }: { label: s
   return <span><span className="flex flex-wrap items-center gap-2"><span>{label}{required && <span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span>}</span>{visibleRequirement && <span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">{visibleRequirement}</span>}</span>{visibleAudience && <span className="mt-1 block text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: {visibleAudience}</span>}{hint && <span className="mt-1 block text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}</span>;
 }
 
-function TextInput({ label, value, onChange, type = "text", placeholder, hint, required, min, max, requirement, audience, list, name }: { label: string; value: string; onChange: (value: string) => void; type?: HTMLInputTypeAttribute; placeholder?: string; hint?: string; required?: boolean; min?: string; max?: string; requirement?: string; audience?: string; list?: string; name?: string }) {
+function TextInput({ label, value, onChange, type = "text", placeholder, hint, required, min, max, requirement, audience, list, name, autoComplete }: { label: string; value: string; onChange: (value: string) => void; type?: HTMLInputTypeAttribute; placeholder?: string; hint?: string; required?: boolean; min?: string; max?: string; requirement?: string; audience?: string; list?: string; name?: string; autoComplete?: string }) {
   const [touched, setTouched] = useState(false);
   const id = useId();
   const errorId = useId();
-  const invalid = Boolean(required && touched && !value.trim());
+  const exceedsDateMaximum = type === "date" && Boolean(value && max && value > max);
+  const invalid = Boolean(touched && ((required && !value.trim()) || exceedsDateMaximum));
+  const errorMessage = exceedsDateMaximum ? "You must be 18 or older." : "This field is required.";
   const resolvedName = name || label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  return <label htmlFor={id} className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /><input id={id} name={resolvedName} aria-label={label} aria-invalid={invalid} aria-describedby={invalid ? errorId : undefined} type={type} value={value} placeholder={placeholder} required={required} min={min} max={max} list={list} autoComplete={type === "email" ? "email" : type === "tel" ? "tel" : "off"} spellCheck={type === "email" ? false : undefined} onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} className="biodata-field min-h-12" />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[#9f2f2f]">This field is required.</span>}</label>;
+  return <label htmlFor={id} className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /><input id={id} name={resolvedName} aria-label={label} aria-invalid={invalid} aria-describedby={invalid ? errorId : undefined} type={type} value={value} placeholder={placeholder} required={required} min={min} max={max} list={list} autoComplete={autoComplete || (type === "email" ? "email" : type === "tel" ? "tel" : "off")} spellCheck={type === "email" ? false : undefined} onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} className="biodata-field min-h-12" />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[#9f2f2f]">{errorMessage}</span>}</label>;
 }
 
-function TextArea({ label, value, onChange, hint, required, maxLength, requirement, audience }: { label: string; value: string; onChange: (value: string) => void; hint?: string; required?: boolean; maxLength?: number; requirement?: string; audience?: string }) {
+function TextArea({ label, value, onChange, hint, required, maxLength, requirement, audience, placeholder }: { label: string; value: string; onChange: (value: string) => void; hint?: string; required?: boolean; maxLength?: number; requirement?: string; audience?: string; placeholder?: string }) {
   const [touched, setTouched] = useState(false);
   const id = useId();
   const errorId = useId();
   const invalid = Boolean(required && touched && !value.trim());
-  return <label htmlFor={id} className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={invalid ? errorId : undefined} value={value} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-3 leading-7" />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[#9f2f2f]">This field is required.</span>}{maxLength && <span className="self-end text-xs font-normal text-[color:var(--workspace-ink-muted)]">{value.length} of {maxLength} characters</span>}</label>;
+  return <label htmlFor={id} className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={invalid ? errorId : undefined} value={value} placeholder={placeholder} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-3 leading-7" />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[#9f2f2f]">This field is required.</span>}{maxLength && <span className="self-end text-xs font-normal text-[color:var(--workspace-ink-muted)]">{value.length} of {maxLength} characters</span>}</label>;
 }
 
 function SelectInput({ label, value, options, onChange, required, requirement, audience, hint }: { label: string; value: string; options: BlueprintOption[]; onChange: (value: string) => void; required?: boolean; requirement?: string; audience?: string; hint?: string }) {
@@ -633,6 +626,9 @@ function audienceCopy(audience: string, privacyMode: "private" | "balanced") {
   return audience;
 }
 
-function hasValue(value: unknown) {
-  return typeof value === "string" ? Boolean(value.trim()) : value !== undefined && value !== null;
+function latestAdultBirthDate() {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCFullYear(date.getUTCFullYear() - 18);
+  return date.toISOString().slice(0, 10);
 }

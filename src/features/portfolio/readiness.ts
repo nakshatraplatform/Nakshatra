@@ -28,6 +28,17 @@ function hasValue(value: unknown) {
     : value !== undefined && value !== null && value !== false;
 }
 
+function isAdultBirthDate(value: unknown) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const birthDate = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(birthDate.getTime())) return false;
+  if (birthDate.toISOString().slice(0, 10) !== value) return false;
+  const latest = new Date();
+  latest.setUTCHours(0, 0, 0, 0);
+  latest.setUTCFullYear(latest.getUTCFullYear() - 18);
+  return birthDate <= latest;
+}
+
 /** One canonical checklist drives progress UI, resume guidance, and server publication validation. */
 export function calculatePortfolioCompletion(
   data: PortfolioDraftData,
@@ -37,23 +48,16 @@ export function calculatePortfolioCompletion(
   const requirements: PortfolioRequirement[] = [
     { key: "first_name", label: "First name", editorSection: "foundation", group: "basics", complete: hasValue(name.first_name) },
     { key: "last_name", label: "Last name", editorSection: "foundation", group: "basics", complete: hasValue(name.last_name) },
-    { key: "date_of_birth", label: "Date of birth", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.dob) },
+    { key: "date_of_birth", label: "Date of birth (18 or older)", editorSection: "foundation", group: "basics", complete: isAdultBirthDate(data.personal.dob) },
     { key: "current_location", label: "Current location", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.current_location) },
-    { key: "career_title", label: "Profession or role", editorSection: "work", group: "basics", complete: hasValue(data.career?.title) },
+    { key: "career_title", label: "Profession or role", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
     {
       key: "introduction",
       label: "Short introduction",
-      editorSection: "story",
+      editorSection: "foundation",
       group: "basics",
       complete: hasValue(data.personal.short_bio) || hasValue(data.personal.profile_summary),
     },
-    { key: "time_of_birth", label: "Time of birth", editorSection: "astrology", group: "details", complete: hasValue(data.astrology?.time_of_birth) },
-    { key: "place_of_birth", label: "Place of birth", editorSection: "astrology", group: "details", complete: hasValue(data.personal.place_of_birth) },
-    { key: "rashi", label: "Moon sign (Rashi)", editorSection: "astrology", group: "details", complete: hasValue(data.astrology?.rashi) },
-    { key: "nakshatra", label: "Birth star (Nakshatra)", editorSection: "astrology", group: "details", complete: hasValue(data.astrology?.nakshatra) },
-    { key: "pada", label: "Pada", editorSection: "astrology", group: "details", complete: hasValue(data.astrology?.pada) },
-    { key: "gotra", label: "Gotra", editorSection: "astrology", group: "details", complete: hasValue(data.vitals?.gotra) },
-    { key: "manglik_status", label: "Manglik status", editorSection: "astrology", group: "details", complete: hasValue(data.astrology?.manglik_status) },
     { key: "primary_photo", label: "Shareable primary photo", editorSection: "foundation", group: "details", complete: hasShareablePrimaryPhoto },
   ];
   const missing = requirements.filter((requirement) => !requirement.complete);

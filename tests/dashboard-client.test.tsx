@@ -105,8 +105,8 @@ function renderDashboard(overrides: Partial<React.ComponentProps<typeof Dashboar
 }
 
 function goToFoundation() {
-  if (screen.queryByRole("heading", { name: "Portfolio essentials" })) return;
-  fireEvent.click(screen.getByRole("button", { name: "Next: Foundation" }));
+  if (screen.queryByRole("heading", { name: "The essentials" })) return;
+  fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
 }
 
 beforeEach(() => {
@@ -148,10 +148,10 @@ describe("dashboard client", () => {
   it("opens the canonical editor when requested by an editing route", () => {
     renderDashboard({ initialEditorOpen: true });
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Portfolio essentials" })).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "2");
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "1");
     goToFoundation();
-    expect(screen.getByRole("heading", { name: "Portfolio essentials" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     expect(screen.queryByText("Rashi palette")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Music")).not.toBeInTheDocument();
   });

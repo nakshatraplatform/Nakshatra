@@ -36,10 +36,8 @@ insert into public.portfolios(
   'a3000000-0000-4000-8000-000000000001',
   'readiness_test_token_01',
   '{
-    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","current_location":"Boston","place_of_birth":"Bengaluru","short_bio":"A thoughtful introduction."},
-    "career":{"title":"Engineer"},
-    "vitals":{"gotra":"Kashyap"},
-    "astrology":{"time_of_birth":"09:15","rashi":"kanya","nakshatra":"Uttara Phalguni","pada":"2","manglik_status":"No"}
+    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","current_location":"Boston","short_bio":"A thoughtful introduction."},
+    "career":{"title":"Engineer"}
   }'::jsonb,
   null,
   false
@@ -65,7 +63,7 @@ select pg_temp.set_authenticated_claims(
   'a1000000-0000-4000-8000-000000000001',
   'a2000000-0000-4000-8000-000000000001'
 );
-select is(jsonb_array_length(public.get_portfolio_publication_readiness() -> 'missingRequired'), 0, 'canonical required content is complete');
+select is(jsonb_array_length(public.get_portfolio_publication_readiness() -> 'missingRequired'), 0, 'the inclusive minimum is complete without optional cultural or astrology details');
 select is(public.get_portfolio_publication_readiness() ->> 'verificationStatus', 'required', 'verification is initially required');
 select is(public.update_portfolio_onboarding_progress('select_plan', 'launch_30') ->> 'status', 'ok', 'an owner can select a plan without being charged');
 
