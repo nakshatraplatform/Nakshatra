@@ -36,7 +36,6 @@ import {
   RotateCcw,
   Save,
   Send,
-  X,
   LockKeyhole,
   PanelRightOpen,
   ImagePlus,
@@ -53,6 +52,7 @@ import {
   Settings,
   CheckCircle2,
   Circle,
+  ArrowLeft,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
@@ -827,30 +827,55 @@ export default function DashboardClient({
           >
             <header className="flex flex-none flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Final disclosure review</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Review before publishing</p>
                 <h2 id="portfolio-review-heading" className="mt-1 text-xl font-semibold">Check both views before publishing</h2>
-                <p className="mt-1 text-sm text-slate-600">Your draft is saved. Nothing public changes until you confirm below.</p>
+                <p className="mt-1 text-sm text-slate-600">Your draft is saved. Open each preview in a new tab; nothing public changes from this review.</p>
               </div>
               <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>
                 Back to editing
               </button>
             </header>
 
-            <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 sm:p-6 lg:grid-cols-2 lg:overflow-hidden">
-              <article className="flex min-h-[34rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white lg:min-h-0">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid gap-4 lg:grid-cols-2">
+              <article className="flex flex-col rounded-xl border border-slate-200 bg-white p-5">
                 <div className="border-b border-slate-200 px-4 py-3">
                   <h3 className="font-semibold">First View · {normalizePortfolioPrivacyMode(draftData.privacy_mode) === "private" ? "Short" : "Standard"}</h3>
                   <p className="mt-1 text-xs text-slate-600">What anyone with the share link can see.</p>
                 </div>
-                <iframe src="/preview" title="First View portfolio preview" className="min-h-[30rem] w-full flex-1 bg-white" />
+                <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
+                  <p className="text-sm leading-6 text-slate-600">Check the public introduction, primary photo and the details visible before approval.</p>
+                  <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                    <ExternalLink className="h-4 w-4" />
+                    Open First View
+                  </a>
+                </div>
               </article>
-              <article className="flex min-h-[34rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white lg:min-h-0">
+              <article className="flex flex-col rounded-xl border border-slate-200 bg-white p-5">
                 <div className="border-b border-slate-200 px-4 py-3">
                   <h3 className="font-semibold">Full View · Approved people only</h3>
                   <p className="mt-1 text-xs text-slate-600">What a verified person receives after your approval.</p>
                 </div>
-                <iframe src="/approved-preview" title="Full View portfolio preview" className="min-h-[30rem] w-full flex-1 bg-white" />
+                <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
+                  <p className="text-sm leading-6 text-slate-600">Check protected details and confirm that nothing appears in Full View unexpectedly.</p>
+                  <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                    <ExternalLink className="h-4 w-4" />
+                    Open Full View
+                  </a>
+                </div>
               </article>
+              </div>
+
+              <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
+                <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
+                <p className="mt-1 text-sm text-slate-600">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
+                  <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
+                  <ReviewRequirement complete={readinessState.paymentActive} label="Active plan confirmed" pendingLabel="Plan payment integration coming soon" />
+                  <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Available after verification and payment" />
+                </div>
+              </section>
             </div>
 
             <footer className="flex flex-none flex-col gap-3 border-t border-slate-200 bg-[#fffdf8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -860,7 +885,7 @@ export default function DashboardClient({
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Cancel review</button>
+                <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Back to dashboard</button>
                 <button
                   ref={reviewPublishRef}
                   type="button"
@@ -922,10 +947,11 @@ export default function DashboardClient({
                 <button
                   type="button"
                   onClick={closePortfolioEditor}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
-                  aria-label="Close portfolio details"
+                  className="dashboard-secondary-action flex-none"
                 >
-                  <X className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back to dashboard</span>
+                  <span className="sm:hidden">Dashboard</span>
                 </button>
               </div>
             </div>
@@ -1010,8 +1036,8 @@ export default function DashboardClient({
                       {savingDraft
                         ? "Saving..."
                         : portfolio?.is_published
-                          ? "Review changes"
-                          : "Review and publish"}
+                          ? "Review saved changes"
+                          : "Review before publishing"}
                     </button>
                   </div>
                 </div>
@@ -1020,6 +1046,28 @@ export default function DashboardClient({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ReviewRequirement({
+  complete,
+  label,
+  pendingLabel,
+}: {
+  complete: boolean;
+  label: string;
+  pendingLabel: string;
+}) {
+  return (
+    <div className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${complete ? "border-[#b8d8ce] bg-[#eef7f3]" : "border-[#ded5bd] bg-[#faf7ed]"}`}>
+      {complete
+        ? <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-[#315f57]" aria-hidden="true" />
+        : <Circle className="mt-0.5 h-5 w-5 flex-none text-[#9a7b32]" aria-hidden="true" />}
+      <div>
+        <p className="text-sm font-semibold">{complete ? label : pendingLabel}</p>
+        {!complete && <p className="mt-0.5 text-xs text-slate-600">{label}</p>}
+      </div>
     </div>
   );
 }

@@ -183,14 +183,15 @@ describe("dashboard client", () => {
     const palette = screen.queryAllByRole("button").find((button) => button.textContent?.includes("#"));
     if (palette) fireEvent.click(palette);
     fireEvent.click(screen.getByRole("button", { name: /add photos/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /review and publish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review before publishing/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
-    expect(screen.getByTitle("First View portfolio preview")).toHaveAttribute("src", "/preview");
-    expect(screen.getByTitle("Full View portfolio preview")).toHaveAttribute("src", "/approved-preview");
+    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Complete required details" })).toBeDisabled();
     expect(mocks.publish).not.toHaveBeenCalled();
@@ -358,8 +359,11 @@ describe("dashboard client", () => {
       publicationReadiness: readyPublicationReadiness,
     });
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
-    fireEvent.click(screen.getByRole("button", { name: /review changes/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
@@ -418,7 +422,7 @@ describe("dashboard client", () => {
 
   it("cancels publication review without changing the public portfolio", async () => {
     renderDashboard({ initialEditorOpen: true });
-    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
     await waitFor(() => expect(document.body.style.overflow).toBe("hidden"));
     expect(mocks.save).toHaveBeenCalledTimes(1);
@@ -494,7 +498,7 @@ describe("dashboard client", () => {
     fireEvent(window, beforeUnload);
     expect(beforeUnload.defaultPrevented).toBe(true);
     vi.mocked(confirm).mockReturnValueOnce(false);
-    fireEvent.click(screen.getByRole("button", { name: /close portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
