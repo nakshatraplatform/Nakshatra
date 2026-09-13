@@ -188,13 +188,13 @@ export function createPublicPortfolioSnapshot(data: PortfolioData): PortfolioDat
       ...(!privateMode ? { gender: data.personal.gender } : {}),
       short_bio: clean(data.personal.short_bio),
       ...(!privateMode ? { profile_summary: publicStory } : {}),
-      marital_status: data.personal.marital_status,
-      citizenship: data.personal.citizenship,
-      religion: data.personal.religion,
-      community: data.personal.community,
-      sub_community: data.personal.sub_community,
       ...(!privateMode
         ? {
+            marital_status: data.personal.marital_status,
+            citizenship: data.personal.citizenship,
+            religion: data.personal.religion,
+            community: data.personal.community,
+            sub_community: data.personal.sub_community,
             immigration_status: data.personal.immigration_status,
             shared_life_plans: publicSharedLifePlans
               ? excerpt(publicSharedLifePlans, 360)

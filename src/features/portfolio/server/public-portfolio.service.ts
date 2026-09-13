@@ -30,10 +30,15 @@ export async function resolvePublicPortfolio(
   token: string
 ): Promise<ResolvedPortfolio | null> {
   const repository = new PublicPortfolioRepository(supabase);
-  const { data, error } = await repository.resolvePublic(token);
+  const [{ data, error }, verification] = await Promise.all([
+    repository.resolvePublic(token),
+    repository.resolvePublicIdentityVerified(token),
+  ]);
   if (error || !data) return null;
   const parsed = resolvedPortfolioSchema.safeParse(data);
-  return parsed.success ? parsed.data : null;
+  return parsed.success
+    ? { ...parsed.data, identityVerified: !verification.error && verification.data === true }
+    : null;
 }
 
 /** Distinguishes an expired canonical link from malformed, unknown, rotated, or unpublished links. */
@@ -59,6 +64,7 @@ export async function resolvePortfolioView(
   if (!publicPortfolio) return null;
 
   let resolved = publicPortfolio;
+  const identityVerified = publicPortfolio.identityVerified;
   let accessMode: PortfolioView["accessMode"] = "public";
   if (authenticated) {
     const { data } = await repository.resolveApproved(token);
@@ -71,6 +77,7 @@ export async function resolvePortfolioView(
 
   return {
     ...resolved,
+    identityVerified,
     accessMode,
     photos: await createSafePhotoUrls(
       repository,

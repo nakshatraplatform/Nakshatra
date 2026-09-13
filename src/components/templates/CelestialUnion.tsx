@@ -21,6 +21,8 @@ interface CelestialUnionProps {
   themeColor: string;
   sunSign: string | null;
   accessMode?: "owner" | "approved" | "public";
+  accessExpiresAt?: string;
+  identityVerified?: boolean;
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
@@ -52,6 +54,8 @@ export default function CelestialUnion({
   data,
   sunSign,
   accessMode = "owner",
+  accessExpiresAt,
+  identityVerified = false,
   photos = [],
   horoscopeAttachment,
   interestAction,
@@ -62,6 +66,7 @@ export default function CelestialUnion({
   const approvedViewer = accessMode === "approved";
   const hasApprovedAccess = ownerPreview || approvedViewer;
   const privacyMode = data.privacy_mode || "balanced";
+  const shortPublicView = accessMode === "public" && privacyMode === "private";
   const rashi = normalizeRashi(data.astrology?.rashi || sunSign);
   const rashiOption = RASHI_OPTIONS.find((option) => option.key === rashi);
   const heroPhoto = photos.find((photo) => photo.mediaType === "hero");
@@ -77,6 +82,7 @@ export default function CelestialUnion({
       : null;
   const heroPhotos = heroPhoto ? [heroPhoto] : legacyOwnerPhoto ? [legacyOwnerPhoto] : [];
   const galleryPhotos = photos.filter((photo) => photo.mediaType === "gallery");
+  const shortGalleryPhotos = galleryPhotos.filter((photo) => photo.presentation !== "blurred").slice(0, 1);
   const blurredPhotos = photos.filter((photo) => photo.presentation === "blurred");
   const shortBio = clean(data.personal.short_bio);
   const profileSummary = clean(data.personal.profile_summary);
@@ -188,6 +194,7 @@ export default function CelestialUnion({
     hasApprovedAccess,
   });
   const showProtectedSection = protectedItems.length > 0 || (hasApprovedAccess && contactEntries.length > 0);
+  const showInterestSection = Boolean(interestAction);
   const chapters: ChapterDefinition[] = [];
 
   if (profileSummary || hasPersonalDetails || languages.length > 0 || values.length > 0) {
@@ -470,6 +477,19 @@ export default function CelestialUnion({
   const trailingChapters = numberedChapters.filter(
     (chapter) => !leadingChapterIds.has(chapter.id) && !pairedChapterIds.has(chapter.id)
   );
+  const fullChapterOrder = [
+    "personal-story",
+    "journey",
+    "lifestyle",
+    "family",
+    "preferences",
+    "future-plans",
+    "shared-life",
+    "astrology",
+  ];
+  const fullChapters = fullChapterOrder
+    .map((id) => numberedChapters.find((chapter) => chapter.id === id))
+    .filter((chapter): chapter is typeof numberedChapters[number] => Boolean(chapter));
 
   const variables = {
     "--portfolio-background": theme.background,
@@ -498,10 +518,14 @@ export default function CelestialUnion({
             <Sparkles aria-hidden="true" />
             <span>Nakshatra</span>
           </a>
-          {chapters.length > 0 && (
+          {(chapters.length > 0 || shortPublicView) && (
             <nav aria-label="Portfolio sections">
-              {chapters.some((chapter) => chapter.id === "personal-story") && <a href="#personal-story">Story</a>}
-              {chapters.some((chapter) => chapter.id === "journey") && <a href="#journey">Journey</a>}
+              {shortPublicView
+                ? <a href="#portfolio-profile">Overview</a>
+                : <>
+                    {chapters.some((chapter) => chapter.id === "personal-story") && <a href="#personal-story">Story</a>}
+                    {chapters.some((chapter) => chapter.id === "journey") && <a href="#journey">Journey</a>}
+                  </>}
               {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
             </nav>
           )}
@@ -510,6 +534,29 @@ export default function CelestialUnion({
           </span>
         </div>
       </header>
+
+      {approvedViewer && (
+        <aside className="portfolio-access-context" aria-label="Full View access details">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <strong>Full View access</strong>
+            <span>
+              Shared with your signed-in account by the portfolio owner
+              {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
+            </span>
+          </div>
+        </aside>
+      )}
+
+      {identityVerified && (
+        <aside className="portfolio-verification-context" aria-label="Identity verification information">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <strong>Identity verified</strong>
+            <span>Verification confirms that this portfolio belongs to a real person. It is not a personal, employment, financial, or background endorsement.</span>
+          </div>
+        </aside>
+      )}
 
       <main id="portfolio-top" className="portfolio-main">
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
@@ -527,6 +574,11 @@ export default function CelestialUnion({
             </div>
             {heroLine && <p className="portfolio-hero-line">{heroLine}</p>}
             {shortBio && <p className="portfolio-hero-summary">{shortBio}</p>}
+            {showInterestSection && (
+              <div className="portfolio-hero-actions">
+                <a className="portfolio-button portfolio-button-primary" href="#portfolio-interest">Introduce yourself</a>
+              </div>
+            )}
           </div>
         </section>
 
@@ -536,31 +588,49 @@ export default function CelestialUnion({
           </section>
         )}
 
-        <div id="portfolio-profile" className="portfolio-chapters">
-          {leadingChapters.map((chapter) => (
-            <Chapter key={chapter.id} {...chapter} />
-          ))}
-          {pairedChapterRows.length > 0 && (
-            <div className="portfolio-chapter-pairs">
-              {pairedChapterRows.map((row) => (
-                <div key={row.map((chapter) => chapter.id).join("-")} className="portfolio-chapter-pair" data-chapter-count={row.length}>
-                  {row.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {shortPublicView ? (
+          <ShortIntroduction
+            name={data.personal.name}
+            education={educationTitle}
+            career={careerTitle}
+            interests={hobbies}
+            values={values}
+            languages={languages}
+            diet={clean(data.lifestyle?.diet)}
+            familyIntroduction={clean(data.family?.public_summary)}
+            partnershipIntroduction={clean(data.preferences?.narrative)}
+          />
+        ) : hasApprovedAccess ? (
+          <div id="portfolio-profile" className="portfolio-chapters portfolio-full-chapters">
+            {fullChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
+          </div>
+        ) : (
+          <div id="portfolio-profile" className="portfolio-chapters">
+            {leadingChapters.map((chapter) => (
+              <Chapter key={chapter.id} {...chapter} />
+            ))}
+            {pairedChapterRows.length > 0 && (
+              <div className="portfolio-chapter-pairs">
+                {pairedChapterRows.map((row) => (
+                  <div key={row.map((chapter) => chapter.id).join("-")} className="portfolio-chapter-pair" data-chapter-count={row.length}>
+                    {row.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        <AdaptivePortfolioGallery photos={galleryPhotos} />
+        <AdaptivePortfolioGallery photos={shortPublicView ? shortGalleryPhotos : galleryPhotos} />
 
-        {trailingChapters.length > 0 && (
+        {!shortPublicView && !hasApprovedAccess && trailingChapters.length > 0 && (
           <div className="portfolio-chapters portfolio-chapters-trailing">
             {trailingChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
           </div>
         )}
 
-        {showProtectedSection && (
-          <section id="protected-details" className="portfolio-protected-section">
+        {(showProtectedSection || showInterestSection) && (
+          <section id="portfolio-interest" className="portfolio-protected-section">
             <div className="portfolio-protected-copy">
               <p className="portfolio-eyebrow">Respectful access</p>
               <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the profile owner" : "More can be shared after approval."}</h2>
@@ -569,7 +639,7 @@ export default function CelestialUnion({
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
                     ? "These contact details became visible when the profile owner approved your request."
-                    : "Only information that exists is listed below. The profile owner reviews each request before deciding what to share."}
+                    : "Introduce yourself using a verified email. The profile owner decides whether to share Full View access with you."}
               </p>
             </div>
             {protectedItems.length > 0 && (
@@ -592,6 +662,10 @@ export default function CelestialUnion({
             ) : null}
           </section>
         )}
+
+        {showInterestSection && (
+          <a className="portfolio-mobile-interest" href="#portfolio-interest">Introduce yourself</a>
+        )}
       </main>
 
       <footer className="portfolio-footer">
@@ -599,6 +673,54 @@ export default function CelestialUnion({
         <p>One clear wedding portfolio.</p>
       </footer>
     </div>
+  );
+}
+
+function ShortIntroduction({
+  name,
+  education,
+  career,
+  interests,
+  values,
+  languages,
+  diet,
+  familyIntroduction,
+  partnershipIntroduction,
+}: {
+  name?: string;
+  education?: string;
+  career?: string;
+  interests: string[];
+  values: string[];
+  languages: string[];
+  diet?: string;
+  familyIntroduction?: string;
+  partnershipIntroduction?: string;
+}) {
+  const facts = compactPairs([
+    ["Education", education],
+    ["Career", career],
+    ["Languages", languages.slice(0, 3).join(", ")],
+    ["Diet", diet],
+  ]);
+  const tags = Array.from(new Set([...interests, ...values])).slice(0, 5);
+  if (!facts.length && !tags.length && !familyIntroduction && !partnershipIntroduction) return null;
+
+  return (
+    <section id="portfolio-profile" className="portfolio-short-overview" aria-labelledby="short-overview-title">
+      <div className="portfolio-section-heading">
+        <p>A quick introduction</p>
+        <h2 id="short-overview-title">A little more about {firstName(name)}</h2>
+      </div>
+      {facts.length > 0 && (
+        <div className="portfolio-detail-grid">
+          {facts.map(([label, value]) => <DataPair key={label} label={label} value={value} />)}
+        </div>
+      )}
+      {tags.length > 0 && <div className="portfolio-tags">{tags.map((value) => <span key={value}>{value}</span>)}</div>}
+      {familyIntroduction && <div><h3>Family introduction</h3><p className="portfolio-long-copy">{familyIntroduction}</p></div>}
+      {partnershipIntroduction && <div><h3>Hopes for a partnership</h3><p className="portfolio-long-copy">{partnershipIntroduction}</p></div>}
+    </section>
   );
 }
 
@@ -740,6 +862,15 @@ function validDate(value?: string) {
   const parsed = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return undefined;
   return value;
+}
+
+function formatAccessExpiry(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "soon";
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function familyMemberValue(member?: { name?: string; occupation?: string; location?: string; marital_status?: string }) {

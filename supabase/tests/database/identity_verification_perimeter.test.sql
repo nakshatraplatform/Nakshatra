@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(17);
+select plan(20);
 
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000001', '91100000-0000-4000-8000-000000000001', 'identity-owner@test.local');
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000002', '91100000-0000-4000-8000-000000000002', 'verified-owner@test.local');
@@ -73,6 +73,18 @@ select ok(
     and identity_reverification_grace_until = identity_verified_until + interval '30 days'
    from public.public_portfolio_snapshots where portfolio_id = '94000000-0000-4000-8000-000000000002'),
   'public snapshots receive only the safe verification badge and validity windows'
+);
+select ok(
+  public.resolve_public_portfolio_identity_verified('identity_verified_token'),
+  'an exact active portfolio exposes the current boolean verification signal'
+);
+select ok(
+  not public.resolve_public_portfolio_identity_verified('missing_identity_token'),
+  'missing and unverified portfolio links do not expose a verification signal'
+);
+select ok(
+  has_function_privilege('anon', 'public.resolve_public_portfolio_identity_verified(text)', 'EXECUTE'),
+  'anonymous portfolio readers can resolve only the boolean verification signal'
 );
 
 insert into app_private.identity_verification_worker_state(subject_id, candidate_id, attempt_id, task_type)

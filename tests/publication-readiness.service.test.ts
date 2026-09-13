@@ -3,6 +3,7 @@ import {
   getPublicationReadiness,
   updatePublicationProgress,
 } from "@/features/portfolio/server/publication-readiness.service";
+import { publicationReadinessSchema } from "@/features/portfolio/server/publication-readiness.contract";
 
 const readiness = {
   portfolioExists: true,
@@ -19,6 +20,14 @@ const readiness = {
 };
 
 describe("publication readiness service", () => {
+  it("normalizes omitted optional readiness fields", () => {
+    expect(publicationReadinessSchema.parse({
+      ...readiness,
+      lastEditorSection: undefined,
+      paymentActive: undefined,
+    })).toMatchObject({ lastEditorSection: null, paymentActive: false });
+  });
+
   it("returns a validated owner-safe readiness projection", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: readiness, error: null });
     await expect(getPublicationReadiness({ rpc } as never)).resolves.toEqual(readiness);

@@ -79,6 +79,8 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
+  await expect(page.getByLabel("Identity verification information")).toContainText("Identity verified");
+  await expect(page.getByLabel("Identity verification information")).toContainText("not a personal, employment, financial, or background endorsement");
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
@@ -163,7 +165,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   await expect(privacyControl).toBeFocused();
   await expect(privacyControl).toHaveCSS("outline-width", "2px");
 
-  if ((page.viewportSize()?.width || 0) >= 900) {
+  if ((page.viewportSize()?.width || 0) > 720) {
     const chapterStyles = await page.locator(".portfolio-chapter").first().evaluate((element) => {
       const styles = getComputedStyle(element);
       return { display: styles.display, columns: styles.gridTemplateColumns.split(" ").length };
@@ -243,9 +245,32 @@ test("Private portfolio keeps one gallery photo clear and safely blurs the rest"
   await page.goto("/p/e2e-private-token");
 
   await expect(page.locator('.portfolio-root[data-privacy-mode="private"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A little more about Aditi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Education and career" })).toHaveCount(0);
   const gallery = page.locator(".portfolio-gallery");
-  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(7);
+  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(1);
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(1);
-  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(6);
+  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(0);
   await expect(gallery.locator('.portfolio-gallery-feature[data-presentation="clear"]')).toBeVisible();
+});
+
+test("portfolio actions and hero remain usable across supported viewports", async ({ page }) => {
+  await page.goto("/p/e2e-portfolio-token");
+
+  const viewportWidth = page.viewportSize()?.width || 0;
+  const hero = page.locator(".portfolio-photo-stage");
+  const heroBounds = await hero.boundingBox();
+  expect(heroBounds).not.toBeNull();
+
+  if (viewportWidth <= 720) {
+    expect(heroBounds!.height).toBeLessThanOrEqual(370);
+    const stickyAction = page.locator(".portfolio-mobile-interest");
+    await expect(stickyAction).toBeVisible();
+    await expect(stickyAction).toHaveAttribute("href", "#portfolio-interest");
+  } else {
+    await expect(page.locator(".portfolio-mobile-interest")).toBeHidden();
+  }
+
+  await expect(page.locator(".portfolio-hero-actions").getByRole("link", { name: "Introduce yourself" })).toBeVisible();
+  await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });

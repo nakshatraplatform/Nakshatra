@@ -191,6 +191,21 @@ describe("portfolio lifecycle services", () => {
     ).rejects.toBeInstanceOf(PortfolioPublishError);
   });
 
+  it("stops safely when primary-photo validation or protected-preview preparation fails", async () => {
+    repository.findShareablePrimaryPhoto.mockResolvedValueOnce({ data: null, error: new Error("storage unavailable") });
+    await expect(
+      publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
+    ).rejects.toMatchObject({ code: "PRIMARY_PHOTO_CHECK_FAILED" });
+    expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
+
+    repository.findShareablePrimaryPhoto.mockResolvedValueOnce({ data: { id: "hero-photo-id" }, error: null });
+    ensurePortfolioPhotoPreviews.mockRejectedValueOnce(new Error("preview generation failed"));
+    await expect(
+      publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
+    ).rejects.toMatchObject({ code: "PROTECTED_PHOTO_PREVIEW_FAILED" });
+    expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
+  });
+
   it("maps transactional readiness, pilot entitlement, verification, and authorization failures to safe errors", async () => {
     repository.publishPortfolioTransaction.mockResolvedValue({
       data: { status: "not_ready" },

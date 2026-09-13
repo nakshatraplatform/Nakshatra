@@ -8,6 +8,8 @@ export interface TemplateProps {
   themeColor: string;
   sunSign: string | null;
   accessMode?: "owner" | "approved" | "public";
+  accessExpiresAt?: string;
+  identityVerified?: boolean;
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
@@ -26,6 +28,8 @@ export function BiodataTemplate(
       themeColor={props.themeColor}
       sunSign={props.sunSign}
       accessMode={props.accessMode}
+      accessExpiresAt={props.accessExpiresAt}
+      identityVerified={props.identityVerified}
       photos={props.photos}
       horoscopeAttachment={props.horoscopeAttachment}
       interestAction={props.interestAction}

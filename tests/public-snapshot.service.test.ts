@@ -150,14 +150,12 @@ describe("public portfolio snapshot", () => {
     expect(privateSnapshot).not.toHaveProperty("family");
     expect(privateSnapshot.personal).not.toHaveProperty("long_term_goals");
     expect(privateSnapshot.personal).not.toHaveProperty("immigration_status");
-    expect(privateSnapshot.personal.community).toBe("Brahmin");
     expect(privateSnapshot.personal).not.toHaveProperty("profile_summary");
-    expect(privateSnapshot.personal).toMatchObject({
-      marital_status: "Never Married",
-      citizenship: "India",
-      religion: "Hindu",
-      sub_community: "Smartha",
-    });
+    expect(privateSnapshot.personal).not.toHaveProperty("marital_status");
+    expect(privateSnapshot.personal).not.toHaveProperty("citizenship");
+    expect(privateSnapshot.personal).not.toHaveProperty("religion");
+    expect(privateSnapshot.personal).not.toHaveProperty("community");
+    expect(privateSnapshot.personal).not.toHaveProperty("sub_community");
     expect(privateSnapshot.lifestyle).toMatchObject({
       languages: "English, Hindi",
       values_statement: "Kindness, Mutual respect",
@@ -254,5 +252,33 @@ describe("public portfolio snapshot", () => {
     });
     expect(privateSnapshot.personal).not.toHaveProperty("profile_summary");
     expect(privateSnapshot.personal.short_bio).toBe("Warm, grounded, and curious about the world.");
+  });
+
+  it("truncates long Short View introductions without exposing detailed family records", () => {
+    const longFamilyIntroduction = "A warm, close-knit family that values kindness and curiosity ".repeat(8).trim();
+    const longPartnerIntroduction = "Someone thoughtful, communicative, and ready to build a shared life ".repeat(6).trim();
+    const snapshot = createPublicPortfolioSnapshot({
+      ...portfolio,
+      privacy_mode: "private",
+      personal: {
+        ...portfolio.personal,
+        first_name: undefined,
+        middle_name: undefined,
+        last_name: undefined,
+      },
+      family: {
+        public_summary: longFamilyIntroduction,
+        siblings: [{ name: "Protected sibling", occupation: "Doctor", location: "Chicago" }],
+      },
+      preferences: { narrative: longPartnerIntroduction },
+    });
+
+    expect(snapshot.personal.name).toBe("Aditi");
+    expect(snapshot.family?.public_summary?.length).toBeLessThanOrEqual(321);
+    expect(snapshot.family?.public_summary).toMatch(/…$/);
+    expect(snapshot.preferences?.narrative?.length).toBeLessThanOrEqual(241);
+    expect(snapshot.preferences?.narrative).toMatch(/…$/);
+    expect(snapshot.family).not.toHaveProperty("siblings");
+    expect(snapshot.visibility).toMatchObject({ family_details: "restricted" });
   });
 });

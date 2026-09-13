@@ -243,6 +243,9 @@ const server = createServer((request, response) => {
       return sendJson(response, 200, resolvedPortfolio(token === "e2e-private-token"));
     });
   }
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_identity_verified") {
+    return sendJson(response, 200, true);
+  }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_approved_portfolio") {
     return sendJson(response, 200, null);
   }

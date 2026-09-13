@@ -2722,6 +2722,10 @@ export type Database = {
         Args: { p_share_token: string }
         Returns: Json
       }
+      resolve_public_portfolio_identity_verified: {
+        Args: { p_share_token: string }
+        Returns: boolean
+      }
       rotate_portfolio_transaction: {
         Args: { p_share_token: string }
         Returns: Json
