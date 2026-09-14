@@ -105,3 +105,66 @@ begin
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
 end;
 $$;
+
+-- Publication-focused migrations intentionally reject legacy minimal fixtures.
+-- These helpers keep unrelated perimeter tests explicit about satisfying the
+-- current production gates without weakening those gates in application code.
+create or replace function pg_temp.complete_portfolio_draft(
+  p_draft jsonb default '{}'::jsonb
+)
+returns jsonb
+language sql
+immutable
+as $$
+  select
+    (coalesce(p_draft, '{}'::jsonb) - 'personal' - 'career')
+    || pg_catalog.jsonb_build_object(
+      'personal',
+      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","current_location":"Test City","short_bio":"A complete test introduction."}'::jsonb
+        || coalesce(p_draft -> 'personal', '{}'::jsonb),
+      'career',
+      '{"title":"Test role"}'::jsonb || coalesce(p_draft -> 'career', '{}'::jsonb)
+    )
+$$;
+
+create or replace function pg_temp.prime_paid_publication(
+  p_portfolio_id uuid,
+  p_draft jsonb
+)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into app_private.portfolio_publication_progress (
+    portfolio_id,
+    selected_plan_code,
+    plan_selected_at,
+    payment_status,
+    payment_confirmed_at,
+    payment_expires_at,
+    disclosure_version,
+    disclosure_fingerprint,
+    disclosure_confirmed_at
+  ) values (
+    p_portfolio_id,
+    'test_plan',
+    pg_catalog.now(),
+    'paid',
+    pg_catalog.now(),
+    pg_catalog.now() + interval '365 days',
+    'publication-disclosure-v1',
+    app_private.portfolio_draft_fingerprint(p_draft),
+    pg_catalog.now()
+  )
+  on conflict (portfolio_id) do update set
+    selected_plan_code = excluded.selected_plan_code,
+    plan_selected_at = excluded.plan_selected_at,
+    payment_status = excluded.payment_status,
+    payment_confirmed_at = excluded.payment_confirmed_at,
+    payment_expires_at = excluded.payment_expires_at,
+    disclosure_version = excluded.disclosure_version,
+    disclosure_fingerprint = excluded.disclosure_fingerprint,
+    disclosure_confirmed_at = excluded.disclosure_confirmed_at,
+    updated_at = pg_catalog.now()
+$$;

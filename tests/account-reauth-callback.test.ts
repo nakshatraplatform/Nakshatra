@@ -102,4 +102,18 @@ describe("account deletion reauthentication callback", () => {
     expect(response.headers.get("location")).toBe("http://local/brokerdesk/onboarding");
     expect(from).not.toHaveBeenCalled();
   });
+
+  it("continues pilot OAuth without provisioning a customer portfolio", async () => {
+    const from = vi.fn();
+    createClient.mockResolvedValueOnce({
+      auth: {
+        exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null }),
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: "applicant" } } }),
+      },
+      from,
+    });
+    const response = await GET(new Request("http://local/api/auth/callback?code=ok&next=/pilot-access"));
+    expect(response.headers.get("location")).toBe("http://local/pilot-access");
+    expect(from).not.toHaveBeenCalled();
+  });
 });

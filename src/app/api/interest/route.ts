@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           code: "INTEREST_REQUEST_REJECTED",
-          error: "The request contains a value the database cannot accept. Check the phone number and optional portfolio link.",
+          error: "The request contains a value the database cannot accept. Check the phone number and optional details.",
         },
         { status: 400 }
       );

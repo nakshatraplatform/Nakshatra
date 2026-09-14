@@ -86,6 +86,8 @@ export default async function PublicBiodataPage({ params }: Props) {
       themeColor={portfolio.themeColor || "#6366f1"}
       sunSign={portfolio.sunSign || null}
       accessMode={portfolio.accessMode}
+      accessExpiresAt={portfolio.accessExpiresAt}
+      identityVerified={portfolio.identityVerified}
       photos={portfolio.photos}
       horoscopeAttachment={horoscopeAttachment}
       interestAction={portfolio.accessMode === "public" ? <InterestRequestModal portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} /> : undefined}

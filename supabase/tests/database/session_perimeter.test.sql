@@ -97,6 +97,7 @@ select ok(
         'public.is_published_portfolio(uuid)'::regprocedure,
         'public.resolve_public_portfolio(text)'::regprocedure,
         'public.resolve_public_portfolio_status(text)'::regprocedure,
+        'public.resolve_public_portfolio_identity_verified(text)'::regprocedure,
         'public.record_public_portfolio_view(text)'::regprocedure,
         'public.consume_api_rate_limit(text,text)'::regprocedure,
         'public.is_public_portfolio_media_path(text,text)'::regprocedure

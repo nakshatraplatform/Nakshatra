@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(17);
+select plan(20);
 
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000001', '91100000-0000-4000-8000-000000000001', 'identity-owner@test.local');
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000002', '91100000-0000-4000-8000-000000000002', 'verified-owner@test.local');
@@ -54,13 +54,18 @@ select is((select status::text from app_private.identity_verification_subjects w
 
 insert into public.portfolios (id, user_id, candidate_id, share_token, draft_data, published_data, expires_at)
 values
-  ('94000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'identity_unverified_tok', '{}'::jsonb, '{}'::jsonb, now() + interval '90 days'),
-  ('94000000-0000-4000-8000-000000000002', '91000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000002', 'identity_verified_token', '{}'::jsonb, '{}'::jsonb, now() + interval '90 days');
+  ('94000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'identity_unverified_tok', pg_temp.complete_portfolio_draft(), '{}'::jsonb, now() + interval '90 days'),
+  ('94000000-0000-4000-8000-000000000002', '91000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000002', 'identity_verified_token', pg_temp.complete_portfolio_draft(), '{}'::jsonb, now() + interval '90 days');
 
 insert into public.portfolio_media (portfolio_id, candidate_id, media_type, storage_path, visibility, sort_order)
 values
   ('94000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'hero', '91000000-0000-4000-8000-000000000001/94000000-0000-4000-8000-000000000001/hero.webp', 'public', 0),
   ('94000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000002', 'hero', '91000000-0000-4000-8000-000000000002/94000000-0000-4000-8000-000000000002/hero.webp', 'public', 0);
+
+select pg_temp.prime_paid_publication(
+  '94000000-0000-4000-8000-000000000002',
+  pg_temp.complete_portfolio_draft()
+);
 
 select throws_ok($$update public.portfolios set is_published = true where id = '94000000-0000-4000-8000-000000000001'$$, '23514', null, 'direct database publication fails without current verification');
 select lives_ok($$update public.portfolios set is_published = true where id = '94000000-0000-4000-8000-000000000002'$$, 'verified candidate publication succeeds');
@@ -73,6 +78,18 @@ select ok(
     and identity_reverification_grace_until = identity_verified_until + interval '30 days'
    from public.public_portfolio_snapshots where portfolio_id = '94000000-0000-4000-8000-000000000002'),
   'public snapshots receive only the safe verification badge and validity windows'
+);
+select ok(
+  public.resolve_public_portfolio_identity_verified('identity_verified_token'),
+  'an exact active portfolio exposes the current boolean verification signal'
+);
+select ok(
+  not public.resolve_public_portfolio_identity_verified('missing_identity_token'),
+  'missing and unverified portfolio links do not expose a verification signal'
+);
+select ok(
+  has_function_privilege('anon', 'public.resolve_public_portfolio_identity_verified(text)', 'EXECUTE'),
+  'anonymous portfolio readers can resolve only the boolean verification signal'
 );
 
 insert into app_private.identity_verification_worker_state(subject_id, candidate_id, attempt_id, task_type)

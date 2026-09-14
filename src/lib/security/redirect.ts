@@ -26,6 +26,12 @@ export function isBrokerdeskAuthRedirect(value: string | null | undefined) {
   return pathname === "/brokerdesk" || pathname.startsWith("/brokerdesk/");
 }
 
+/** Identifies the applicant-only continuation that must never bootstrap a portfolio. */
+export function isPilotAccessAuthRedirect(value: string | null | undefined) {
+  const safePath = sanitizeInternalRedirect(value);
+  return new URL(safePath, "https://nakshatra.invalid").pathname === "/pilot-access";
+}
+
 /** Builds an absolute application URL from the configured production origin or the current local origin. */
 export function createCanonicalAppUrl(path: string, requestUrl: string) {
   const requestOrigin = new URL(requestUrl).origin;

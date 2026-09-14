@@ -103,7 +103,7 @@ describe("interest request flow", () => {
     expect(screen.getByLabelText("City")).toHaveValue("");
     expect(screen.getByLabelText("Brief family introduction")).toHaveValue("");
     expect(screen.getByLabelText("Message")).toHaveValue("");
-    expect(screen.getByLabelText("Your portfolio link")).toHaveValue("");
+    expect(screen.queryByLabelText("Your portfolio link")).not.toBeInTheDocument();
   });
 
   it("disables interest on the signed-in owner's own portfolio", () => {
@@ -166,7 +166,7 @@ describe("interest request flow", () => {
         city: "Toronto",
         familyContext: "Our family lives in Toronto.",
         message: "We would be glad to connect.",
-        portfolioUrl: "https://example.com/rohan",
+        portfolioUrl: "https://untrusted.example/rohan",
       }),
     }));
 
@@ -180,7 +180,7 @@ describe("interest request flow", () => {
       p_location: "Toronto, Ontario, Canada",
       p_family_context: "Our family lives in Toronto.",
       p_message: "We would be glad to connect.",
-      p_portfolio_url: "https://example.com/rohan",
+      p_portfolio_url: null,
       p_country: "Canada",
       p_state: "Ontario",
       p_city: "Toronto",
@@ -328,7 +328,6 @@ describe("interest request flow", () => {
     [{ profileFor: "" }, "contacting for"],
     [{ phone: "" }, "phone number"],
     [{ email: "not-an-email" }, "email address"],
-    [{ portfolioUrl: "http://example.com/profile" }, "https://"],
     [{ message: "x".repeat(601) }, "too long"],
   ])("explains the first invalid field in the interest form", (override, expectedMessage) => {
     const parsed = interestRequestSchema.safeParse({

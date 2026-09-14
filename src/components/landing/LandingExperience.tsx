@@ -22,30 +22,30 @@ export type LandingVariant = "clarity" | "control" | "story";
 const concepts = {
   clarity: {
     className: styles.clarity,
-    eyebrow: "Invite-only private beta",
+    eyebrow: "Private pilot · Public waitlist",
     headline: "One marriage introduction. Shared on your terms.",
     lead: "Replace scattered biodata files, photographs, and horoscope attachments with one current portfolio. Families see a clear first introduction. Personal details are shared only after you approve their verified request.",
-    primary: "I have a pilot invitation",
+    primary: "Join the waitlist",
     secondary: "View a sample portfolio",
     visualMode: "Standard introduction",
     visualNote: "Contact details protected",
   },
   control: {
     className: styles.control,
-    eyebrow: "Invite-only private beta",
+    eyebrow: "Private pilot · Public waitlist",
     headline: "Share your story. Not your privacy.",
     lead: "Choose what a first-time viewer sees, keep contact details protected, and approve seven-day full portfolio access only when an introduction feels relevant.",
-    primary: "I have a pilot invitation",
+    primary: "Join the waitlist",
     secondary: "See how control works",
     visualMode: "Short introduction",
     visualNote: "Full portfolio needs approval",
   },
   story: {
     className: styles.story,
-    eyebrow: "Invite-only private beta",
+    eyebrow: "Private pilot · Public waitlist",
     headline: "A biodata is a list. This is how you’re introduced.",
     lead: "Bring your story, photographs, family, and horoscope together in the way you would actually want someone to understand you. Not as another form or attachment.",
-    primary: "I have a pilot invitation",
+    primary: "Join the waitlist",
     secondary: "See the portfolio structure",
     visualMode: "Standard introduction",
     visualNote: "Story · Journey · Family · Gallery",
@@ -93,7 +93,7 @@ const samplePortfolios = [
 
 const faqs = [
   { question: "Is Nakshatra a matchmaking website?", answer: "No. Nakshatra does not suggest matches or search for people on your behalf. It gives you one clear portfolio to share with the families you choose." },
-  { question: "Who can create a portfolio during beta testing?", answer: "Portfolio creation is limited to invited pilot participants. People who receive a shared portfolio do not need a creator invitation to read its First View, verify their email, express interest, or receive approved Full View access." },
+  { question: "Can I create a portfolio after joining the waitlist?", answer: "Not yet. The waitlist only records your interest and contact details. We will send signup instructions separately when launch access becomes available. People who receive a shared portfolio can still read its First View and express interest." },
   { question: "Is the pilot paid?", answer: "No. The private beta is free for invited pilot participants. Paid plans are not available during the pilot." },
   { question: "Does someone need to sign in to open my link?", answer: "No. Anyone with your link can read your first view straight away. A viewer verifies their email before asking to see your full portfolio." },
   { question: "Is identity verification required?", answer: "Yes. Every pilot creator must complete the Didit identity check before publishing. The verified badge confirms that the owner completed the identity check; it does not guarantee that every portfolio detail is accurate." },
@@ -118,7 +118,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
             <a href="#how">How it works</a><a href="#control">Your control</a><a href="#beta">Beta access</a><a href="#questions">Questions</a>
           </div>
           <Link href="/login" className={styles.signIn}>Sign in</Link>
-          <Link href="/signup" className={styles.primaryButton}>Pilot access</Link>
+          <Link href="/pilot-access" className={styles.primaryButton}>Join waitlist</Link>
         </nav>
       </header>
 
@@ -129,10 +129,10 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
             <h1>{concept.headline}</h1>
             <p className={styles.heroLead}>{concept.lead}</p>
             <div className={styles.heroActions}>
-              <Link href="/signup" className={styles.primaryButton}>{concept.primary} <ArrowRight aria-hidden="true" /></Link>
+              <Link href="/pilot-access" className={styles.primaryButton}>{concept.primary} <ArrowRight aria-hidden="true" /></Link>
               <a href={variant === "control" ? "#control" : "#samples"} className={styles.secondaryButton}>{concept.secondary}</a>
             </div>
-            <p className={styles.heroNote}><Check aria-hidden="true" /> Free beta for invited creators. Didit identity verification is required before publication.</p>
+            <p className={styles.heroNote}><Check aria-hidden="true" /> Join for launch updates. Waitlist registration does not create product access.</p>
           </div>
           <PortfolioPreview mode={concept.visualMode} note={concept.visualNote} variant={variant} />
         </section>
@@ -170,16 +170,16 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
         <section id="beta" className={styles.betaSection}>
           <div className={styles.betaCopy}>
             <p className={styles.eyebrow}>Private beta testing</p>
-            <h2>Creation is invited. Introductions can still travel.</h2>
-            <p>Invited pilot participants can create, verify, publish, share, update, and manage their portfolios. People in their network can open a shared First View and express interest without a creator invitation.</p>
+            <h2>The pilot is private. The launch waitlist is open.</h2>
+            <p>Current pilot participants can continue creating and sharing. Everyone else can join the waitlist for launch updates without receiving creator or portfolio access.</p>
           </div>
           <div className={styles.betaDetails}>
-            <span><BadgeCheck aria-hidden="true" /><strong>Invited creators</strong>Use your pilot invitation to create an account. Every creator completes Didit identity verification before publication.</span>
+            <span><BadgeCheck aria-hidden="true" /><strong>Current pilot creators</strong>Existing participants can sign in and continue testing. Every creator completes Didit identity verification before publication.</span>
             <span><MessageCircle aria-hidden="true" /><strong>Shared-network viewers</strong>Open the First View, verify an email to express interest, and receive seven-day Full View access after approval.</span>
-            <span><RefreshCw aria-hidden="true" /><strong>Free pilot</strong>No payment or plan purchase is required. Public portfolio links are active for 30 days by default.</span>
+            <span><RefreshCw aria-hidden="true" /><strong>Launch waitlist</strong>Leave verified contact details now. Signup instructions will be sent separately when access opens.</span>
           </div>
           <div className={styles.betaActions}>
-            <Link href="/signup" className={styles.primaryButton}>I have a pilot invitation <ArrowRight aria-hidden="true" /></Link>
+            <Link href="/pilot-access" className={styles.primaryButton}>Join the waitlist <ArrowRight aria-hidden="true" /></Link>
             <Link href="/login" className={styles.secondaryButton}>Sign in to Nakshatra</Link>
           </div>
         </section>
@@ -190,8 +190,8 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
         </section>
 
         <section className={styles.finalCta}>
-          <div><p className={styles.eyebrow}>Private beta</p><h2>Your introduction deserves more than another file.</h2><p>If you have a pilot invitation, create privately, complete identity verification, preview every view, and publish when you are ready.</p></div>
-          <div className={styles.finalAction}><Link href="/signup" className={styles.lightButton}>Use my pilot invitation <ArrowRight aria-hidden="true" /></Link><span>Free for invited pilot participants.</span></div>
+          <div><p className={styles.eyebrow}>Launching soon</p><h2>Your introduction deserves more than another file.</h2><p>Join the waitlist and we will let you know when Nakshatra opens for new portfolio creators.</p></div>
+          <div className={styles.finalAction}><Link href="/pilot-access" className={styles.lightButton}>Join the waitlist <ArrowRight aria-hidden="true" /></Link><span>No product access is created yet.</span></div>
         </section>
       </main>
 

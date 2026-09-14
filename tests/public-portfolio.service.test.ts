@@ -47,11 +47,16 @@ function client(outcomes: Record<string, { data: unknown; error?: unknown }>) {
 
 describe("public portfolio service", () => {
   it("returns only valid token-resolver payloads", async () => {
-    const valid = client({ resolve_public_portfolio: { data: publicPayload } });
+    const valid = client({
+      resolve_public_portfolio: { data: publicPayload },
+      resolve_public_portfolio_identity_verified: { data: true },
+    });
     await expect(resolvePublicPortfolio(valid.supabase, "valid-token")).resolves.toMatchObject({
       data: { personal: { name: "Aditi" } },
+      identityVerified: true,
     });
     expect(valid.rpc).toHaveBeenCalledWith("resolve_public_portfolio", { p_share_token: "valid-token" });
+    expect(valid.rpc).toHaveBeenCalledWith("resolve_public_portfolio_identity_verified", { p_share_token: "valid-token" });
 
     const malformed = client({ resolve_public_portfolio: { data: { portfolioId: "private-id" } } });
     await expect(resolvePublicPortfolio(malformed.supabase, "valid-token")).resolves.toBeNull();
@@ -98,11 +103,13 @@ describe("public portfolio service", () => {
     };
     const fixture = client({
       resolve_public_portfolio: { data: publicPayload },
+      resolve_public_portfolio_identity_verified: { data: true },
       resolve_approved_portfolio: { data: approved },
     });
     const view = await resolvePortfolioView(fixture.supabase, "valid-token", true);
     expect(view?.accessMode).toBe("approved");
     expect(view?.data.personal.name).toBe("Approved Aditi");
+    expect(view?.identityVerified).toBe(true);
   });
 
   it("records views by token and signs approved horoscopes briefly", async () => {

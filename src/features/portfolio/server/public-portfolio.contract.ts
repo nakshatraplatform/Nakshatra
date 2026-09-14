@@ -20,6 +20,7 @@ export const resolvedPortfolioSchema = z.object({
   themeColor: z.string().nullable().optional(),
   sunSign: z.string().nullable().optional(),
   accessExpiresAt: z.string().refine((value) => Number.isFinite(Date.parse(value))).optional(),
+  identityVerified: z.boolean().optional(),
   horoscope: z.object({
     fileExtension: z.literal("webp"),
     languageLabel: z.string().nullable().optional(),

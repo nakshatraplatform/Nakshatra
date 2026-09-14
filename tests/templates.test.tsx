@@ -164,6 +164,10 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Female")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Explore profile" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "How privacy works" })).not.toBeInTheDocument();
+    const quickActions = screen.getByRole("navigation", { name: "Portfolio quick actions" });
+    expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#portfolio-top");
+    expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
+    expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
     expect(screen.queryByText("Fair")).not.toBeInTheDocument();
     expect(screen.getByText("Kashyap")).toBeInTheDocument();
@@ -181,9 +185,13 @@ describe("celestial union portfolio", () => {
     expect(document.querySelector("#preferences .portfolio-long-copy")).toBeTruthy();
     expect(document.querySelector("#shared-life .portfolio-long-copy")).toBeTruthy();
     const gallery = document.querySelector(".portfolio-gallery");
+    const journey = document.getElementById("journey");
     const preferences = document.getElementById("preferences");
     expect(gallery).toBeTruthy();
+    expect(journey).toBeTruthy();
     expect(preferences).toBeTruthy();
+    expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gallery!.compareDocumentPosition(preferences!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -218,6 +226,43 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
   });
 
+  it("shows approved access context with an explicit expiry", () => {
+    render(
+      <CelestialUnion
+        data={createApprovedPortfolioSnapshot(complete)}
+        themeColor=""
+        sunSign="kanya"
+        accessMode="approved"
+        accessExpiresAt="2030-01-02T15:30:00.000Z"
+        identityVerified
+      />
+    );
+
+    const context = screen.getByLabelText("Full View access details");
+    expect(within(context).getByText("Full View access")).toBeInTheDocument();
+    expect(within(context).getByText(/Shared with your signed-in account by the portfolio owner/)).toBeInTheDocument();
+    expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Identity verification information")).toHaveTextContent("It is not a personal, employment, financial, or background endorsement.");
+  });
+
+  it("always renders the public interest action, even without protected labels", () => {
+    render(
+      <CelestialUnion
+        data={{ privacy_mode: "private", personal: { name: "Aditi", short_bio: "A short hello." } }}
+        themeColor=""
+        sunSign={null}
+        accessMode="public"
+        interestAction={<button type="button">Show interest</button>}
+      />
+    );
+
+    expect(screen.getAllByRole("link", { name: "Introduce yourself" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Introduce yourself" })[0]).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).getByRole("link", { name: "Request Full View" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+  });
+
   it("renders family and contact values for the full owner preview", () => {
     render(
       <CelestialUnion
@@ -235,6 +280,14 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Protected information preview" })).toBeInTheDocument();
     expect(screen.getByText("+91 90000 00000")).toBeInTheDocument();
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
+    const personalStory = document.getElementById("personal-story");
+    const gallery = document.querySelector(".portfolio-gallery");
+    const journey = document.getElementById("journey");
+    expect(personalStory).toBeTruthy();
+    expect(gallery).toBeTruthy();
+    expect(journey).toBeTruthy();
+    expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("uses the accessible zodiac fact and fixed dark design tokens", () => {
@@ -317,21 +370,32 @@ describe("celestial union portfolio", () => {
     );
 
     expect(container.querySelector('[data-privacy-mode="private"]')).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "A little more about Aditi" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
+    expect(screen.getByText("MS")).toBeInTheDocument();
+    expect(screen.getByText("English, Hindi")).toBeInTheDocument();
+    expect(screen.getByText("Vegetarian")).toBeInTheDocument();
+    expect(screen.getByText("Reading")).toBeInTheDocument();
+    expect(screen.getByText("Travel")).toBeInTheDocument();
     expect(screen.queryByText(/Education and career information exists/)).not.toBeInTheDocument();
     expect(screen.queryByText("Northeastern · 2020")).not.toBeInTheDocument();
     expect(within(screen.getByLabelText("At a glance")).getByText(/Kanya \(Virgo\)/)).toBeInTheDocument();
-    expect(screen.getByText("Uttara Phalguni")).toBeInTheDocument();
+    expect(screen.queryByText("Uttara Phalguni")).not.toBeInTheDocument();
     expect(screen.queryByText("Kashyap")).not.toBeInTheDocument();
     expect(screen.queryByText("Bharadwaj")).not.toBeInTheDocument();
-    expect(screen.getByText("Never Married")).toBeInTheDocument();
-    expect(screen.getByText("India")).toBeInTheDocument();
-    expect(screen.getByText("Hindu")).toBeInTheDocument();
-    expect(screen.getByText("Smartha")).toBeInTheDocument();
+    expect(screen.queryByText("Never Married")).not.toBeInTheDocument();
+    expect(screen.queryByText("India")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hindu")).not.toBeInTheDocument();
+    expect(screen.queryByText("Smartha")).not.toBeInTheDocument();
     expect(screen.queryByText("A thoughtful introduction")).not.toBeInTheDocument();
     expect(screen.queryByText("Female")).not.toBeInTheDocument();
     expect(screen.queryByText("Drinking")).not.toBeInTheDocument();
     expect(screen.queryByText("Smoking")).not.toBeInTheDocument();
+    const shortIntroduction = document.getElementById("portfolio-profile");
+    const shortGallery = document.querySelector(".portfolio-gallery");
+    expect(shortIntroduction).toBeTruthy();
+    expect(shortGallery).toBeTruthy();
+    expect(shortIntroduction!.compareDocumentPosition(shortGallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     rerender(<CelestialUnion data={balancedData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />);
     expect(container.querySelector('[data-privacy-mode="balanced"]')).toBeTruthy();

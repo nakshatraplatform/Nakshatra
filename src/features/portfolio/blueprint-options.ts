@@ -17,12 +17,14 @@ export const PROFILE_FOR_OPTIONS = [
   option("daughter", "My daughter"),
   option("sibling", "My sibling"),
   option("relative", "A relative"),
+  option("friend", "A friend"),
 ];
 
 export const MARITAL_STATUS_OPTIONS = [
   option("", "Select marital status"),
-  option("Never Married"),
-  option("Previously Married"),
+  option("Never Married", "Never married"),
+  option("Divorced"),
+  option("Previously Married", "Previously married — prefer not to specify"),
   option("Widowed"),
   option("Separated"),
   option("Annulled"),
@@ -33,7 +35,8 @@ export const HEIGHT_OPTIONS = [
   option("", "Select height"),
   ...Array.from({ length: 37 }, (_, index) => {
     const inches = 48 + index;
-    return option(`${Math.floor(inches / 12)}'${inches % 12}"`);
+    const imperial = `${Math.floor(inches / 12)}'${inches % 12}"`;
+    return option(imperial, `${imperial} (${Math.round(inches * 2.54)} cm)`);
   }),
 ];
 
@@ -78,32 +81,34 @@ export const RELIGION_OPTIONS = [
 
 export const JOB_TYPE_OPTIONS = [
   option("", "Select work status"),
-  option("Full-time"),
-  option("Contract"),
-  option("Job Search"),
-  option("Studying"),
-  option("Business"),
-  option("Freelance"),
-  option("Internship"),
-  option("Self-Employed"),
+  option("Full-time", "Employed full-time"),
+  option("Contract", "Contract employment"),
+  option("Self-Employed", "Self-employed"),
+  option("Business", "Business owner"),
+  option("Freelance", "Freelance or consulting"),
+  option("Studying", "Student"),
+  option("Internship", "Internship or training"),
+  option("Job Search", "Seeking opportunities"),
   option("Career break"),
+  option("Not currently working"),
   option("Prefer not to say"),
 ];
 
 export const VISA_OPTIONS = [
   option("", "Select visa or residency"),
-  option("Not Applicable"),
-  option("H1B"),
-  option("Green Card"),
-  option("OPT"),
-  option("L1"),
-  option("I-140"),
-  option("Student"),
-  option("Post-Study Work"),
-  option("Work"),
-  option("Business"),
-  option("Permanent Resident"),
   option("Citizen"),
+  option("Permanent Resident", "Permanent resident"),
+  option("Work", "Work visa or permit"),
+  option("Student", "Student visa"),
+  option("Post-Study Work", "Post-study work permit"),
+  option("Dependent", "Dependent visa or permit"),
+  option("Business", "Business or investor visa"),
+  option("H1B", "H-1B (United States)"),
+  option("Green Card", "Green Card (United States)"),
+  option("OPT", "OPT (United States)"),
+  option("L1", "L-1 (United States)"),
+  option("I-140", "I-140 approved (United States)"),
+  option("Not Applicable", "Not applicable"),
   option("Other"),
   option("Prefer not to say"),
 ];
@@ -179,6 +184,24 @@ export const FREQUENCY_OPTIONS = [
   option("Will share later"),
 ];
 
+export const ALCOHOL_USE_OPTIONS = [
+  option("", "Select alcohol use"),
+  option("Never"),
+  option("Occasionally"),
+  option("Socially"),
+  option("Regularly"),
+  option("Prefer not to say"),
+];
+
+export const TOBACCO_USE_OPTIONS = [
+  option("", "Select tobacco use"),
+  option("Never"),
+  option("Former user"),
+  option("Occasionally"),
+  option("Regularly"),
+  option("Prefer not to say"),
+];
+
 export const HOBBY_OPTIONS = [
   "Reading", "Traveling", "Photography", "Cooking", "Hiking", "Gaming",
   "Painting", "Yoga", "Meditation", "Gardening", "Dancing", "Singing",
@@ -206,11 +229,11 @@ export const LANGUAGE_OPTIONS = [
 ].map((value) => option(value));
 
 export const COMMUNITY_OPTIONS = [
-  option("", "Select community"),
-  "No caste", "Arya Vysya", "Bestha", "Brahmin", "Goud", "Intercaste",
+  option("", "Select or enter your own"),
+  "Not applicable", "Prefer not to say", "No caste", "Intercaste", "Arya Vysya", "Bestha", "Brahmin", "Goud",
   "Kamma", "Kalinga Vysya", "Kapu", "Kshatriya", "Lambadi", "Madiga", "Mala",
   "Mudaliyar", "Mudhiraj", "Nai Brahmin", "Padmasali", "Padmanayaka Velama",
-  "Perika", "Reddy", "Velama", "Viswabrahmin", "Yadav", "Other",
+  "Perika", "Reddy", "Velama", "Viswabrahmin", "Yadav", "Other / self-describe",
 ].map((value) => typeof value === "string" ? option(value) : value);
 
 export const CASTE_PREFERENCE_OPTIONS = [
@@ -228,7 +251,6 @@ export const SIBLING_POSITION_OPTIONS = [
   option("Youngest"),
   option("Twin"),
   option("Only Child"),
-  option("Step-Sibling"),
 ];
 
 export const MARRIAGE_TIMELINE_OPTIONS = [
@@ -257,6 +279,7 @@ export const RELOCATION_OPTIONS = [
   option("Depends on both careers and family"),
   option("Open to returning to India"),
   option("Discuss later"),
+  option("Prefer not to say"),
 ];
 
 export const CAREER_AFTER_MARRIAGE_OPTIONS = [
@@ -335,12 +358,13 @@ export const MANGLIK_OPTIONS = [
 ];
 
 export const NAKSHATRA_OPTIONS = [
+  option("", "Select birth star"),
   "Anuradha", "Ardra", "Ashlesha", "Ashwini", "Bharani", "Chitra",
   "Dhanishta", "Hasta", "Jyeshtha", "Krittika", "Magha", "Mrigashira",
   "Mula", "Punarvasu", "Purva Ashadha", "Purva Bhadrapada", "Purva Phalguni",
   "Pushya", "Revati", "Rohini", "Shatabhisha", "Shravana", "Swati",
   "Uttara Ashadha", "Uttara Bhadrapada", "Uttara Phalguni", "Vishakha",
-].map((value) => option(value));
+].map((value) => typeof value === "string" ? option(value) : value);
 
 export const SECTION_AUDIENCE_OPTIONS = [
   option("public", "Public portfolio"),

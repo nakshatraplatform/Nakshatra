@@ -295,8 +295,7 @@ describe("static app surfaces", () => {
     expect(layout.props.lang).toBe("en");
     const { rerender } = render(await LoginPage());
     expect(screen.getByText("auth:login")).toBeInTheDocument();
-    rerender(await SignupPage());
-    expect(screen.getByText("auth:signup")).toBeInTheDocument();
+    await expect(SignupPage()).rejects.toThrow("REDIRECT:/pilot-access");
     rerender(<DashboardLoading />);
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
     rerender(<EditLoading />);

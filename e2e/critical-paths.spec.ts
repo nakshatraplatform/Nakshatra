@@ -1,19 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page presents the product and reaches account creation", async ({ page }) => {
+test("landing page presents the product and reaches the launch waitlist", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Nakshatra | Private Wedding Biodata Portfolio");
   await expect(page.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /pilot invitation/i }).first();
-  await expect(primaryCta).toHaveAttribute("href", "/signup");
-  await page.goto("/signup");
-  await expect(page).toHaveURL(/\/signup$/);
-  await expect(page.getByRole("heading", { name: /create your pilot account/i })).toBeVisible();
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /join (?:the )?waitlist/i }).first();
+  await expect(primaryCta).toHaveAttribute("href", "/pilot-access");
+  await page.goto("/pilot-access");
+  await expect(page).toHaveURL(/\/pilot-access$/);
+  await expect(page.getByRole("heading", { name: /join the nakshatra waitlist/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create pilot account" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
-  await expect(page.getByRole("button", { name: /sign-in link/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /verify email to join/i })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /verify with google/i })).toBeEnabled();
 });
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
@@ -58,11 +56,11 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /pilot invitation/i }).first()).toBeVisible();
+  await expect(main.getByRole("link", { name: /join (?:the )?waitlist/i }).first()).toBeVisible();
   await expect(main.getByRole("link", { name: /view a sample portfolio/i })).toBeVisible();
 });
 
-test("landing concepts keep the same clear path to account creation", async ({ page }) => {
+test("landing concepts keep the same clear path to the launch waitlist", async ({ page }) => {
   const concepts = [
     ["/landing/control", /share your story\. not your privacy/i],
     ["/landing/story", /a biodata is a list\. this is how you’re introduced/i],
@@ -71,7 +69,10 @@ test("landing concepts keep the same clear path to account creation", async ({ p
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /pilot invitation/i }).first()).toHaveAttribute("href", "/signup");
+    await expect(page.getByRole("main").getByRole("link", { name: /join (?:the )?waitlist/i }).first()).toHaveAttribute(
+      "href",
+      "/pilot-access"
+    );
   }
 });
 
@@ -79,6 +80,8 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
+  await expect(page.getByLabel("Identity verification information")).toContainText("Identity verified");
+  await expect(page.getByLabel("Identity verification information")).toContainText("not a personal, employment, financial, or background endorsement");
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
@@ -163,7 +166,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   await expect(privacyControl).toBeFocused();
   await expect(privacyControl).toHaveCSS("outline-width", "2px");
 
-  if ((page.viewportSize()?.width || 0) >= 900) {
+  if ((page.viewportSize()?.width || 0) > 720) {
     const chapterStyles = await page.locator(".portfolio-chapter").first().evaluate((element) => {
       const styles = getComputedStyle(element);
       return { display: styles.display, columns: styles.gridTemplateColumns.split(" ").length };
@@ -243,9 +246,32 @@ test("Private portfolio keeps one gallery photo clear and safely blurs the rest"
   await page.goto("/p/e2e-private-token");
 
   await expect(page.locator('.portfolio-root[data-privacy-mode="private"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A little more about Aditi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Education and career" })).toHaveCount(0);
   const gallery = page.locator(".portfolio-gallery");
-  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(7);
+  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(1);
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(1);
-  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(6);
+  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(0);
   await expect(gallery.locator('.portfolio-gallery-feature[data-presentation="clear"]')).toBeVisible();
+});
+
+test("portfolio actions and hero remain usable across supported viewports", async ({ page }) => {
+  await page.goto("/p/e2e-portfolio-token");
+
+  const viewportWidth = page.viewportSize()?.width || 0;
+  const hero = page.locator(".portfolio-photo-stage");
+  const heroBounds = await hero.boundingBox();
+  expect(heroBounds).not.toBeNull();
+
+  if (viewportWidth <= 720) {
+    expect(heroBounds!.height).toBeLessThanOrEqual(370);
+    const stickyAction = page.locator(".portfolio-mobile-interest");
+    await expect(stickyAction).toBeVisible();
+    await expect(stickyAction).toHaveAttribute("href", "#portfolio-interest");
+  } else {
+    await expect(page.locator(".portfolio-mobile-interest")).toBeHidden();
+  }
+
+  await expect(page.locator(".portfolio-hero-actions").getByRole("link", { name: "Introduce yourself" })).toBeVisible();
+  await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });

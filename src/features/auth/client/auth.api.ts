@@ -3,6 +3,7 @@ export type AuthStartPayload =
   | { method: "password_signup"; email: string; password: string; redirect: string }
   | { method: "password_signin"; email: string; password: string; redirect: string }
   | { method: "email_otp"; email: string; redirect: string }
+  | { method: "pilot_access_otp"; email: string }
   | { method: "resend_signup"; email: string; redirect: string }
   | { method: "password_recovery"; email: string };
 
@@ -46,7 +47,7 @@ export function startAuthentication(payload: AuthStartPayload) {
 
 /** Exchanges a six-digit email code for an authenticated session. */
 export function verifyAuthenticationCode(payload: {
-  purpose: "owner_signup" | "viewer_interest";
+  purpose: "owner_signup" | "viewer_interest" | "pilot_access";
   email: string;
   token: string;
   redirect: string;

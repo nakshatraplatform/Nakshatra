@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Portfolio, PortfolioData, PortfolioMedia } from "../src/types/portfolio";
 
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
+  updateProgress: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
@@ -33,6 +34,7 @@ vi.mock("@/features/portfolio/client/portfolio-dashboard.api", () => ({
   uploadPortfolioPhotoRequest: mocks.upload,
   updatePortfolioPhotoRequest: mocks.update,
   deletePortfolioPhotoRequest: mocks.remove,
+  updatePublicationProgressRequest: mocks.updateProgress,
 }));
 vi.mock("@/features/access/client/access-dashboard.api", () => ({
   manageAccessGrantRequest: mocks.manageAccess,
@@ -44,6 +46,41 @@ const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
   vitals: {}, astrology: { rashi: "kanya" }, education: {}, career: {}, family: {}, lifestyle: {}, contact: {},
   style: { template_name: "Royal Heritage" },
+};
+
+const readyData: PortfolioData = {
+  ...data,
+  personal: {
+    ...data.personal,
+    first_name: "Aditi",
+    last_name: "Rao",
+    current_location: "Boston",
+    place_of_birth: "Bengaluru",
+    short_bio: "A thoughtful introduction.",
+  },
+  career: { title: "Engineer" },
+  vitals: { gotra: "Kashyap" },
+  astrology: {
+    rashi: "kanya",
+    nakshatra: "Uttara Phalguni",
+    pada: "2",
+    time_of_birth: "09:15",
+    manglik_status: "No",
+  },
+};
+
+const readyPublicationReadiness = {
+  portfolioExists: true,
+  lastEditorSection: "privacy" as const,
+  previewedAt: "2026-01-01T00:00:00.000Z",
+  selectedPlanCode: "launch_30",
+  verificationStatus: "verified" as const,
+  paymentStatus: "paid" as const,
+  paymentExpiresAt: "2099-01-01T00:00:00.000Z",
+  paymentActive: true,
+  disclosureConfirmed: true,
+  published: true,
+  missingRequired: [],
 };
 
 const portfolio: Portfolio = {
@@ -68,7 +105,8 @@ function renderDashboard(overrides: Partial<React.ComponentProps<typeof Dashboar
 }
 
 function goToFoundation() {
-  fireEvent.click(screen.getByRole("button", { name: "Next: Foundation" }));
+  if (screen.queryByRole("heading", { name: "The essentials" })) return;
+  fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
 }
 
 beforeEach(() => {
@@ -88,6 +126,10 @@ beforeEach(() => {
     ok: true,
     data: { media: { ...media, id: "media-2" }, previewUrl: "https://signed.test/media-2.webp" },
   });
+  mocks.updateProgress.mockResolvedValue({
+    ok: true,
+    data: { readiness: readyPublicationReadiness },
+  });
 });
 
 afterEach(() => {
@@ -106,15 +148,15 @@ describe("dashboard client", () => {
   it("opens the canonical editor when requested by an editing route", () => {
     renderDashboard({ initialEditorOpen: true });
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Privacy and sharing" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "1");
     goToFoundation();
-    expect(screen.getByRole("heading", { name: "Portfolio essentials" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     expect(screen.queryByText("Rashi palette")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Music")).not.toBeInTheDocument();
   });
 
-  it("opens a new private draft, edits it, saves it, and publishes it", async () => {
+  it("opens a new private draft, edits it, saves it, and exposes the gated final review", async () => {
     renderDashboard({ portfolio: null, shareUrl: null, media: [] });
     expect(screen.getByText(/one clear introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
@@ -141,18 +183,18 @@ describe("dashboard client", () => {
     const palette = screen.queryAllByRole("button").find((button) => button.textContent?.includes("#"));
     if (palette) fireEvent.click(palette);
     fireEvent.click(screen.getByRole("button", { name: /add photos/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /review and publish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review before publishing/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
-    expect(screen.getByTitle("First View portfolio preview")).toHaveAttribute("src", "/preview");
-    expect(screen.getByTitle("Full View portfolio preview")).toHaveAttribute("src", "/approved-preview");
+    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Publish portfolio" }));
-    await waitFor(() => expect(mocks.publish).toHaveBeenCalled());
-    expect(mocks.refresh).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Complete required details" })).toBeDisabled();
+    expect(mocks.publish).not.toHaveBeenCalled();
   }, 10_000);
 
   it("operates published-link controls and signs out", async () => {
@@ -162,6 +204,10 @@ describe("dashboard client", () => {
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /share on whatsapp/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
+    const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's Nakshatra wedding portfolio");
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the First View");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Full details are shared only after the profile owner approves");
     fireEvent.click(screen.getByRole("button", { name: /renew/i }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
@@ -200,6 +246,11 @@ describe("dashboard client", () => {
         requester_user_id: "viewer-1",
         metadata: { profile_for: "self", country: "Canada", state: "Ontario", city: "Toronto" },
         created_at: "2026-08-09T12:00:00.000Z",
+        email_verified: true,
+        source_type: "direct",
+        broker_name: null,
+        broker_representative_name: null,
+        requester_portfolio_token: "rohan-portfolio-token",
       }],
     });
 
@@ -291,25 +342,127 @@ describe("dashboard client", () => {
   it("redirects expired sessions and shows ordinary API failures", async () => {
     mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "AUTH_SESSION_MISSING", message: "Sign in" } });
     mocks.publish.mockResolvedValueOnce({ ok: false, error: { code: "PUBLISH_FAILED", message: "Complete required fields" } });
-    renderDashboard();
+    const first = renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_expired"));
-    fireEvent.click(screen.getByRole("button", { name: /review changes/i }));
+    first.unmount();
+    mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1" } });
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
 
+  it("confirms disclosure and publishes reviewed edits in one action", async () => {
+    const disclosurePending = {
+      ...readyPublicationReadiness,
+      disclosureConfirmed: false,
+    };
+    mocks.updateProgress.mockImplementation(async (action) => ({
+      ok: true,
+      data: {
+        readiness: action.action === "confirm_disclosure"
+          ? readyPublicationReadiness
+          : disclosurePending,
+      },
+    }));
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: disclosurePending,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
+    expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /confirm & publish changes/i }));
+
+    await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({
+      action: "confirm_disclosure",
+      value: "publication-disclosure-v1",
+    }));
+    await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(expect.objectContaining({
+      personal: expect.objectContaining({ first_name: "Aditi" }),
+    })));
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
+  it("distinguishes direct and broker introductions and only links authenticated portfolios", () => {
+    renderDashboard({
+      interests: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          viewer_name: "Maya Shah",
+          viewer_phone: "+1 555 010 3300",
+          viewer_email: "maya@example.com",
+          viewer_family_context: "Our families share similar values.",
+          message: "I would be glad to connect.",
+          status: "new",
+          requester_user_id: "22222222-2222-4222-8222-222222222222",
+          metadata: { profile_for: "self", city: "Boston" },
+          created_at: "2026-08-10T12:00:00.000Z",
+          email_verified: true,
+          source_type: "direct",
+          broker_name: null,
+          broker_representative_name: null,
+          requester_portfolio_token: "maya-authenticated-token",
+        },
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          viewer_name: "Arjun Nair",
+          viewer_phone: "+91 90000 10000",
+          viewer_email: "arjun@example.com",
+          viewer_family_context: null,
+          message: "Introduced with the family's permission.",
+          status: "new",
+          requester_user_id: "44444444-4444-4444-8444-444444444444",
+          metadata: { profile_for: "son", city: "Bengaluru" },
+          created_at: "2026-08-11T12:00:00.000Z",
+          email_verified: true,
+          source_type: "broker",
+          broker_name: "Sanskriti Introductions",
+          broker_representative_name: "Priya Menon",
+          requester_portfolio_token: null,
+        },
+      ],
+    });
+
+    expect(screen.getByText(/Direct introduction · For themselves/i)).toBeInTheDocument();
+    expect(screen.getByText(/Via Sanskriti Introductions · For their son/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Maya Shah"));
+    expect(screen.getByRole("link", { name: "View their Nakshatra portfolio" })).toHaveAttribute(
+      "href",
+      "/p/maya-authenticated-token"
+    );
+    fireEvent.click(screen.getByText("Arjun Nair"));
+    expect(screen.getByText("Priya Menon")).toBeInTheDocument();
+    expect(screen.getAllByText("Verified")).toHaveLength(2);
+  });
+
   it("cancels publication review without changing the public portfolio", async () => {
     renderDashboard({ initialEditorOpen: true });
-    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    await waitFor(() => expect(document.body.style.overflow).toBe("hidden"));
     expect(mocks.save).toHaveBeenCalledTimes(1);
     expect(mocks.publish).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument());
     expect(mocks.publish).not.toHaveBeenCalled();
   });
 
@@ -329,6 +482,11 @@ describe("dashboard client", () => {
         requester_user_id: "viewer-2",
         metadata: null,
         created_at: "2026-08-10T12:00:00.000Z",
+        email_verified: true,
+        source_type: "direct",
+        broker_name: null,
+        broker_representative_name: null,
+        requester_portfolio_token: null,
       }],
       accessSummary: {
         grants: [],
@@ -342,7 +500,7 @@ describe("dashboard client", () => {
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Interests to review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Introductions to review" })).toBeInTheDocument();
     expect(screen.getByText("Maya Shah")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Access history"));
     expect(screen.getByText("Portfolio unpublished")).toBeInTheDocument();
@@ -351,13 +509,13 @@ describe("dashboard client", () => {
     expect(screen.queryByRole("button", { name: /Share on WhatsApp/i })).not.toBeInTheDocument();
   });
 
-  it("updates field disclosure labels when Short introduction is selected", () => {
+  it("shows disclosure details only for fields hidden until approval", () => {
     renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
     fireEvent.click(screen.getByRole("button", { name: /Short introduction/i }));
     goToFoundation();
-    expect(screen.getAllByText("Shown in: Short and Full").length).toBeGreaterThan(0);
-    expect(screen.getByText("Shown in: Age in Short · Exact date in Full")).toBeInTheDocument();
-    expect(screen.getAllByText("Shown in: Full only").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
   });
 
   it("preserves unsaved answers, offers retry, and warns before closing", async () => {
@@ -373,13 +531,39 @@ describe("dashboard client", () => {
     fireEvent(window, beforeUnload);
     expect(beforeUnload.defaultPrevented).toBe(true);
     vi.mocked(confirm).mockReturnValueOnce(false);
-    fireEvent.click(screen.getByRole("button", { name: /close portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: "Try saving again" }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not loop autosave requests after a failed attempt", async () => {
+    vi.useFakeTimers();
+    mocks.save.mockResolvedValue({
+      ok: false,
+      error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable", status: 500 },
+    });
+    renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Updated" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(2);
   });
 
   it("requires an explicit choice for legacy photo privacy without expanding access", () => {
@@ -414,7 +598,7 @@ describe("dashboard client", () => {
 
     expect(screen.getByText("Private beta testing")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Portfolio creation is currently invite-only." })).toBeInTheDocument();
-    expect(screen.getByText(/open portfolio links shared with you/i)).toBeInTheDocument();
+    expect(screen.getByText(/continue using portfolio links shared with you/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /start with the basics/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /portfolio details/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /interests to review/i })).not.toBeInTheDocument();

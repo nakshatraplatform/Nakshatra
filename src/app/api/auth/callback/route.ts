@@ -18,7 +18,12 @@ import {
   deletionReauthCookieNames,
 } from "@/features/account/server/reauth-cookie";
 import { createClient } from "@/lib/supabase/server";
-import { createCanonicalAppUrl, isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
+import {
+  createCanonicalAppUrl,
+  isBrokerdeskAuthRedirect,
+  isPilotAccessAuthRedirect,
+  sanitizeInternalRedirect,
+} from "@/lib/security/redirect";
 import { getRequestId, logServerError } from "@/lib/security/logging";
 import { ensureOwnerPortfolio } from "@/features/auth/server/portfolio-bootstrap";
 
@@ -97,7 +102,7 @@ export async function GET(request: Request) {
         return response;
       }
 
-      if (user && !isBrokerdeskAuthRedirect(next)) {
+      if (user && !isBrokerdeskAuthRedirect(next) && !isPilotAccessAuthRedirect(next)) {
         try {
           await ensureOwnerPortfolio(supabase, user.id);
         } catch (err) {

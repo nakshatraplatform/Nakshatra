@@ -171,7 +171,7 @@ values (
   '41000000-0000-4000-8000-000000000006',
   '44000000-0000-4000-8000-000000000002',
   'phase4_delete_token01',
-  '{"personal":{"name":"Delete Subject"}}',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Delete Subject"}}'::jsonb),
   '{"personal":{"name":"Delete Subject"}}',
   false,
   now() + interval '90 days'
@@ -183,6 +183,10 @@ values (
   '41000000-0000-4000-8000-000000000006/44000000-0000-4000-8000-000000000001/hero.webp',
   'public',
   0
+);
+select pg_temp.prime_paid_publication(
+  '44000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Delete Subject"}}'::jsonb)
 );
 update public.portfolios set is_published = true
 where id = '44000000-0000-4000-8000-000000000001';

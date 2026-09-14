@@ -314,9 +314,13 @@ Do not treat these local results as proof of deployed configuration. This checko
 
 ## Pilot blockers from the assessment
 
+The original assessment list below is historical prioritization. The creator-entitlement boundary, disclosure review, seven-day Full View confirmation, 30-day public-link policy, expired-link state, and non-destructive unpublish were implemented on `main` in the 2026-09-11 pilot launch changes.
+
+The approved package and its superseding waitlist decision are documented in `docs/pilot-access-lifecycle-plan.md`. `/pilot-access` now records verified launch interest only and never grants creator access. The administrator surface is a read-only waitlist, public B2C password signup is closed, existing creators can still sign in, and a Nakshatra application administrator automatically receives creator capability. Supabase project ownership is deliberately separate from in-product authority. These changes require migration `20260912150000_waitlist_and_admin_creator_access.sql`. Future email-bound signup invitation delivery remains deferred.
+
 1. Add a single-use, email-bound creator invitation/entitlement and enforce it in signup, OAuth callback, verification, portfolio bootstrap, dashboard, and owner APIs.
 2. Ensure viewer/Auth identity can never self-elevate into creator entitlement.
-3. Enforce creator invitations at the authorization boundary. Pilot-facing CTAs now use invitation-aware beta messaging; do not invent a waitlist until a real capture workflow exists.
+3. Deploy and rehearse the NAK-70 verified waitlist lifecycle. Public CTAs collect launch interest only; creator capability remains enforced independently at the database boundary.
 4. Disable payments and BrokerDesk server-side and remove payment claims from the pilot.
 5. Keep the Didit publication requirement, verify its production configuration, and provide clear consent, failure, retry, and support states for every pilot creator.
 6. Add a real publication disclosure review; the current “Review and publish” action publishes directly.
@@ -349,6 +353,8 @@ Do not treat these local results as proof of deployed configuration. This checko
 | Landing | `src/components/landing/LandingExperience.tsx` and module CSS |
 | Auth UI | `src/components/auth/AuthForm.tsx` |
 | Auth APIs | `src/app/api/auth/*` |
+| Pilot access plan | `docs/pilot-access-lifecycle-plan.md` |
+| Pilot access API and contracts | `src/app/api/pilot-access/route.ts`, `src/features/pilot-access/server/*` |
 | Owner portfolio bootstrap | `src/features/auth/server/portfolio-bootstrap.ts` |
 | Dashboard | `src/app/dashboard/dashboard-client.tsx` |
 | Portfolio editor | `src/components/portfolio/BlueprintForm.tsx` |

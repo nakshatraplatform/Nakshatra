@@ -1,4 +1,8 @@
 import type { PortfolioData, PortfolioHoroscope, PortfolioMedia } from "@/types/portfolio";
+import type {
+  PublicationProgressAction,
+  PublicationReadiness,
+} from "@/features/portfolio/server/publication-readiness.contract";
 
 export type PortfolioApiFailure = {
   ok: false;
@@ -55,6 +59,14 @@ export function saveDashboardDraftRequest(data: PortfolioData) {
   return requestPortfolioApi<{ portfolioId: string }>(
     "/api/dashboard",
     { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data }) }
+  );
+}
+
+/** Persists one resumable creator-journey transition through the guarded owner command. */
+export function updatePublicationProgressRequest(action: PublicationProgressAction) {
+  return requestPortfolioApi<{ readiness: PublicationReadiness }>(
+    "/api/portfolio/onboarding",
+    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(action) }
   );
 }
 

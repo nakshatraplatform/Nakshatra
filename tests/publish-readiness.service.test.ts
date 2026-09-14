@@ -51,16 +51,10 @@ describe("portfolio publish readiness", () => {
 
   it.each([
     [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, name: "", first_name: "", last_name: "" } }, true, "first name"],
+    [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, dob: "2020-01-01" } }, true, "18 or older"],
     [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, current_location: "" } }, true, "current location"],
     [{ ...readyPortfolio, career: { ...readyPortfolio.career, title: "" } }, true, "profession or role"],
     [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, profile_summary: "", short_bio: "" } }, true, "short introduction"],
-    [{ ...readyPortfolio, astrology: { ...readyPortfolio.astrology, time_of_birth: "" } }, true, "time of birth"],
-    [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, place_of_birth: "" } }, true, "place of birth"],
-    [{ ...readyPortfolio, astrology: { ...readyPortfolio.astrology, rashi: "" } }, true, "moon sign (Rashi)"],
-    [{ ...readyPortfolio, astrology: { ...readyPortfolio.astrology, nakshatra: "" } }, true, "birth star (Nakshatra)"],
-    [{ ...readyPortfolio, astrology: { ...readyPortfolio.astrology, pada: "" } }, true, "pada"],
-    [{ ...readyPortfolio, vitals: { ...readyPortfolio.vitals, gotra: "" } }, true, "gotra"],
-    [{ ...readyPortfolio, astrology: { ...readyPortfolio.astrology, manglik_status: "" } }, true, "Manglik status"],
     [readyPortfolio, false, "primary photo"],
   ] as const)("rejects incomplete generation state", (data, hasShareablePrimaryPhoto, message) => {
     expect(() => requirePortfolioPublishReadiness({ data, hasShareablePrimaryPhoto })).toThrow(PortfolioPublishReadinessError);
@@ -98,6 +92,6 @@ describe("portfolio publish readiness", () => {
     };
 
     expect(() => requirePortfolioPublishReadiness({ data: incomplete, hasShareablePrimaryPhoto: false }))
-      .toThrow(" and 2 more");
+      .toThrow(" and 3 more");
   });
 });

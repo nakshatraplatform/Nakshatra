@@ -53,6 +53,11 @@ insert into public.portfolio_media (
   '{"blurPath":"65000000-0000-4000-8000-000000000001/65000000-0000-4000-8000-000000000004/hero-blur.webp"}'::jsonb
 );
 
+select pg_temp.prime_paid_publication(
+  '65000000-0000-4000-8000-000000000004',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb)
+);
+
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '65000000-0000-4000-8000-000000000001',
@@ -62,7 +67,7 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.publish_portfolio_transaction(
     '65000000-0000-4000-8000-000000000004',
-    '{"personal":{"name":"Approved Contact Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"},"visibility":{"contact":"restricted"}}',
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"},"contact":{"contact_person":"Father","phone":"+1 555 010 2000","email":"parent@example.test","contacts":[{"relationship":"mother","name":"Parent Two","phone":"+1 555 010 2001"}]}}',
     'approved_contact_0001',

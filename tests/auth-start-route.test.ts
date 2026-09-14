@@ -90,30 +90,38 @@ describe("authentication start route", () => {
     });
   });
 
-  it("creates a password account and requests signup verification", async () => {
+  it("starts pilot OTP verification with a fixed applicant continuation", async () => {
+    const response = await POST(request({
+      method: "pilot_access_otp",
+      email: "Applicant@Example.com",
+      redirect: "/dashboard",
+    }));
+    expect(response.status).toBe(200);
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "applicant@example.com",
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fpilot-access`,
+        data: { entry_context: "pilot_applicant" },
+      },
+    });
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
+  });
+
+  it("keeps public B2C password signup closed", async () => {
     const response = await POST(request({
       method: "password_signup",
       email: "Owner@Example.com",
       password: "strong-pass-1",
       redirect: "/edit",
     }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      verificationRequired: true,
-      email: "owner@example.com",
-    });
-    expect(signUp).toHaveBeenCalledWith({
-      email: "owner@example.com",
-      password: "strong-pass-1",
-      options: {
-        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fedit`,
-        data: { entry_context: "portfolio_owner" },
-      },
-    });
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ code: "SIGNUP_CLOSED" });
+    expect(signUp).not.toHaveBeenCalled();
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
-  it("provisions the owner portfolio when local signup returns a session", async () => {
+  it("does not provision a portfolio through a direct public signup request", async () => {
     signUp.mockResolvedValueOnce({
       data: { user: { id: "new-owner" }, session: { access_token: "token" } },
       error: null,
@@ -124,9 +132,8 @@ describe("authentication start route", () => {
       password: "strong-pass-1",
       redirect: "/edit",
     }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ authenticated: true, redirect: "/edit" });
-    expect(ensureOwnerPortfolio).toHaveBeenCalledWith(expect.anything(), "new-owner");
+    expect(response.status).toBe(403);
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
   it("derives BrokerDesk signup context from the allowlisted destination without creating a customer portfolio", async () => {
@@ -174,16 +181,7 @@ describe("authentication start route", () => {
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
-  it("uses non-enumerating responses for rejected signup and sign-in", async () => {
-    signUp.mockResolvedValueOnce({ data: { user: null, session: null }, error: new Error("duplicate") });
-    const signup = await POST(request({
-      method: "password_signup",
-      email: "owner@example.com",
-      password: "strong-pass-1",
-    }));
-    expect(signup.status).toBe(400);
-    await expect(signup.json()).resolves.toMatchObject({ code: "SIGNUP_FAILED" });
-
+  it("uses a non-enumerating response for rejected sign-in", async () => {
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: new Error("invalid") });
     const signin = await POST(request({
       method: "password_signin",

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { getApiUser } from "@/lib/auth";
-import { sanitizeInternalRedirect } from "@/lib/security/redirect";
+import { isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 export const metadata = {
   title: "Pilot access · Nakshatra",
@@ -19,6 +19,7 @@ export default async function SignupPage({
   const requested = (await searchParams).redirect;
   const destination = sanitizeInternalRedirect(typeof requested === "string" ? requested : undefined);
   if (auth.status === "authenticated") redirect(destination);
+  if (!isBrokerdeskAuthRedirect(destination)) redirect("/pilot-access");
 
   return (
     <Suspense>

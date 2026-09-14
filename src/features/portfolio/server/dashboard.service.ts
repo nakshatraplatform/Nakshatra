@@ -35,6 +35,21 @@ function databaseErrorCode(error: unknown): string | null {
   return typeof code === "string" ? code : null;
 }
 
+/** Logs a database classification without recording the submitted portfolio payload. */
+function logDashboardDatabaseFailure(error: unknown) {
+  const record = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const code = typeof record.code === "string" ? record.code : "unknown";
+  const developmentMessage = process.env.NODE_ENV === "development" && typeof record.message === "string"
+    ? record.message.slice(0, 500)
+    : undefined;
+  console.error(JSON.stringify({
+    level: "error",
+    event: "dashboard.draft_save.database_failed",
+    databaseCode: code,
+    ...(developmentMessage ? { developmentMessage } : {}),
+  }));
+}
+
 function savedDraftResult(value: unknown): value is {
   status: "saved";
   portfolioId: string;
@@ -87,8 +102,9 @@ export async function saveDashboardDraft({
   }
 
   if (error) {
+    logDashboardDatabaseFailure(error);
     const code = databaseErrorCode(error);
-    if (["PGRST202", "PGRST203", "PGRST204", "42703", "42883"].includes(code || "")) {
+    if (["PGRST202", "PGRST203", "PGRST204"].includes(code || "")) {
       throw new DashboardSaveError(
         "Portfolio saving is temporarily unavailable because the latest database update has not been applied.",
         "DASHBOARD_DATABASE_UPDATE_REQUIRED",

@@ -13,10 +13,13 @@ import {
 import { getPortfolioAccessSummary } from "@/features/access/server/access.service";
 import { HoroscopeRepository } from "@/features/horoscope/server/horoscope.repository";
 import { InterestRepository } from "@/features/interest/server/interest.repository";
+import { dashboardInterestsSchema } from "@/features/interest/server/interest-dashboard.contract";
 import { PortfolioMediaRepository } from "@/features/media/server/media.repository";
 import { createOwnerPortfolioMediaPreviewUrls } from "@/features/media/server/photo-url.service";
 import { DashboardRepository } from "./dashboard.repository";
 import { canCreatePortfolio } from "@/features/auth/server/portfolio-bootstrap";
+import { loadPilotAccessState } from "@/features/pilot-access/server/pilot-access.service";
+import { getPublicationReadiness } from "./publication-readiness.service";
 
 type PortfolioRow = Database["public"]["Tables"]["portfolios"]["Row"];
 
@@ -47,9 +50,10 @@ export async function loadDashboardView({
   userId: string;
 }) {
   const dashboardRepository = new DashboardRepository(supabase);
-  const [{ data: portfolioRow }, creatorEntitled] = await Promise.all([
+  const [{ data: portfolioRow }, creatorEntitled, pilotAccessState] = await Promise.all([
     dashboardRepository.findDashboardPortfolioForUser(userId),
     canCreatePortfolio(supabase),
+    loadPilotAccessState(supabase).catch(() => null),
   ]);
   const portfolio = mapDashboardPortfolio(portfolioRow as PortfolioRow | null);
 
@@ -57,40 +61,43 @@ export async function loadDashboardView({
     return {
       portfolio: null,
       canCreatePortfolio: creatorEntitled,
+      pilotAccessState,
       viewCount: 0,
       media: [] as PortfolioMedia[],
       mediaUrls: {} as Record<string, string>,
       horoscope: null as PortfolioHoroscope | null,
       interests: [],
       accessSummary: { grants: [], events: [] },
+      publicationReadiness: await getPublicationReadiness(supabase),
     };
   }
 
   const mediaRepository = new PortfolioMediaRepository(supabase);
   const horoscopeRepository = new HoroscopeRepository(supabase);
   const interestRepository = new InterestRepository(supabase);
-  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary] = await Promise.all([
+  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, publicationReadiness] = await Promise.all([
     dashboardRepository.countPortfolioViews(portfolio.id),
     mediaRepository.findPortfolioPhotos(portfolio.id),
     horoscopeRepository.findByPortfolio(portfolio.id),
     interestRepository.listForPortfolio(portfolio.id),
     getPortfolioAccessSummary(supabase),
+    getPublicationReadiness(supabase),
   ]);
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
-  const interests = (interestsResult.data ?? []).map((interest) => ({
-    ...interest,
-    metadata: jsonObject(interest.metadata),
-  }));
+  const parsedInterests = dashboardInterestsSchema.safeParse(interestsResult.data ?? []);
+  const interests = parsedInterests.success ? parsedInterests.data : [];
 
   return {
     portfolio,
     canCreatePortfolio: creatorEntitled,
+    pilotAccessState,
     viewCount: views.count ?? 0,
     media,
     mediaUrls,
     horoscope: (horoscopeResult.data as PortfolioHoroscope | null) ?? null,
     interests,
     accessSummary,
+    publicationReadiness,
   };
 }

@@ -123,7 +123,12 @@ insert into public.portfolio_media (
   'interest_required',0,
   '{"blurPath":"d1000000-0000-4000-8000-000000000002/d4000000-0000-4000-8000-000000000001/hero-blur.webp"}'::jsonb
 );
+select pg_temp.prime_paid_publication(
+  'd4000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":""}}'::jsonb)
+);
 update public.portfolios set
+  draft_data=pg_temp.complete_portfolio_draft('{"personal":{"name":""}}'::jsonb),
   published_data='{"personal":{"name":"Published Customer","gender":"female","current_location":"Boston, United States"}}'::jsonb,
   is_published=true,
   published_at=pg_catalog.now()
