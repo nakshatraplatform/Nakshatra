@@ -185,9 +185,13 @@ describe("celestial union portfolio", () => {
     expect(document.querySelector("#preferences .portfolio-long-copy")).toBeTruthy();
     expect(document.querySelector("#shared-life .portfolio-long-copy")).toBeTruthy();
     const gallery = document.querySelector(".portfolio-gallery");
+    const journey = document.getElementById("journey");
     const preferences = document.getElementById("preferences");
     expect(gallery).toBeTruthy();
+    expect(journey).toBeTruthy();
     expect(preferences).toBeTruthy();
+    expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gallery!.compareDocumentPosition(preferences!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -276,6 +280,14 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Protected information preview" })).toBeInTheDocument();
     expect(screen.getByText("+91 90000 00000")).toBeInTheDocument();
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
+    const personalStory = document.getElementById("personal-story");
+    const gallery = document.querySelector(".portfolio-gallery");
+    const journey = document.getElementById("journey");
+    expect(personalStory).toBeTruthy();
+    expect(gallery).toBeTruthy();
+    expect(journey).toBeTruthy();
+    expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("uses the accessible zodiac fact and fixed dark design tokens", () => {
@@ -379,6 +391,11 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("Female")).not.toBeInTheDocument();
     expect(screen.queryByText("Drinking")).not.toBeInTheDocument();
     expect(screen.queryByText("Smoking")).not.toBeInTheDocument();
+    const shortIntroduction = document.getElementById("portfolio-profile");
+    const shortGallery = document.querySelector(".portfolio-gallery");
+    expect(shortIntroduction).toBeTruthy();
+    expect(shortGallery).toBeTruthy();
+    expect(shortIntroduction!.compareDocumentPosition(shortGallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     rerender(<CelestialUnion data={balancedData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />);
     expect(container.querySelector('[data-privacy-mode="balanced"]')).toBeTruthy();

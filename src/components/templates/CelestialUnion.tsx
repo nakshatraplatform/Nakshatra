@@ -468,14 +468,16 @@ export default function CelestialUnion({
     number: index + 1,
   }));
   const pairedChapterIds = new Set(["journey", "lifestyle", "family", "astrology"]);
-  const leadingChapterIds = new Set(["personal-story"]);
-  const leadingChapters = numberedChapters.filter((chapter) => leadingChapterIds.has(chapter.id));
+  const firstStandardChapter = numberedChapters[0];
   const pairedChapterRows = [
     ["journey", "lifestyle"],
     ["family", "astrology"],
-  ].map((row) => row.map((id) => numberedChapters.find((chapter) => chapter.id === id)).filter((chapter): chapter is typeof numberedChapters[number] => Boolean(chapter))).filter((row) => row.length > 0);
+  ].map((row) => row
+    .map((id) => numberedChapters.find((chapter) => chapter.id === id))
+    .filter((chapter): chapter is typeof numberedChapters[number] => chapter !== undefined && chapter.id !== firstStandardChapter?.id)
+  ).filter((row) => row.length > 0);
   const trailingChapters = numberedChapters.filter(
-    (chapter) => !leadingChapterIds.has(chapter.id) && !pairedChapterIds.has(chapter.id)
+    (chapter) => chapter.id !== firstStandardChapter?.id && !pairedChapterIds.has(chapter.id)
   );
   const fullChapterOrder = [
     "personal-story",
@@ -490,6 +492,8 @@ export default function CelestialUnion({
   const fullChapters = fullChapterOrder
     .map((id) => numberedChapters.find((chapter) => chapter.id === id))
     .filter((chapter): chapter is typeof numberedChapters[number] => Boolean(chapter));
+  const firstFullChapter = fullChapters[0];
+  const remainingFullChapters = fullChapters.slice(1);
 
   const variables = {
     "--portfolio-background": theme.background,
@@ -585,39 +589,55 @@ export default function CelestialUnion({
         )}
 
         {shortPublicView ? (
-          <ShortIntroduction
-            name={data.personal.name}
-            education={educationTitle}
-            career={careerTitle}
-            interests={hobbies}
-            values={values}
-            languages={languages}
-            diet={clean(data.lifestyle?.diet)}
-            familyIntroduction={clean(data.family?.public_summary)}
-            partnershipIntroduction={clean(data.preferences?.narrative)}
-          />
+          <>
+            <ShortIntroduction
+              name={data.personal.name}
+              education={educationTitle}
+              career={careerTitle}
+              interests={hobbies}
+              values={values}
+              languages={languages}
+              diet={clean(data.lifestyle?.diet)}
+              familyIntroduction={clean(data.family?.public_summary)}
+              partnershipIntroduction={clean(data.preferences?.narrative)}
+            />
+            <AdaptivePortfolioGallery photos={shortGalleryPhotos} />
+          </>
         ) : hasApprovedAccess ? (
-          <div id="portfolio-profile" className="portfolio-chapters portfolio-full-chapters">
-            {fullChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
-          </div>
-        ) : (
-          <div id="portfolio-profile" className="portfolio-chapters">
-            {leadingChapters.map((chapter) => (
-              <Chapter key={chapter.id} {...chapter} />
-            ))}
-            {pairedChapterRows.length > 0 && (
-              <div className="portfolio-chapter-pairs">
-                {pairedChapterRows.map((row) => (
-                  <div key={row.map((chapter) => chapter.id).join("-")} className="portfolio-chapter-pair" data-chapter-count={row.length}>
-                    {row.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
-                  </div>
-                ))}
+          <>
+            {firstFullChapter && (
+              <div id="portfolio-profile" className="portfolio-chapters portfolio-full-chapters">
+                <Chapter {...firstFullChapter} />
               </div>
             )}
-          </div>
+            <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {remainingFullChapters.length > 0 && (
+              <div className="portfolio-chapters portfolio-full-chapters">
+                {remainingFullChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {firstStandardChapter && (
+              <div id="portfolio-profile" className="portfolio-chapters">
+                <Chapter {...firstStandardChapter} />
+              </div>
+            )}
+            <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {pairedChapterRows.length > 0 && (
+              <div className="portfolio-chapters">
+                <div className="portfolio-chapter-pairs">
+                  {pairedChapterRows.map((row) => (
+                    <div key={row.map((chapter) => chapter.id).join("-")} className="portfolio-chapter-pair" data-chapter-count={row.length}>
+                      {row.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
-
-        <AdaptivePortfolioGallery photos={shortPublicView ? shortGalleryPhotos : galleryPhotos} />
 
         {!shortPublicView && !hasApprovedAccess && trailingChapters.length > 0 && (
           <div className="portfolio-chapters portfolio-chapters-trailing">
