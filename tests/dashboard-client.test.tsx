@@ -475,14 +475,13 @@ describe("dashboard client", () => {
     expect(screen.queryByRole("button", { name: /Share on WhatsApp/i })).not.toBeInTheDocument();
   });
 
-  it("updates field disclosure labels when Short introduction is selected", () => {
+  it("shows disclosure details only for fields hidden until approval", () => {
     renderDashboard({ initialEditorOpen: true });
     fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
     fireEvent.click(screen.getByRole("button", { name: /Short introduction/i }));
     goToFoundation();
-    expect(screen.getAllByText("Shown in: Short and Full").length).toBeGreaterThan(0);
-    expect(screen.getByText("Shown in: Age in Short · Exact date in Full")).toBeInTheDocument();
-    expect(screen.getAllByText("Shown in: Full only").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
   });
 
   it("preserves unsaved answers, offers retry, and warns before closing", async () => {

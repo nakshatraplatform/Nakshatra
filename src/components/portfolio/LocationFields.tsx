@@ -153,8 +153,7 @@ export function LocationFields({
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
-        <span className="flex flex-wrap items-center gap-2">{labels.country}<span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">{requireCountryAndCity ? "Required" : "Optional"}</span></span>
-        <span className="text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: Every portfolio view</span>
+        <span>{labels.country}{requireCountryAndCity && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>
         <select
           aria-label={labels.country}
           name="current_country"
@@ -175,8 +174,7 @@ export function LocationFields({
 
       {regionsLoaded && regions.length > 0 ? (
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
-          <span className="flex flex-wrap items-center gap-2">{labels.region}<span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">Optional</span></span>
-          <span className="text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: Every portfolio view</span>
+          <span>{labels.region}</span>
           <select
             aria-label={labels.region}
             name="current_region"
@@ -195,8 +193,7 @@ export function LocationFields({
         </label>
       ) : (
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
-          <span className="flex flex-wrap items-center gap-2">{labels.region}<span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">Optional</span></span>
-          <span className="text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: Every portfolio view</span>
+          <span>{labels.region}</span>
           <input
             aria-label={labels.region}
             name="current_region"
@@ -213,8 +210,7 @@ export function LocationFields({
       )}
 
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
-        <span className="flex flex-wrap items-center gap-2">{labels.city}<span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">{requireCountryAndCity ? "Required" : "Optional"}</span></span>
-        <span className="text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: Every portfolio view</span>
+        <span>{labels.city}{requireCountryAndCity && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>
         <input
           aria-label={labels.city}
           name="current_city"

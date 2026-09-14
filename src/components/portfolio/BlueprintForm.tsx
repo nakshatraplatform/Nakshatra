@@ -78,13 +78,13 @@ const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: bo
   { id: "privacy", label: "Privacy & contact", time: "2 min" },
 ];
 
+const PortfolioPrivacyModeContext = createContext<"private" | "balanced">("balanced");
+
 function navigableSection(section: PortfolioEditorSection): PortfolioEditorSection {
   if (section === "lifestyle") return "story";
   if (section === "future") return "preferences";
   return SECTIONS.some((item) => item.id === section) ? section : "foundation";
 }
-
-const PortfolioPrivacyModeContext = createContext<"private" | "balanced">("balanced");
 
 const RASHI_SELECT_OPTIONS: BlueprintOption[] = [
   { value: "", label: "Select moon sign" },
@@ -280,19 +280,39 @@ export function BlueprintForm({
           >
             <span className="block h-full rounded-full bg-[color:var(--workspace-teal)]" style={{ width: `${((activeIndex + 1) / SECTIONS.length) * 100}%` }} />
           </div>
-          <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]">
-            Go to section
-            <select
-            aria-label="Go to portfolio section"
-              value={activeSection}
-              onChange={(event) => goTo(event.target.value as PortfolioEditorSection)}
-              className="biodata-field min-h-12"
+          <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2">
+            <button
+              type="button"
+              aria-label="Previous section"
+              disabled={activeIndex === 0}
+              onClick={() => goTo(SECTIONS[activeIndex - 1].id)}
+              className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-white text-[color:var(--workspace-ink)] disabled:opacity-35"
             >
-              {SECTIONS.map((section, index) => (
-                <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""} · {section.time}</option>
-              ))}
-            </select>
-          </label>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]">
+              Go to section
+              <select
+                aria-label="Go to portfolio section"
+                value={activeSection}
+                onChange={(event) => goTo(event.target.value as PortfolioEditorSection)}
+                className="biodata-field min-h-11"
+              >
+                {SECTIONS.map((section, index) => (
+                  <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              aria-label="Next section"
+              disabled={activeIndex === SECTIONS.length - 1}
+              onClick={() => goTo(SECTIONS[activeIndex + 1].id)}
+              className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-white text-[color:var(--workspace-ink)] disabled:opacity-35"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <p className="mb-3 text-sm font-semibold text-[color:var(--workspace-ink-muted)]">
           Step {activeIndex + 1} of {SECTIONS.length} · {SECTIONS[activeIndex].label}
@@ -315,7 +335,7 @@ export function BlueprintForm({
               <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in initial views · Exact date in Full" hint="You must be at least 18. Initial views show age, not the exact date." max={latestAdultBirthDate()} autoComplete="bday" />
               <SelectInput label="Gender" value={data.personal.gender || ""} options={GENDER_OPTIONS} onChange={(value) => updatePersonal({ gender: value ? value as PortfolioData["personal"]["gender"] : undefined })} requirement="Recommended" audience="Standard and Full" hint="Optional. It is not shown in the Short introduction." />
               <SelectInput label="Height" value={data.vitals?.height || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), height: value })} requirement="Recommended" audience="All portfolio views" />
-              <SelectInput label="Marital status" value={data.personal.marital_status || ""} options={MARITAL_STATUS_OPTIONS} onChange={(value) => updatePersonal({ marital_status: value })} requirement="Recommended" audience="All portfolio views" />
+              <SelectInput label="Marital status" value={data.personal.marital_status || ""} options={MARITAL_STATUS_OPTIONS} onChange={(value) => updatePersonal({ marital_status: value })} requirement="Recommended" audience="Standard and Full" />
             </div>
             <LocationFields value={{ country: data.personal.country, countryCode: data.personal.country_code, region: data.personal.region, regionCode: data.personal.region_code, city: data.personal.city, cityGeonameId: data.personal.city_geoname_id }} onChange={updateResidence} labels={{ country: "Current country", region: "Current state or region", city: "Current city" }} requireCountryAndCity />
             <TextInput label="Profession or role" value={data.career?.title || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), title: value })} required requirement="Required" audience="All portfolio views" hint="Keep it broad, such as Product designer, Physician, Business owner, Student, or Between roles." autoComplete="organization-title" />
@@ -343,7 +363,7 @@ export function BlueprintForm({
               <TextInput label="Employer or organisation" value={data.career?.company || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), company: value })} audience="Full portfolio" />
               <TextInput label="Work location" value={data.career?.location || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), location: value })} requirement="Recommended" audience="All portfolio views" />
               <SelectInput label="Visa or residency status" value={data.personal.immigration_status || ""} options={VISA_OPTIONS} onChange={(value) => updatePersonal({ immigration_status: value })} requirement="Optional" audience="Standard and Full" />
-              <TextInput label="Citizenship" value={data.personal.citizenship || ""} onChange={(value) => updatePersonal({ citizenship: value })} requirement="Recommended" audience="All portfolio views" />
+              <TextInput label="Citizenship" value={data.personal.citizenship || ""} onChange={(value) => updatePersonal({ citizenship: value })} requirement="Recommended" audience="Standard and Full" />
               <SelectInput label="Income currency" value={data.career?.income_currency || ""} options={CURRENCY_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), income_currency: value })} requirement="Optional" audience="Full portfolio" hint="Choose a currency only if you want to share an income range." />
               <SelectInput label="Annual income range" value={data.career?.annual_income || ""} options={INCOME_RANGE_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), annual_income: value, ...(value === "Prefer not to say" && { income_currency: "" }) })} requirement="Optional" audience="Full portfolio" hint="Never shown in the public introduction. Exact income is not requested." />
             </div>
@@ -355,9 +375,9 @@ export function BlueprintForm({
           <FormSection eyebrow="Roots" title="Family and background" description="Introduce your family in a warm, respectful way. Personal contact details remain protected.">
             <TextArea label="How would you describe your family?" value={data.family?.public_summary || ""} onChange={(value) => updateFamily({ public_summary: value })} maxLength={600} requirement="Recommended" audience="All portfolio views" hint="Describe the family without phone numbers, exact addresses, or private documents. The Short introduction uses a concise version." />
             <div className="grid gap-4 sm:grid-cols-2">
-              <SelectInput label="Religion or outlook" value={data.personal.religion || ""} options={RELIGION_OPTIONS} onChange={(value) => updatePersonal({ religion: value })} requirement="Optional" audience="All portfolio views" hint="Share this only if it is meaningful to you." />
-              <TextInput label="Community or cultural background" value={data.personal.community || ""} onChange={(value) => updatePersonal({ community: value })} list="community-options" requirement="Optional" audience="All portfolio views" hint="Start typing to use a suggestion, enter your own wording, or leave this blank." />
-              <TextInput label="Sub-community (if relevant)" value={data.personal.sub_community || ""} onChange={(value) => updatePersonal({ sub_community: value })} requirement="Optional" audience="All portfolio views" />
+              <SelectInput label="Religion or outlook" value={data.personal.religion || ""} options={RELIGION_OPTIONS} onChange={(value) => updatePersonal({ religion: value })} requirement="Optional" audience="Standard and Full" hint="Share this only if it is meaningful to you." />
+              <TextInput label="Community or cultural background" value={data.personal.community || ""} onChange={(value) => updatePersonal({ community: value })} list="community-options" requirement="Optional" audience="Standard and Full" hint="Start typing to use a suggestion, enter your own wording, or leave this blank." />
+              <TextInput label="Sub-community (if relevant)" value={data.personal.sub_community || ""} onChange={(value) => updatePersonal({ sub_community: value })} requirement="Optional" audience="Standard and Full" />
               <TextInput label="Parents' current location" value={data.family?.parents_location || ""} onChange={(value) => updateFamily({ parents_location: value })} requirement="Optional" audience="Full portfolio" />
               <TextInput label="Father or guardian name" value={data.family?.father?.name || ""} onChange={(value) => updateFamily({ father: { ...(data.family?.father || {}), name: value } })} requirement="Optional" audience="Full portfolio" />
               <TextInput label="Father or guardian profession" value={data.family?.father?.occupation || ""} onChange={(value) => updateFamily({ father: { ...(data.family?.father || {}), occupation: value } })} requirement="Optional" audience="Full portfolio" />
@@ -488,7 +508,7 @@ export function BlueprintForm({
           </FormSection>
         )}
 
-        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[color:var(--workspace-border)] pt-5">
+        <div className="mt-5 hidden items-center justify-between gap-3 border-t border-[color:var(--workspace-border)] pt-5 sm:flex">
           <button type="button" disabled={activeIndex === 0} onClick={() => goTo(SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-white px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
           <p className="hidden text-sm text-[color:var(--workspace-ink-muted)] sm:block">You can change saved answers at any time.</p>
           {activeIndex < SECTIONS.length - 1 ? (
@@ -506,18 +526,20 @@ function FormSection({ eyebrow, title, description, children }: { eyebrow: strin
 }
 
 function InfoCard({ title, text, audience }: { title: string; text: string; audience: string }) {
-  return <div className="rounded-xl border border-[#bdd5d0] bg-[#eef5f2] p-4"><div className="flex items-start gap-3"><ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-1 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p><span className="mt-3 inline-flex rounded-full border border-[#b7cbc6] bg-white px-2.5 py-1 text-xs font-semibold text-[color:var(--workspace-ink)]">{audience}</span></div></div></div>;
+  const protectedAudience = audience === "Never public" || audience.includes("Full portfolio");
+  return <div className="rounded-xl border border-[#bdd5d0] bg-[#eef5f2] p-4"><div className="flex items-start gap-3"><ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-1 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p>{protectedAudience && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />{audience === "Never public" ? "Never public" : "Shown after approval"}</span>}</div></div></div>;
 }
 
 function EmbeddedPanel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return <div className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4"><div className="mb-4"><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-1 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{description}</p></div>{children}</div>;
 }
 
-function FieldLabel({ label, hint, required, requirement, audience }: { label: string; hint?: string; required?: boolean; requirement?: string; audience?: string }) {
+function FieldLabel({ label, hint, required, audience }: { label: string; hint?: string; required?: boolean; requirement?: string; audience?: string }) {
   const privacyMode = useContext(PortfolioPrivacyModeContext);
-  const visibleRequirement = required ? "Required" : requirement || "Optional";
-  const visibleAudience = audience ? audienceCopy(audience, privacyMode) : undefined;
-  return <span><span className="flex flex-wrap items-center gap-2"><span>{label}{required && <span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span>}</span>{visibleRequirement && <span className="rounded-full border border-[color:var(--workspace-border)] bg-white px-2 py-0.5 text-xs font-semibold text-[color:var(--workspace-ink-muted)]">{visibleRequirement}</span>}</span>{visibleAudience && <span className="mt-1 block text-xs font-medium text-[color:var(--workspace-teal)]">Shown in: {visibleAudience}</span>}{hint && <span className="mt-1 block text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}</span>;
+  const approvalOnly = audience === "Full portfolio"
+    || audience === "Approved people"
+    || (privacyMode === "private" && audience === "Standard and Full");
+  return <span><span>{label}{required && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>{approvalOnly && <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />Shown after approval</span>}{hint && <span className="mt-1 block text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}</span>;
 }
 
 function TextInput({ label, value, onChange, type = "text", placeholder, hint, required, min, max, requirement, audience, list, name, autoComplete }: { label: string; value: string; onChange: (value: string) => void; type?: HTMLInputTypeAttribute; placeholder?: string; hint?: string; required?: boolean; min?: string; max?: string; requirement?: string; audience?: string; list?: string; name?: string; autoComplete?: string }) {
@@ -611,19 +633,6 @@ function updateRange(range: { minimum: string; maximum: string }, boundary: "min
 
 function splitValues(value: string) {
   return Array.from(new Set(value.split(/[,;\n]/).map((item) => item.trim()).filter(Boolean)));
-}
-
-function audienceCopy(audience: string, privacyMode: "private" | "balanced") {
-  const initialView = privacyMode === "private" ? "Short" : "Standard";
-  if (audience === "All portfolio views") return `${initialView} and Full`;
-  if (audience === "Standard and Full") return privacyMode === "private" ? "Full only" : "Standard and Full";
-  if (audience === "Age in initial views · Exact date in Full") return `Age in ${initialView} · Exact date in Full`;
-  if (audience === "Full portfolio" || audience === "Approved people") return "Full only";
-  if (audience === "Portfolio") return `${initialView} introduction`;
-  if (audience === "Portfolio, if you choose") return `${initialView} when selected`;
-  if (audience === "Protected") return "Not in the public introduction";
-  if (audience === "Only you") return "Private draft only";
-  return audience;
 }
 
 function latestAdultBirthDate() {

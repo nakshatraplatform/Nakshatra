@@ -106,6 +106,10 @@ describe("blueprint form", () => {
     expect(screen.getByText(/0 of 7 required details complete/)).toBeInTheDocument();
     expect(screen.getByText("Step 1 of 7 · Basics")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Continue: About & lifestyle/ })).toHaveClass("dashboard-primary-action");
+    fireEvent.click(screen.getByRole("button", { name: "Next section" }));
+    expect(screen.getByRole("heading", { name: "About you" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Previous section" }));
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     fireEvent.blur(screen.getByLabelText("First name"));
     expect(screen.getByText("This field is required.")).toBeInTheDocument();
     expect(screen.getByLabelText("First name")).toHaveAttribute("aria-invalid", "true");
@@ -150,7 +154,7 @@ describe("blueprint form", () => {
       expect.stringContaining("Astrology & traditions"),
       expect.stringContaining("Privacy & contact"),
     ]);
-    expect(screen.getAllByText("Optional").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Optional")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "125k-150k" } });
@@ -234,7 +238,7 @@ describe("blueprint form", () => {
     expect(screen.getByLabelText("Lagnam")).not.toBeRequired();
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
     expect(screen.getByText("No guessing required")).toBeInTheDocument();
-    expect(screen.getAllByText("Shown in: Standard and Full").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Shown in: Full only").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
   });
 });

@@ -993,7 +993,7 @@ export default function DashboardClient({
               </div>
             </div>
 
-            <div className="flex-none border-t border-slate-200 bg-[#f3f0e8] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="dashboard-editor-footer flex-none border-t border-slate-200 bg-[#f3f0e8] px-4 py-4 sm:px-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 {draftError && (
                   <div role="alert" className="mb-3 rounded-lg border border-[#d8a7a1] bg-[#fff0ee] px-4 py-3 text-sm text-[#7f3535]">
@@ -1008,10 +1008,10 @@ export default function DashboardClient({
                   </div>
                 )}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm leading-6 text-slate-500">
+                  <p className="dashboard-editor-footer-copy text-sm leading-6 text-slate-500">
                     Saving keeps your changes. Publishing updates the portfolio people can view.
                   </p>
-                  <div className="flex gap-2">
+                  <div className="dashboard-editor-actions flex gap-2">
                     <button
                       type="button"
                       onClick={openEarlyPreview}
@@ -1025,7 +1025,7 @@ export default function DashboardClient({
                       type="button"
                       onClick={saveDashboardDraft}
                       disabled={savingDraft}
-                      className="dashboard-secondary-action flex-1 sm:flex-none"
+                      className="dashboard-secondary-action hidden flex-1 sm:inline-flex sm:flex-none"
                     >
                       <Save className="h-4 w-4" />
                       {savingDraft ? "Saving..." : "Save draft"}
@@ -1034,14 +1034,20 @@ export default function DashboardClient({
                       type="button"
                       onClick={reviewPortfolio}
                       disabled={publishing || savingDraft}
-                      className="dashboard-primary-action flex-1 sm:flex-none"
-                    >
-                      <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
-                      {savingDraft
+                      aria-label={savingDraft
                         ? "Saving..."
                         : portfolio?.is_published
                           ? "Review saved changes"
                           : "Review before publishing"}
+                      className="dashboard-editor-review-action dashboard-primary-action flex-1 sm:flex-none"
+                    >
+                      <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
+                      <span className="sm:hidden">{savingDraft ? "Saving..." : "Review changes"}</span>
+                      <span className="hidden sm:inline">{savingDraft
+                          ? "Saving..."
+                          : portfolio?.is_published
+                            ? "Review saved changes"
+                            : "Review before publishing"}</span>
                     </button>
                   </div>
                 </div>
