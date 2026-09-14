@@ -518,17 +518,13 @@ export default function CelestialUnion({
             <Sparkles aria-hidden="true" />
             <span>Nakshatra</span>
           </a>
-          {(chapters.length > 0 || shortPublicView) && (
-            <nav aria-label="Portfolio sections">
-              {shortPublicView
-                ? <a href="#portfolio-profile">Overview</a>
-                : <>
-                    {chapters.some((chapter) => chapter.id === "personal-story") && <a href="#personal-story">Story</a>}
-                    {chapters.some((chapter) => chapter.id === "journey") && <a href="#journey">Journey</a>}
-                  </>}
-              {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
-            </nav>
-          )}
+          <nav aria-label="Portfolio quick actions">
+            <a href="#portfolio-top">Overview</a>
+            {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
+            {showInterestSection
+              ? <a href="#portfolio-interest">Request Full View</a>
+              : <a href="#portfolio-profile">Details</a>}
+          </nav>
           <span className="portfolio-mode-label">
             <ShieldCheck aria-hidden="true" /> {ownerPreview ? "Owner preview" : approvedViewer ? "Full portfolio" : privacyLabel(privacyMode)}
           </span>

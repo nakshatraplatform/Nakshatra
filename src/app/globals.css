@@ -207,6 +207,7 @@
   .dashboard-editor-footer-copy { display: none; }
   .dashboard-editor-actions { width: 100%; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
   .dashboard-editor-actions > button { min-width: 0; min-height: 3rem; padding-inline: 0.7rem; }
+  .dashboard-editor-save-action { display: none; }
 }
 
 /* --- Account privacy workspace --- */

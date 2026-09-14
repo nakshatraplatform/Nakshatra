@@ -241,4 +241,15 @@ describe("blueprint form", () => {
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
   });
+
+  it("labels protected contact visibility once at the section level", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+
+    const sectionNotice = screen.getByText("Protected contact").parentElement;
+    expect(sectionNotice).toHaveTextContent("Shown after approval");
+    for (const label of ["Who is this?", "Name of contact", "Phone", "Email"]) {
+      expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shown after approval");
+    }
+  });
 });

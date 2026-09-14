@@ -258,11 +258,23 @@ export default function DashboardClient({
     }
   }
 
-  /** Generates a new portfolio or explicitly updates the existing public snapshot from the private draft. */
+  /** Confirms the reviewed disclosure when needed, then atomically refreshes the public snapshot from the draft. */
   async function publishPortfolio() {
     setPublishing(true);
     setDraftError(null);
     try {
+      if (!readinessState.disclosureConfirmed) {
+        const { updatePublicationProgressRequest } = await import(
+          "@/features/portfolio/client/portfolio-dashboard.api"
+        );
+        const disclosureResult = await updatePublicationProgressRequest({
+          action: "confirm_disclosure",
+          value: "publication-disclosure-v1",
+        });
+        if (!disclosureResult.ok) return void handlePortfolioApiFailure(disclosureResult);
+        setReadinessState(disclosureResult.data.readiness);
+      }
+
       const { publishPortfolioRequest } = await import(
         "@/features/portfolio/client/portfolio-dashboard.api"
       );
@@ -405,24 +417,6 @@ export default function DashboardClient({
         }));
       }
     }, 300);
-  }
-
-  async function confirmDisclosure() {
-    setPublishing(true);
-    setDraftError(null);
-    try {
-      const { updatePublicationProgressRequest } = await import(
-        "@/features/portfolio/client/portfolio-dashboard.api"
-      );
-      const result = await updatePublicationProgressRequest({
-        action: "confirm_disclosure",
-        value: "publication-disclosure-v1",
-      });
-      if (!result.ok) return void handlePortfolioApiFailure(result);
-      setReadinessState(result.data.readiness);
-    } finally {
-      setPublishing(false);
-    }
   }
 
   async function uploadPhotos(files: FileList | null) {
@@ -877,7 +871,7 @@ export default function DashboardClient({
                   <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
                   <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
                   <ReviewRequirement complete={readinessState.paymentActive} label="Active plan confirmed" pendingLabel="Plan payment integration coming soon" />
-                  <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Available after verification and payment" />
+                  <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                 </div>
               </section>
             </div>
@@ -900,7 +894,7 @@ export default function DashboardClient({
                     || readinessState.verificationStatus !== "verified"
                     || !readinessState.paymentActive
                   }
-                  onClick={readinessState.disclosureConfirmed ? publishPortfolio : confirmDisclosure}
+                  onClick={publishPortfolio}
                 >
                   <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
                   {publishing
@@ -911,11 +905,13 @@ export default function DashboardClient({
                         ? "Verification required"
                         : !readinessState.paymentActive
                           ? "Payment coming soon"
-                          : !readinessState.disclosureConfirmed
-                            ? "Confirm final disclosure"
-                            : portfolio?.is_published
-                              ? "Publish reviewed changes"
-                              : "Publish portfolio"}
+                        : portfolio?.is_published
+                          ? readinessState.disclosureConfirmed
+                            ? "Publish reviewed changes"
+                            : "Confirm & publish changes"
+                          : readinessState.disclosureConfirmed
+                            ? "Publish portfolio"
+                            : "Confirm & publish portfolio"}
                 </button>
               </div>
             </footer>
@@ -941,7 +937,11 @@ export default function DashboardClient({
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 id="portfolio-editor-heading" className="text-lg font-semibold">Portfolio details</h2>
                     <span className={`dashboard-save-state is-${draftSaveState}`} aria-live="polite">
-                      {draftSaveState === "saving" ? "Saving..." : draftSaveState === "saved" ? "Saved" : "Changes not saved"}
+                      {draftSaveState === "saving"
+                        ? "Saving..."
+                        : draftSaveState === "saved"
+                          ? portfolio?.is_published ? "Draft saved" : "Saved"
+                          : "Changes not saved"}
                     </span>
                   </div>
                   <p className="text-sm text-slate-500">
@@ -1009,7 +1009,9 @@ export default function DashboardClient({
                 )}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="dashboard-editor-footer-copy text-sm leading-6 text-slate-500">
-                    Saving keeps your changes. Publishing updates the portfolio people can view.
+                    {portfolio?.is_published
+                      ? "Changes autosave as a draft. Review and publish to update what people see."
+                      : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
                   </p>
                   <div className="dashboard-editor-actions flex gap-2">
                     <button
@@ -1025,7 +1027,7 @@ export default function DashboardClient({
                       type="button"
                       onClick={saveDashboardDraft}
                       disabled={savingDraft}
-                      className="dashboard-secondary-action hidden flex-1 sm:inline-flex sm:flex-none"
+                      className="dashboard-editor-save-action dashboard-secondary-action flex-1 sm:flex-none"
                     >
                       <Save className="h-4 w-4" />
                       {savingDraft ? "Saving..." : "Save draft"}

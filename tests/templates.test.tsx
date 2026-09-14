@@ -164,6 +164,10 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Female")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Explore profile" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "How privacy works" })).not.toBeInTheDocument();
+    const quickActions = screen.getByRole("navigation", { name: "Portfolio quick actions" });
+    expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#portfolio-top");
+    expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
+    expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
     expect(screen.queryByText("Fair")).not.toBeInTheDocument();
     expect(screen.getByText("Kashyap")).toBeInTheDocument();
@@ -250,6 +254,7 @@ describe("celestial union portfolio", () => {
 
     expect(screen.getAllByRole("link", { name: "Introduce yourself" })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: "Introduce yourself" })[0]).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).getByRole("link", { name: "Request Full View" })).toHaveAttribute("href", "#portfolio-interest");
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
   });

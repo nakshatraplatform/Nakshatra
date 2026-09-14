@@ -368,6 +368,40 @@ describe("dashboard client", () => {
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
 
+  it("confirms disclosure and publishes reviewed edits in one action", async () => {
+    const disclosurePending = {
+      ...readyPublicationReadiness,
+      disclosureConfirmed: false,
+    };
+    mocks.updateProgress.mockImplementation(async (action) => ({
+      ok: true,
+      data: {
+        readiness: action.action === "confirm_disclosure"
+          ? readyPublicationReadiness
+          : disclosurePending,
+      },
+    }));
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: disclosurePending,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
+    expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /confirm & publish changes/i }));
+
+    await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({
+      action: "confirm_disclosure",
+      value: "publication-disclosure-v1",
+    }));
+    await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(expect.objectContaining({
+      personal: expect.objectContaining({ first_name: "Aditi" }),
+    })));
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
   it("distinguishes direct and broker introductions and only links authenticated portfolios", () => {
     renderDashboard({
       interests: [

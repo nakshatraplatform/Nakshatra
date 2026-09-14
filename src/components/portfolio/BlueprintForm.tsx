@@ -496,10 +496,10 @@ export function BlueprintForm({
                     <button type="button" onClick={() => updateContacts(contacts.filter((_, itemIndex) => itemIndex !== index))} className="workspace-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-[#9f2f2f] hover:bg-[#fff0ee]"><Trash2 className="h-4 w-4" aria-hidden="true" /> Remove</button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <SelectInput label="Who is this?" value={contact.relationship || "self"} options={CONTACT_RELATIONSHIPS} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, relationship: value } : item))} audience="Full portfolio" />
-                    <TextInput label="Name of contact" value={contact.name || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item))} audience="Full portfolio" />
-                    <TextInput label="Phone" type="tel" value={contact.phone || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item))} audience="Full portfolio" hint="Provide a phone number, an email, or both." />
-                    <TextInput label="Email" type="email" value={contact.email || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, email: value } : item))} audience="Full portfolio" />
+                    <SelectInput label="Who is this?" value={contact.relationship || "self"} options={CONTACT_RELATIONSHIPS} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, relationship: value } : item))} />
+                    <TextInput label="Name of contact" value={contact.name || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item))} />
+                    <TextInput label="Phone" type="tel" value={contact.phone || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item))} hint="Provide a phone number, an email, or both." />
+                    <TextInput label="Email" type="email" value={contact.email || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, email: value } : item))} />
                   </div>
                 </div>
               ))}
