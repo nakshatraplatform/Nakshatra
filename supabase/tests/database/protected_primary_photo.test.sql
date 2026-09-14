@@ -85,6 +85,11 @@ insert into public.portfolio_media (
     '{}'::jsonb
   );
 
+select pg_temp.prime_paid_publication(
+  '63000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Protected Primary"}}'::jsonb)
+);
+
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '61000000-0000-4000-8000-000000000001',
@@ -93,7 +98,7 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.publish_portfolio_transaction(
     '63000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Protected Primary"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Protected Primary"}}'::jsonb),
     '{"personal":{"name":"Protected Primary"}}',
     '{"personal":{"name":"Protected Primary"}}',
     'protected_primary_001',

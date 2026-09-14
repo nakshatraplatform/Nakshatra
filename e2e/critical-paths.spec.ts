@@ -1,19 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page presents the product and reaches account creation", async ({ page }) => {
+test("landing page presents the product and reaches the launch waitlist", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Nakshatra | Private Wedding Biodata Portfolio");
   await expect(page.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /pilot invitation/i }).first();
-  await expect(primaryCta).toHaveAttribute("href", "/signup");
-  await page.goto("/signup");
-  await expect(page).toHaveURL(/\/signup$/);
-  await expect(page.getByRole("heading", { name: /create your pilot account/i })).toBeVisible();
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /join (?:the )?waitlist/i }).first();
+  await expect(primaryCta).toHaveAttribute("href", "/pilot-access");
+  await page.goto("/pilot-access");
+  await expect(page).toHaveURL(/\/pilot-access$/);
+  await expect(page.getByRole("heading", { name: /join the nakshatra waitlist/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create pilot account" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
-  await expect(page.getByRole("button", { name: /sign-in link/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /verify email to join/i })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /verify with google/i })).toBeEnabled();
 });
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
@@ -58,11 +56,11 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /pilot invitation/i }).first()).toBeVisible();
+  await expect(main.getByRole("link", { name: /join (?:the )?waitlist/i }).first()).toBeVisible();
   await expect(main.getByRole("link", { name: /view a sample portfolio/i })).toBeVisible();
 });
 
-test("landing concepts keep the same clear path to account creation", async ({ page }) => {
+test("landing concepts keep the same clear path to the launch waitlist", async ({ page }) => {
   const concepts = [
     ["/landing/control", /share your story\. not your privacy/i],
     ["/landing/story", /a biodata is a list\. this is how you’re introduced/i],
@@ -71,7 +69,10 @@ test("landing concepts keep the same clear path to account creation", async ({ p
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /pilot invitation/i }).first()).toHaveAttribute("href", "/signup");
+    await expect(page.getByRole("main").getByRole("link", { name: /join (?:the )?waitlist/i }).first()).toHaveAttribute(
+      "href",
+      "/pilot-access"
+    );
   }
 });
 

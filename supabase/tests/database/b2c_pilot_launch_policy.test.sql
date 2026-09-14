@@ -100,6 +100,11 @@ update app_private.identity_verification_subjects
 set status = 'verified', verified_at = now(), expires_at = now() + interval '365 days'
 where candidate_id = '73000000-0000-4000-8000-000000000001';
 
+select pg_temp.prime_paid_publication(
+  '74000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Pilot Owner"}}'::jsonb)
+);
+
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '71000000-0000-4000-8000-000000000001',
@@ -108,7 +113,7 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.publish_portfolio_transaction(
     '74000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Pilot Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Pilot Owner"}}'::jsonb),
     '{"personal":{"name":"Pilot Owner"}}',
     '{"personal":{"name":"Pilot Owner"}}',
     'pilot_policy_token_01', now() + interval '90 days', 1, '#17151c', null

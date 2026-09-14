@@ -77,7 +77,7 @@ select pg_temp.set_authenticated_claims(
 );
 select is(
   public.submit_pilot_access_request(
-    'Pilot Applicant', '+14155550100', 'pilot_access_v1',
+    'Pilot Applicant', '+14155550100', 'launch_waitlist_v1',
     'pilot-submit:00000001'
   ) ->> 'status',
   'pending',

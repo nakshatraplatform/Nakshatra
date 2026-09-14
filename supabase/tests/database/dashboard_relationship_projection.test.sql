@@ -22,19 +22,56 @@ select pg_temp.create_auth_actor(
   'broker@dashboard.test'
 );
 
+insert into app_private.b2c_creator_entitlements (email_hash)
+values (app_private.normalized_email_hash('direct@dashboard.test'));
+
+insert into public.candidates (id, primary_owner_user_id, display_name, created_by)
+values (
+  '82500000-0000-4000-8000-000000000001',
+  '81000000-0000-4000-8000-000000000002',
+  'Maya Shah',
+  '81000000-0000-4000-8000-000000000002'
+);
+
+update app_private.identity_verification_subjects
+set status = 'verified', verified_at = now() - interval '1 day', expires_at = now() + interval '365 days'
+where candidate_id = '82500000-0000-4000-8000-000000000001';
+
 insert into public.portfolios (
-  id, user_id, share_token, draft_data, published_data, is_published, expires_at
+  id, user_id, candidate_id, share_token, draft_data, published_data, is_published, expires_at
 ) values
   (
     '83000000-0000-4000-8000-000000000001',
     '81000000-0000-4000-8000-000000000001',
-    'owner_dashboard_token_01', '{}', '{}', true, now() + interval '30 days'
+    null,
+    'owner_dashboard_token_01', '{}', '{}', false, now() + interval '30 days'
   ),
   (
     '83000000-0000-4000-8000-000000000002',
     '81000000-0000-4000-8000-000000000002',
-    'direct_dashboard_token_01', '{}', '{}', true, now() + interval '30 days'
+    '82500000-0000-4000-8000-000000000001',
+    'direct_dashboard_token_01', pg_temp.complete_portfolio_draft(), '{}', false, now() + interval '30 days'
   );
+
+insert into public.portfolio_media (
+  portfolio_id, candidate_id, media_type, storage_path, visibility, sort_order
+) values (
+  '83000000-0000-4000-8000-000000000002',
+  '82500000-0000-4000-8000-000000000001',
+  'hero',
+  '81000000-0000-4000-8000-000000000002/83000000-0000-4000-8000-000000000002/hero.webp',
+  'public',
+  0
+);
+
+select pg_temp.prime_paid_publication(
+  '83000000-0000-4000-8000-000000000002',
+  pg_temp.complete_portfolio_draft()
+);
+
+update public.portfolios
+set is_published = true
+where id = '83000000-0000-4000-8000-000000000002';
 
 insert into public.public_portfolio_snapshots (
   portfolio_id, share_token, data, template_id, expires_at, is_active

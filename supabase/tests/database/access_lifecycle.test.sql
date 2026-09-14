@@ -55,13 +55,18 @@ insert into public.portfolio_media (
   '{"width":800,"height":1200}'::jsonb
 );
 
+select pg_temp.prime_paid_publication(
+  'a3000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Aditi Draft"},"contact":{"phone":"private"}}'::jsonb)
+);
+
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
 
 select is(
   public.publish_portfolio_transaction(
     'a3000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Aditi Draft"},"contact":{"phone":"private"}}'::jsonb,
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Aditi Draft"},"contact":{"phone":"private"}}'::jsonb),
     '{"personal":{"name":"Aditi Public"}}'::jsonb,
     '{"personal":{"name":"Aditi Full"},"family":{"father":{"name":"Private Parent"}}}'::jsonb,
     'phase2_secure_token_1', now() + interval '90 days', 3, '#17151c', 'kanya'
@@ -236,10 +241,14 @@ select throws_ok(
 );
 select is((select name from public.candidate_family_members where candidate_id = 'a2000000-0000-4000-8000-000000000001'), 'Saved Parent', 'failed replacement preserves the last known-good family data');
 
+select pg_temp.prime_paid_publication(
+  'a3000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft('{"personal":{"name":"Republished Draft"}}'::jsonb)
+);
 select is(
   public.publish_portfolio_transaction(
     'a3000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Republished Draft"}}'::jsonb,
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Republished Draft"}}'::jsonb),
     '{"personal":{"name":"Republished Public"}}'::jsonb,
     '{"personal":{"name":"Republished Full"}}'::jsonb,
     'ignored_secure_token1', now() + interval '90 days', 3, '#17151c', 'kanya'

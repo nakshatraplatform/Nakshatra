@@ -25,7 +25,7 @@ as $$
       select 1 from public.portfolio_media media
       where media.portfolio_id = p_portfolio_id
         and media.media_type = 'hero'
-        and media.visibility = 'public'
+        and media.visibility in ('public', 'blurred', 'interest_required', 'approved_only')
     ) then 'primary_photo' end
   ], null::text);
 $$;
