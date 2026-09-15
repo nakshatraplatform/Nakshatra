@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import nextConfig from "../next.config";
+import nextConfig, { resolveOutputMode } from "../next.config";
+
+describe("Next.js deployment output", () => {
+  it("lets Vercel package the application while retaining standalone Docker output", () => {
+    expect(resolveOutputMode("1")).toBeUndefined();
+    expect(resolveOutputMode(undefined)).toBe("standalone");
+    expect(resolveOutputMode("0")).toBe("standalone");
+  });
+});
 
 describe("Next.js security headers", () => {
   it("applies browser defenses globally and no-store policy to sensitive routes", async () => {
