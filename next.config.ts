@@ -38,9 +38,15 @@ const privateNoStoreHeaders = [
   { key: "Vary", value: "Cookie, Authorization" },
 ];
 
+export function resolveOutputMode(vercel = process.env.VERCEL): NextConfig["output"] {
+  // Vercel's adapter packages the server output itself. Standalone output is
+  // retained everywhere else because the repository's Dockerfile consumes it.
+  return vercel === "1" ? undefined : "standalone";
+}
+
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  output: "standalone",
+  output: resolveOutputMode(),
   poweredByHeader: false,
   turbopack: {
     root: path.resolve(__dirname),
