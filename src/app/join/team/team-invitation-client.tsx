@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Building2, LockKeyhole, ShieldCheck } from "lucide-react";
@@ -58,7 +61,7 @@ export function TeamInvitationClient() {
   }, []);
 
   return <div className={styles.shell}>
-    <header><Link href="/" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk invitation</span></header>
+    <header><Link href="/" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk invitation</span><ThemeSwitch /></header>
     <main>
       <section className={styles.card} aria-live="polite">
         <div className={styles.icon}>{stage === "accepted" ? <ShieldCheck /> : <Building2 />}</div>

@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { themeTestToken, themeTestUser } from "./theme-session.mjs";
 
 const host = "127.0.0.1";
 const port = 54329;
@@ -223,6 +224,7 @@ const server = createServer((request, response) => {
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
   if (url.pathname === "/auth/v1/user") {
+    if (request.headers.authorization === `Bearer ${themeTestToken}`) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
     }
@@ -230,6 +232,13 @@ const server = createServer((request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/auth/v1/otp") {
     return sendJson(response, 200, {});
+  }
+  // Theme browser coverage uses the real page components with loopback-only,
+  // read-only projections. Production authorization code is never replaced.
+  if (request.headers.authorization === `Bearer ${themeTestToken}`) {
+    if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });
+    if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests"].includes(url.pathname)) return sendJson(response, 200, null);
   }
   if (url.pathname === "/rest/v1/public_portfolio_snapshots" || url.pathname === "/rest/v1/portfolio_media") {
     return sendJson(response, 403, { message: "Direct public table access is disabled" });
@@ -239,8 +248,10 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (token !== "e2e-portfolio-token" && token !== "e2e-private-token") return sendJson(response, 200, null);
-      return sendJson(response, 200, resolvedPortfolio(token === "e2e-private-token"));
+      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token"].includes(token)) return sendJson(response, 200, null);
+      const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
+      if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
+      return sendJson(response, 200, portfolio);
     });
   }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_identity_verified") {

@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Copy, LockKeyhole, Mail, UserPlus, Users } from "lucide-react";
@@ -26,7 +29,7 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
     };
   }, [customers]);
 
-  if (!customers.available) return <main className={styles.unavailable}><h1>Customers are unavailable</h1><p>This workspace may not exist, or your role may not permit customer access.</p><Link href="/brokerdesk">Return to BrokerDesk</Link></main>;
+  if (!customers.available) return <main className={styles.unavailable}><div className="app-header-actions"><ThemeSwitch /></div><h1>Customers are unavailable</h1><p>This workspace may not exist, or your role may not permit customer access.</p><Link href="/brokerdesk">Return to BrokerDesk</Link></main>;
   const available: Available = customers;
 
   async function invite(event: FormEvent<HTMLFormElement>) {
@@ -47,7 +50,7 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
 
   const activeCount = grouped.men.length + grouped.women.length + grouped.other.length;
   return <div className={styles.shell}>
-    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><nav><Link href="/brokerdesk">Home</Link><strong>Customers</strong><Link href={`/brokerdesk/w/${available.workspaceRef}/settings/team`}>Settings</Link></nav></header>
+    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><nav><Link href="/brokerdesk">Home</Link><strong>Customers</strong><Link href={`/brokerdesk/w/${available.workspaceRef}/settings/team`}>Settings</Link></nav><ThemeSwitch /></header>
     <main>
       <div className={styles.heading}><div><p>Customers</p><h1>People you represent</h1><span>Invite customers and work from the portfolio each customer owns.</span></div><button onClick={() => setShowInvite((value) => !value)}><UserPlus /> Invite customer</button></div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}

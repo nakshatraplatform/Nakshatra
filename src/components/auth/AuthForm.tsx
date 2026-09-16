@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -201,7 +204,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <ArrowLeft aria-hidden="true" />
           <span>NAKSHATRA</span>
         </Link>
-        <Link href="/" className="account-home">Back to home</Link>
+        <div className="app-header-actions"><ThemeSwitch /><Link href="/" className="account-home">Back to home</Link></div>
       </header>
 
       <main className="account-main">

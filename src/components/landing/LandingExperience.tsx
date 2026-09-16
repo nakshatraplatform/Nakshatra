@@ -1,3 +1,4 @@
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -114,6 +115,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
           <Sparkles aria-hidden="true" /><span>NAKSHATRA</span>
         </Link>
         <nav className={styles.navigation} aria-label="Main navigation">
+          <ThemeSwitch />
           <div className={styles.navigationLinks}>
             <a href="#how">How it works</a><a href="#control">Your control</a><a href="#beta">Beta access</a><a href="#questions">Questions</a>
           </div>

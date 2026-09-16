@@ -1,3 +1,4 @@
+import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 /** Provider return parameters are deliberately not trusted or rendered; the protected provider process determines final state. */
 export default function VerificationResultPage() {
   return (
-    <main className="mx-auto max-w-xl px-6 py-20">
+    <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation />
       <p className="site-eyebrow">Identity verification</p>
       <h1>Verification submitted</h1>
       <p>Your identity-verification provider has received the session. This page does not determine the result.</p>

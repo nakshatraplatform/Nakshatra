@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
@@ -132,7 +135,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
             <ArrowLeft aria-hidden="true" />
             Dashboard
           </Link>
-          <strong className="text-sm">NAKSHATRA</strong>
+          <div className="app-header-actions"><strong className="text-sm">NAKSHATRA</strong><ThemeSwitch /></div>
         </div>
       </header>
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
+
+
 import { useEffect, useState } from "react";
 import {
   getIdentityVerificationLinkRequest,
@@ -70,11 +73,11 @@ export function VerificationLinkClient({ token }: { token: string }) {
     setAction(null);
   }
 
-  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><h1>Verification link unavailable</h1><p>{error}</p></main>;
+  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><h1>Verification link unavailable</h1><p>{error}</p></main>;
   if (!link) return <main className="mx-auto max-w-xl px-6 py-20"><p>Loading secure verification…</p></main>;
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
+    <main className="mx-auto max-w-xl px-6 py-16"><ThemeNavigation />
       <p className="site-eyebrow">Nakshatra identity verification</p>
       <h1>{link.kind === "invitation" ? "Confirm your identity" : "Verification management"}</h1>
       <div aria-live="polite" aria-atomic="true">

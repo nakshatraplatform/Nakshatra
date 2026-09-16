@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
@@ -118,7 +121,7 @@ export function BrokerdeskMfaClient() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link>
-        <span>BrokerDesk security</span>
+        <div className="app-header-actions"><span>BrokerDesk security</span><ThemeSwitch /></div>
       </header>
       <main className={styles.main}>
         <section className={styles.card} aria-live="polite" aria-busy={pending || stage === "loading"}>

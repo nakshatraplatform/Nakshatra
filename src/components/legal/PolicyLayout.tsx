@@ -1,3 +1,4 @@
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -19,9 +20,10 @@ export function PolicyLayout({
           <Link href="/" className="workspace-focus inline-flex min-h-12 items-center rounded-lg px-2 text-base font-extrabold tracking-[0.12em] text-[color:var(--workspace-navy)]">
             NAKSHATRA
           </Link>
-          <Link href="/signup" className="workspace-focus inline-flex min-h-12 items-center rounded-lg bg-[color:var(--workspace-navy)] px-4 text-sm font-semibold text-white">
+          <div className="app-header-actions"><ThemeSwitch />
+          <Link href="/signup" className="workspace-focus inline-flex min-h-12 items-center rounded-lg bg-[color:var(--workspace-action)] px-4 text-sm font-semibold text-white">
             Get started
-          </Link>
+          </Link></div>
         </div>
       </header>
       <main id="main-content" className="mx-auto max-w-4xl px-5 py-12 sm:px-8 sm:py-16">

@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Building2, Check, ChevronRight, LockKeyhole, ShieldCheck } from "lucide-react";
@@ -70,7 +73,7 @@ export function BrokerdeskOnboardingClient({
       <header className="brokerdesk-onboarding-header">
         <Link href="/" className="brokerdesk-wordmark">NAKSHATRA</Link>
         <span>BrokerDesk setup</span>
-        <Link href="/dashboard" className="brokerdesk-customer-link">Customer dashboard</Link>
+        <div className="app-header-actions"><ThemeSwitch /><Link href="/dashboard" className="brokerdesk-customer-link">Customer dashboard</Link></div>
       </header>
 
       <main className="brokerdesk-onboarding-main">

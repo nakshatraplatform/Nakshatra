@@ -1,3 +1,4 @@
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import { Building2, CalendarClock, LockKeyhole } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -14,7 +15,7 @@ export default async function CustomerBrokersPage() {
   const { supabase } = await getAuthenticatedUser();
   const result = await resolveCustomerBrokerRelationships(supabase);
   return <div className={styles.shell}>
-    <header><Link href="/dashboard" className={styles.wordmark}>NAKSHATRA</Link><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link></header>
+    <header><Link href="/dashboard" className={styles.wordmark}>NAKSHATRA</Link><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link><ThemeSwitch /></header>
     <main>
       <p className={styles.eyebrow}>Privacy controls</p>
       <h1>My brokers</h1>

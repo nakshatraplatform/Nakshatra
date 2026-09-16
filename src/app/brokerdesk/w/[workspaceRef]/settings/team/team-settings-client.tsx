@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { Check, Copy, LockKeyhole, ShieldCheck, SlidersHorizontal, UserPlus, UserX, Users } from "lucide-react";
@@ -30,7 +33,7 @@ export function TeamSettingsClient({ team, reauthPurpose }: { team: BrokerdeskTe
   useEffect(() => {
     if (reauthPurpose) window.history.replaceState(null, "", window.location.pathname);
   }, [reauthPurpose]);
-  if (!team.available) return <main className={styles.unavailable}><h1>Team settings are unavailable</h1><p>This workspace may not exist, or you may not have permission to manage its team.</p><Link href="/brokerdesk">Return to BrokerDesk</Link></main>;
+  if (!team.available) return <main className={styles.unavailable}><div className="app-header-actions"><ThemeSwitch /></div><h1>Team settings are unavailable</h1><p>This workspace may not exist, or you may not have permission to manage its team.</p><Link href="/brokerdesk">Return to BrokerDesk</Link></main>;
   const availableTeam = team;
   const currentRole = members.find((member) => member.isCurrentUser)?.rolePreset;
 
@@ -88,7 +91,7 @@ export function TeamSettingsClient({ team, reauthPurpose }: { team: BrokerdeskTe
   }
 
   return <div className={styles.shell}>
-    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><Link href="/dashboard">Customer dashboard</Link></header>
+    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><Link href="/dashboard">Customer dashboard</Link><ThemeSwitch /></header>
     <main>
       <div className={styles.heading}><div><p>Settings · Team</p><h1>People who work with you</h1><span>Employees see only the customers and work their role allows.</span></div>{mode === "list" && <button onClick={() => begin("team_invite")}><UserPlus /> Invite employee</button>}</div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
