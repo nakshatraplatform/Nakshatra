@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -49,7 +52,7 @@ export function ResetPasswordForm() {
           <ArrowLeft aria-hidden="true" />
           <span>NAKSHATRA</span>
         </Link>
-        <Link href="/login" className="account-home">Back to sign in</Link>
+        <div className="app-header-actions"><ThemeSwitch /><Link href="/login" className="account-home">Back to sign in</Link></div>
       </header>
       <main className="account-main">
         <section className="account-panel">

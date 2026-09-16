@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -548,20 +550,21 @@ export default function DashboardClient({
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <h1 className="text-lg font-bold tracking-[0.12em]">NAKSHATRA</h1>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:inline">
+            <ThemeSwitch />
+            <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
               {userEmail}
             </span>
             <Link
               href="/account"
               aria-label="Account and privacy"
               title="Account and privacy"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
             >
               <Settings className="h-4 w-4" />
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
@@ -575,30 +578,30 @@ export default function DashboardClient({
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
             <section className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
-              <div className="rounded-full bg-[#dcebe5] p-4">
-                <LockKeyhole className="h-7 w-7 text-[#315f57]" />
+              <div className="rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] p-4">
+                <LockKeyhole className="h-7 w-7 text-[light-dark(#315f57,var(--app-dark-accent))]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#477b77]">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
                   Private beta testing
                 </p>
-                <h2 className="mt-2 text-3xl font-medium text-[#18272e]">
+                <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
                   Portfolio creation is currently invite-only.
                 </h2>
-                <p className="mx-auto mt-3 max-w-xl text-slate-600">
+                <p className="mx-auto mt-3 max-w-xl text-[light-dark(#475569,var(--app-dark-muted))]">
                   New portfolio creation is closed while we prepare for launch. You can join the waitlist for updates, or continue using portfolio links shared with you.
                 </p>
               </div>
               {pilotAccessState?.application?.status === "pending" ? (
-                <div className="rounded-xl border border-[#c9bc91] bg-[#f4efdf] px-4 py-3 text-sm text-[#725d2b]">
+                <div className="rounded-xl border border-[light-dark(#c9bc91,var(--app-dark-border))] bg-[light-dark(#f4efdf,var(--app-dark-surface-soft))] px-4 py-3 text-sm text-[light-dark(#725d2b,var(--app-dark-gold))]">
                   You are on the Nakshatra launch waitlist. This does not provide portfolio creation access.
                 </div>
               ) : pilotAccessState?.application?.status === "declined" ? (
-                <div className="rounded-xl border border-[#d6aaaa] bg-[#fff3f0] px-4 py-3 text-sm text-[#873a3a]">
+                <div className="rounded-xl border border-[light-dark(#d6aaaa,var(--app-dark-border))] bg-[light-dark(#fff3f0,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#873a3a,var(--app-dark-danger))]">
                   Creator access is not available for this account yet. Your viewer access remains active.
                 </div>
               ) : pilotAccessState?.application?.status === "revoked" ? (
-                <div className="rounded-xl border border-[#d6aaaa] bg-[#fff3f0] px-4 py-3 text-sm text-[#873a3a]">
+                <div className="rounded-xl border border-[light-dark(#d6aaaa,var(--app-dark-border))] bg-[light-dark(#fff3f0,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#873a3a,var(--app-dark-danger))]">
                   Creator access for this account has been paused. Your saved information remains protected.
                 </div>
               ) : (
@@ -606,23 +609,23 @@ export default function DashboardClient({
                   Join the waitlist
                 </Link>
               )}
-              <Link href="/" className="text-sm font-semibold text-[#315f57]">
+              <Link href="/" className="text-sm font-semibold text-[light-dark(#315f57,var(--app-dark-accent))]">
                 Learn about the private beta
               </Link>
             </section>
           ) : !portfolio?.is_published ? (
             <div className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
-              <div className="rounded-full bg-[#dcebe5] p-4">
-                <Edit3 className="h-7 w-7 text-[#315f57]" />
+              <div className="rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] p-4">
+                <Edit3 className="h-7 w-7 text-[light-dark(#315f57,var(--app-dark-accent))]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#477b77]">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
                   Start your portfolio
                 </p>
-                <h2 className="mt-2 text-3xl font-medium text-[#18272e]">
+                <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
                   Let&apos;s build one clear introduction.
                 </h2>
-                <p className="mx-auto mt-3 max-w-lg text-slate-600">
+                <p className="mx-auto mt-3 max-w-lg text-[light-dark(#475569,var(--app-dark-muted))]">
                   Begin with the main details. Add photos, family information, and your horoscope when you are ready.
                 </p>
               </div>
@@ -636,11 +639,11 @@ export default function DashboardClient({
                   {portfolio ? "Continue portfolio" : "Start with the basics"}
                 </button>
               ) : (
-                <p className="rounded-xl border border-[#477b77]/25 bg-[#dcebe5]/50 px-4 py-3 text-sm text-[#315f57]">
+                <p className="rounded-xl border border-[light-dark(#477b7740,var(--app-dark-border))] bg-[light-dark(#dcebe580,var(--app-dark-success-surface))] px-4 py-3 text-sm text-[light-dark(#315f57,var(--app-dark-accent))]">
                   Creator access is paused for this account. Your saved portfolio and history remain available.
                 </p>
               )}
-              <p className="text-sm text-slate-500">Save your work and continue later. Nothing is published until you complete the final review.</p>
+              <p className="text-sm text-[light-dark(#64748b,var(--app-dark-muted))]">Save your work and continue later. Nothing is published until you complete the final review.</p>
             </div>
           ) : (
               <section className="dashboard-welcome">
@@ -693,26 +696,26 @@ export default function DashboardClient({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="dashboard-glass p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Eye className="h-4 w-4" />
                     <span className="text-sm font-medium">Portfolio views</span>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-[#18272e]">{viewCount}</p>
+                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
                 </div>
                 <div className="dashboard-glass p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Inbox className="h-4 w-4" />
                     <span className="text-sm font-medium">Interests received</span>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-[#18272e]">{interests.length}</p>
-                  <p className="mt-1 text-sm text-slate-500">{interestItems.filter((item) => item.status === "new" || item.status === "pending_review").length} need a response</p>
+                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
+                  <p className="mt-1 text-sm text-[light-dark(#64748b,var(--app-dark-muted))]">{interestItems.filter((item) => item.status === "new" || item.status === "pending_review").length} need a response</p>
                 </div>
                 <div className="dashboard-glass p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Clock className="h-4 w-4" />
                     <span className="text-sm font-medium">Public link</span>
                   </div>
-                  <p className="mt-2 text-lg font-semibold text-[#18272e]">
+                  <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
                     {portfolio?.is_published && daysLeft !== null
                       ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`
                       : "Not published"}
@@ -722,9 +725,9 @@ export default function DashboardClient({
 
           {portfolio?.is_published && shareUrl ? (
                 <div className="dashboard-glass p-4">
-                  <p className="mb-3 text-sm font-semibold text-[#18272e]">Portfolio link</p>
+                  <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
                   <div className="dashboard-share-link-row">
-                    <code className="flex-1 overflow-x-auto rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                    <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
                       {shareUrl}
                     </code>
                     <button
@@ -776,8 +779,8 @@ export default function DashboardClient({
                 </div>
           ) : (
             <div className="dashboard-glass p-4">
-              <p className="text-sm font-semibold text-[#18272e]">Public sharing is off</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
+              <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
                 Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
               </p>
             </div>
@@ -821,41 +824,41 @@ export default function DashboardClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="portfolio-review-heading"
-            className="mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[#f8f6f0] text-[#18272e] shadow-2xl"
+            className="mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] text-[light-dark(#18272e,var(--app-dark-ink))] shadow-2xl"
           >
-            <header className="flex flex-none flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <header className="flex flex-none flex-col gap-4 border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Review before publishing</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Review before publishing</p>
                 <h2 id="portfolio-review-heading" className="mt-1 text-xl font-semibold">Check both views before publishing</h2>
-                <p className="mt-1 text-sm text-slate-600">Your draft is saved. Open each preview in a new tab; nothing public changes from this review.</p>
+                <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Your draft is saved. Open each preview in a new tab; nothing public changes from this review.</p>
               </div>
-              <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>
+              <div className="app-header-actions"><ThemeSwitch /><button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>
                 Back to editing
-              </button>
+              </button></div>
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="grid gap-4 lg:grid-cols-2">
-              <article className="flex flex-col rounded-xl border border-slate-200 bg-white p-5">
-                <div className="border-b border-slate-200 px-4 py-3">
+              <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
+                <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
                   <h3 className="font-semibold">First View · {normalizePortfolioPrivacyMode(draftData.privacy_mode) === "private" ? "Short" : "Standard"}</h3>
-                  <p className="mt-1 text-xs text-slate-600">What anyone with the share link can see.</p>
+                  <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What anyone with the share link can see.</p>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
-                  <p className="text-sm leading-6 text-slate-600">Check the public introduction, primary photo and the details visible before approval.</p>
+                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the public introduction, primary photo and the details visible before approval.</p>
                   <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
                     <ExternalLink className="h-4 w-4" />
                     Open First View
                   </a>
                 </div>
               </article>
-              <article className="flex flex-col rounded-xl border border-slate-200 bg-white p-5">
-                <div className="border-b border-slate-200 px-4 py-3">
+              <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
+                <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
                   <h3 className="font-semibold">Full View · Approved people only</h3>
-                  <p className="mt-1 text-xs text-slate-600">What a verified person receives after your approval.</p>
+                  <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What a verified person receives after your approval.</p>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
-                  <p className="text-sm leading-6 text-slate-600">Check protected details and confirm that nothing appears in Full View unexpectedly.</p>
+                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in Full View unexpectedly.</p>
                   <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
                     <ExternalLink className="h-4 w-4" />
                     Open Full View
@@ -864,9 +867,9 @@ export default function DashboardClient({
               </article>
               </div>
 
-              <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
+              <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                 <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
-                <p className="mt-1 text-sm text-slate-600">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
+                <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
                   <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
@@ -876,10 +879,10 @@ export default function DashboardClient({
               </section>
             </div>
 
-            <footer className="flex flex-none flex-col gap-3 border-t border-slate-200 bg-[#fffdf8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <footer className="flex flex-none flex-col gap-3 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p className="text-sm font-semibold">Publishing creates or updates your First View link.</p>
-                <p className="mt-1 text-xs text-slate-600">Full View remains locked until you approve a verified interest request.</p>
+                <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">Full View remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
@@ -931,7 +934,7 @@ export default function DashboardClient({
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[#18272e]/45 backdrop-blur-sm">
           <div role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden shadow-2xl">
-            <div className="flex-none border-b border-slate-200 px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex-none border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
@@ -944,11 +947,11 @@ export default function DashboardClient({
                           : "Changes not saved"}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-[light-dark(#64748b,var(--app-dark-muted))]">
                     Complete what you know. Save your work and continue later.
                   </p>
                 </div>
-                <button
+                <div className="app-header-actions"><ThemeSwitch /><button
                   type="button"
                   onClick={closePortfolioEditor}
                   className="dashboard-secondary-action flex-none"
@@ -956,7 +959,7 @@ export default function DashboardClient({
                   <ArrowLeft className="h-4 w-4" />
                   <span className="hidden sm:inline">Back to dashboard</span>
                   <span className="sm:hidden">Dashboard</span>
-                </button>
+                </button></div>
               </div>
             </div>
 
@@ -993,22 +996,22 @@ export default function DashboardClient({
               </div>
             </div>
 
-            <div className="dashboard-editor-footer flex-none border-t border-slate-200 bg-[#f3f0e8] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="dashboard-editor-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f3f0e8,var(--app-dark-surface-soft))] px-4 py-4 sm:px-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 {draftError && (
-                  <div role="alert" className="mb-3 rounded-lg border border-[#d8a7a1] bg-[#fff0ee] px-4 py-3 text-sm text-[#7f3535]">
+                  <div role="alert" className="mb-3 rounded-lg border border-[light-dark(#d8a7a1,var(--app-dark-border))] bg-[light-dark(#fff0ee,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#7f3535,var(--app-dark-danger))]">
                     <p className="font-semibold">We couldn&apos;t complete that action.</p>
                     <p className="mt-1 leading-5">{draftError}</p>
                     <p className="mt-1 leading-5">Your answers are still on this screen.</p>
                     {draftSaveState === "unsaved" && (
-                      <button type="button" onClick={saveDashboardDraft} disabled={savingDraft} className="mt-2 min-h-10 rounded-lg border border-[#b96a63] bg-white px-3 font-semibold text-[#7f3535] hover:bg-[#fff8f6]">
+                      <button type="button" onClick={saveDashboardDraft} disabled={savingDraft} className="mt-2 min-h-10 rounded-lg border border-[light-dark(#b96a63,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-3 font-semibold text-[light-dark(#7f3535,var(--app-dark-danger))] hover:bg-[light-dark(#fff8f6,var(--app-dark-surface))]">
                         Try saving again
                       </button>
                     )}
                   </div>
                 )}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="dashboard-editor-footer-copy text-sm leading-6 text-slate-500">
+                  <p className="dashboard-editor-footer-copy text-sm leading-6 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     {portfolio?.is_published
                       ? "Changes autosave as a draft. Review and publish to update what people see."
                       : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
@@ -1072,13 +1075,13 @@ function ReviewRequirement({
   pendingLabel: string;
 }) {
   return (
-    <div className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${complete ? "border-[#b8d8ce] bg-[#eef7f3]" : "border-[#ded5bd] bg-[#faf7ed]"}`}>
+    <div className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${complete ? "border-[light-dark(#b8d8ce,var(--app-dark-border))] bg-[light-dark(#eef7f3,var(--app-dark-canvas))]" : "border-[light-dark(#ded5bd,var(--app-dark-border))] bg-[light-dark(#faf7ed,var(--app-dark-canvas))]"}`}>
       {complete
-        ? <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-[#315f57]" aria-hidden="true" />
-        : <Circle className="mt-0.5 h-5 w-5 flex-none text-[#9a7b32]" aria-hidden="true" />}
+        ? <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-[light-dark(#315f57,var(--app-dark-accent))]" aria-hidden="true" />
+        : <Circle className="mt-0.5 h-5 w-5 flex-none text-[light-dark(#9a7b32,var(--app-dark-gold))]" aria-hidden="true" />}
       <div>
         <p className="text-sm font-semibold">{complete ? label : pendingLabel}</p>
-        {!complete && <p className="mt-0.5 text-xs text-slate-600">{label}</p>}
+        {!complete && <p className="mt-0.5 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">{label}</p>}
       </div>
     </div>
   );
@@ -1113,11 +1116,11 @@ function CreatorReadinessTracker({
     <section className="dashboard-glass p-4 sm:p-5" aria-labelledby="creator-readiness-heading">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Your publishing journey</p>
-          <h2 id="creator-readiness-heading" className="mt-1 text-xl font-semibold text-[#18272e]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Your publishing journey</p>
+          <h2 id="creator-readiness-heading" className="mt-1 text-xl font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
             {completion.percentage}% complete
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
             {nextStep ? `Next: ${nextStep.label}` : "Your portfolio is published."}
             {draftSaveState === "saving" ? " · Saving changes…" : ""}
           </p>
@@ -1135,26 +1138,26 @@ function CreatorReadinessTracker({
         </div>
       </div>
 
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[light-dark(#e2e8f0,var(--app-dark-surface-soft))]" aria-hidden="true">
         <div className="h-full rounded-full bg-[#477b77] transition-[width]" style={{ width: `${completion.percentage}%` }} />
       </div>
 
       <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Publication steps">
         {steps.map((step) => (
-          <li key={step.label} className={`flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-xs ${step.complete ? "border-[#a9cfc3] bg-[#e8f3ef] text-[#315f57]" : "border-slate-200 bg-white text-slate-600"}`}>
+          <li key={step.label} className={`flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-xs ${step.complete ? "border-[light-dark(#a9cfc3,var(--app-dark-border))] bg-[light-dark(#e8f3ef,var(--app-dark-surface-soft))] text-[light-dark(#315f57,var(--app-dark-accent))]" : "border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[light-dark(#475569,var(--app-dark-muted))]"}`}>
             {step.complete
               ? <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
               : <Circle className="h-4 w-4 shrink-0" aria-hidden="true" />}
             <span>
               {step.label}
-              {step.comingSoon ? <span className="block text-[10px] text-slate-400">Coming soon</span> : null}
+              {step.comingSoon ? <span className="block text-[10px] text-[light-dark(#94a3b8,var(--app-dark-muted))]">Coming soon</span> : null}
             </span>
           </li>
         ))}
       </ol>
 
       {!completion.readyToPublish && completion.missing.length > 0 ? (
-        <p className="mt-4 text-xs leading-5 text-slate-500">
+        <p className="mt-4 text-xs leading-5 text-[light-dark(#64748b,var(--app-dark-muted))]">
           Still needed: {completion.missing.slice(0, 4).map((item) => item.label).join(", ")}
           {completion.missing.length > 4 ? ` and ${completion.missing.length - 4} more` : ""}.
         </p>
@@ -1251,7 +1254,7 @@ function HoroscopeManager({
             placeholder="For example, Kannada"
             className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-black/15 px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#f4d98f]/50"
           />
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-[#f4d98f] px-4 text-sm font-semibold text-[#17151c] hover:bg-[#fff0b7] disabled:opacity-50">
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-[#f4d98f] px-4 text-sm font-semibold text-[light-dark(#17151c,var(--app-dark-ink))] hover:bg-[light-dark(#fff0b7,var(--app-dark-warning-surface))] disabled:opacity-50">
             <Upload className={`h-4 w-4 ${uploading ? "animate-pulse" : ""}`} />
             {uploading ? "Checking attachment..." : "Attach horoscope"}
           </button>
@@ -1414,24 +1417,24 @@ function InterestInbox({
             role="dialog"
             aria-modal="true"
             aria-labelledby={approvalTitleId}
-            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-[#fffdf8] p-5 text-[#18272e] shadow-2xl sm:p-7"
+            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-5 text-[light-dark(#18272e,var(--app-dark-ink))] shadow-2xl sm:p-7"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#477b77]">Confirm controlled disclosure</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Confirm controlled disclosure</p>
             <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Full View to {approvalCandidate.viewer_name || "this viewer"}?</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
               Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires seven days after approval.
             </p>
-            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-5 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f8fafc,var(--app-dark-surface))] p-4">
               <p className="text-sm font-semibold">This Full View will disclose:</p>
               {disclosedCategories.length > 0 ? (
-                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-slate-700">
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[light-dark(#334155,var(--app-dark-ink))]">
                   {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
                 </ul>
               ) : (
-                <p className="mt-2 text-sm text-slate-600">No additional protected information has been added yet.</p>
+                <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">No additional protected information has been added yet.</p>
               )}
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-600">
+            <p className="mt-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
               You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
             </p>
             {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
@@ -1817,7 +1820,7 @@ function PhotoManager({
                 <div className="flex h-full items-center justify-center text-xs text-white/35">Loading...</div>
               )}
               {item.media_type === "hero" && (
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-[#f4d98f] px-2 py-1 text-xs font-semibold text-[#17151c]">
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-[#f4d98f] px-2 py-1 text-xs font-semibold text-[light-dark(#17151c,var(--app-dark-ink))]">
                   <Crown className="h-3 w-3" /> Hero
                 </span>
               )}
@@ -1837,7 +1840,7 @@ function PhotoManager({
                 onChange={(event) =>
                   onUpdate(item.id, { visibility: event.target.value as PortfolioMediaVisibility })
                 }
-                className="h-10 w-full rounded-md border border-white/10 bg-white/[0.06] px-2 text-xs text-white outline-none"
+                className="h-10 w-full rounded-md border border-white/10 bg-[light-dark(#ffffff,var(--app-dark-surface))]/[0.06] px-2 text-xs text-white outline-none"
                 aria-label="Photo visibility"
               >
                 {!visibilityLabels.some((option) => option.value === item.visibility) && (

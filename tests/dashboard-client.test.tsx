@@ -587,6 +587,14 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_revoked"));
   });
 
+  it("keeps the paused-creator notice on a theme-aware contrast surface", () => {
+    renderDashboard({ portfolio: { ...portfolio, is_published: false }, canCreatePortfolio: false });
+    expect(screen.getByText(/Creator access is paused/)).toHaveClass(
+      "bg-[light-dark(#dcebe580,var(--app-dark-success-surface))]",
+      "text-[light-dark(#315f57,var(--app-dark-accent))]",
+    );
+  });
+
   it("shows the private-beta boundary without creator controls for non-invited accounts", () => {
     renderDashboard({
       portfolio: null,

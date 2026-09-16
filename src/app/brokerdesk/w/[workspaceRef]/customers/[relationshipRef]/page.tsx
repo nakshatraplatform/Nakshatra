@@ -1,3 +1,4 @@
+import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import { ArrowLeft, CalendarClock, LockKeyhole, MapPin, ShieldCheck, UserRound, Users } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -15,10 +16,10 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   const { workspaceRef, relationshipRef } = await params;
   const { supabase } = await getAuthenticatedUser();
   const customer = await resolveBrokerdeskCustomer(supabase, workspaceRef, relationshipRef);
-  if (!customer.available) return <main className={styles.unavailable}><h1>Customer unavailable</h1><p>This relationship may not exist, may not be assigned to you, or may no longer permit access.</p><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Return to customers</Link></main>;
+  if (!customer.available) return <main className={styles.unavailable}><div className="app-header-actions"><ThemeSwitch /></div><h1>Customer unavailable</h1><p>This relationship may not exist, may not be assigned to you, or may no longer permit access.</p><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Return to customers</Link></main>;
 
   return <div className={styles.shell}>
-    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link></header>
+    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
     <main>
       <Link className={styles.back} href={`/brokerdesk/w/${workspaceRef}/customers`}><ArrowLeft /> All customers</Link>
       <div className={styles.heading}><div className={styles.avatar}>{customer.displayName.slice(0, 1).toUpperCase()}</div><div><p>Customer relationship</p><h1>{customer.displayName}</h1><span>{[customer.gender, customer.location].filter(Boolean).join(" · ") || "Shared portfolio"}</span></div><span className={styles.status}>{customer.relationshipStatus}</span></div>

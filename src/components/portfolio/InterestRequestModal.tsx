@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, CheckCircle2, ChevronDown, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
 import { startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
+import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
 
 type ModalStep = "details" | "verify" | "success";
 type InterestPayload = {
@@ -19,12 +20,13 @@ type InterestPayload = {
   message: FormDataEntryValue | null;
 };
 
-export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, isOwner = false }: {
+export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, isOwner = false, appearance = "light" }: {
   portfolioToken: string;
   profileName: string;
   authenticated: boolean;
   verifiedEmail?: string | null;
   isOwner?: boolean;
+  appearance?: CelestialAppearance;
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ModalStep>("details");
@@ -194,7 +196,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       )}
 
       {open && createPortal(
-        <div className="interest-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
+        <div className="interest-modal-backdrop" style={{ colorScheme: appearance }} onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
           <div ref={dialogRef} className="interest-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <div className="interest-modal-header">
               <div>

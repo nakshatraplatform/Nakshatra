@@ -7,6 +7,9 @@ import {
   Tenor_Sans,
 } from "next/font/google";
 import "./globals.css";
+import "./app-theme.css";
+import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
+import { APP_THEME_INIT_SCRIPT } from "@/lib/app-theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,11 +57,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-app-theme="light"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${portfolioDisplay.variable} ${portfolioBody.variable} ${portfolioSection.variable} h-full antialiased`}
     >
+      <head><script dangerouslySetInnerHTML={{ __html: APP_THEME_INIT_SCRIPT }} /></head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <a href="#main-content" className="skip-link">Skip to main content</a>
-        {children}
+        <AppThemeProvider>{children}</AppThemeProvider>
       </body>
     </html>
   );

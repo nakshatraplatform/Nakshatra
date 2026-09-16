@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import type { PortfolioHoroscopeAttachment } from "@/types/portfolio";
 import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.contract";
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
+import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
 import {
   isPortfolioOwner,
   recordPublicPortfolioView,
@@ -90,7 +91,7 @@ export default async function PublicBiodataPage({ params }: Props) {
       identityVerified={portfolio.identityVerified}
       photos={portfolio.photos}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} /> : undefined}
+      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} /> : undefined}
     />
   );
 }

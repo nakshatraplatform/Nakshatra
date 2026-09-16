@@ -1,5 +1,8 @@
 "use client";
 
+import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
+
+
 import Link from "next/link";
 
 export default function Error({
@@ -16,6 +19,7 @@ export default function Error({
       id="main-content"
       className="flex flex-1 flex-col items-center justify-center bg-[color:var(--workspace-canvas)] px-4 py-16 text-center text-[color:var(--workspace-ink)]"
     >
+      <div className="w-full max-w-sm"><ThemeNavigation /></div>
       <h1 className="text-2xl font-bold">Something went wrong</h1>
       <p className="mt-2 max-w-md text-base text-[color:var(--workspace-ink-muted)]">
         We could not complete this request. Your saved information is unchanged.
@@ -24,13 +28,13 @@ export default function Error({
       <div className="mt-6 flex w-full max-w-sm flex-col gap-3 sm:flex-row sm:justify-center">
         <button
           onClick={reset}
-          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-navy)] px-5 text-base font-semibold text-white transition-colors hover:bg-[color:var(--workspace-navy-strong)]"
+          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-white transition-colors hover:bg-[color:var(--workspace-navy-strong)]"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl border border-[color:var(--workspace-border)] bg-white px-5 text-base font-semibold transition-colors hover:bg-[color:var(--workspace-surface-soft)]"
+          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-5 text-base font-semibold transition-colors hover:bg-[color:var(--workspace-surface-soft)]"
         >
           Go home
         </Link>

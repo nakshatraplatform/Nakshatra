@@ -1,0 +1,59 @@
+/* App-only semantic palette. Light values remain at their existing component
+   declarations; light-dark() also respects an owner's portfolio color-scheme. */
+:root {
+  color-scheme: light;
+  --app-dark-canvas: #111b22;
+  --app-dark-surface: #1b2932;
+  --app-dark-surface-soft: #263640;
+  --app-dark-ink: #edf2ef;
+  --app-dark-muted: #b0bfca;
+  --app-dark-border: #6b838f;
+  --app-dark-accent: #8fd4c8;
+  --app-dark-gold: #e2c07a;
+  --app-dark-success: #a0dcc0;
+  --app-dark-success-surface: #193d34;
+  --app-dark-warning: #f0d392;
+  --app-dark-warning-surface: #3d3320;
+  --app-dark-danger: #ffb4ab;
+  --app-dark-danger-surface: #462d30;
+  --app-focus: light-dark(#315f5c, #8fd4c8);
+}
+
+:root[data-app-theme="dark"] { color-scheme: dark; }
+
+.app-theme-switch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid light-dark(#adb8ba, var(--app-dark-border));
+  border-radius: 9px;
+  background: light-dark(#fffdf8, var(--app-dark-surface));
+  color: light-dark(#234b68, var(--app-dark-ink));
+  cursor: pointer;
+}
+
+.app-theme-switch:hover { background: light-dark(#e5efeb, var(--app-dark-surface-soft)); }
+.app-theme-switch:focus-visible { outline: 3px solid var(--app-focus); outline-offset: 3px; }
+.app-theme-sun { display: none; }
+[data-app-theme="dark"] .app-theme-sun { display: block; }
+[data-app-theme="dark"] .app-theme-moon { display: none; }
+.app-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; }
+.app-theme-navigation { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
+.app-theme-navigation a { text-underline-offset: 0.2em; }
+
+/* Native inputs, dialogs and selection follow the enclosing appearance. */
+::selection { background: light-dark(#c3ded6, #315f5c); color: light-dark(#162a33, #fffdf8); }
+:where(input, textarea) { caret-color: currentColor; }
+:where(button, a, input, select, textarea, summary):focus-visible { outline-color: var(--app-focus); }
+
+/* A published/preview portfolio belongs to its owner, never the app preference. */
+[data-template="celestial-union"] { color-scheme: light; }
+[data-template="celestial-union"][data-appearance="dark"] { color-scheme: dark; }
+
+@media (max-width: 420px) {
+  .app-header-actions { gap: 0.5rem; }
+  .account-header { gap: 0.5rem; padding-inline: 1rem; }
+}

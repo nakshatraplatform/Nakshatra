@@ -1,3 +1,4 @@
+import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
 import Link from "next/link";
 
 export default function NotFound() {
@@ -6,13 +7,14 @@ export default function NotFound() {
       id="main-content"
       className="flex flex-1 flex-col items-center justify-center bg-[color:var(--workspace-canvas)] px-4 py-16 text-center text-[color:var(--workspace-ink)]"
     >
+      <div className="w-full max-w-sm"><ThemeNavigation /></div>
       <h1 className="text-4xl font-bold">404</h1>
       <p className="mt-2 text-base text-[color:var(--workspace-ink-muted)]">
         Page not found. Check the address or return to your dashboard.
       </p>
       <Link
         href="/dashboard"
-        className="workspace-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-navy)] px-5 text-base font-semibold text-white transition-colors hover:bg-[color:var(--workspace-navy-strong)]"
+        className="workspace-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-white transition-colors hover:bg-[color:var(--workspace-navy-strong)]"
       >
         Go to dashboard
       </Link>

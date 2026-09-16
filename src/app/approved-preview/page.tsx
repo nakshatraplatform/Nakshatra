@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BiodataTemplate } from "@/components/templates";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { loadOwnerApprovedPreview } from "@/features/portfolio/server/owner-preview.service";
+import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
 
 export const metadata: Metadata = {
   title: "Full portfolio preview",
@@ -17,7 +18,7 @@ export default async function ApprovedPreviewPage() {
   const { portfolio, data, photos, horoscopeAttachment } = preview;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col" style={{ colorScheme: getCelestialAppearance(data.style) }}>
       <div data-preview-bar="" className="border-b border-border bg-muted px-4 py-2">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-medium">Full portfolio · Owner preview</span>
