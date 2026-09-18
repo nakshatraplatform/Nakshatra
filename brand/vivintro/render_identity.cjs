@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- standalone CommonJS renderer resolves optional tools from a caller-provided dependency directory */
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const deps = process.argv[2];
