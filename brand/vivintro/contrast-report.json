@@ -1,0 +1,100 @@
+[
+  {
+    "name": "Ink / paper",
+    "foreground": "#162a33",
+    "background": "#f8f6f0",
+    "ratio": 13.75,
+    "normalTextPass": true
+  },
+  {
+    "name": "Muted / paper",
+    "foreground": "#627178",
+    "background": "#f8f6f0",
+    "ratio": 4.68,
+    "normalTextPass": true
+  },
+  {
+    "name": "White / primary",
+    "foreground": "#fffdf8",
+    "background": "#174b55",
+    "ratio": 9.5,
+    "normalTextPass": true
+  },
+  {
+    "name": "Quiet teal / paper",
+    "foreground": "#477b77",
+    "background": "#f8f6f0",
+    "ratio": 4.45,
+    "normalTextPass": false
+  },
+  {
+    "name": "Gold / paper",
+    "foreground": "#a86708",
+    "background": "#f8f6f0",
+    "ratio": 4.22,
+    "normalTextPass": false
+  },
+  {
+    "name": "White / quiet teal",
+    "foreground": "#fffdf8",
+    "background": "#477b77",
+    "ratio": 4.73,
+    "normalTextPass": true
+  },
+  {
+    "name": "Dark ink / canvas",
+    "foreground": "#edf2ef",
+    "background": "#111b22",
+    "ratio": 15.41,
+    "normalTextPass": true
+  },
+  {
+    "name": "Dark muted / surface",
+    "foreground": "#b0bfca",
+    "background": "#1b2932",
+    "ratio": 7.91,
+    "normalTextPass": true
+  },
+  {
+    "name": "Dark teal / surface",
+    "foreground": "#8fd4c8",
+    "background": "#1b2932",
+    "ratio": 8.81,
+    "normalTextPass": true
+  },
+  {
+    "name": "Dark gold / surface",
+    "foreground": "#e2c07a",
+    "background": "#1b2932",
+    "ratio": 8.55,
+    "normalTextPass": true
+  },
+  {
+    "name": "Gold text / paper",
+    "foreground": "#8f6628",
+    "background": "#f8f6f0",
+    "ratio": 4.74,
+    "normalTextPass": true
+  },
+  {
+    "name": "Gold text / tint",
+    "foreground": "#805c24",
+    "background": "#eeece3",
+    "ratio": 5.11,
+    "normalTextPass": true
+  },
+  {
+    "name": "Teal text / paper",
+    "foreground": "#315f5c",
+    "background": "#f8f6f0",
+    "ratio": 6.65,
+    "normalTextPass": true
+  },
+  {
+    "name": "Muted text / tint",
+    "foreground": "#58666d",
+    "background": "#eeece3",
+    "ratio": 5.02,
+    "normalTextPass": true
+  }
+]

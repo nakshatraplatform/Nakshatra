@@ -1,0 +1,11 @@
+Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
+
+Geist
+
+
+
+
+
+
+
+https://openfontlicense.org
