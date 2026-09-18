@@ -5,7 +5,6 @@ import type { PortfolioData, PortfolioHoroscopeAttachment } from "@/types/portfo
 
 export interface TemplateProps {
   data: PortfolioData;
-  themeColor: string;
   sunSign: string | null;
   accessMode?: "owner" | "approved" | "public";
   accessExpiresAt?: string;
@@ -25,7 +24,6 @@ export function BiodataTemplate(
   return (
     <CelestialUnion
       data={props.data}
-      themeColor={props.themeColor}
       sunSign={props.sunSign}
       accessMode={props.accessMode}
       accessExpiresAt={props.accessExpiresAt}

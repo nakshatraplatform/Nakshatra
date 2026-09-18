@@ -16,20 +16,20 @@ Nakshatra is not a matrimony marketplace, dating product, search directory, matc
 
 It is a consent-based introduction platform with two product contexts:
 
-- **B2C:** An adult candidate creates one current marriage portfolio, shares a First View through their existing network, receives verified interest requests, and decides who receives time-limited Full View access.
+- **B2C:** An adult candidate creates one current marriage portfolio, shares a Brief or Detailed Introduction through their existing network, receives verified interest requests, and decides who receives time-limited Complete Portfolio access.
 - **BrokerDesk / B2B:** Organization onboarding, role-based staff access, invitations, reauthentication, and MFA foundations. This is implemented in the repository but is not part of the current B2C pilot.
 
 The core product loop is:
 
 ```text
 Private draft
-  → owner previews public and Full views
+  → owner previews the public Introduction and Complete Portfolio
   → owner publishes one link
-  → anyone with the active link reads First View
+  → anyone with the active link reads the selected public Introduction
   → viewer verifies email and expresses interest
   → owner reviews the request
   → owner approves or rejects
-  → approved viewer receives identity-bound Full View for 7 days
+  → approved viewer receives the identity-bound Complete Portfolio for 15 days
   → owner may revoke access, rotate the link, unpublish, or update the portfolio
 ```
 
@@ -40,14 +40,14 @@ The intended pilot is narrower than the implemented product surface:
 - Free, private beta.
 - Portfolio creation is invite-only.
 - Only an email-bound invited participant may become a portfolio owner.
-- Network viewers may open a shared First View, verify their email, submit interest, and receive approved Full View access.
+- Network viewers may open a shared Brief or Detailed Introduction, verify their email, submit interest, and receive approved Complete Portfolio access.
 - A viewer/Auth account does not imply creator entitlement.
 - Adult candidates only. Family assistance must not replace candidate knowledge and consent.
 - Payments are disabled and must not be claimed.
 - Didit identity verification is required for every pilot creator before first publication.
 - BrokerDesk is disabled server-side for this launch.
-- Public portfolio links are bearer links and may be forwarded. Full View is the identity-bound disclosure layer.
-- Public portfolio links are active for 30 days by default. Approved Full View access lasts 7 days.
+- Public portfolio links are bearer links and may be forwarded. The Complete Portfolio is the identity-bound disclosure layer.
+- Public portfolio links are active for 30 days by default. Approved Complete Portfolio access lasts 15 days.
 - Future paid-plan durations under consideration are 3, 4, 6, and 12 months. They are not implemented or available during the pilot.
 
 As of this update, that contract is **not fully enforced**. See “Pilot blockers” below.
@@ -62,7 +62,7 @@ As of this update, that contract is **not fully enforced**. See “Pilot blocker
 
 ### Recommended positioning
 
-For adults and families sharing marriage introductions through trusted personal networks, Nakshatra is a private marriage portfolio that keeps one introduction current and personal details behind approval. Unlike static files, chat attachments, generic documents, or searchable matrimony platforms, it supports a deliberate path from First View to verified interest to time-limited Full View without becoming a marketplace.
+For adults and families sharing marriage introductions through trusted personal networks, Nakshatra is a private marriage portfolio that keeps one introduction current and personal details behind approval. Unlike static files, chat attachments, generic documents, or searchable matrimony platforms, it supports a deliberate path from a public Introduction to verified interest to a time-limited Complete Portfolio without becoming a marketplace.
 
 ### Messaging hierarchy
 
@@ -70,8 +70,8 @@ For adults and families sharing marriage introductions through trusted personal 
 2. A marriage introduction should be a controlled process, not a circulating file.
 3. Nakshatra provides one current portfolio and staged disclosure.
 4. It represents the candidate as a person, not only as fields.
-5. Families can share it through WhatsApp; recipients need no app for First View.
-6. First View → verified request → approved Full View.
+5. Families can share it through WhatsApp; recipients need no app for the public Introduction.
+6. Brief or Detailed Introduction → verified request → approved Complete Portfolio.
 7. Nakshatra is not matchmaking, discovery, or a background check.
 8. During the pilot, creation is invite-only while shared-network participation remains open.
 
@@ -122,7 +122,7 @@ B2C owner
 ├── /dashboard
 ├── /edit                    Redirect to dashboard editor
 ├── /preview                 Owner preview of current public mode
-├── /approved-preview        Owner Full View preview
+├── /approved-preview        Owner Complete Portfolio preview
 └── /account                 Export, sessions, deletion
 
 Shared portfolio
@@ -159,7 +159,7 @@ BrokerDesk
 
 `src/features` is divided by domain:
 
-- `access` — Full View grant lifecycle.
+- `access` — Complete Portfolio grant lifecycle.
 - `account` — export, session display, reauthentication, deletion.
 - `auth` — password rules and portfolio bootstrap.
 - `broker-relationships` — customer invitations and candidate/agency relationship access.
@@ -184,7 +184,7 @@ The database is migration-driven. Important domains include:
 - Normalized candidate details and visibility rules.
 - Private media and horoscope attachments.
 - Sanitized public portfolio snapshots.
-- Approved Full View snapshots.
+- Approved Complete Portfolio snapshots.
 - Interest requests, requester verification, grants, and access events.
 - Account deletion requests, leases, receipts, and retention operations.
 - Identity verification sessions/invitations/webhook events.
@@ -198,7 +198,7 @@ Security relies on separate projections, not CSS hiding:
 
 - Draft data is owner-only.
 - Public snapshots are sanitized and resolved only by exact active share token.
-- Approved snapshots contain the permitted Full View and are resolved for an authenticated, approved viewer.
+- Approved snapshots contain the permitted Complete Portfolio and are resolved for an authenticated, approved viewer.
 - Anonymous users must not enumerate snapshots or media tables.
 - Original protected media remains private; short-lived signed URLs are created only after access resolution.
 
@@ -233,7 +233,7 @@ Security relies on separate projections, not CSS hiding:
   → preview
   → publish
   → share/copy/WhatsApp
-  → manage interests and Full View grants
+  → manage interests and Complete Portfolio grants
 ```
 
 The editor sections are Foundation, About you, Education & work, Family, Astrology, Lifestyle, Partner preferences, Future plans, and Privacy & contact.
@@ -242,14 +242,14 @@ The editor sections are Foundation, About you, Education & work, Family, Astrolo
 
 ```text
 /p/[token]
-  → read First View
+  → read the public Introduction
   → Show interest near final protected section
   → name, representation, phone, email
   → email OTP
   → request submitted
   → owner decision
   → revisit same link while authenticated
-  → identity-bound Full View when approved
+  → identity-bound Complete Portfolio when approved
 ```
 
 No owner/requester operational notification service was present at assessment time, so both sides otherwise depend on revisiting the product.
@@ -261,7 +261,7 @@ There is one canonical portfolio renderer: `src/components/templates/CelestialUn
 Current presentation:
 
 - Light editorial appearance by default; optional dark appearance.
-- Human cover with name, photograph, short introduction, and quick facts.
+- Human cover with name, photograph, brief personal introduction, and quick facts.
 - Numbered story/journey/family/lifestyle/astrology/future chapters.
 - Adaptive gallery with protected previews.
 - Protected-information summary and interest action.
@@ -308,13 +308,13 @@ Observed during the 2026-09 readiness assessment:
 - Database fixture/smoke validation: passed.
 - Full local pgTAP: not run because Docker/Podman was unavailable on the assessment host.
 
-Security strengths include sanitized public snapshots, separate approved snapshots, private media, RLS tests, exact-token public resolution, live-session binding, same-origin/body-size protections, safe redirect handling, fresh reauthentication for deletion, link rotation/unpublishing, and time-limited Full View grants.
+Security strengths include sanitized public snapshots, separate approved snapshots, private media, RLS tests, exact-token public resolution, live-session binding, same-origin/body-size protections, safe redirect handling, fresh reauthentication for deletion, link rotation/unpublishing, and time-limited Complete Portfolio grants.
 
 Do not treat these local results as proof of deployed configuration. This checkout had no `.vercel/project.json`, Supabase project reference, or production environment binding.
 
 ## Pilot blockers from the assessment
 
-The original assessment list below is historical prioritization. The creator-entitlement boundary, disclosure review, seven-day Full View confirmation, 30-day public-link policy, expired-link state, and non-destructive unpublish were implemented on `main` in the 2026-09-11 pilot launch changes.
+The original assessment list below is historical prioritization. The creator-entitlement boundary, disclosure review, Complete Portfolio confirmation, 30-day public-link policy, expired-link state, and non-destructive unpublish were implemented on `main` in the 2026-09-11 pilot launch changes. Complete Portfolio access now lasts 15 days.
 
 The approved package and its superseding waitlist decision are documented in `docs/pilot-access-lifecycle-plan.md`. `/pilot-access` now records verified launch interest only and never grants creator access. The administrator surface is a read-only waitlist, public B2C password signup is closed, existing creators can still sign in, and a Nakshatra application administrator automatically receives creator capability. Supabase project ownership is deliberately separate from in-product authority. These changes require migration `20260912150000_waitlist_and_admin_creator_access.sql`. Future email-bound signup invitation delivery remains deferred.
 
@@ -324,7 +324,7 @@ The approved package and its superseding waitlist decision are documented in `do
 4. Disable payments and BrokerDesk server-side and remove payment claims from the pilot.
 5. Keep the Didit publication requirement, verify its production configuration, and provide clear consent, failure, retry, and support states for every pilot creator.
 6. Add a real publication disclosure review; the current “Review and publish” action publishes directly.
-7. Add a Full View confirmation showing recipient, disclosed categories, seven-day expiry, and revocation.
+7. Add a Complete Portfolio confirmation showing recipient, disclosed categories, 15-day expiry, and revocation.
 8. Add owner new-interest and viewer decision notifications.
 9. Enforce adult candidate status from DOB and record candidate consent/representation context.
 10. Preserve dashboard history when a portfolio is unpublished or expired.

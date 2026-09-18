@@ -10,7 +10,7 @@ import { representativePortfolio } from "./fixtures/portfolio-view-fixtures";
 describe("representative portfolio views", () => {
   it("keeps Short View concise and excludes protected identity and contact details", () => {
     const data = createPublicPortfolioSnapshot({ ...representativePortfolio, privacy_mode: "private" });
-    const { container } = render(<CelestialUnion data={data} themeColor="" sunSign="mesha" accessMode="public" />);
+    const { container } = render(<CelestialUnion data={data} sunSign="mesha" accessMode="public" />);
 
     expect(container.querySelector(".portfolio-short-overview")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Ananya" })).toBeInTheDocument();
@@ -25,7 +25,7 @@ describe("representative portfolio views", () => {
 
   it("uses the chaptered Standard View while keeping protected details out", () => {
     const data = createPublicPortfolioSnapshot(representativePortfolio);
-    const { container } = render(<CelestialUnion data={data} themeColor="" sunSign="mesha" accessMode="public" />);
+    const { container } = render(<CelestialUnion data={data} sunSign="mesha" accessMode="public" />);
 
     expect(container.querySelector(".portfolio-short-overview")).toBeNull();
     expect(screen.getByRole("heading", { name: "Ananya Mehta" })).toBeInTheDocument();
@@ -36,9 +36,9 @@ describe("representative portfolio views", () => {
     expect(screen.queryByText("family@example.test")).not.toBeInTheDocument();
   });
 
-  it("shows decision details in Full View but still excludes owner-only data", () => {
+  it("shows decision details in the Complete Portfolio but still excludes owner-only data", () => {
     const data = createApprovedPortfolioSnapshot(representativePortfolio);
-    render(<CelestialUnion data={data} themeColor="" sunSign="mesha" accessMode="approved" accessExpiresAt="2030-01-02T15:30:00.000Z" />);
+    render(<CelestialUnion data={data} sunSign="mesha" accessMode="approved" accessExpiresAt="2030-01-02T15:30:00.000Z" />);
 
     expect(screen.getByText("1995-04-18")).toBeInTheDocument();
     expect(screen.getByText("$100k–$125k · USD")).toBeInTheDocument();

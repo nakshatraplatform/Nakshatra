@@ -14,11 +14,14 @@ import {
   CELESTIAL_THEME_COLORS,
   getCelestialAppearance,
 } from "@/features/portfolio/celestial-theme";
+import {
+  PORTFOLIO_VIEW_LABELS,
+  publicIntroductionLabel,
+} from "@/features/portfolio/template";
 import { RASHI_OPTIONS, type PortfolioData, type PortfolioHoroscopeAttachment, type RashiKey } from "@/types/portfolio";
 
 interface CelestialUnionProps {
   data: PortfolioData;
-  themeColor: string;
   sunSign: string | null;
   accessMode?: "owner" | "approved" | "public";
   accessExpiresAt?: string;
@@ -66,7 +69,7 @@ export default function CelestialUnion({
   const approvedViewer = accessMode === "approved";
   const hasApprovedAccess = ownerPreview || approvedViewer;
   const privacyMode = data.privacy_mode || "balanced";
-  const shortPublicView = accessMode === "public" && privacyMode === "private";
+  const briefPublicView = accessMode === "public" && privacyMode === "private";
   const rashi = normalizeRashi(data.astrology?.rashi || sunSign);
   const rashiOption = RASHI_OPTIONS.find((option) => option.key === rashi);
   const heroPhoto = photos.find((photo) => photo.mediaType === "hero");
@@ -82,7 +85,7 @@ export default function CelestialUnion({
       : null;
   const heroPhotos = heroPhoto ? [heroPhoto] : legacyOwnerPhoto ? [legacyOwnerPhoto] : [];
   const galleryPhotos = photos.filter((photo) => photo.mediaType === "gallery");
-  const shortGalleryPhotos = galleryPhotos.filter((photo) => photo.presentation !== "blurred").slice(0, 1);
+  const briefGalleryPhotos = galleryPhotos;
   const blurredPhotos = photos.filter((photo) => photo.presentation === "blurred");
   const shortBio = clean(data.personal.short_bio);
   const profileSummary = clean(data.personal.profile_summary);
@@ -281,7 +284,8 @@ export default function CelestialUnion({
       "journey",
       "Journey",
       "Education and career",
-      "Education and career information exists and may be shared after approval."
+      "Education and career information exists and may be shared after approval.",
+      showInterestSection
     ));
   }
 
@@ -333,11 +337,13 @@ export default function CelestialUnion({
             ))}
           </div>
           {familyProtected && !hasApprovedAccess && (
-            <ProtectedInline>
-              {privacyMode === "private"
-                ? "Additional family background, names, occupations, and exact locations remain protected."
-                : "Names, occupations, and exact family locations remain protected."}
-            </ProtectedInline>
+            <ProtectedInline
+              heading="More family details are shared after approval"
+              detail={privacyMode === "private"
+                ? "Additional family background, names, occupations, and exact locations stay protected."
+                : "Names, occupations, and exact family locations stay protected."}
+              showAction={showInterestSection}
+            />
           )}
         </>
       ),
@@ -347,7 +353,8 @@ export default function CelestialUnion({
       "family",
       "Family and roots",
       "Family",
-      "Family information exists and can be requested after a respectful introduction."
+      "Family information exists and can be requested after a respectful introduction.",
+      showInterestSection
     ));
   }
 
@@ -371,11 +378,13 @@ export default function CelestialUnion({
             <DataPair label="Manglik status" value={clean(data.astrology?.manglik_status)} />
           </div>
           {astrologyProtected && !hasApprovedAccess && (
-            <ProtectedInline>
-              {privacyMode === "private"
-                ? "Additional astrology and exact birth details remain protected."
-                : "Exact birth date, time, place, and chart remain protected."}
-            </ProtectedInline>
+            <ProtectedInline
+              heading="More astrology details are shared after approval"
+              detail={privacyMode === "private"
+                ? "Additional astrology and exact birth details stay protected."
+                : "Exact birth date, time, place, and chart stay protected."}
+              showAction={showInterestSection}
+            />
           )}
           {horoscopeAttachment && (
             <a className="portfolio-horoscope-attachment" href={horoscopeAttachment.href} target="_blank" rel="noreferrer">
@@ -400,7 +409,8 @@ export default function CelestialUnion({
       "astrology",
       "Astrology",
       "Cultural alignment",
-      "Astrology information exists and can be shared after approval."
+      "Astrology information exists and can be shared after approval.",
+      showInterestSection
     ));
   }
 
@@ -518,28 +528,28 @@ export default function CelestialUnion({
     >
       <header className="portfolio-header">
         <div className="portfolio-header-inner">
-          <a href="#portfolio-top" className="portfolio-brand" aria-label="Nakshatra portfolio home">
+          <a href="#main-content" className="portfolio-brand" aria-label="Nakshatra portfolio home">
             <Sparkles aria-hidden="true" />
             <span>Nakshatra</span>
           </a>
           <nav aria-label="Portfolio quick actions">
-            <a href="#portfolio-top">Overview</a>
+            <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
             {showInterestSection
-              ? <a href="#portfolio-interest">Request Full View</a>
+              ? <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>
               : <a href="#portfolio-profile">Details</a>}
           </nav>
           <span className="portfolio-mode-label">
-            <ShieldCheck aria-hidden="true" /> {ownerPreview ? "Owner preview" : approvedViewer ? "Full portfolio" : privacyLabel(privacyMode)}
+            <ShieldCheck aria-hidden="true" /> {ownerPreview ? "Owner preview" : approvedViewer ? PORTFOLIO_VIEW_LABELS.complete : publicIntroductionLabel(privacyMode)}
           </span>
         </div>
       </header>
 
       {approvedViewer && (
-        <aside className="portfolio-access-context" aria-label="Full View access details">
+        <aside className="portfolio-access-context" aria-label="Complete Portfolio access details">
           <ShieldCheck aria-hidden="true" />
           <div>
-            <strong>Full View access</strong>
+            <strong>Complete Portfolio access</strong>
             <span>
               Shared with your signed-in account by the portfolio owner
               {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
@@ -558,7 +568,7 @@ export default function CelestialUnion({
         </aside>
       )}
 
-      <main id="portfolio-top" className="portfolio-main">
+      <main id="main-content" className="portfolio-main">
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
           <div className="portfolio-photo-stage">
             <span className="portfolio-orbit portfolio-orbit-one" aria-hidden="true" />
@@ -588,9 +598,9 @@ export default function CelestialUnion({
           </section>
         )}
 
-        {shortPublicView ? (
+        {briefPublicView ? (
           <>
-            <ShortIntroduction
+            <BriefIntroduction
               name={data.personal.name}
               education={educationTitle}
               career={careerTitle}
@@ -601,7 +611,7 @@ export default function CelestialUnion({
               familyIntroduction={clean(data.family?.public_summary)}
               partnershipIntroduction={clean(data.preferences?.narrative)}
             />
-            <AdaptivePortfolioGallery photos={shortGalleryPhotos} />
+            <AdaptivePortfolioGallery photos={briefGalleryPhotos} />
           </>
         ) : hasApprovedAccess ? (
           <>
@@ -639,7 +649,7 @@ export default function CelestialUnion({
           </>
         )}
 
-        {!shortPublicView && !hasApprovedAccess && trailingChapters.length > 0 && (
+        {!briefPublicView && !hasApprovedAccess && trailingChapters.length > 0 && (
           <div className="portfolio-chapters portfolio-chapters-trailing">
             {trailingChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
           </div>
@@ -655,12 +665,17 @@ export default function CelestialUnion({
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
                     ? "These contact details became visible when the profile owner approved your request."
-                    : "Introduce yourself using a verified email. The profile owner decides whether to share Full View access with you."}
+                    : "Introduce yourself using a verified email. The profile owner decides whether to share the Complete Portfolio with you."}
               </p>
             </div>
             {protectedItems.length > 0 && (
-              <div className="portfolio-protected-items" aria-label="Protected information available">
-                {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
+              <div className="portfolio-protected-summary">
+                <div className="portfolio-protected-items" aria-label="Protected information available">
+                  {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
+                </div>
+                {!hasApprovedAccess && (
+                  <p className="portfolio-protected-clarifier">One approved request shares everything listed above in the Complete Portfolio.</p>
+                )}
               </div>
             )}
             {hasApprovedAccess && contactEntries.length > 0 ? (
@@ -692,7 +707,7 @@ export default function CelestialUnion({
   );
 }
 
-function ShortIntroduction({
+function BriefIntroduction({
   name,
   education,
   career,
@@ -767,8 +782,13 @@ function TimelineItem({ icon, label, title, meta, detail }: { icon: ReactNode; l
   );
 }
 
-function ProtectedInline({ children }: { children: ReactNode }) {
-  return <p className="portfolio-protected-note"><LockKeyhole aria-hidden="true" />{children}</p>;
+function ProtectedInline({ heading, detail, showAction }: { heading: string; detail: string; showAction: boolean }) {
+  return (
+    <div className="portfolio-protected-note">
+      <LockKeyhole aria-hidden="true" />
+      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p>
+    </div>
+  );
 }
 
 function DataPair({ label, value }: { label: string; value?: string | null }) {
@@ -777,12 +797,12 @@ function DataPair({ label, value }: { label: string; value?: string | null }) {
   return <div className="portfolio-data-pair"><span>{label}</span><strong>{meaningfulValue}</strong></div>;
 }
 
-function protectedChapter(id: string, eyebrow: string, title: string, message: string): ChapterDefinition {
+function protectedChapter(id: string, eyebrow: string, title: string, message: string, showAction = false): ChapterDefinition {
   return {
     id,
     eyebrow,
     title,
-    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>Protected information</strong><span>{message}</span></p></div>,
+    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p></div>,
   };
 }
 
@@ -840,11 +860,6 @@ function hasAny(values: Array<string | null | undefined>) {
 
 function firstName(value?: string) {
   return clean(value)?.split(/\s+/)[0] || "this profile";
-}
-
-function privacyLabel(mode: PortfolioData["privacy_mode"]) {
-  if (mode === "private") return "Short introduction";
-  return "Standard introduction";
 }
 
 function genderLabel(value?: PortfolioData["personal"]["gender"]) {

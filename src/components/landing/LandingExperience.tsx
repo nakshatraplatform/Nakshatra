@@ -17,6 +17,9 @@ import {
   UserCheck,
 } from "lucide-react";
 import styles from "./LandingExperience.module.css";
+import { PORTFOLIO_VIEW_LABELS } from "@/features/portfolio/template";
+import { GuidedTour } from "./GuidedTour";
+import { LandingSectionRail } from "./LandingSectionRail";
 
 export type LandingVariant = "clarity" | "control" | "story";
 
@@ -28,18 +31,18 @@ const concepts = {
     lead: "Replace scattered biodata files, photographs, and horoscope attachments with one current portfolio. Families see a clear first introduction. Personal details are shared only after you approve their verified request.",
     primary: "Join the waitlist",
     secondary: "View a sample portfolio",
-    visualMode: "Standard introduction",
+    visualMode: PORTFOLIO_VIEW_LABELS.detailed,
     visualNote: "Contact details protected",
   },
   control: {
     className: styles.control,
     eyebrow: "Private pilot · Public waitlist",
     headline: "Share your story. Not your privacy.",
-    lead: "Choose what a first-time viewer sees, keep contact details protected, and approve seven-day full portfolio access only when an introduction feels relevant.",
+    lead: "Choose what a first-time viewer sees, keep contact details protected, and approve 15-day Complete Portfolio access only when an introduction feels relevant.",
     primary: "Join the waitlist",
     secondary: "See how control works",
-    visualMode: "Short introduction",
-    visualNote: "Full portfolio needs approval",
+    visualMode: PORTFOLIO_VIEW_LABELS.brief,
+    visualNote: "Complete Portfolio needs approval",
   },
   story: {
     className: styles.story,
@@ -48,7 +51,7 @@ const concepts = {
     lead: "Bring your story, photographs, family, and horoscope together in the way you would actually want someone to understand you. Not as another form or attachment.",
     primary: "Join the waitlist",
     secondary: "See the portfolio structure",
-    visualMode: "Standard introduction",
+    visualMode: PORTFOLIO_VIEW_LABELS.detailed,
     visualNote: "Story · Journey · Family · Gallery",
   },
 } as const;
@@ -59,29 +62,28 @@ const problems = [
   { icon: LockKeyhole, title: "You cannot take it back", body: "Once a file is forwarded, you have no way to know where it went or who still has it." },
 ] as const;
 
-const steps = [
-  { number: "01", title: "Create", body: "Add your story, family background, photographs, and horoscope in a guided form. Save as you go and finish in your own time." },
-  { number: "02", title: "Preview and verify", body: "See exactly what each family will see before anyone else does. Every pilot creator completes Didit identity verification before publication." },
-  { number: "03", title: "Share", body: "Publish when you are ready and send one link through WhatsApp, email, or wherever your family already talks." },
-  { number: "04", title: "Approve", body: "Review interest requests in your dashboard and decide who sees your full portfolio." },
-] as const;
-
 const viewModes = [
-  { icon: LockKeyhole, label: "First view", title: "Short introduction", body: "A brief introduction that keeps most details behind your approval." },
-  { icon: ShieldCheck, label: "First view", title: "Standard introduction", body: "The details most families expect to see when they first read a portfolio." },
-  { icon: UserCheck, label: "After approval", title: "Full portfolio", body: "Your complete portfolio, opened only for a viewer you have approved." },
+  { icon: LockKeyhole, label: "Public", title: PORTFOLIO_VIEW_LABELS.brief, body: "A concise introduction that keeps most details behind your approval." },
+  { icon: ShieldCheck, label: "Public", title: PORTFOLIO_VIEW_LABELS.detailed, body: "A richer introduction with the details most families expect to see first." },
+  { icon: UserCheck, label: "After approval", title: PORTFOLIO_VIEW_LABELS.complete, body: "Your complete portfolio, opened only for a viewer you have approved." },
 ] as const;
 
 const trustFacts = [
-  { icon: LockKeyhole, text: "Contact details are never in the first view." },
+  { icon: LockKeyhole, text: "Contact details are never in either public Introduction." },
   { icon: BadgeCheck, text: "Viewers confirm their email before they can request more." },
   { icon: UserCheck, text: "You approve or set aside every request from your dashboard." },
   { icon: RefreshCw, text: "You can end someone's access at any time." },
 ] as const;
 
+const heroAssurances = [
+  { icon: LockKeyhole, title: "No public directory", body: "Only people with your link can open the public Introduction." },
+  { icon: BadgeCheck, title: "Verified before publishing", body: "Every pilot creator completes an identity check." },
+  { icon: UserCheck, title: "Protected details need approval", body: "You decide who receives 15-day Complete Portfolio access." },
+] as const;
+
 const familyBenefits = [
   { icon: Smartphone, title: "Clear on every phone", body: "Large, readable text and plain labels. Comfortable for parents and grandparents to read." },
-  { icon: Globe2, title: "Nothing to install", body: "The link opens straight in a browser. There is no app to download and no account needed to read the first view." },
+  { icon: Globe2, title: "Nothing to install", body: "The link opens straight in a browser. There is no app to download and no account needed to read the public Introduction." },
   { icon: BadgeCheck, title: "Identity verification required", body: "Every pilot creator completes the Didit identity check before publication. The verified badge does not guarantee every portfolio detail." },
   { icon: RefreshCw, title: "Always current", body: "Change a detail, update your published portfolio, and the same link shows the current version." },
 ] as const;
@@ -94,13 +96,13 @@ const samplePortfolios = [
 
 const faqs = [
   { question: "Is Nakshatra a matchmaking website?", answer: "No. Nakshatra does not suggest matches or search for people on your behalf. It gives you one clear portfolio to share with the families you choose." },
-  { question: "Can I create a portfolio after joining the waitlist?", answer: "Not yet. The waitlist only records your interest and contact details. We will send signup instructions separately when launch access becomes available. People who receive a shared portfolio can still read its First View and express interest." },
+  { question: "Can I create a portfolio after joining the waitlist?", answer: "Not yet. The waitlist only records your interest and contact details. We will send signup instructions separately when launch access becomes available. People who receive a shared portfolio can still read its public Introduction and express interest." },
   { question: "Is the pilot paid?", answer: "No. The private beta is free for invited pilot participants. Paid plans are not available during the pilot." },
-  { question: "Does someone need to sign in to open my link?", answer: "No. Anyone with your link can read your first view straight away. A viewer verifies their email before asking to see your full portfolio." },
+  { question: "Does someone need to sign in to open my link?", answer: "No. Anyone with your link can read your Brief or Detailed Introduction straight away. A viewer verifies their email before asking to see your Complete Portfolio." },
   { question: "Is identity verification required?", answer: "Yes. Every pilot creator must complete the Didit identity check before publishing. The verified badge confirms that the owner completed the identity check; it does not guarantee that every portfolio detail is accurate." },
   { question: "How long does a public link remain active?", answer: "A published portfolio link is active for 30 days by default. The owner can unpublish or replace the link earlier." },
-  { question: "How long does approved access last?", answer: "Full portfolio access lasts for seven days. You can end it earlier or renew it from your dashboard." },
-  { question: "Can someone find my portfolio by searching my name?", answer: "No. Nakshatra has no public portfolio directory, and portfolio pages tell search engines not to list them. Anyone who receives or is forwarded your link can still open its first view." },
+  { question: "How long does approved access last?", answer: "Complete Portfolio access lasts for 15 days. You can end it earlier or renew it from your dashboard." },
+  { question: "Can someone find my portfolio by searching my name?", answer: "No. Nakshatra has no public portfolio directory, and portfolio pages tell search engines not to list them. Anyone who receives or is forwarded your link can still open its public Introduction." },
 ] as const;
 
 export function LandingExperience({ variant }: { variant: LandingVariant }) {
@@ -109,6 +111,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
   return (
     <div className={`${styles.page} ${concept.className}`} data-landing-variant={variant}>
       <a className={styles.skipLink} href="#main-content">Skip to main content</a>
+      <LandingSectionRail />
 
       <header className={styles.header}>
         <Link href="/" className={styles.brand} aria-label="Nakshatra home">
@@ -125,7 +128,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
       </header>
 
       <main id="main-content">
-        <section className={styles.hero}>
+        <section id="top" className={styles.hero}>
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>{concept.eyebrow}</p>
             <h1>{concept.headline}</h1>
@@ -135,6 +138,14 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
               <a href={variant === "control" ? "#control" : "#samples"} className={styles.secondaryButton}>{concept.secondary}</a>
             </div>
             <p className={styles.heroNote}><Check aria-hidden="true" /> Join for launch updates. Waitlist registration does not create product access.</p>
+            <ul className={styles.heroAssurances} aria-label="Nakshatra privacy assurances">
+              {heroAssurances.map(({ icon: Icon, title, body }) => (
+                <li key={title}>
+                  <Icon aria-hidden="true" />
+                  <span><strong>{title}</strong><small>{body}</small></span>
+                </li>
+              ))}
+            </ul>
           </div>
           <PortfolioPreview mode={concept.visualMode} note={concept.visualNote} variant={variant} />
         </section>
@@ -147,16 +158,13 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
         <section id="control" className={styles.controlSection}>
           <div className={styles.controlIntro}>
             <p className={styles.eyebrow}>Your information, your decision</p><h2>One link does not mean everyone sees everything.</h2><p>You choose how much a new family sees when they first open your link. Contact details and personal information stay protected until you approve that viewer yourself.</p>
-            <div className={styles.accessFlow} aria-label="Portfolio access flow"><span>First introduction</span><ArrowRight aria-hidden="true" /><span>Verified email request</span><ArrowRight aria-hidden="true" /><strong>Full portfolio</strong></div>
+            <div className={styles.accessFlow} aria-label="Portfolio access flow"><span>Brief or Detailed Introduction</span><ArrowRight aria-hidden="true" /><span>Verified email request</span><ArrowRight aria-hidden="true" /><strong>Complete Portfolio</strong></div>
           </div>
           <div className={styles.controlGrid}>{viewModes.map(({ icon: Icon, label, title, body }) => <article key={title}><Icon aria-hidden="true" /><span>{label}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
           <div className={styles.trustFacts}>{trustFacts.map(({ icon: Icon, text }) => <span key={text}><Icon aria-hidden="true" />{text}</span>)}</div>
         </section>
 
-        <section id="how" className={styles.stepsSection}>
-          <div className={styles.sectionHeading}><p className={styles.eyebrow}>How it works</p><h2>Four steps from a blank page to a shared link.</h2></div>
-          <div className={styles.stepsGrid}>{steps.map((step) => <article key={step.number}><span>{step.number}</span><h3>{step.title}</h3><p>{step.body}</p></article>)}</div>
-        </section>
+        <GuidedTour />
 
         <section className={styles.familySection}>
           <div className={styles.sectionHeading}><p className={styles.eyebrow}>Built for every family</p><h2>Easy to read on any phone, for any generation.</h2></div>
@@ -177,7 +185,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
           </div>
           <div className={styles.betaDetails}>
             <span><BadgeCheck aria-hidden="true" /><strong>Current pilot creators</strong>Existing participants can sign in and continue testing. Every creator completes Didit identity verification before publication.</span>
-            <span><MessageCircle aria-hidden="true" /><strong>Shared-network viewers</strong>Open the First View, verify an email to express interest, and receive seven-day Full View access after approval.</span>
+            <span><MessageCircle aria-hidden="true" /><strong>Shared-network viewers</strong>Open the public Introduction, verify an email to express interest, and receive 15-day Complete Portfolio access after approval.</span>
             <span><RefreshCw aria-hidden="true" /><strong>Launch waitlist</strong>Leave verified contact details now. Signup instructions will be sent separately when access opens.</span>
           </div>
           <div className={styles.betaActions}>
@@ -222,7 +230,13 @@ function PortfolioPreview({ mode, note, variant }: { mode: string; note: string;
         </div>
         <footer><span>Story</span><span>Journey</span><span>Family</span><span>Gallery</span></footer>
       </article>
-      <div className={styles.floatingNote}><RefreshCw aria-hidden="true" /> {note}</div>
+      <div className={styles.previewLifecycle} aria-label="How protected access works">
+        <span><small>01 · Shared link</small><strong>Public Introduction</strong></span>
+        <ArrowRight aria-hidden="true" />
+        <span><small>02 · Verified email</small><strong>Interest request</strong></span>
+        <ArrowRight aria-hidden="true" />
+        <span data-approved><small>03 · Your decision</small><strong>{note}</strong></span>
+      </div>
     </div>
   );
 }

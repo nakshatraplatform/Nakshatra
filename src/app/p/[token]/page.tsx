@@ -84,7 +84,6 @@ export default async function PublicBiodataPage({ params }: Props) {
     <BiodataTemplate
       templateId={portfolio.templateId}
       data={portfolio.data}
-      themeColor={portfolio.themeColor || "#6366f1"}
       sunSign={portfolio.sunSign || null}
       accessMode={portfolio.accessMode}
       accessExpiresAt={portfolio.accessExpiresAt}

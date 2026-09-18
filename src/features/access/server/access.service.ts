@@ -29,7 +29,7 @@ export async function getPortfolioAccessSummary(
   return error || !parsed.success ? { grants: [], events: [] } : parsed.data;
 }
 
-/** Renews or revokes one owner-managed Full View grant through an atomic command. */
+/** Renews or revokes one owner-managed Complete Portfolio grant through an atomic command. */
 export async function managePortfolioGrant(
   supabase: SupabaseClient,
   grantId: string,

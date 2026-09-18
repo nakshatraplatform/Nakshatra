@@ -26,7 +26,7 @@ export default function PrivacyPage() {
       </PolicySection>
 
       <PolicySection title="Your choices and requests">
-        <p>You can edit a draft, change appearance and privacy mode, unpublish a biodata, replace its public link, or allow the link to expire. Public links currently expire after 90 days unless renewed.</p>
+        <p>You can edit a draft, change appearance and privacy mode, unpublish a biodata, replace its public link, or allow the link to expire. Public links currently expire after 30 days unless renewed.</p>
         <p>Self-service account deletion is not available yet. To request access, correction, deletion, consent withdrawal, or help with a privacy concern, email <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@nakshatra.app">hello@nakshatra.app</a>.</p>
       </PolicySection>
 

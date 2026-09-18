@@ -178,18 +178,18 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.manage_reveal_grant('76000000-0000-4000-8000-000000000001', 'renew') ->> 'status',
   'renewed',
-  'Full View renewal succeeds through the owner command'
+  'Complete Portfolio renewal succeeds through the owner command'
 );
 select ok(
-  (select expires_at between now() + interval '6 days 23 hours' and now() + interval '7 days'
+  (select expires_at between now() + interval '14 days 23 hours' and now() + interval '15 days'
    from public.reveal_grants where id = '76000000-0000-4000-8000-000000000001'),
-  'Full View renewal resets to no more than seven days'
+  'Complete Portfolio renewal resets to no more than 15 days'
 );
 select is(public.unpublish_portfolio_transaction() ->> 'status', 'unpublished', 'unpublish succeeds');
 
 reset role;
 select is((select count(*)::integer from public.interest_requests where portfolio_id = '74000000-0000-4000-8000-000000000001'), 1, 'unpublish preserves interest requests');
-select is((select count(*)::integer from public.reveal_grants where portfolio_id = '74000000-0000-4000-8000-000000000001'), 1, 'unpublish preserves Full View grants');
+select is((select count(*)::integer from public.reveal_grants where portfolio_id = '74000000-0000-4000-8000-000000000001'), 1, 'unpublish preserves Complete Portfolio grants');
 select ok(
   exists (select 1 from public.access_audit_events where portfolio_id = '74000000-0000-4000-8000-000000000001' and event_type = 'portfolio_unpublished'),
   'unpublish writes an immutable audit event'

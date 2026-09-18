@@ -6,6 +6,7 @@ import {
   type PortfolioData,
 } from "@/types/portfolio";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { CELESTIAL_UNION_TEMPLATE_NAME } from "@/features/portfolio/template";
 
 const APPROVED_EXCLUDED_PREFERENCE_KEYS = new Set([
   "private_notes",
@@ -111,7 +112,7 @@ export function createApprovedPortfolioSnapshot(data: PortfolioData): PortfolioD
     preferences: approvedPreferences,
     style: {
       appearance: data.style?.appearance || "light",
-      template_name: "Nakshatra Portfolio",
+      template_name: CELESTIAL_UNION_TEMPLATE_NAME,
     },
   });
 }

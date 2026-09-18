@@ -187,7 +187,7 @@ set local request.jwt.claims = '{"sub":"11111111-1111-4111-8111-111111111111","r
 select is(
   public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'),
   'approved',
-  'owner approval atomically creates full access'
+  'owner approval atomically creates Complete Portfolio access'
 );
 
 set local request.jwt.claims = '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","session_id":"22222222-2222-4222-8222-222222222223"}';

@@ -70,7 +70,7 @@ export function updatePublicationProgressRequest(action: PublicationProgressActi
   );
 }
 
-/** Extends an already published portfolio link for another 90 days. */
+/** Extends an already published portfolio link for another 30 days. */
 export function renewPortfolioLinkRequest() {
   return requestPortfolioApi<{ ok: true }>("/api/portfolio/renew", { method: "POST" });
 }

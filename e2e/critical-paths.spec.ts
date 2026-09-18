@@ -192,8 +192,8 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
       })
     );
     expect(futureChapterStyles).toEqual([
-      { display: "grid", columns: 3, copySize: 17 },
-      { display: "grid", columns: 3, copySize: 17 },
+      { display: "grid", columns: 3, copySize: 18 },
+      { display: "grid", columns: 3, copySize: 18 },
     ]);
   } else {
     await expect(page.locator(".portfolio-chapter-pair").first()).toHaveCSS("display", "block");
@@ -242,16 +242,16 @@ test("interest popup stays in view and keeps extra details optional", async ({ p
   await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();
 });
 
-test("Private portfolio keeps one gallery photo clear and safely blurs the rest", async ({ page }) => {
+test("Private portfolio keeps one gallery photo clear and shows protected placeholders", async ({ page }) => {
   await page.goto("/p/e2e-private-token");
 
   await expect(page.locator('.portfolio-root[data-privacy-mode="private"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "A little more about Aditi" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Education and career" })).toHaveCount(0);
   const gallery = page.locator(".portfolio-gallery");
-  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(1);
+  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(1);
-  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(0);
+  await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(6);
   await expect(gallery.locator('.portfolio-gallery-feature[data-presentation="clear"]')).toBeVisible();
 });
 

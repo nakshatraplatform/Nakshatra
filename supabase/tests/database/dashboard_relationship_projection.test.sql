@@ -197,7 +197,7 @@ select ok(
 select is(
   public.list_portfolio_access() #>> '{grants,0,sourceType}',
   'broker',
-  'Full View access retains the relationship source'
+  'Complete Portfolio access retains the relationship source'
 );
 
 reset role;

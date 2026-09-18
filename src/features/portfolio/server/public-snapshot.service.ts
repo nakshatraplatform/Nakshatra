@@ -6,6 +6,7 @@ import {
   type PortfolioData,
 } from "@/types/portfolio";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { CELESTIAL_UNION_TEMPLATE_NAME } from "@/features/portfolio/template";
 
 function ageFromDate(dateOfBirth?: string) {
   if (!dateOfBirth) return undefined;
@@ -204,7 +205,7 @@ export function createPublicPortfolioSnapshot(data: PortfolioData): PortfolioDat
     },
     style: {
       appearance: data.style?.appearance || "light",
-      template_name: "Nakshatra Portfolio",
+      template_name: CELESTIAL_UNION_TEMPLATE_NAME,
     },
     career: {
       title: data.career?.title,

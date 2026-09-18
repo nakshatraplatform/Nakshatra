@@ -54,7 +54,7 @@ describe("portfolio publish readiness", () => {
     [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, dob: "2020-01-01" } }, true, "18 or older"],
     [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, current_location: "" } }, true, "current location"],
     [{ ...readyPortfolio, career: { ...readyPortfolio.career, title: "" } }, true, "profession or role"],
-    [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, profile_summary: "", short_bio: "" } }, true, "short introduction"],
+    [{ ...readyPortfolio, personal: { ...readyPortfolio.personal, profile_summary: "", short_bio: "" } }, true, "brief personal introduction"],
     [readyPortfolio, false, "primary photo"],
   ] as const)("rejects incomplete generation state", (data, hasShareablePrimaryPhoto, message) => {
     expect(() => requirePortfolioPublishReadiness({ data, hasShareablePrimaryPhoto })).toThrow(PortfolioPublishReadinessError);

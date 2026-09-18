@@ -232,7 +232,7 @@ Recommended story:
 1. **Hero:** `Share your story. Not your privacy.` Subcopy explains one living portfolio, approved access, and family-friendly review. Primary action: `Create your portfolio`. Secondary: `View an example`.
 2. **Problem/proof:** replace scattered PDFs and repeated updates with one controlled source. Show a real product screen, not decorative document stacks alone.
 3. **What a portfolio contains:** Story, journey, everyday life, family context, preferences, and protected details.
-4. **How sharing works:** First view → interest → owner approval → time-limited details.
+4. **How sharing works:** Brief or Detailed Introduction → interest → owner approval → time-limited Complete Portfolio.
 5. **Trust controls:** verification scope, recipient preview, expiration, revoke, and no public directory.
 6. **Pricing + focused FAQ + final action.**
 
@@ -261,7 +261,7 @@ Use an eight-step guided flow with autosave and a continuously available preview
 7. Astrology and documents (optional/protected)
 8. Sharing and review
 
-Each field or field group has a visible audience chip: `First view`, `After mutual interest`, `Shared by you`, or `Only you`. Use suggested defaults and allow edits. Do not ask users to understand “Balanced” versus “Private” before they have seen the resulting view.
+Each field or field group has a visible audience chip: `Brief Introduction`, `Detailed Introduction`, `Complete Portfolio`, `Shared by you`, or `Only you`. Use suggested defaults and allow edits. Do not ask users to understand the persisted “Balanced” versus “Private” values before they have seen the resulting Introduction.
 
 Show:
 
@@ -304,7 +304,7 @@ Prioritize decisions and trust health over vanity analytics:
 
 | Label | Meaning | Typical content | Trigger |
 | --- | --- | --- | --- |
-| First view | Safe introduction | name, city-level location, story, broad work/education, selected images | share link |
+| Brief or Detailed Introduction | Safe public introduction | name, city-level location, story, broad work/education, selected images | share link |
 | Mutual view | More context after both sides agree to continue | family summary, practical preferences, expanded gallery | mutual interest recorded |
 | Shared details | Owner-selected sensitive bundle | direct contact, detailed family/contact context, selected documents | explicit owner grant |
 | Verified exchange | Highest-sensitivity exchange | exact birth details or original horoscope/identity artifacts | defined verification and consent event |
@@ -452,7 +452,7 @@ References: [W3C guidance on older users](https://www.w3.org/WAI/older-users/dev
 - The landing and portfolio direction feels dignified, calm, and clearly differentiated from dating products.
 - Cream surfaces, dark ink, teal, and restrained gold communicate warmth without visual sentimentality.
 - The portfolio form already separates optional family, lifestyle, preferences, and astrology content.
-- The dashboard already includes interest decisions, time-limited Full View access, renewal, revocation, and access history.
+- The dashboard already includes interest decisions, time-limited Complete Portfolio access, renewal, revocation, and access history.
 - The account area exposes export, session revocation, and deletion rather than hiding privacy controls.
 
 ### Highest-priority issues
@@ -465,7 +465,7 @@ References: [W3C guidance on older users](https://www.w3.org/WAI/older-users/dev
 #### P1 — trust and navigation
 
 - Mobile navigation hid `Sign in`; keep it visible alongside `Create portfolio`.
-- `Balanced`, `Private`, and `Full View` describe system modes, not the relationship or content being revealed. Migrate toward recipient-view labels and named section bundles.
+- Persisted `balanced`, `private`, and `full` values remain compatibility details. Customer-facing labels are Brief Introduction, Detailed Introduction, and Complete Portfolio.
 - `Identity Verified` lacks visible scope, provider, and date. Add verification detail and a boundary statement.
 - The large global stylesheet contains multiple product surfaces and overrides. Extract landing, auth, dashboard, editor, portfolio, and legal/account styling into clear ownership boundaries.
 

@@ -70,7 +70,7 @@ describe("blueprint form", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
 
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Updated" } });
-    fireEvent.change(screen.getByLabelText("Short introduction"), { target: { value: "A concise new bio" } });
+    fireEvent.change(screen.getByLabelText("Brief personal introduction"), { target: { value: "A concise new bio" } });
     fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
@@ -78,7 +78,7 @@ describe("blueprint form", () => {
     fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
     fireEvent.change(screen.getAllByLabelText("Name of contact")[0], { target: { value: "Updated Contact" } });
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
-    fireEvent.click(screen.getByRole("button", { name: /Standard introduction/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Detailed Introduction/ }));
 
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ first_name: "Updated", name: "Updated Rao" }));
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ short_bio: "A concise new bio" }));
@@ -90,7 +90,7 @@ describe("blueprint form", () => {
     expect(onUpdate).toHaveBeenCalledWith("style", expect.objectContaining({
       appearance: "dark",
       theme_color: "#121a21",
-      template_name: "Celestial Union",
+      template_name: "Nakshatra Portfolio",
     }));
     expect(onUpdate).toHaveBeenCalledWith("privacy_mode", "balanced");
   });
@@ -118,10 +118,10 @@ describe("blueprint form", () => {
     fireEvent.blur(screen.getByLabelText("Date of birth"));
     expect(screen.getByText("You must be 18 or older.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
-    expect(screen.getByRole("button", { name: /Short introduction/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Brief Introduction/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
-    expect(screen.getByText(/contacts stay out of both initial views/i)).toBeInTheDocument();
+    expect(screen.getByText(/contacts stay out of both public Introductions/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
     expect(screen.getByText(/Optional section/)).toBeInTheDocument();
     expect(screen.queryByText("Sibling 1")).not.toBeInTheDocument();
