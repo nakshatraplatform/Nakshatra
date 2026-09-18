@@ -76,8 +76,8 @@ describe("landing and shared frontend components", () => {
     expect(screen.getAllByText(/Nakshatra/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: /join.*waitlist/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/first view/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/full portfolio/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brief Introduction/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Complete Portfolio/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /pilot is private.*waitlist is open/i })).toBeInTheDocument();
     expect(screen.getByText(/signup instructions will be sent separately/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /identity verification required/i })).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("landing and shared frontend components", () => {
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
     expect(screen.getByRole("heading", { name: /share your story\. not your privacy/i })).toBeInTheDocument();
-    expect(screen.getByText(/full portfolio needs approval/i)).toBeInTheDocument();
+    expect(screen.getByText(/Complete Portfolio needs approval/i)).toBeInTheDocument();
 
     rerender(<LandingExperience variant="story" />);
     expect(screen.getByRole("heading", { name: /a biodata is a list\. this is how you’re introduced/i })).toBeInTheDocument();

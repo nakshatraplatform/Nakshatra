@@ -27,7 +27,7 @@ Production Auth settings to verify in Supabase:
 Deletion is asynchronous:
 
 1. The user requests deletion in `/account`. NAK-41 adds a separate fresh-auth proof before this action is released.
-2. `request_account_deletion()` unpublishes portfolios, disables public snapshots, revokes Full View grants, closes active requests, and schedules deletion after 24 hours. Repeating a pending request returns the original deadline without moving it.
+2. `request_account_deletion()` unpublishes portfolios, disables public snapshots, revokes Complete Portfolio grants, closes active requests, and schedules deletion after 24 hours. Repeating a pending request returns the original deadline without moving it.
 3. The private account remains usable while the request is `pending`. Cancellation is available only while the request remains `pending` or retryable `failed`; canceled portfolios remain unpublished.
 4. An organization owner must transfer ownership when other active members would otherwise be left without an owner.
 5. `npm run privacy:process-deletions` atomically claims due work, sets a 30-minute lease token, freezes account access, and revokes Auth sessions. An expired lease is reclaimed with a new token; no worker can mutate a claim it no longer owns.

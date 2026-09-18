@@ -100,12 +100,12 @@ const photos: PortfolioPhoto[] = [
 describe("celestial union portfolio", () => {
   it("uses the canonical template for legacy and unknown template IDs", () => {
     const { container, rerender } = render(
-      <BiodataTemplate templateId={3} data={complete} themeColor="#17151c" sunSign="kanya" photos={photos} />
+      <BiodataTemplate templateId={3} data={complete} sunSign="kanya" photos={photos} />
     );
     expect(container.querySelector('[data-template="celestial-union"]')).toBeTruthy();
 
     rerender(
-      <BiodataTemplate templateId={999} data={complete} themeColor="#17151c" sunSign="kanya" photos={photos} />
+      <BiodataTemplate templateId={999} data={complete} sunSign="kanya" photos={photos} />
     );
     expect(container.querySelector('[data-template="celestial-union"]')).toBeTruthy();
   });
@@ -115,7 +115,6 @@ describe("celestial union portfolio", () => {
     render(
       <CelestialUnion
         data={publicData}
-        themeColor="#17151c"
         sunSign="kanya"
         accessMode="public"
         photos={photos}
@@ -165,7 +164,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByRole("link", { name: "Explore profile" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "How privacy works" })).not.toBeInTheDocument();
     const quickActions = screen.getByRole("navigation", { name: "Portfolio quick actions" });
-    expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#portfolio-top");
+    expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
@@ -203,9 +202,9 @@ describe("celestial union portfolio", () => {
       pageCount: 3,
     };
     const { rerender } = render(
-      <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} themeColor="" sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
+      <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
-    expect(screen.getByText("Full portfolio")).toBeInTheDocument();
+    expect(screen.getByText("Complete Portfolio")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
     expect(approvedPersonalStory).toBeTruthy();
@@ -221,7 +220,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Contact shared by the profile owner" })).toBeInTheDocument();
 
-    rerender(<CelestialUnion data={createPublicPortfolioSnapshot(complete)} themeColor="" sunSign="kanya" accessMode="public" />);
+    rerender(<CelestialUnion data={createPublicPortfolioSnapshot(complete)} sunSign="kanya" accessMode="public" />);
     expect(screen.queryByRole("link", { name: /original horoscope/i })).not.toBeInTheDocument();
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
   });
@@ -230,7 +229,6 @@ describe("celestial union portfolio", () => {
     render(
       <CelestialUnion
         data={createApprovedPortfolioSnapshot(complete)}
-        themeColor=""
         sunSign="kanya"
         accessMode="approved"
         accessExpiresAt="2030-01-02T15:30:00.000Z"
@@ -238,8 +236,8 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const context = screen.getByLabelText("Full View access details");
-    expect(within(context).getByText("Full View access")).toBeInTheDocument();
+    const context = screen.getByLabelText("Complete Portfolio access details");
+    expect(within(context).getByText("Complete Portfolio access")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the portfolio owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
     expect(screen.getByLabelText("Identity verification information")).toHaveTextContent("It is not a personal, employment, financial, or background endorsement.");
@@ -249,7 +247,6 @@ describe("celestial union portfolio", () => {
     render(
       <CelestialUnion
         data={{ privacy_mode: "private", personal: { name: "Aditi", short_bio: "A short hello." } }}
-        themeColor=""
         sunSign={null}
         accessMode="public"
         interestAction={<button type="button">Show interest</button>}
@@ -258,16 +255,59 @@ describe("celestial union portfolio", () => {
 
     expect(screen.getAllByRole("link", { name: "Introduce yourself" })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: "Introduce yourself" })[0]).toHaveAttribute("href", "#portfolio-interest");
-    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).getByRole("link", { name: "Request Full View" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+  });
+
+  it("links protected chapters to the interest action and explains the disclosure bundle", () => {
+    render(
+      <CelestialUnion
+        data={{
+          privacy_mode: "balanced",
+          personal: { name: "Aditi", short_bio: "A short hello." },
+          visibility: { family: "restricted" },
+        }}
+        sunSign={null}
+        accessMode="public"
+        interestAction={<button type="button">Show interest</button>}
+      />
+    );
+
+    const family = document.getElementById("family");
+    expect(family).toBeTruthy();
+    expect(within(family!).getByText("Family shared after approval")).toBeInTheDocument();
+    expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getByText("One approved request shares everything listed above in the Complete Portfolio.")).toBeInTheDocument();
+  });
+
+  it("keeps protected gallery slots visible in the Brief Introduction", () => {
+    const protectedGalleryPhoto: PortfolioPhoto = {
+      ...photos[1],
+      id: "protected-gallery",
+      alt: "Protected gallery photo",
+      presentation: "blurred",
+    };
+    render(
+      <CelestialUnion
+        data={createPublicPortfolioSnapshot({ ...complete, privacy_mode: "private" })}
+        sunSign="kanya"
+        accessMode="public"
+        photos={[photos[0], photos[1], protectedGalleryPhoto]}
+      />
+    );
+
+    const protectedPhoto = screen.getByRole("button", { name: "Photo 2, shared after approval" });
+    expect(protectedPhoto).toBeInTheDocument();
+    fireEvent.click(protectedPhoto);
+    expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("2 photos")).toBeInTheDocument();
   });
 
   it("renders family and contact values for the full owner preview", () => {
     render(
       <CelestialUnion
         data={complete}
-        themeColor="#f2c6a7"
         sunSign="kanya"
         photos={photos}
       />
@@ -292,7 +332,7 @@ describe("celestial union portfolio", () => {
 
   it("uses the accessible zodiac fact and fixed dark design tokens", () => {
     const { container } = render(
-      <CelestialUnion data={{ ...complete, style: { appearance: "dark" } }} themeColor="#ffffff" sunSign="kanya" photos={photos} />
+      <CelestialUnion data={{ ...complete, style: { appearance: "dark" } }} sunSign="kanya" photos={photos} />
     );
     expect(container.querySelector('[data-appearance="dark"]')).toBeTruthy();
     expect(within(screen.getByLabelText("At a glance")).getByText(/Kanya \(Virgo\)/)).toBeInTheDocument();
@@ -309,7 +349,6 @@ describe("celestial union portfolio", () => {
             photo_url: "https://example.test/legacy-owner.webp",
           },
         }}
-        themeColor="#f2c6a7"
         sunSign="kanya"
         photos={[photos[1]]}
       />
@@ -328,7 +367,6 @@ describe("celestial union portfolio", () => {
           ...complete,
           personal: { ...complete.personal, dob: "2026-13-01" },
         }}
-        themeColor="#f2c6a7"
         sunSign="kanya"
       />
     );
@@ -342,7 +380,6 @@ describe("celestial union portfolio", () => {
       <BiodataTemplate
         templateId={1}
         data={{ personal: { name: "Minimal", dob: "2000-01-01", gender: "male" } }}
-        themeColor=""
         sunSign={null}
       />
     );
@@ -366,10 +403,11 @@ describe("celestial union portfolio", () => {
       },
     });
     const { container, rerender } = render(
-      <CelestialUnion data={privateData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />
+      <CelestialUnion data={privateData} sunSign="kanya" accessMode="public" photos={photos} />
     );
 
     expect(container.querySelector('[data-privacy-mode="private"]')).toBeTruthy();
+    expect(screen.getByText("Brief Introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "A little more about Aditi" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
     expect(screen.getByText("MS")).toBeInTheDocument();
@@ -391,14 +429,15 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("Female")).not.toBeInTheDocument();
     expect(screen.queryByText("Drinking")).not.toBeInTheDocument();
     expect(screen.queryByText("Smoking")).not.toBeInTheDocument();
-    const shortIntroduction = document.getElementById("portfolio-profile");
-    const shortGallery = document.querySelector(".portfolio-gallery");
-    expect(shortIntroduction).toBeTruthy();
-    expect(shortGallery).toBeTruthy();
-    expect(shortIntroduction!.compareDocumentPosition(shortGallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const briefIntroduction = document.getElementById("portfolio-profile");
+    const briefGallery = document.querySelector(".portfolio-gallery");
+    expect(briefIntroduction).toBeTruthy();
+    expect(briefGallery).toBeTruthy();
+    expect(briefIntroduction!.compareDocumentPosition(briefGallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    rerender(<CelestialUnion data={balancedData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />);
+    rerender(<CelestialUnion data={balancedData} sunSign="kanya" accessMode="public" photos={photos} />);
     expect(container.querySelector('[data-privacy-mode="balanced"]')).toBeTruthy();
+    expect(screen.getByText("Detailed Introduction")).toBeInTheDocument();
     expect(screen.getByText("Never Married")).toBeInTheDocument();
     expect(screen.getByText("India")).toBeInTheDocument();
     expect(screen.getByText("Hindu")).toBeInTheDocument();
@@ -409,11 +448,11 @@ describe("celestial union portfolio", () => {
     expect(within(screen.getByLabelText("At a glance")).getByText(/Kanya \(Virgo\)/)).toBeInTheDocument();
     expect(screen.queryByText("A close-knit family with roots in Karnataka.")).not.toBeInTheDocument();
 
-    rerender(<CelestialUnion data={balancedFamilyData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />);
+    rerender(<CelestialUnion data={balancedFamilyData} sunSign="kanya" accessMode="public" photos={photos} />);
     expect(container.querySelector('[data-privacy-mode="balanced"]')).toBeTruthy();
     expect(screen.getByText("A close-knit family with roots in Karnataka.")).toBeInTheDocument();
 
-    rerender(<CelestialUnion data={privateData} themeColor="" sunSign="kanya" accessMode="public" photos={photos} />);
+    rerender(<CelestialUnion data={privateData} sunSign="kanya" accessMode="public" photos={photos} />);
     expect(screen.queryByText("A close-knit family with roots in Karnataka.")).not.toBeInTheDocument();
     expect(screen.queryByText("Northeastern · 2020")).not.toBeInTheDocument();
   });
@@ -424,7 +463,7 @@ describe("adaptive portfolio media", () => {
 
   it("keeps orientation metadata on hero and gallery elements", () => {
     const { container } = render(
-      <CelestialUnion data={complete} themeColor="#17151c" sunSign="kanya" photos={photos} />
+      <CelestialUnion data={complete} sunSign="kanya" photos={photos} />
     );
     expect(container.querySelector('.portfolio-hero-media[data-orientation="portrait"]')).toBeTruthy();
     expect(container.querySelector('.portfolio-gallery-feature img[data-orientation="landscape"]')).toBeTruthy();

@@ -50,7 +50,7 @@ export default function OpenGraphImage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", color: "#246d75", fontFamily: "Arial, sans-serif", fontSize: 20, fontWeight: 700 }}>
-            <span>First View</span><span>→</span><span>Verified interest</span><span>→</span><span>Approved Full View</span>
+            <span>Public Introduction</span><span>→</span><span>Verified interest</span><span>→</span><span>Complete Portfolio</span>
           </div>
         </div>
       </div>

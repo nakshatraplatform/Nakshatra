@@ -45,6 +45,7 @@ describe("AuthForm", () => {
     expect(screen.getByText(/limited to invited beta participants/i)).toBeInTheDocument();
     expect(screen.getByText(/Didit identity verification is required before publication/i)).toBeInTheDocument();
     expect(screen.getByText(/use that shared link to view it and express interest/i)).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: /access model/i })).toHaveTextContent(/Begin privately.*15 days/i);
 
     await user.type(screen.getByLabelText("Email address"), "New@Example.com");
     await user.type(screen.getByLabelText("Password"), "Wedding2026");

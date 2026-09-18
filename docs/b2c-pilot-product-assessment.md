@@ -4,13 +4,13 @@
 
 **Scope:** Repository-grounded product, positioning, UX, conversion, portfolio, dashboard, and design-system review
 
-**Pilot contract assessed:** Free, invite-only portfolio creation for adult pilot participants. Every pilot creator must complete Didit identity verification before first publication. Anyone with a shared First View link may view it and express interest. A verified viewer may receive identity-bound Full View access for seven days after owner approval. Public links are active for 30 days by default. Payments and BrokerDesk are not part of the B2C pilot; future 3-, 4-, 6-, and 12-month paid plans are not implemented.
+**Pilot contract assessed:** Free, invite-only portfolio creation for adult pilot participants. Every pilot creator must complete Didit identity verification before first publication. Anyone with a shared Brief or Detailed Introduction link may view it and express interest. A verified viewer may receive identity-bound Complete Portfolio access for 15 days after owner approval. Public links are active for 30 days by default. Payments and BrokerDesk are not part of the B2C pilot; future 3-, 4-, 6-, and 12-month paid plans are not implemented.
 
-**Pilot-facing implementation update:** On 2026-09-11, landing and signup copy was aligned to the invite-only beta, required Didit verification, free pilot, 30-day public link, and seven-day Full View contract. Authorization and production-operation gates identified below remain separate implementation work.
+**Pilot-facing implementation update:** On 2026-09-11, landing and signup copy was aligned to the invite-only beta, required Didit verification, free pilot, 30-day public link, and 15-day Complete Portfolio contract. Authorization and production-operation gates identified below remain separate implementation work.
 
 ## 1. Executive summary
 
-Nakshatra has the foundations of a differentiated product, not merely a prettier biodata maker. Its strongest idea is **staged, consent-based marriage introduction**: one current representation, a useful First View, a verified interest request, and a separately approved Full View. The code implements this separation more seriously than the marketing currently communicates.
+Nakshatra has the foundations of a differentiated product, not merely a prettier biodata maker. Its strongest idea is **staged, consent-based marriage introduction**: one current representation, a useful public Introduction, a verified interest request, and a separately approved Complete Portfolio. The code implements this separation more seriously than the marketing currently communicates.
 
 The B2C pilot is not launch-ready yet. The main problem is not visual quality. The landing page, authentication surfaces, portfolio renderer, and dashboard are calm, credible, and responsive. The problem is that the product contract presented to users does not match the intended pilot or several actual transitions:
 
@@ -18,7 +18,7 @@ The B2C pilot is not launch-ready yet. The main problem is not visual quality. T
 - Authentication equates account creation with portfolio-owner eligibility; no pilot creator entitlement exists.
 - Viewer email verification creates an Auth user without clearly explaining that secure viewer identity.
 - “Review and publish” publishes without a review step.
-- “Approve access” releases Full View without showing the exact disclosure and seven-day term at confirmation.
+- “Approve access” releases the Complete Portfolio without showing the exact disclosure and 15-day term at confirmation.
 - Owners and viewers receive no operational notification when an interest or decision occurs.
 - Unpublishing hides the owner’s operational dashboard instead of preserving relationship history.
 - Didit is part of the pilot publication journey and must be production-ready; BrokerDesk is implemented and reachable but outside the pilot promise.
@@ -35,7 +35,7 @@ The correct launch strategy is to narrow the product, not expand it: enforce inv
 
 ### Recommended positioning
 
-> For adults and families who share marriage introductions through trusted personal networks, Nakshatra is a private marriage portfolio that keeps one introduction current and personal details behind approval. Unlike PDFs, chat attachments, generic documents, and searchable matrimony platforms, Nakshatra supports a deliberate path from first introduction to verified interest to time-limited Full View—without becoming a marketplace.
+> For adults and families who share marriage introductions through trusted personal networks, Nakshatra is a private marriage portfolio that keeps one introduction current and personal details behind approval. Unlike PDFs, chat attachments, generic documents, and searchable matrimony platforms, Nakshatra supports a deliberate path from public Introduction to verified interest to a time-limited Complete Portfolio—without becoming a marketplace.
 
 ### Recommended primary tagline
 
@@ -115,7 +115,7 @@ Before I add or request sensitive information, show me exactly who can see it, f
 
 ### Launch narrative
 
-> Biodata files were designed to be sent, not governed. They become outdated, separate the person from their story, and expose the same details to everyone. Nakshatra turns the marriage introduction into a living, controlled process: share a useful First View, receive a verified request, and decide when Full View is appropriate.
+> Biodata files were designed to be sent, not governed. They become outdated, separate the person from their story, and expose the same details to everyone. Nakshatra turns the marriage introduction into a living, controlled process: share a useful public Introduction, receive a verified request, and decide when the Complete Portfolio is appropriate.
 
 ### Messaging frameworks
 
@@ -130,7 +130,7 @@ Before I add or request sensitive information, show me exactly who can see it, f
 
 - Problem: Files go stale, split apart, and expose too much too early.
 - Agitate: Every correction creates another version; every forward removes context and control.
-- Solution: A current marriage portfolio with a shareable First View and approved Full View.
+- Solution: A current marriage portfolio with a shareable Brief or Detailed Introduction and approved Complete Portfolio.
 
 **Awareness-stage actions**
 
@@ -176,11 +176,11 @@ B2C owner experience
 ├── /dashboard               Status, requests, access, link, editor
 ├── /edit                    Compatibility redirect
 ├── /preview                 Owner preview of current public mode
-├── /approved-preview        Owner preview of Full View
+├── /approved-preview        Owner preview of Complete Portfolio
 └── /account                 Export, sessions, account deletion
 
 Shared portfolio experience
-├── /p/[token]               First View or identity-resolved Full View
+├── /p/[token]               Public Introduction or identity-resolved Complete Portfolio
 ├── /p/[token]/horoscope     Authorized horoscope retrieval
 ├── /verify/[token]          Viewer verification-link flow
 └── interest modal           Email OTP → request submission
@@ -265,7 +265,7 @@ At assessment time, users could understand that Nakshatra is a digital marriage 
 
 - The hero communicates an outcome: sharing without losing control.
 - The pain section uses concrete problems: staleness, fragmentation, and irreversibility.
-- The First View → verified request → Full View model is the strongest differentiator.
+- The public Introduction → verified request → Complete Portfolio model is the strongest differentiator.
 - “Nothing to install” directly addresses family adoption friction.
 - The visual style is calm, editorial, culturally restrained, and avoids marketplace/dating patterns.
 - The page is responsive, keyboard-aware, and reduced-motion aware.
@@ -281,7 +281,7 @@ This is coherent for a commercial launch but incorrect for the private beta. Pri
 1. Beta-aware header.
 2. Category and primary outcome.
 3. Familiar file/WhatsApp pain.
-4. First View versus approved Full View demonstration.
+4. Public Introduction versus approved Complete Portfolio demonstration.
 5. Network workflow.
 6. Candidate and family benefits.
 7. Actual sample portfolio.
@@ -303,7 +303,7 @@ This is coherent for a commercial launch but incorrect for the private beta. Pri
 
 **Secondary CTA:** See how access works
 
-**Boundary:** Portfolio creation is limited to invited pilot participants. Anyone with a shared portfolio link can view its First View and express interest.
+**Boundary:** Portfolio creation is limited to invited pilot participants. Anyone with a shared portfolio link can view its selected public Introduction and express interest.
 
 Required honesty note:
 
@@ -332,9 +332,9 @@ Required honesty note:
 3. **Authentication:** Google or password must match the invited email.
 4. **Representation and consent:** “I am the adult candidate” or “I am assisting an adult candidate.” Assisted creation requires recorded candidate consent before publication.
 5. **Welcome commitment:** Explain the six essentials, expected time, autosave, and disclosure layers.
-6. **Fast first value:** Name, location, role, short introduction, and main photo, followed immediately by a live preview.
+6. **Fast first value:** Name, location, role, brief personal introduction, and main photo, followed immediately by a live preview.
 7. **Guided completion:** Progressively disclose remaining detail groups.
-8. **Real disclosure review:** Public view, Full View, link preview, photo visibility, expiry, and forwarding warning before explicit publication.
+8. **Real disclosure review:** Public Introduction, Complete Portfolio, link preview, photo visibility, expiry, and forwarding warning before explicit publication.
 
 ## 7. Portfolio-creation audit
 
@@ -382,7 +382,7 @@ There is one canonical renderer, `CelestialUnion`, despite legacy template IDs. 
 - Protected sections remain visible as understandable boundaries rather than disappearing silently.
 - Desktop and mobile reading orders are intentionally adapted.
 - Typography and restrained cultural accents create seriousness without wedding-card ornamentation.
-- Contact data and exact sensitive details appear only in Full View.
+- Contact data and exact sensitive details appear only in the Complete Portfolio.
 
 ### Risks
 
@@ -393,7 +393,7 @@ There is one canonical renderer, `CelestialUnion`, despite legacy template IDs. 
 - Gallery prominence can outweigh personal story and disclosure context.
 - Public hero metadata and social previews can be cached outside Nakshatra after sharing.
 - Owner, public, and approved mode labels need stronger plain-language explanation.
-- The global skip link targets `#main-content`, while this template uses `#portfolio-top`.
+- The global skip link and portfolio main content now share the `#main-content` target.
 - `themeColor` is passed through the template API but is not used by the renderer, so Open Graph styling can disagree with the opened portfolio.
 - Alt text is reused as a visible photo caption, although accessibility descriptions and human story captions have different jobs.
 - The lightbox lacks a complete focus trap and trigger-focus restoration.
@@ -431,7 +431,7 @@ Add a restrained early “Introduce yourself” link in the hero and a contextua
 - Interest and access are split into different surfaces even though they are one relationship lifecycle.
 - Approval has no disclosure-confirmation step.
 - Share, renew, rotate, and unpublish have similar visual prominence.
-- Public-link expiry and seven-day Full View expiry are not explained together.
+- Public-link expiry and 15-day Complete Portfolio expiry are not explained together.
 - Pending and historical lists silently stop at five.
 - Identity verification occupies owner attention despite being excluded from the pilot.
 - No persistent beta support/feedback channel exists.
@@ -445,7 +445,7 @@ Draft → complete essentials. Ready → review disclosure. Published → share.
 
 **Introductions and access**
 
-One person record per relationship: Waiting → Full View active → Expired/Ended → Set aside. Include verified identity state, submitted context, disclosed categories, expiry, decision controls, and activity history.
+One person record per relationship: Waiting → Complete Portfolio active → Expired/Ended → Set aside. Include verified identity state, submitted context, disclosed categories, expiry, decision controls, and activity history.
 
 **Portfolio and privacy**
 
@@ -464,7 +464,7 @@ Persistent “Private beta: get help or send feedback” entry point.
 1. No creator beta entitlement separates invited owners from network viewers.
 2. Viewer OTP creates an Auth identity without transparent explanation.
 3. “Review and publish” publishes without a review.
-4. Full View approval occurs without a disclosure confirmation.
+4. Complete Portfolio approval occurs without a disclosure confirmation.
 5. No new-interest or decision notifications.
 6. Unpublishing hides operational history and controls.
 7. Required Didit verification lacks confirmed production readiness, recovery guidance, and a fully rehearsed failure/support journey.
@@ -478,7 +478,7 @@ Persistent “Private beta: get help or send feedback” entry point.
 15. Photo deletion is a small destructive target without confirmation or undo.
 16. Photo descriptions/alt text cannot be authored in the UI.
 17. “Short / Standard preview” labels one route ambiguously.
-18. Interest and Full View appear as separate records instead of one lifecycle.
+18. Interest and Complete Portfolio access appear as separate records instead of one lifecycle.
 19. Lists silently truncate at five.
 20. Interest success disappears too quickly and does not explain the next step.
 
@@ -494,7 +494,7 @@ Persistent “Private beta: get help or send feedback” entry point.
 8. “View a sample portfolio” leads to static cards, not a sample portfolio.
 9. Invited creators and uninvited viewers receive the same CTA.
 10. There is no beta-interest capture route; do not add a waitlist CTA until that workflow exists.
-11. The forwardable First View is not distinguished early enough from identity-bound Full View.
+11. The forwardable public Introduction is not distinguished early enough from the identity-bound Complete Portfolio.
 12. Trust claims are not supported by a concrete “who sees what” artifact.
 13. Category terminology varies across metadata, pages, and documents.
 14. The stated brand line is disconnected from implemented copy.
@@ -509,9 +509,9 @@ Persistent “Private beta: get help or send feedback” entry point.
 
 1. Add a persistent Private beta label to marketing and owner surfaces.
 2. Create distinct invitation and viewer entry components; add a waitlist component only after its data, consent, and follow-up workflow exists.
-3. Build an actual First View/Full View disclosure comparison.
+3. Build an actual public Introduction/Complete Portfolio disclosure comparison.
 4. Add a real publication-review screen.
-5. Add a Full View grant confirmation with categories and seven-day expiry.
+5. Add a Complete Portfolio grant confirmation with categories and 15-day expiry.
 6. Redesign the editor into four outcome milestones.
 7. Provide a live preview after the first essential milestone.
 8. Implement autosave with “Saved just now” status.
@@ -574,9 +574,9 @@ Additional template-specific corrections within those improvements: fix the skip
 2. State that Didit identity verification is required before publication and explain accurately what the verified badge does and does not prove.
 3. Add Private beta labels and accurate creator-versus-viewer copy.
 4. Rename “Review and publish” until a review exists, or add a minimal confirmation.
-5. Add a seven-day disclosure confirmation before approving Full View.
+5. Add a 15-day disclosure confirmation before approving the Complete Portfolio.
 6. Preserve Sign in on mobile. Completed in the 2026-09-11 pilot-facing update.
-7. Clarify First View forwarding and screenshot limits.
+7. Clarify public Introduction forwarding and screenshot limits.
 8. Correct category terminology across metadata and legal pages.
 9. Change “sample portfolio” CTA to an actual sample or accurately label the static preview.
 10. Keep success states open until dismissed and state the next step.
@@ -613,7 +613,7 @@ Do not invite real participants until all P0 gates pass:
 - Viewer identities cannot self-elevate into creator entitlement.
 - Payments and BrokerDesk are disabled server-side and absent from pilot claims; Didit is enabled, configured, consented, and successfully rehearsed as a mandatory creator publication gate.
 - Publication includes an explicit, accurate disclosure review.
-- Full View approval shows recipient, data categories, seven-day expiry, and revocation behavior.
+- Complete Portfolio approval shows recipient, data categories, 15-day expiry, and revocation behavior.
 - Owners receive new-interest notifications; viewers receive decision notifications.
 - Adult participation and candidate consent are enforced.
 - Account deletion and retention workers are operating and monitored.

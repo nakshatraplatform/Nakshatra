@@ -61,6 +61,10 @@ import type { PilotAccessState } from "@/features/pilot-access/server/pilot-acce
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
+  PORTFOLIO_VIEW_LABELS,
+  publicIntroductionLabel,
+} from "@/features/portfolio/template";
+import {
   EMPTY_PUBLICATION_READINESS,
   type PublicationReadiness,
 } from "@/features/portfolio/server/publication-readiness.contract";
@@ -144,6 +148,13 @@ export default function DashboardClient({
   const initialEditorSection = (
     readinessState.lastEditorSection || completion.nextEditorSection
   ) as PortfolioEditorSection;
+  const linkStatisticState = !portfolio?.is_published
+    ? undefined
+    : isExpired || (daysLeft !== null && daysLeft <= 0)
+      ? "expired"
+      : daysLeft !== null && daysLeft <= 7
+        ? "warning"
+        : "active";
 
   useEffect(() => {
     if (draftSaveState === "saved") return;
@@ -216,7 +227,7 @@ export default function DashboardClient({
     const text = encodeURIComponent(
       `Sharing ${profileName}'s Nakshatra wedding portfolio.\n\n`
       + `View the introduction: ${shareUrl}\n\n`
-      + "This link opens the First View. Full details are shared only after the profile owner approves an introduction."
+      + "This link opens the selected public Introduction. The Complete Portfolio is shared only after the profile owner approves an introduction."
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -632,11 +643,15 @@ export default function DashboardClient({
               {canCreatePortfolio ? (
                 <button
                   type="button"
-                  onClick={() => setFormOpen(true)}
+                  onClick={() => completion.readyToPublish ? setReviewOpen(true) : setFormOpen(true)}
                   className="dashboard-primary-action"
                 >
                   <PanelRightOpen className="h-4 w-4" />
-                  {portfolio ? "Continue portfolio" : "Start with the basics"}
+                  {completion.readyToPublish
+                    ? "Review and publish"
+                    : portfolio
+                      ? "Continue portfolio"
+                      : "Start with the basics"}
                 </button>
               ) : (
                 <p className="rounded-xl border border-[light-dark(#477b7740,var(--app-dark-border))] bg-[light-dark(#dcebe580,var(--app-dark-success-surface))] px-4 py-3 text-sm text-[light-dark(#315f57,var(--app-dark-accent))]">
@@ -652,7 +667,21 @@ export default function DashboardClient({
                   <h2>Your portfolio is ready to share.</h2>
                   <p>Review new interests, see recent activity, or update your portfolio.</p>
                 </div>
-                {!isExpired && <button onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share portfolio</button>}
+                <div className="dashboard-welcome-actions">
+                  {canCreatePortfolio && (
+                    <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action">
+                      <Edit3 className="h-4 w-4" /> Portfolio details
+                    </button>
+                  )}
+                  {isExpired
+                    ? canCreatePortfolio && (
+                      <button type="button" onClick={renewLink} disabled={renewing} className="dashboard-primary-action">
+                        <RefreshCw className={`h-4 w-4 ${renewing ? "animate-spin" : ""}`} />
+                        {renewing ? "Renewing link..." : "Renew public link"}
+                      </button>
+                    )
+                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share portfolio</button>}
+                </div>
               </section>
           )}
 
@@ -662,12 +691,13 @@ export default function DashboardClient({
               completion={completion}
               readiness={readinessState}
               draftSaveState={draftSaveState}
-              onContinue={() => setFormOpen(true)}
               onPreview={openEarlyPreview}
             />
           )}
-          <InterestInbox
+          <RelationshipLifecycle
             interests={interestItems}
+            grants={accessGrants}
+            events={accessEvents}
             disclosedCategories={disclosedCategories}
             onDecision={(id, status) => {
               setInterestItems((current) =>
@@ -677,11 +707,6 @@ export default function DashboardClient({
               );
               router.refresh();
             }}
-          />
-
-          <AccessControls
-            grants={accessGrants}
-            events={accessEvents}
             onGrantChange={(grantId, action, expiresAt) => {
               setAccessGrants((current) => current.map((grant) =>
                 grant.id === grantId
@@ -695,14 +720,14 @@ export default function DashboardClient({
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="dashboard-glass p-4">
+                <div className="dashboard-glass dashboard-stat-card p-4">
                   <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Eye className="h-4 w-4" />
                     <span className="text-sm font-medium">Portfolio views</span>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
                 </div>
-                <div className="dashboard-glass p-4">
+                <div className="dashboard-glass dashboard-stat-card p-4">
                   <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Inbox className="h-4 w-4" />
                     <span className="text-sm font-medium">Interests received</span>
@@ -710,13 +735,18 @@ export default function DashboardClient({
                   <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
                   <p className="mt-1 text-sm text-[light-dark(#64748b,var(--app-dark-muted))]">{interestItems.filter((item) => item.status === "new" || item.status === "pending_review").length} need a response</p>
                 </div>
-                <div className="dashboard-glass p-4">
+                <div
+                  className="dashboard-glass dashboard-stat-card p-4"
+                  data-link-state={linkStatisticState}
+                >
                   <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Clock className="h-4 w-4" />
                     <span className="text-sm font-medium">Public link</span>
                   </div>
                   <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-                    {portfolio?.is_published && daysLeft !== null
+                    {isExpired
+                      ? "Expired"
+                      : portfolio?.is_published && daysLeft !== null
                       ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`
                       : "Not published"}
                   </p>
@@ -738,25 +768,6 @@ export default function DashboardClient({
                     </button>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      onClick={shareWhatsApp}
-                      className="dashboard-primary-action"
-                    >
-                      <Share2 className="h-4 w-4" />
-                      Share on WhatsApp
-                    </button>
-                    {isExpired && canCreatePortfolio && (
-                      <button
-                        onClick={renewLink}
-                        disabled={renewing}
-                        className="dashboard-secondary-action"
-                      >
-                        <RefreshCw
-                          className={`h-4 w-4 ${renewing ? "animate-spin" : ""}`}
-                        />
-                        Renew (30 days)
-                      </button>
-                    )}
                     {canCreatePortfolio && (
                       <button
                         onClick={rotateLink}
@@ -787,29 +798,19 @@ export default function DashboardClient({
           )}
 
           {portfolio && <div className="flex flex-wrap gap-3">
-                {canCreatePortfolio && (
-                <button
-                  type="button"
-                  onClick={() => setFormOpen(true)}
-                  className="dashboard-secondary-action"
-                >
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  Edit portfolio
-                </button>
-                )}
                 <Link
                   href="/preview"
                   className="dashboard-secondary-action"
                 >
                   <Eye className="mr-2 h-4 w-4" />
-                  Preview public introduction
+                  Preview public Introduction
                 </Link>
                 <Link
                   href="/approved-preview"
                   className="dashboard-secondary-action"
                 >
                   <ShieldCheck className="mr-2 h-4 w-4" />
-                  Full portfolio preview
+                  Preview Complete Portfolio
                 </Link>
           </div>}
           </>}
@@ -841,27 +842,27 @@ export default function DashboardClient({
               <div className="grid gap-4 lg:grid-cols-2">
               <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                 <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
-                  <h3 className="font-semibold">First View · {normalizePortfolioPrivacyMode(draftData.privacy_mode) === "private" ? "Short" : "Standard"}</h3>
+                  <h3 className="font-semibold">{publicIntroductionLabel(normalizePortfolioPrivacyMode(draftData.privacy_mode))}</h3>
                   <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What anyone with the share link can see.</p>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
                   <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the public introduction, primary photo and the details visible before approval.</p>
                   <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
                     <ExternalLink className="h-4 w-4" />
-                    Open First View
+                    Open public Introduction
                   </a>
                 </div>
               </article>
               <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                 <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
-                  <h3 className="font-semibold">Full View · Approved people only</h3>
+                  <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
                   <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What a verified person receives after your approval.</p>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
-                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in Full View unexpectedly.</p>
+                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in the Complete Portfolio unexpectedly.</p>
                   <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
                     <ExternalLink className="h-4 w-4" />
-                    Open Full View
+                    Open Complete Portfolio
                   </a>
                 </div>
               </article>
@@ -881,8 +882,8 @@ export default function DashboardClient({
 
             <footer className="flex flex-none flex-col gap-3 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-sm font-semibold">Publishing creates or updates your First View link.</p>
-                <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">Full View remains locked until you approve a verified interest request.</p>
+                <p className="text-sm font-semibold">Publishing creates or updates your public Introduction link.</p>
+                <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
@@ -921,15 +922,6 @@ export default function DashboardClient({
           </section>
         </div>
       )}
-
-      {canCreatePortfolio && <button
-        type="button"
-        onClick={() => setFormOpen(true)}
-        className="dashboard-primary-action fixed bottom-5 right-5 z-40 shadow-lg"
-      >
-        <PanelRightOpen className="h-4 w-4" />
-        Portfolio details
-      </button>}
 
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[#18272e]/45 backdrop-blur-sm">
@@ -996,7 +988,7 @@ export default function DashboardClient({
               </div>
             </div>
 
-            <div className="dashboard-editor-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f3f0e8,var(--app-dark-surface-soft))] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="dashboard-editor-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f3f0e8,var(--app-dark-surface-soft))] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 {draftError && (
                   <div role="alert" className="mb-3 rounded-lg border border-[light-dark(#d8a7a1,var(--app-dark-border))] bg-[light-dark(#fff0ee,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#7f3535,var(--app-dark-danger))]">
@@ -1010,7 +1002,7 @@ export default function DashboardClient({
                     )}
                   </div>
                 )}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="dashboard-editor-footer-copy text-sm leading-6 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     {portfolio?.is_published
                       ? "Changes autosave as a draft. Review and publish to update what people see."
@@ -1091,13 +1083,11 @@ function CreatorReadinessTracker({
   completion,
   readiness,
   draftSaveState,
-  onContinue,
   onPreview,
 }: {
   completion: ReturnType<typeof calculatePortfolioCompletion>;
   readiness: PublicationReadiness;
   draftSaveState: "saved" | "unsaved" | "saving";
-  onContinue: () => void;
   onPreview: () => void;
 }) {
   const steps = [
@@ -1126,10 +1116,6 @@ function CreatorReadinessTracker({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={onContinue} className="dashboard-primary-action">
-            <Edit3 className="h-4 w-4" />
-            {completion.percentage ? "Continue portfolio" : "Start with basics"}
-          </button>
           {completion.basicsComplete && (
             <button type="button" onClick={onPreview} className="dashboard-secondary-action">
               <Eye className="h-4 w-4" /> Preview
@@ -1270,6 +1256,42 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function RelationshipLifecycle({
+  interests,
+  grants,
+  events,
+  disclosedCategories,
+  onDecision,
+  onGrantChange,
+}: {
+  interests: DashboardInterest[];
+  grants: AccessGrant[];
+  events: AccessAuditEvent[];
+  disclosedCategories: string[];
+  onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
+  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
+}) {
+  const waitingCount = interests.filter((interest) => interest.status === "new" || interest.status === "pending_review").length;
+
+  return (
+    <section className="dashboard-glass dashboard-relationship-lifecycle" aria-labelledby="relationship-lifecycle-heading">
+      <div className="dashboard-section-heading">
+        <div>
+          <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
+          <p>Follow each relationship from introduction review through time-limited Complete Portfolio access.</p>
+        </div>
+        <span>{waitingCount} waiting</span>
+      </div>
+      <InterestInbox
+        interests={interests}
+        disclosedCategories={disclosedCategories}
+        onDecision={onDecision}
+      />
+      <AccessControls grants={grants} events={events} onGrantChange={onGrantChange} />
+    </section>
+  );
+}
+
 function InterestInbox({
   interests,
   disclosedCategories,
@@ -1333,13 +1355,13 @@ function InterestInbox({
   }
 
   return (
-    <section className="dashboard-glass dashboard-interest-inbox">
-      <div className="dashboard-section-heading">
+    <div className="dashboard-relationship-stage dashboard-interest-inbox">
+      <div className="dashboard-relationship-stage-heading">
         <div>
-          <h2>Introductions to review</h2>
-          <p>Review each person&apos;s verified contact, source, and context before sharing Full View.</p>
+          <h3>Awaiting review</h3>
+          <p>Review each person&apos;s verified contact, source, and context before sharing the Complete Portfolio.</p>
         </div>
-        <span>{newInterests.length} waiting</span>
+        <span>{newInterests.length}</span>
       </div>
       {newInterests.length === 0 ? (
         <p className="dashboard-empty-state">New interests will appear here after viewers introduce themselves.</p>
@@ -1379,7 +1401,7 @@ function InterestInbox({
                     {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their Nakshatra portfolio</Link>}
                     <button type="button" className="dashboard-secondary-action" disabled={workingId === interest.id} onClick={() => void decide(interest, "rejected")}>Not right now</button>
                     {interest.requester_user_id ? (
-                      <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Review Full View access</button>
+                      <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Review Complete Portfolio access</button>
                     ) : (
                       <span className="dashboard-action-note">Ask the viewer to verify their email before approving access.</span>
                     )}
@@ -1420,12 +1442,12 @@ function InterestInbox({
             className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-5 text-[light-dark(#18272e,var(--app-dark-ink))] shadow-2xl sm:p-7"
           >
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Confirm controlled disclosure</p>
-            <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Full View to {approvalCandidate.viewer_name || "this viewer"}?</h3>
+            <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Complete Portfolio access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
             <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-              Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires seven days after approval.
+              Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
             </p>
             <div className="mt-5 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f8fafc,var(--app-dark-surface))] p-4">
-              <p className="text-sm font-semibold">This Full View will disclose:</p>
+              <p className="text-sm font-semibold">The Complete Portfolio will disclose:</p>
               {disclosedCategories.length > 0 ? (
                 <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[light-dark(#334155,var(--app-dark-ink))]">
                   {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
@@ -1449,13 +1471,13 @@ function InterestInbox({
                   if (approved) setApprovalCandidate(null);
                 })}
               >
-                {workingId === approvalCandidate.id ? "Granting access..." : "Confirm Full View for 7 days"}
+                {workingId === approvalCandidate.id ? "Granting access..." : "Confirm Complete Portfolio for 15 days"}
               </button>
             </div>
           </section>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -1473,8 +1495,8 @@ function AccessControls({
 
   async function manage(grant: AccessGrant, action: "renew" | "revoke") {
     const prompt = action === "revoke"
-      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the full portfolio.`
-      : `Renew full portfolio access for ${grant.viewerName || "this viewer"} for seven days?`;
+      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the Complete Portfolio.`
+      : `Renew Complete Portfolio access for ${grant.viewerName || "this viewer"} for 15 days?`;
     if (!confirm(prompt)) return;
     setWorkingId(grant.id);
     setError(null);
@@ -1494,17 +1516,17 @@ function AccessControls({
   }
 
   return (
-    <section className="dashboard-glass dashboard-access-controls">
-      <div className="dashboard-section-heading">
+    <div className="dashboard-relationship-stage dashboard-access-controls">
+      <div className="dashboard-relationship-stage-heading">
         <div>
-          <h2>People with Full View</h2>
+          <h3>Complete Portfolio access</h3>
           <p>See who can open protected details, when access ends, and whether they have used it.</p>
         </div>
         <UserRoundCheck className="h-5 w-5" aria-hidden="true" />
       </div>
       {error && <p className="dashboard-action-error" role="alert">{error}</p>}
       {grants.length === 0 ? (
-        <p className="dashboard-empty-state">Nobody has Full View yet. Approve a verified introduction above to grant seven-day access.</p>
+        <p className="dashboard-empty-state">Nobody has Complete Portfolio access yet. Approve a verified introduction above to grant 15-day access.</p>
       ) : (
         <div className="dashboard-access-list">
           {grants.map((grant) => (
@@ -1529,7 +1551,7 @@ function AccessControls({
                     disabled={workingId === grant.id}
                     onClick={() => void manage(grant, "renew")}
                   >
-                    Renew 7 days
+                    Renew 15 days
                   </button>
                   <button
                     type="button"
@@ -1558,7 +1580,7 @@ function AccessControls({
           </ol>
         </details>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -1578,11 +1600,11 @@ function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: stri
     request_submitted: `${viewer} submitted a request`,
     request_reopened: `${viewer}'s request was reopened`,
     request_rejected: `${viewer}'s request was set aside`,
-    grant_created: `Full portfolio access granted to ${viewer}`,
-    grant_renewed: `Full portfolio access renewed for ${viewer}`,
-    grant_accessed: `${viewer} opened the full portfolio`,
+    grant_created: `Complete Portfolio access granted to ${viewer}`,
+    grant_renewed: `Complete Portfolio access renewed for ${viewer}`,
+    grant_accessed: `${viewer} opened the Complete Portfolio`,
     grant_revoked: `Access ended for ${viewer}`,
-    grant_expired: `Full portfolio access expired for ${viewer}`,
+    grant_expired: `Complete Portfolio access expired for ${viewer}`,
     portfolio_rotated: "Portfolio link rotated",
     portfolio_unpublished: "Portfolio unpublished",
   };

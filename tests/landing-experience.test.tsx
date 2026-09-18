@@ -10,8 +10,10 @@ describe("LandingExperience pilot messaging", () => {
 
     expect(screen.getAllByText(/private pilot · public waitlist/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /pilot is private.*waitlist is open/i })).toBeInTheDocument();
-    expect(screen.getByText(/receive a shared portfolio can still read its First View and express interest/i)).toBeInTheDocument();
-    expect(screen.getByText(/receive seven-day Full View access after approval/i)).toBeInTheDocument();
+    expect(screen.getByText(/receive a shared portfolio can still read its public Introduction and express interest/i)).toBeInTheDocument();
+    expect(screen.getByText(/receive 15-day Complete Portfolio access after approval/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/No public directory/i);
+    expect(screen.getByLabelText(/how protected access works/i)).toHaveTextContent(/Shared link.*Verified email.*Your decision/i);
   });
 
   it("describes the non-entitling waitlist and required creator verification", () => {
@@ -30,5 +32,14 @@ describe("LandingExperience pilot messaging", () => {
       expect(link).toHaveAttribute("href", "/pilot-access");
     }
     expect(screen.getByRole("link", { name: "Sign in to Nakshatra" })).toHaveAttribute("href", "/login");
+  });
+
+  it("keeps section navigation available and presents the lifecycle as a guided tour", () => {
+    render(<LandingExperience variant="clarity" />);
+
+    expect(screen.getByRole("navigation", { name: "Page sections" })).toHaveTextContent(/Top.*Control.*Tour.*Questions/i);
+    expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Preview and verify.*Share.*Approve/i);
+    expect(screen.getByRole("heading", { name: /four moves from a private draft to approved access/i })).toBeInTheDocument();
+    expect(document.body).toHaveTextContent(/Complete Portfolio access for 15 days/i);
   });
 });

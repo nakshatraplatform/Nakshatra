@@ -1,7 +1,7 @@
 import "server-only";
 
 export const PUBLIC_PORTFOLIO_LIFETIME_DAYS = 30;
-export const FULL_VIEW_LIFETIME_DAYS = 7;
+export const FULL_VIEW_LIFETIME_DAYS = 15;
 
 /** Returns the canonical public-link expiry used for first publication, republish, and renewal. */
 export function createPublicPortfolioExpiry(now = new Date()) {

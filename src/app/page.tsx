@@ -4,7 +4,7 @@ import { LandingExperience } from "@/components/landing/LandingExperience";
 export const metadata: Metadata = {
   title: "Nakshatra | Private Wedding Biodata Portfolio",
   description:
-    "Create one current wedding biodata portfolio, share a clear First View, and approve who receives protected details. Invite-only private beta.",
+    "Create one current wedding biodata portfolio, share a Brief or Detailed Introduction, and approve who receives protected details in the Complete Portfolio. Invite-only private beta.",
   openGraph: {
     type: "website",
     url: "/",

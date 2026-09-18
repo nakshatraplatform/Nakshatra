@@ -273,7 +273,7 @@ function DetailsForm({ sessionEmail, pending, error, onSubmit }: {
             <div className="interest-form-intro"><strong>Location</strong><span>Optional</span></div>
             <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" /><Field label="State or province" name="state" autoComplete="address-level1" /><Field label="City" name="city" autoComplete="address-level2" /></div>
             <div className="interest-optional-copy-grid">
-              <label className="interest-field"><span>Brief family introduction</span><textarea name="familyContext" rows={2} maxLength={600} placeholder="A short introduction about your family" /></label>
+              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={2} maxLength={600} placeholder="A few helpful details about your family" /></label>
               <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} placeholder="Anything you would like the family to know" /></label>
             </div>
           </div>

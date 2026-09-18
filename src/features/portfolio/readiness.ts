@@ -53,7 +53,7 @@ export function calculatePortfolioCompletion(
     { key: "career_title", label: "Profession or role", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
     {
       key: "introduction",
-      label: "Short introduction",
+      label: "Brief personal introduction",
       editorSection: "foundation",
       group: "basics",
       complete: hasValue(data.personal.short_bio) || hasValue(data.personal.profile_summary),

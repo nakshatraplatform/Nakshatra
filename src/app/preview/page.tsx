@@ -15,7 +15,6 @@ export default async function PreviewPage() {
   const preview = await loadOwnerPublicPreview(supabase, user.id);
   if (!preview) redirect("/dashboard?edit=1");
   const { portfolio, data, photos } = preview;
-  const themeColor = portfolio.theme_color || "#6366f1";
   const sunSign = portfolio.sun_sign;
 
   return (
@@ -23,7 +22,7 @@ export default async function PreviewPage() {
       {/* Preview banner */}
       <div data-preview-bar="" className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-soft)] px-4 py-3 text-[color:var(--workspace-ink)]">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold">Public preview · Draft</span>
+          <span className="text-sm font-semibold">Public Introduction · Draft preview</span>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Link
               href="/dashboard?edit=1"
@@ -45,7 +44,6 @@ export default async function PreviewPage() {
         <BiodataTemplate
           templateId={portfolio.template_id}
           data={data}
-          themeColor={themeColor}
           sunSign={sunSign}
           accessMode="public"
           photos={photos}

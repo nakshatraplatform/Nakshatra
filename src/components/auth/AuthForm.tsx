@@ -207,7 +207,22 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <div className="app-header-actions"><ThemeSwitch /><Link href="/" className="account-home">Back to home</Link></div>
       </header>
 
-      <main className="account-main">
+      <main className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined}>
+        {!brokerdeskContinuation && (
+          <aside className="account-context" aria-label="Nakshatra access model">
+            <p className="account-context-kicker">One current portfolio</p>
+            <h2>{mode === "signup" ? "Begin privately. Share only when you are ready." : "Return to your portfolio and its conversations."}</h2>
+            <p>{mode === "signup"
+              ? "Build your introduction in your own time, preview every view, and decide when it becomes shareable."
+              : "Update your story, manage your shared link, and respond to verified interest from one place."}</p>
+            <ol className="account-context-flow">
+              <li><span>01</span><div><strong>Create privately</strong><small>Your draft is visible only to you.</small></div></li>
+              <li><span>02</span><div><strong>Publish an Introduction</strong><small>Share one current link without exposing protected details.</small></div></li>
+              <li><span>03</span><div><strong>Approve protected access</strong><small>Complete Portfolio access lasts 15 days and can end earlier.</small></div></li>
+            </ol>
+            <div className="account-context-assurance"><ShieldCheck aria-hidden="true" /><span><strong>Designed around consent</strong><small>No searchable public directory and no automatic access to protected details.</small></span></div>
+          </aside>
+        )}
         <section className="account-panel" aria-labelledby="account-title" aria-busy={pendingAction !== null}>
           {screen === "credentials" && (
             <>

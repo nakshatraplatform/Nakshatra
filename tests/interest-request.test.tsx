@@ -96,12 +96,12 @@ describe("interest request flow", () => {
     expect(screen.getByLabelText("Country")).not.toBeRequired();
     expect(screen.getByLabelText("State or province")).not.toBeRequired();
     expect(screen.getByLabelText("City")).not.toBeRequired();
-    expect(screen.getByLabelText("Brief family introduction")).not.toBeRequired();
+    expect(screen.getByLabelText("Family context")).not.toBeRequired();
     expect(screen.getByLabelText("Message")).not.toBeRequired();
     expect(screen.getByLabelText("Country")).toHaveValue("");
     expect(screen.getByLabelText("State or province")).toHaveValue("");
     expect(screen.getByLabelText("City")).toHaveValue("");
-    expect(screen.getByLabelText("Brief family introduction")).toHaveValue("");
+    expect(screen.getByLabelText("Family context")).toHaveValue("");
     expect(screen.getByLabelText("Message")).toHaveValue("");
     expect(screen.queryByLabelText("Your portfolio link")).not.toBeInTheDocument();
   });

@@ -164,7 +164,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "New" } });
     fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Name" } });
     fireEvent.change(
-      screen.getByLabelText("Short introduction"),
+      screen.getByLabelText("Brief personal introduction"),
       { target: { value: "A story" } }
     );
     fireEvent.change(screen.getByLabelText("Date of birth"), {
@@ -184,13 +184,13 @@ describe("dashboard client", () => {
     if (palette) fireEvent.click(palette);
     fireEvent.click(screen.getByRole("button", { name: /add photos/i }));
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /review before publishing/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
-    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(screen.getByRole("link", { name: /open public introduction/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Complete required details" })).toBeDisabled();
@@ -198,18 +198,16 @@ describe("dashboard client", () => {
   }, 10_000);
 
   it("operates published-link controls and signs out", async () => {
-    renderDashboard();
-    expect(screen.getByRole("link", { name: /full portfolio preview/i })).toHaveAttribute("href", "/approved-preview");
+    renderDashboard({ isExpired: false, daysLeft: 20 });
+    expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /share on whatsapp/i }));
+    fireEvent.click(screen.getByRole("button", { name: /share portfolio/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
     expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's Nakshatra wedding portfolio");
-    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the First View");
-    expect(decodeURIComponent(whatsappUrl)).toContain("Full details are shared only after the profile owner approves");
-    fireEvent.click(screen.getByRole("button", { name: /renew/i }));
-    await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the selected public Introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is shared only after the profile owner approves");
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
@@ -217,6 +215,58 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
     await waitFor(() => expect(mocks.clearLocalSession).toHaveBeenCalled());
     expect(mocks.push).toHaveBeenCalledWith("/");
+  });
+
+  it("uses lifecycle-aware primary actions and expiry statistics", async () => {
+    const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6 });
+    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
+      "data-link-state",
+      "warning"
+    );
+
+    rerender(
+      <DashboardClient
+        portfolio={portfolio}
+        viewCount={12}
+        userEmail="aditi@example.com"
+        canCreatePortfolio
+        shareUrl="https://nakshatra.test/p/token"
+        isExpired
+        daysLeft={0}
+        media={[media]}
+        mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }}
+      />
+    );
+
+    expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
+      "data-link-state",
+      "expired"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Renew public link" }));
+    await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
+  });
+
+  it("opens final review from a complete unpublished draft without duplicating editor actions", async () => {
+    renderDashboard({
+      portfolio: {
+        ...portfolio,
+        draft_data: readyData,
+        published_data: null,
+        is_published: false,
+        share_token: null,
+      },
+      shareUrl: null,
+      isExpired: false,
+      daysLeft: null,
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: { ...readyPublicationReadiness, published: false },
+    });
+
+    expect(screen.queryByRole("button", { name: "Portfolio details" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review and publish" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
   });
 
   it("lets an owner approve a signed-in interest from the dashboard", async () => {
@@ -256,10 +306,10 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByText("Rohan Mehta"));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Review Full View access" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review Complete Portfolio access" }));
 
-    const approval = screen.getByRole("dialog", { name: /Grant Full View to Rohan Mehta/i });
-    expect(within(approval).getByText(/Access expires seven days after approval/i)).toBeInTheDocument();
+    const approval = screen.getByRole("dialog", { name: /Grant Complete Portfolio access to Rohan Mehta/i });
+    expect(within(approval).getByText(/Access expires 15 days after approval/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Personal profile, location, and story details/i)).toBeInTheDocument();
     expect(within(approval).getByText("Exact date of birth")).toBeInTheDocument();
     expect(within(approval).getByText(/Education, employer, career/i)).toBeInTheDocument();
@@ -268,7 +318,7 @@ describe("dashboard client", () => {
     expect(within(approval).getByText(/Partner preferences/i)).toBeInTheDocument();
     expect(within(approval).getByText("Protected contact details")).toBeInTheDocument();
     expect(decisionFetch).not.toHaveBeenCalled();
-    fireEvent.click(within(approval).getByRole("button", { name: "Confirm Full View for 7 days" }));
+    fireEvent.click(within(approval).getByRole("button", { name: "Confirm Complete Portfolio for 15 days" }));
 
     await waitFor(() => expect(decisionFetch).toHaveBeenCalledWith(
       "/api/interest/interest-1",
@@ -277,7 +327,7 @@ describe("dashboard client", () => {
     expect(await screen.findByText("0 waiting")).toBeInTheDocument();
   });
 
-  it("lets the owner renew and revoke Full View access", async () => {
+  it("lets the owner renew and revoke Complete Portfolio access", async () => {
     renderDashboard({
       accessSummary: {
         grants: [{
@@ -301,7 +351,7 @@ describe("dashboard client", () => {
     });
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Renew 7 days" }));
+    fireEvent.click(screen.getByRole("button", { name: "Renew 15 days" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "renew"));
     expect(await screen.findByText("Active until Feb 1, 2099")).toBeInTheDocument();
 
@@ -310,12 +360,12 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
     expect(await screen.findByText("Access ended")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Access history"));
-    expect(screen.getByText("Full portfolio access granted to Rohan Mehta")).toBeInTheDocument();
+    expect(screen.getByText("Complete Portfolio access granted to Rohan Mehta")).toBeInTheDocument();
   });
 
   it("updates, deletes, and uploads owner photos", async () => {
     const { container } = renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     goToFoundation();
     expect(screen.getByText("1/8")).toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Profile photo" })).toHaveClass("w-36", "sm:w-40");
@@ -347,7 +397,7 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }],
       publicationReadiness: readyPublicationReadiness,
     });
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_expired"));
@@ -358,11 +408,11 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }],
       publicationReadiness: readyPublicationReadiness,
     });
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /open first view/i })).toHaveAttribute("href", "/preview");
-    expect(screen.getByRole("link", { name: /open full view/i })).toHaveAttribute("href", "/approved-preview");
+    expect(screen.getByRole("link", { name: /open public introduction/i })).toHaveAttribute("href", "/preview");
+    expect(screen.getByRole("link", { name: /open complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
@@ -387,7 +437,7 @@ describe("dashboard client", () => {
       publicationReadiness: disclosurePending,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /confirm & publish changes/i }));
@@ -500,7 +550,8 @@ describe("dashboard client", () => {
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Introductions to review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Introductions and access" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Awaiting review" })).toBeInTheDocument();
     expect(screen.getByText("Maya Shah")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Access history"));
     expect(screen.getByText("Portfolio unpublished")).toBeInTheDocument();
@@ -512,7 +563,7 @@ describe("dashboard client", () => {
   it("shows disclosure details only for fields hidden until approval", () => {
     renderDashboard({ initialEditorOpen: true });
     fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
-    fireEvent.click(screen.getByRole("button", { name: /Short introduction/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Brief Introduction/i }));
     goToFoundation();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
@@ -524,7 +575,7 @@ describe("dashboard client", () => {
       error: { code: "DASHBOARD_SAVE_FAILED", message: "We could not save your portfolio right now." },
     });
     renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
     const beforeUnload = new Event("beforeunload", { cancelable: true });
@@ -568,7 +619,7 @@ describe("dashboard client", () => {
 
   it("requires an explicit choice for legacy photo privacy without expanding access", () => {
     renderDashboard({ media: [{ ...media, visibility: "hidden" }] });
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     goToFoundation();
     expect(screen.getByLabelText("Photo visibility")).toHaveValue("");
     expect(screen.getByText(/existing privacy remains unchanged/i)).toBeInTheDocument();
@@ -581,7 +632,7 @@ describe("dashboard client", () => {
       error: { code: "AUTH_SESSION_REVOKED", message: "This session was signed out", status: 401 },
     });
     renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_revoked"));

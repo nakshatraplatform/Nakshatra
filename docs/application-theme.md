@@ -65,6 +65,37 @@ paused-access notice uses `--app-dark-accent` with
 `--app-dark-success-surface`, retaining its existing Light pair. Keep readable
 text or an icon alongside status colors.
 
+## Typography, product color and spacing contracts
+
+The root layout owns the existing font loading and exposes three portfolio font
+variables. Components must reuse these variables rather than importing another
+font or defining a parallel family token:
+
+| Variable | Role |
+| --- | --- |
+| `--font-portfolio-display` | Playfair Display for a person's name and restrained display headings |
+| `--font-portfolio-body` | Manrope for body copy, controls, navigation and operational UI |
+| `--font-portfolio-section` | Tenor Sans for optional eyebrow and chapter labels |
+
+Application surfaces map the incumbent palette through the `--product-*` roles
+in `globals.css`. Their semantic ownership is deliberate:
+
+- `--product-action` / `--product-primary`: primary actions and links;
+- `--product-gold`: editorial emphasis and portfolio chapter numbering only;
+- `--product-teal`: verification, trust and protected-content signals;
+- `--product-attention`: time-sensitive warnings such as a link approaching
+  expiry; and
+- the danger action treatment: destructive owner actions such as ending access
+  or unpublishing only. Validation errors retain their existing error-surface
+  contract, while ordinary statuses must not borrow the destructive affordance.
+
+Spacing is being consolidated only where a component is actively changed. The
+dashboard currently defines `--space-control-gap`, `--space-card`, and
+`--space-section`; new dashboard work should reuse those roles before adding a
+new value. This is not authorization for a global CSS normalization pass.
+Landing and authentication redesign remain separate work and require their own
+defects, acceptance criteria and review scope.
+
 ## Portfolio boundary
 
 Published and preview portfolios retain their owner's appearance. Their root

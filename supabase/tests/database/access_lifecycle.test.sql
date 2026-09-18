@@ -112,7 +112,7 @@ select throws_ok(
   'an owner-only field aborts the approved publication transaction'
 );
 select is((select draft_data #>> '{personal,name}' from public.portfolios where id = 'a3000000-0000-4000-8000-000000000001'), 'Aditi Draft', 'an invalid approved projection rolls the private draft back');
-select is((select data #>> '{personal,name}' from public.approved_portfolio_snapshots where portfolio_id = 'a3000000-0000-4000-8000-000000000001'), 'Aditi Full', 'an invalid approved projection preserves the prior Full View snapshot');
+select is((select data #>> '{personal,name}' from public.approved_portfolio_snapshots where portfolio_id = 'a3000000-0000-4000-8000-000000000001'), 'Aditi Full', 'an invalid approved projection preserves the prior Complete Portfolio snapshot');
 
 reset role;
 select ok(not has_function_privilege('anon', 'public.submit_public_interest(text,text,text,text,text,text,text,text,text,text,text,text)', 'EXECUTE'), 'anonymous visitors cannot execute the access request command');
@@ -144,7 +144,7 @@ select is((select count(*)::integer from public.interest_requests), 1, 'repeat s
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
 select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'approved', 'the owner can approve a new request');
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 1, 'approval creates exactly one active grant');
-select ok((select expires_at between now() + interval '6 days' and now() + interval '8 days' from public.reveal_grants limit 1), 'new Full View access expires after seven days');
+select ok((select expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants limit 1), 'new Complete Portfolio access expires after 15 days');
 select is((select count(*)::integer from public.access_audit_events where event_type = 'grant_created'), 1, 'approval creates an immutable grant audit event');
 select is(public.list_portfolio_access() #>> '{grants,0,viewerName}', 'Rohan Mehta', 'the owner access summary returns the bounded grant history');
 select ok(pg_catalog.jsonb_array_length(public.list_portfolio_access() -> 'events') >= 2, 'the owner access summary includes recent lifecycle events');
@@ -155,7 +155,7 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","r
 select is(public.resolve_approved_portfolio('phase2_secure_token_1'), null, 'another authenticated user cannot use someone else''s grant');
 
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select is(public.resolve_approved_portfolio('phase2_secure_token_1') #>> '{data,personal,name}', 'Aditi Full', 'the approved viewer receives the Full View projection');
+select is(public.resolve_approved_portfolio('phase2_secure_token_1') #>> '{data,personal,name}', 'Aditi Full', 'the approved viewer receives the Complete Portfolio projection');
 select ok(
   (public.resolve_approved_portfolio('phase2_secure_token_1') ->> 'accessExpiresAt')::timestamptz > now(),
   'the approved projection includes the grant expiry used to bound signed capabilities'
@@ -164,7 +164,7 @@ reset role;
 select is((select count(*)::integer from public.access_audit_events where event_type = 'grant_accessed'), 1, 'approved access is recorded without sensitive payload data');
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select is(public.resolve_approved_portfolio('phase2_secure_token_1') #>> '{data,personal,name}', 'Aditi Full', 'repeat Full View access remains available');
+select is(public.resolve_approved_portfolio('phase2_secure_token_1') #>> '{data,personal,name}', 'Aditi Full', 'repeat Complete Portfolio access remains available');
 reset role;
 select is((select count(*)::integer from public.access_audit_events where event_type = 'grant_accessed'), 1, 'repeat access within one hour does not create duplicate audit noise');
 
@@ -174,7 +174,7 @@ select is(public.decide_interest_request((select id from public.interest_request
 select ok((select revoked_at is not null and revocation_reason = 'request_rejected' from public.reveal_grants limit 1), 'rejection revokes the active grant atomically');
 
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select is(public.resolve_approved_portfolio('phase2_secure_token_1'), null, 'a rejected viewer loses Full View immediately');
+select is(public.resolve_approved_portfolio('phase2_secure_token_1'), null, 'a rejected viewer loses Complete Portfolio access immediately');
 select ok(
   public.submit_public_interest(
     'phase2_secure_token_1', 'Rohan Mehta', 'self', '+1 555 010 2200',
@@ -192,9 +192,9 @@ select is(public.decide_interest_request((select id from public.interest_request
 select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'approved', 'a reopened request can be approved again');
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 1, 'reapproval creates one replacement active grant');
 
-select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'renew') ->> 'status', 'renewed', 'the owner can renew active Full View access');
-select ok((select renewed_at is not null and expires_at between now() + interval '6 days' and now() + interval '8 days' from public.reveal_grants where revoked_at is null), 'renewal resets access to seven days from the action time');
-select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'revoke') ->> 'status', 'revoked', 'the owner can revoke Full View access');
+select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'renew') ->> 'status', 'renewed', 'the owner can renew active Complete Portfolio access');
+select ok((select renewed_at is not null and expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants where revoked_at is null), 'renewal resets access to 15 days from the action time');
+select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'revoke') ->> 'status', 'revoked', 'the owner can revoke Complete Portfolio access');
 select is((select status::text from public.interest_requests limit 1), 'rejected', 'manual revocation returns the request to rejected');
 
 reset role;
@@ -286,7 +286,7 @@ insert into public.reveal_grants (
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select is(public.resolve_approved_portfolio('rotated_secure_tok_01'), null, 'an expired grant cannot resolve Full View data');
+select is(public.resolve_approved_portfolio('rotated_secure_tok_01'), null, 'an expired grant cannot resolve Complete Portfolio data');
 select is((select count(*)::integer from public.reveal_grants), 0, 'RLS hides expired grants from the viewer');
 reset role;
 select is((select count(*)::integer from public.access_audit_events where grant_id = 'a6000000-0000-4000-8000-000000000002' and event_type = 'grant_expired'), 1, 'the first expired access attempt records one expiry event');

@@ -14,7 +14,7 @@ const decisionSchema = z.object({
   decision: z.enum(["approved", "rejected", "reopened"]),
 });
 
-/** Lets a portfolio owner approve identity-bound Full View access or decline an interest. */
+/** Lets a portfolio owner approve identity-bound Complete Portfolio access or decline an interest. */
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }

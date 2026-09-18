@@ -2,14 +2,31 @@
 
 ## Product decision
 
-An introduction and its Full View access are one relationship lifecycle, not
+An introduction and its Complete Portfolio access are one relationship lifecycle, not
 unrelated dashboard records:
 
-`Awaiting review -> Full View active -> Expired or ended`
+`Awaiting review -> Complete Portfolio active -> Expired or ended`
 
 An owner may also set an introduction aside and deliberately reopen it later.
-Every Full View approval remains email-identity-bound, expires after seven
+Every Complete Portfolio approval remains email-identity-bound, expires after 15
 days, and can be renewed or ended by the portfolio owner.
+
+The owner dashboard presents these records inside one **Introductions and
+access** surface. Awaiting and set-aside requests, active/expired/ended access,
+and the immutable activity history are stages of the same owner workflow. The
+request and grant remain separate backend records because they have different
+authorization and audit responsibilities; visual consolidation does not weaken
+that boundary.
+
+The page-level primary action follows the portfolio lifecycle:
+
+- incomplete draft: continue the portfolio;
+- complete unpublished draft: review and publish;
+- active public link: share the portfolio; and
+- expired public link: renew the link.
+
+Portfolio editing has one page-level entry per state. The readiness tracker
+reports progress and offers preview without duplicating the editor action.
 
 ## Introduction card
 
@@ -36,13 +53,13 @@ removed from existing request metadata. This prevents a requester from
 claiming somebody else's profile or presenting an arbitrary external link as
 their identity.
 
-## Full View card
+## Complete Portfolio card
 
 Each grant shows the same relationship identity and source, plus:
 
 - current access state;
 - exact expiry date;
-- whether and when Full View was opened; and
+- whether and when the Complete Portfolio was opened; and
 - renew or end-access actions.
 
 The disclosure confirmation remains the final approval step and lists the
@@ -51,7 +68,7 @@ categories that the recipient will receive.
 ## Responsive behavior
 
 At phone widths, introduction headings, fact grids, relationship actions,
-Full View controls, and link sharing controls stack into full-width touch
+Complete Portfolio controls and link sharing controls stack into full-width touch
 targets. Desktop retains the denser two-column fact presentation.
 
 ## Synthetic scenarios
@@ -69,8 +86,10 @@ deleted after acceptance testing.
 - A broker name may be empty without breaking a direct introduction.
 - A requester portfolio link is derived from authenticated database ownership.
 - Untrusted metadata cannot produce a dashboard hyperlink.
-- Full View cards preserve source, expiry, access-use, renewal, and revocation
+- Complete Portfolio cards preserve source, expiry, access-use, renewal, and revocation
   information.
+- Introduction review, Complete Portfolio access, and history share one lifecycle surface.
+- The page-level primary action matches draft, ready, active, and expired states.
 - The relationship controls remain usable at 320 CSS pixels.
-- WhatsApp sharing explains First View and owner-approved Full View without
+- WhatsApp sharing explains the public Introduction and owner-approved Complete Portfolio without
   including sensitive profile details.

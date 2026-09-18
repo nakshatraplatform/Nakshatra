@@ -177,7 +177,7 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolios = { data: portfolio };
     mocks.outcomes.portfolio_media = { data: [] };
     render(await PreviewPage());
-    expect(screen.getByText("Public preview · Draft")).toBeInTheDocument();
+    expect(screen.getByText("Public Introduction · Draft preview")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to editing" })).toHaveAttribute("href", "/dashboard?edit=1");
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
     expect(mocks.loadOwnerPublicPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
@@ -190,8 +190,8 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolio_media = { data: [] };
     mocks.outcomes.portfolio_horoscopes = { data: null };
     render(await ApprovedPreviewPage());
-    expect(screen.getByText(/Full portfolio · Owner preview/)).toBeInTheDocument();
-    expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:approved");
+    expect(screen.getByText(/Complete Portfolio · Owner preview/)).toBeInTheDocument();
+    expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:owner");
     expect(mocks.loadOwnerApprovedPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
   });
 });
