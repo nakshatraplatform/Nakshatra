@@ -303,6 +303,7 @@ export function AdaptivePortfolioGallery({
         }}>
           <button type="button" autoFocus className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close full-screen photo">
             <X aria-hidden="true" />
+            <span>Close</span>
           </button>
           {clearPhotos.length > 1 && (
             <button type="button" className="portfolio-lightbox-previous" onClick={() => moveLightbox(-1)} aria-label="Show previous available photo">
