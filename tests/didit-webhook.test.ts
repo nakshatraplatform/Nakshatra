@@ -63,8 +63,8 @@ describe("Didit webhook verification", () => {
   });
 
   function configure() {
-    vi.stubEnv("DIDIT_APPLICATION_ID", config.applicationId);
-    vi.stubEnv("DIDIT_ENVIRONMENT", "sandbox");
+    vi.stubEnv("DIDIT_APPLICATION_ID", undefined);
+    vi.stubEnv("DIDIT_ENVIRONMENT", undefined);
     vi.stubEnv("DIDIT_WEBHOOK_SECRET", config.webhookSecret);
     vi.stubEnv("DIDIT_WORKFLOW_ID", config.workflowId);
   }
@@ -88,7 +88,7 @@ describe("Didit webhook verification", () => {
     expect(result.payloadDigest).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it("rejects stale, unsigned, malformed, and cross-application envelopes", () => {
+  it("rejects stale, unsigned, malformed, and wrong-workflow envelopes", () => {
     configure();
     const valid = signedRequest();
     expect(() => verifyDiditWebhook({ rawBody: JSON.stringify({ z: "Å", ...envelope }), signature: valid.headers.get("X-Signature-V2"), timestamp: "invalid", now }))
@@ -98,15 +98,128 @@ describe("Didit webhook verification", () => {
     expect(() => verifyDiditWebhook({ rawBody: "{", signature: "a".repeat(64), timestamp, now }))
       .toThrow("DIDIT_WEBHOOK_INVALID");
 
-    const wrongApplication = { ...envelope, application_id: "77777777-7777-4777-8777-777777777777" };
-    const wrongRequest = signedRequest(wrongApplication);
-    expect(() => verifyDiditWebhook({ rawBody: JSON.stringify({ z: "Å", ...wrongApplication }), signature: wrongRequest.headers.get("X-Signature-V2"), timestamp, now }))
+    const wrongWorkflow = { ...envelope, workflow_id: "77777777-7777-4777-8777-777777777777" };
+    const wrongRequest = signedRequest(wrongWorkflow);
+    expect(() => verifyDiditWebhook({ rawBody: JSON.stringify({ z: "Å", ...wrongWorkflow }), signature: wrongRequest.headers.get("X-Signature-V2"), timestamp, now }))
       .toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
 
     const mismatchedTimestamp = { ...envelope, timestamp: Number(timestamp) - 301 };
     const mismatchedRequest = signedRequest(mismatchedTimestamp);
     expect(() => verifyDiditWebhook({ rawBody: JSON.stringify({ z: "Å", ...mismatchedTimestamp }), signature: mismatchedRequest.headers.get("X-Signature-V2"), timestamp, now }))
       .toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
+  });
+
+  function verify(body: Record<string, unknown>) {
+    const request = signedRequest(body, true, String(body.timestamp));
+    return verifyDiditWebhook({
+      rawBody: JSON.stringify({ z: "Å", ...body }),
+      signature: request.headers.get("X-Signature-V2"),
+      timestamp: String(body.timestamp),
+      now,
+    });
+  }
+
+  function consoleEnvelope(): Record<string, unknown> {
+    const body: Record<string, unknown> = { ...envelope, created_at: Number(timestamp) - 10 };
+    delete body.application_id;
+    delete body.environment;
+    delete body.event_id;
+    return body;
+  }
+
+  it("accepts the Console payload shape without application, environment, or event IDs", () => {
+    configure();
+    expect(verify(consoleEnvelope())).toEqual(expect.objectContaining({
+      attemptId: "66666666-6666-4666-8666-666666666666",
+      providerSessionRef: envelope.session_id,
+      eventHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    }));
+  });
+
+  it("deduplicates deliveries with refreshed timestamps when an event ID is supplied", () => {
+    configure();
+    expect(verify(envelope).eventHash).toBe("f6222a1106eefe4f6b25302a9d963cfaba14bedfefacc2c311967e41c61cffe4");
+    expect(verify(envelope).eventHash).toBe(verify({ ...envelope, timestamp: Number(timestamp) + 60 }).eventHash);
+    expect(verify(envelope).eventHash).not.toBe(verify({ ...envelope, event_id: "77777777-7777-4777-8777-777777777777" }).eventHash);
+  });
+
+  it("deduplicates event-ID-free retries regardless of key order and dispatch time", () => {
+    configure();
+    const body = consoleEnvelope();
+    const reordered = Object.fromEntries(Object.entries(body).reverse());
+    expect(verify(body).eventHash).toBe(verify({ ...reordered, timestamp: Number(timestamp) + 60 }).eventHash);
+    expect(verify(body).payloadDigest).not.toBe(verify({ ...reordered, timestamp: Number(timestamp) + 60 }).payloadDigest);
+  });
+
+  it("keeps distinct session changes and corrected decisions separate without event IDs", () => {
+    configure();
+    const body = consoleEnvelope();
+    for (const change of [
+      { status: "Declined" },
+      { webhook_type: "data.updated" },
+      { created_at: Number(timestamp) - 5 },
+      { session_id: "77777777-7777-4777-8777-777777777777" },
+      { decision: { status: "Approved", id_verifications: [{ first_name: "Corrected" }] } },
+    ]) {
+      expect(verify(body).eventHash).not.toBe(verify({ ...body, ...change }).eventHash);
+    }
+  });
+
+  it("rejects tampered bodies and signatures from another destination before persistence", async () => {
+    configure();
+    const body = consoleEnvelope();
+    const request = signedRequest(body);
+    expect(() => verifyDiditWebhook({
+      rawBody: JSON.stringify({ z: "Å", ...body, status: "Declined" }),
+      signature: request.headers.get("X-Signature-V2"), timestamp, now,
+    })).toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
+    vi.stubEnv("DIDIT_WEBHOOK_SECRET", "another-destination-secret");
+    const currentTimestamp = String(Math.floor(Date.now() / 1000));
+    const response = await POST(signedRequest({ ...body, timestamp: Number(currentTimestamp) }, true, currentTimestamp));
+    expect(response.status).toBe(401);
+    expect(repositoryRecord).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { vendor_data: "your-vendor-reference-id" },
+    { session_id: "invalid" },
+    { event_id: "invalid" },
+    { webhook_type: "transaction.created" },
+    { timestamp: Number(timestamp) + 301 },
+  ])("rejects invalid session envelopes: %j", (change) => {
+    configure();
+    expect(() => verify({ ...consoleEnvelope(), ...change })).toThrow();
+  });
+
+  it.each(["DIDIT_WEBHOOK_SECRET", "DIDIT_WORKFLOW_ID"])("requires %s", (key) => {
+    configure();
+    vi.stubEnv(key, undefined);
+    expect(() => verify(consoleEnvelope())).toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
+  });
+
+  it("acknowledges a Console-shaped event only after storing safe receipt inputs", async () => {
+    configure();
+    repositoryRecord.mockResolvedValue({ data: true, error: null });
+    const currentTimestamp = String(Math.floor(Date.now() / 1000));
+    const body = { ...consoleEnvelope(), timestamp: Number(currentTimestamp), decision: { private_evidence: "not-for-storage" } };
+    const response = await POST(signedRequest(body, true, currentTimestamp));
+    expect(response.status).toBe(202);
+    expect(Object.keys(repositoryRecord.mock.calls[0][0]).sort()).toEqual([
+      "attemptId", "eventHash", "payloadDigest", "providerSessionRef", "providerSubjectRef",
+    ]);
+    expect(JSON.stringify(repositoryRecord.mock.calls)).not.toContain("not-for-storage");
+  });
+
+  it.each([
+    { data: null, error: { message: "storage unavailable" } },
+    { data: null, error: null },
+  ])("does not acknowledge unsuccessful persistence: %j", async (result) => {
+    configure();
+    repositoryRecord.mockResolvedValueOnce(result);
+    const currentTimestamp = String(Math.floor(Date.now() / 1000));
+    const response = await POST(signedRequest({ ...consoleEnvelope(), timestamp: Number(currentTimestamp) }, true, currentTimestamp));
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ code: "DIDIT_WEBHOOK_UNAVAILABLE" });
   });
 
   it("acknowledges only after the private event receipt succeeds and never returns provider data", async () => {

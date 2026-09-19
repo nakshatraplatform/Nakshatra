@@ -8,6 +8,11 @@
 
 **Detailed B2C pilot assessment:** [`docs/b2c-pilot-product-assessment.md`](docs/b2c-pilot-product-assessment.md)
 
+**Didit configuration (2026-09-19):** Only `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`,
+and `DIDIT_WEBHOOK_SECRET` are provider-specific settings. See the
+[configuration contract](docs/identity-verification/didit-configuration-contract.md)
+for webhook compatibility, security invariants, and verification evidence.
+
 This file describes the checked-in repository as it exists now. It must distinguish code that exists from capabilities approved for a specific launch. Do not infer production configuration from repository code alone.
 
 ## Product stance
