@@ -59,6 +59,7 @@ import {
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
+import type { OwnerBrokerIntroductionResponse } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
@@ -85,6 +86,7 @@ interface Props {
   interests?: DashboardInterest[];
   accessSummary?: PortfolioAccessSummary;
   publicationReadiness?: PublicationReadiness;
+  brokerIntroductionResponses?: OwnerBrokerIntroductionResponse[];
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -105,6 +107,7 @@ export default function DashboardClient({
   interests = [],
   accessSummary = EMPTY_ACCESS_SUMMARY,
   publicationReadiness = EMPTY_PUBLICATION_READINESS,
+  brokerIntroductionResponses = [],
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -718,6 +721,17 @@ export default function DashboardClient({
               router.refresh();
             }}
           />
+          {brokerIntroductionResponses.length > 0 && <section className="dashboard-glass p-5 sm:p-6" aria-labelledby="broker-introduction-responses-heading">
+            <div className="dashboard-section-heading">
+              <div><h2 id="broker-introduction-responses-heading">Broker introduction responses</h2><p>Responses to introductions shared under your standing broker mandate.</p></div>
+              <span>{brokerIntroductionResponses.length}</span>
+            </div>
+            <div className="mt-4 grid gap-3">{brokerIntroductionResponses.map((response) => <article key={response.introductionRef} className="rounded-xl border border-[color:var(--workspace-border)] p-4">
+              <strong className="capitalize">{response.response}</strong>
+              <p className="mt-1 text-sm text-[color:var(--workspace-ink-muted)]">{response.recipientLabel} · shared through {response.brokerName} · {new Date(response.respondedAt).toLocaleDateString()}</p>
+              {response.comment && <p className="mt-3 text-sm">“{response.comment}”</p>}
+            </article>)}</div>
+          </section>}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="dashboard-glass dashboard-stat-card p-4">

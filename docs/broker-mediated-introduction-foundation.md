@@ -42,10 +42,10 @@ If email delivery is unavailable, the invitation remains valid and BrokerDesk
 shows the private copy-link fallback. A retry with the same invitation reference
 uses the same provider idempotency identity.
 
-## Deferred introduction journey
+## Implemented introduction journey
 
-The next increment owns versioned disclosure references, broker-created
-introduction records, one-time device passes, Detailed Introduction fallback,
-responses, the six-event audit trail and notification delivery. It must not add
-a per-introduction customer approval state or any recipient-broker lookup.
-
+Phases 4–8 add versioned disclosure references, broker-created introduction
+records, one-time device passes, Detailed Introduction fallback, responses, the
+six-event audit trail and isolated version notifications. See
+`docs/broker-introduction-system-design.md`. The implementation contains no
+per-introduction customer approval state and no recipient-broker lookup.

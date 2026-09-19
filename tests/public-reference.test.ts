@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   brokerCustomerRelationshipRefSchema,
   brokerIntroductionRouteRefSchema,
+  brokerPortfolioNoticeRefSchema,
   customerIntroductionCaseRefSchema,
   importRefSchema,
   invitationRefSchema,
   memberRefSchema,
+  portfolioVersionRefSchema,
   taskRefSchema,
   workspaceRefSchema,
 } from "@/features/security/public-reference";
@@ -17,6 +19,8 @@ describe("BrokerDesk public references", () => {
     [workspaceRefSchema, `wrk_${RANDOM_HEX}`],
     [brokerCustomerRelationshipRefSchema, `bcr_${RANDOM_HEX}`],
     [brokerIntroductionRouteRefSchema, `bir_${RANDOM_HEX}`],
+    [brokerPortfolioNoticeRefSchema, `bpn_${RANDOM_HEX}`],
+    [portfolioVersionRefSchema, `pvr_${RANDOM_HEX}`],
     [customerIntroductionCaseRefSchema, `inc_${RANDOM_HEX}`],
     [taskRefSchema, `tsk_${RANDOM_HEX}`],
     [importRefSchema, `imp_${RANDOM_HEX}`],
