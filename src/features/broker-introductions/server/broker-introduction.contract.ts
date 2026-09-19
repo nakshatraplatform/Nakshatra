@@ -113,7 +113,39 @@ export const ownerBrokerIntroductionResponsesSchema = z.object({
   }).strict()).max(200),
 }).strict();
 
+export const brokerdeskDashboardActionSchema = z.object({
+  type: z.enum(["response", "portfolio_update", "clarification", "expiring"]),
+  occurredAt: z.string(),
+  relationshipRef: brokerCustomerRelationshipRefSchema,
+  customerName: z.string().min(1).max(180),
+  introductionRef: brokerIntroductionRouteRefSchema.optional(),
+  noticeRef: brokerPortfolioNoticeRefSchema.optional(),
+  recipientLabel: z.string().min(1).max(120).optional(),
+  response: z.enum(["accepted", "declined"]).optional(),
+  responseComment: z.string().max(1000).optional(),
+  expiresAt: z.string().optional(),
+  versionNumber: z.number().int().positive().optional(),
+}).strict();
+
+export const brokerdeskDashboardSchema = z.discriminatedUnion("available", [
+  z.object({ available: z.literal(false) }).strict(),
+  z.object({
+    available: z.literal(true),
+    workspaceRef: z.string().regex(/^wrk_[0-9a-f]{32}$/),
+    workspaceName: z.string().min(1).max(160),
+    metrics: z.object({
+      activeCustomers: z.number().int().nonnegative(),
+      openIntroductions: z.number().int().nonnegative(),
+      responsesAwaitingReview: z.number().int().nonnegative(),
+      portfolioUpdates: z.number().int().nonnegative(),
+    }).strict(),
+    actions: z.array(brokerdeskDashboardActionSchema).max(100),
+  }).strict(),
+]);
+
 export type BrokerIntroductionItem = z.infer<typeof brokerIntroductionItemSchema>;
 export type BrokerPortfolioNotice = z.infer<typeof brokerPortfolioNoticeSchema>;
 export type ResolvedBrokerIntroduction = z.infer<typeof resolvedBrokerIntroductionSchema>;
 export type OwnerBrokerIntroductionResponse = z.infer<typeof ownerBrokerIntroductionResponsesSchema>["responses"][number];
+export type BrokerdeskDashboard = z.infer<typeof brokerdeskDashboardSchema>;
+export type BrokerdeskDashboardAction = z.infer<typeof brokerdeskDashboardActionSchema>;

@@ -11,6 +11,7 @@ import {
   preparedBrokerIntroductionSchema,
   resolvedBrokerIntroductionSchema,
   ownerBrokerIntroductionResponsesSchema,
+  brokerdeskDashboardSchema,
 } from "./broker-introduction.contract";
 import { BrokerIntroductionRepository } from "./broker-introduction.repository";
 
@@ -22,6 +23,8 @@ const transitionSchema = z.object({
 }).strict();
 const claimSchema = z.object({ available: z.literal(true), expiresAt: z.string() }).strict();
 const flagSchema = z.object({ available: z.literal(true), status: z.literal("clarification") }).strict();
+const reviewedSchema = z.object({ available: z.literal(true), status: z.literal("reviewed") }).strict();
+const acknowledgedSchema = z.object({ available: z.literal(true), status: z.literal("acknowledged") }).strict();
 
 export class BrokerIntroductionError extends Error {
   constructor(
@@ -140,4 +143,30 @@ export async function flagBrokerPortfolioUpdate(supabase: SupabaseClient, worksp
 export async function listOwnerBrokerIntroductionResponses(supabase: SupabaseClient) {
   const result = await new BrokerIntroductionRepository(supabase).ownerResponses();
   return parseOrThrow(ownerBrokerIntroductionResponsesSchema, result.data, result.error).responses;
+}
+
+export async function resolveBrokerdeskDashboard(supabase: SupabaseClient, workspaceRef: string) {
+  const result = await new BrokerIntroductionRepository(supabase).dashboard(workspaceRef);
+  return parseOrThrow(brokerdeskDashboardSchema, result.data, result.error);
+}
+
+export async function markBrokerIntroductionResponseReviewed(
+  supabase: SupabaseClient,
+  workspaceRef: string,
+  introductionRef: string
+) {
+  const result = await new BrokerIntroductionRepository(supabase)
+    .markResponseReviewed(workspaceRef, introductionRef);
+  return parseOrThrow(reviewedSchema, result.data, result.error);
+}
+
+export async function acknowledgeBrokerPortfolioUpdate(
+  supabase: SupabaseClient,
+  workspaceRef: string,
+  relationshipRef: string,
+  noticeRef: string
+) {
+  const result = await new BrokerIntroductionRepository(supabase)
+    .acknowledgeNotice(workspaceRef, relationshipRef, noticeRef);
+  return parseOrThrow(acknowledgedSchema, result.data, result.error);
 }

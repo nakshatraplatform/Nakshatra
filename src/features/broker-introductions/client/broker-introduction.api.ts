@@ -55,3 +55,19 @@ export function flagPortfolioUpdate(workspaceRef: string, relationshipRef: strin
     { relationshipRef }
   );
 }
+
+export function acknowledgePortfolioUpdate(workspaceRef: string, relationshipRef: string, noticeRef: string) {
+  return command<{ available: true; status: "acknowledged" }>(
+    `/api/v1/brokerdesk/workspaces/${encodeURIComponent(workspaceRef)}/portfolio-updates/${encodeURIComponent(noticeRef)}/acknowledge`,
+    "POST",
+    { relationshipRef }
+  );
+}
+
+export function markIntroductionResponseReviewed(workspaceRef: string, introductionRef: string) {
+  return command<{ available: true; status: "reviewed" }>(
+    `/api/v1/brokerdesk/workspaces/${encodeURIComponent(workspaceRef)}/introductions/${encodeURIComponent(introductionRef)}/reviewed`,
+    "POST",
+    {}
+  );
+}

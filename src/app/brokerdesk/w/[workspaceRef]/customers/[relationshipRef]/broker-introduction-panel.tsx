@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { AlertTriangle, CheckCircle2, Copy, Link2, MessageCircleQuestion, Send, XCircle } from "lucide-react";
 import type { BrokerIntroductionItem, BrokerPortfolioNotice } from "@/features/broker-introductions/server/broker-introduction.contract";
-import { createIntroduction, flagPortfolioUpdate, markIntroductionShared, revokeIntroduction } from "@/features/broker-introductions/client/broker-introduction.api";
+import { acknowledgePortfolioUpdate, createIntroduction, flagPortfolioUpdate, markIntroductionShared, revokeIntroduction } from "@/features/broker-introductions/client/broker-introduction.api";
 import styles from "./brokerdesk-customer-detail.module.css";
 
 type CreatedLink = { introductionRef: string; introductionUrl: string; rowVersion: number };
@@ -87,12 +87,22 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
     finally { setPending(false); }
   }
 
+  async function acknowledge(notice: BrokerPortfolioNotice) {
+    setPending(true); setMessage("");
+    try {
+      await acknowledgePortfolioUpdate(workspaceRef, relationshipRef, notice.noticeRef);
+      setNotices((items) => items.map((item) => item.noticeRef === notice.noticeRef ? { ...item, status: "acknowledged" } : item));
+      setMessage("Portfolio update acknowledged.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "The update could not be acknowledged."); }
+    finally { setPending(false); }
+  }
+
   return <>
     {notices.length > 0 && <section className={styles.panel}>
       <div className={styles.panelTitle}><AlertTriangle /><div><h2>Portfolio updates</h2><p>Each notice belongs only to this broker relationship. Updates do not alter introductions already shared.</p></div></div>
       <div className={styles.timeline}>{notices.map((notice) => <article className={styles.introductionRow} key={notice.noticeRef}>
         <div><strong>Published version {notice.versionNumber}</strong><span>{new Date(notice.publishedAt).toLocaleDateString()} · {notice.status}</span></div>
-        {notice.status === "unread" && <button disabled={pending} type="button" onClick={() => flag(notice)}><MessageCircleQuestion /> Flag for clarification</button>}
+        {notice.status !== "acknowledged" && <div><button disabled={pending} type="button" onClick={() => acknowledge(notice)}><CheckCircle2 /> Acknowledge</button>{notice.status === "unread" && <button disabled={pending} type="button" onClick={() => flag(notice)}><MessageCircleQuestion /> Flag for clarification</button>}</div>}
       </article>)}</div>
     </section>}
     <section className={styles.panel}>

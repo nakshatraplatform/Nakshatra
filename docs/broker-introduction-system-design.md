@@ -1,4 +1,4 @@
-# Broker introduction system design — phases 4–8
+# Broker introduction system design — phases 4–12
 
 The broker-facing product remains named `BrokerDesk` internally. That label is
 not a public brand commitment and can be replaced when the B2B product is named.
@@ -83,6 +83,55 @@ same-value retry is idempotent; a conflicting second response is rejected.
 The response appears independently in the source broker's customer page and the
 portfolio owner's dashboard. It does not notify, reveal, or look up another
 broker. Follow-up conversation stays outside the application for the pilot.
+
+### Phase 9 — Broker workspace and action queue
+
+`/brokerdesk/w/<workspaceRef>/dashboard` is the default BrokerDesk destination.
+Its projection is calculated in the database from the signed-in membership,
+workspace entitlement, role capability, customer assignment, and active
+mandate. It contains only the current organization’s counts and actionable
+items: unseen responses, customer publication notices, clarification flags,
+and shared introductions expiring within 72 hours.
+
+No internal organization, candidate, relationship, introduction, or notice UUID
+is returned. All navigation uses opaque public references.
+
+### Phase 10 — Lightweight operational follow-up
+
+A recipient response remains immutable. A broker can only mark it reviewed;
+the follow-up conversation stays on phone or WhatsApp. A portfolio update can
+be acknowledged or flagged for clarification. These actions are deliberately
+status fields rather than new audit event types, preserving the six-event
+introduction history agreed for the pilot.
+
+Acknowledging or reviewing in one broker organization cannot affect another
+broker’s notice or queue, even when both represent the same customer.
+
+### Phase 11 — Link maintenance and security operations
+
+Revoked and expired introductions immediately scrub both claim and device
+session hashes, along with claim/last-seen timestamps. The six-event audit row
+remains, so operators can diagnose the lifecycle without retaining usable
+credentials.
+
+The hourly maintenance workflow calls a service-role-only RPC and is disabled
+until the protected GitHub environment, secrets, and
+`BROKER_INTRODUCTION_WORKER_ENABLED=true` repository variable are configured.
+The worker rejects non-local database hosts other than the approved Nakshatra
+project (`xizzzczzhqzabcipbgep.supabase.co`). User requests also perform lazy
+expiry, so correctness does not depend on the scheduler being available.
+
+### Phase 12 — Bounded pilot and validation
+
+The initial operating boundary remains two brokers, five customers each,
+manual WhatsApp delivery, and no broker-to-broker features. The repository
+includes an opt-in local scenario with two isolated broker workspaces and one
+customer represented by both. It demonstrates independent queues, an accepted
+recipient response, an unread publication notice, and a link approaching
+expiry. The default database reset does not load this scenario.
+
+See `docs/broker-pilot-test-runbook.md` for accounts, expected outcomes, and the
+manual pilot checklist. Production sample identities are never auto-created.
 
 ## Workflow
 

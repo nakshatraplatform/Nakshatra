@@ -6,8 +6,9 @@ const createIntroduction = vi.hoisted(() => vi.fn());
 const markIntroductionShared = vi.hoisted(() => vi.fn());
 const revokeIntroduction = vi.hoisted(() => vi.fn());
 const flagPortfolioUpdate = vi.hoisted(() => vi.fn());
+const acknowledgePortfolioUpdate = vi.hoisted(() => vi.fn());
 vi.mock("@/features/broker-introductions/client/broker-introduction.api", () => ({
-  createIntroduction, markIntroductionShared, revokeIntroduction, flagPortfolioUpdate,
+  createIntroduction, markIntroductionShared, revokeIntroduction, flagPortfolioUpdate, acknowledgePortfolioUpdate,
 }));
 
 import { BrokerIntroductionPanel } from "../src/app/brokerdesk/w/[workspaceRef]/customers/[relationshipRef]/broker-introduction-panel";
@@ -23,6 +24,7 @@ describe("broker introduction panel", () => {
     markIntroductionShared.mockResolvedValue({ available: true, status: "shared", rowVersion: 2 });
     revokeIntroduction.mockResolvedValue({ available: true, status: "revoked", rowVersion: 3 });
     flagPortfolioUpdate.mockResolvedValue({ available: true, status: "clarification" });
+    acknowledgePortfolioUpdate.mockResolvedValue({ available: true, status: "acknowledged" });
   });
 
   it("creates, activates, flags, and revokes broker-scoped introductions", async () => {
@@ -45,6 +47,15 @@ describe("broker introduction panel", () => {
     const revokeButtons = screen.getAllByRole("button", { name: "Revoke" });
     fireEvent.click(revokeButtons[0]);
     await waitFor(() => expect(revokeIntroduction).toHaveBeenCalled());
+  });
+
+  it("acknowledges an isolated portfolio update", async () => {
+    render(<BrokerIntroductionPanel workspaceRef="wrk" relationshipRef="bcr" canCreate={false}
+      initialNotices={[{ noticeRef, status: "clarification", versionNumber: 4, publishedAt: "2026-09-19T00:00:00Z", createdAt: "2026-09-19T00:00:00Z" }]}
+      initialIntroductions={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Acknowledge" }));
+    await screen.findByText("Portfolio update acknowledged.");
+    expect(acknowledgePortfolioUpdate).toHaveBeenCalledWith("wrk", "bcr", noticeRef);
   });
 
   it("explains when the relationship cannot create introductions", () => {

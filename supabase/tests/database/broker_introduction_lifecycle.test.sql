@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(28);
+select plan(34);
 
 select has_table('app_private','portfolio_disclosure_versions','immutable disclosure versions are private');
 select has_table('app_private','broker_portfolio_update_notices','per-mandate update notices are private');
@@ -32,6 +32,12 @@ select has_function('public','respond_to_broker_introduction',array['text','text
 select has_function('public','resolve_broker_portfolio_update_notices',array['text','text'],'isolated notice projection exists');
 select has_function('public','flag_broker_portfolio_update',array['text','text','text'],'optional clarification command exists');
 select has_function('public','resolve_my_broker_introduction_responses',array[]::text[],'owner response projection exists');
+select has_column('app_private','broker_introductions','response_seen_at','broker response follow-up has lightweight review state');
+select has_function('public','resolve_brokerdesk_dashboard',array['text'],'tenant-scoped broker action queue exists');
+select has_function('public','mark_broker_introduction_response_reviewed',array['text','text'],'response review command exists');
+select has_function('public','acknowledge_broker_portfolio_update',array['text','text','text'],'portfolio update acknowledgement exists');
+select has_function('public','run_broker_introduction_maintenance',array[]::text[],'service maintenance command exists');
+select has_trigger('app_private','broker_introductions','scrub_closed_broker_introduction_pass','closed introductions scrub pass credentials');
 
 select ok(
   (select pg_get_constraintdef(oid) from pg_constraint

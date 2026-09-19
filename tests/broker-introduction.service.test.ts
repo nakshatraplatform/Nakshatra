@@ -13,6 +13,9 @@ import {
   listBrokerIntroductions,
   listBrokerPortfolioNotices,
   listOwnerBrokerIntroductionResponses,
+  resolveBrokerdeskDashboard,
+  markBrokerIntroductionResponseReviewed,
+  acknowledgeBrokerPortfolioUpdate,
   markBrokerIntroductionShared,
   resolveBrokerIntroduction,
   respondToBrokerIntroduction,
@@ -80,6 +83,13 @@ describe("broker introduction service", () => {
     await expect(respondToBrokerIntroduction(client(() => ({ data: { available: true, status: "responded", response: "accepted" } })) as never, introductionRef, "b".repeat(64), "accepted", "Proceed")).resolves.toMatchObject({ response: "accepted" });
     await expect(flagBrokerPortfolioUpdate(client(() => ({ data: { available: true, status: "clarification" } })) as never, workspaceRef, relationshipRef, noticeRef)).resolves.toMatchObject({ status: "clarification" });
     await expect(listOwnerBrokerIntroductionResponses(client(() => ({ data: { available: true, responses: [{ introductionRef, brokerName: "Agency", recipientLabel: "Priya", response: "accepted", comment: null, respondedAt: "2026-09-19T00:00:00Z" }] } })) as never)).resolves.toHaveLength(1);
+    await expect(resolveBrokerdeskDashboard(client(() => ({ data: {
+      available: true, workspaceRef, workspaceName: "Agency",
+      metrics: { activeCustomers: 1, openIntroductions: 1, responsesAwaitingReview: 1, portfolioUpdates: 1 },
+      actions: [{ type: "response", occurredAt: "2026-09-19T00:00:00Z", relationshipRef, customerName: "Arun", introductionRef, recipientLabel: "Priya", response: "accepted" }],
+    } })) as never, workspaceRef)).resolves.toMatchObject({ available: true, workspaceName: "Agency" });
+    await expect(markBrokerIntroductionResponseReviewed(client(() => ({ data: { available: true, status: "reviewed" } })) as never, workspaceRef, introductionRef)).resolves.toMatchObject({ status: "reviewed" });
+    await expect(acknowledgeBrokerPortfolioUpdate(client(() => ({ data: { available: true, status: "acknowledged" } })) as never, workspaceRef, relationshipRef, noticeRef)).resolves.toMatchObject({ status: "acknowledged" });
   });
 
   it("returns detailed fallback without private media and signs authorized complete media", async () => {

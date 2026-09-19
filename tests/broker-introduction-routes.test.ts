@@ -12,6 +12,9 @@ const flagNotice = vi.hoisted(() => vi.fn());
 const claim = vi.hoisted(() => vi.fn());
 const resolve = vi.hoisted(() => vi.fn());
 const respond = vi.hoisted(() => vi.fn());
+const dashboard = vi.hoisted(() => vi.fn());
+const reviewed = vi.hoisted(() => vi.fn());
+const acknowledged = vi.hoisted(() => vi.fn());
 const readCookie = vi.hoisted(() => vi.fn((value?: string, ref?: string): string | null => {
   void value; void ref;
   return "s".repeat(43);
@@ -41,6 +44,9 @@ vi.mock("@/features/broker-introductions/server/broker-introduction.service", ()
     claimBrokerIntroductionPass: claim,
     resolveBrokerIntroduction: resolve,
     respondToBrokerIntroduction: respond,
+    resolveBrokerdeskDashboard: dashboard,
+    markBrokerIntroductionResponseReviewed: reviewed,
+    acknowledgeBrokerPortfolioUpdate: acknowledged,
   };
 });
 
@@ -52,6 +58,9 @@ import { POST as clarification } from "../src/app/api/v1/brokerdesk/workspaces/[
 import { POST as exchange } from "../src/app/api/v1/introductions/[introductionRef]/exchange/route";
 import { GET as publicRead } from "../src/app/api/v1/introductions/[introductionRef]/route";
 import { POST as response } from "../src/app/api/v1/introductions/[introductionRef]/response/route";
+import { GET as workspaceDashboard } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/dashboard/route";
+import { POST as reviewResponse } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/reviewed/route";
+import { POST as acknowledgeNotice } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/portfolio-updates/[noticeRef]/acknowledge/route";
 
 const origin = "http://localhost:3000";
 const workspaceRef = `wrk_${"a".repeat(32)}`;
@@ -79,6 +88,9 @@ describe("broker introduction routes", () => {
     claim.mockResolvedValue({ available: true, expiresAt: "2026-10-01T00:00:00Z" });
     resolve.mockResolvedValue({ available: false });
     respond.mockResolvedValue({ available: true, status: "responded", response: "accepted" });
+    dashboard.mockResolvedValue({ available: true, workspaceRef, workspaceName: "Agency", metrics: { activeCustomers: 1, openIntroductions: 1, responsesAwaitingReview: 1, portfolioUpdates: 0 }, actions: [] });
+    reviewed.mockResolvedValue({ available: true, status: "reviewed" });
+    acknowledged.mockResolvedValue({ available: true, status: "acknowledged" });
   });
 
   it("creates a fragment-only pass and lists only one broker relationship", async () => {
@@ -105,6 +117,16 @@ describe("broker introduction routes", () => {
     expect((await notices(new Request(`${origin}/updates?relationshipRef=${relationshipRef}`), context)).status).toBe(200);
     expect((await clarification(mutation("/clarification", { relationshipRef }), context)).status).toBe(200);
     expect(flagNotice).toHaveBeenCalledWith(actor.supabase, workspaceRef, relationshipRef, noticeRef);
+  });
+
+  it("loads the workspace queue and completes response and update follow-ups", async () => {
+    const loaded = await workspaceDashboard(new Request(`${origin}/dashboard`), context);
+    expect(loaded.status).toBe(200);
+    expect(dashboard).toHaveBeenCalledWith(actor.supabase, workspaceRef);
+    expect((await reviewResponse(mutation("/reviewed", {}), context)).status).toBe(200);
+    expect(reviewed).toHaveBeenCalledWith(actor.supabase, workspaceRef, introductionRef);
+    expect((await acknowledgeNotice(mutation("/acknowledge", { relationshipRef }), context)).status).toBe(200);
+    expect(acknowledged).toHaveBeenCalledWith(actor.supabase, workspaceRef, relationshipRef, noticeRef);
   });
 
   it("claims once, reads through the device cookie, and records a response", async () => {

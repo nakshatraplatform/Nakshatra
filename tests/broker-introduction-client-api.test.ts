@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createIntroduction, flagPortfolioUpdate, markIntroductionShared, revokeIntroduction } from "@/features/broker-introductions/client/broker-introduction.api";
+import { acknowledgePortfolioUpdate, createIntroduction, flagPortfolioUpdate, markIntroductionResponseReviewed, markIntroductionShared, revokeIntroduction } from "@/features/broker-introductions/client/broker-introduction.api";
 
 describe("broker introduction client API", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -13,9 +13,13 @@ describe("broker introduction client API", () => {
     await markIntroductionShared("wrk_a", "bir_b", 1);
     await revokeIntroduction("wrk_a", "bir_b", 2);
     await flagPortfolioUpdate("wrk_a", "bcr_c", "bpn_d");
-    expect(fetch).toHaveBeenCalledTimes(3);
+    await acknowledgePortfolioUpdate("wrk_a", "bcr_c", "bpn_d");
+    await markIntroductionResponseReviewed("wrk_a", "bir_b");
+    expect(fetch).toHaveBeenCalledTimes(5);
     expect(fetch.mock.calls[0][0]).toContain("/introductions/bir_b/shared");
     expect(fetch.mock.calls[1][1]).toMatchObject({ method: "DELETE" });
+    expect(fetch.mock.calls[3][0]).toContain("/portfolio-updates/bpn_d/acknowledge");
+    expect(fetch.mock.calls[4][0]).toContain("/introductions/bir_b/reviewed");
   });
 
   it("creates and surfaces neutral API errors", async () => {

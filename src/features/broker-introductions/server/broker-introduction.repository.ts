@@ -81,4 +81,23 @@ export class BrokerIntroductionRepository {
   ownerResponses() {
     return this.supabase.rpc("resolve_my_broker_introduction_responses");
   }
+
+  dashboard(workspaceRef: string) {
+    return this.supabase.rpc("resolve_brokerdesk_dashboard", { p_workspace_ref: workspaceRef });
+  }
+
+  markResponseReviewed(workspaceRef: string, introductionRef: string) {
+    return this.supabase.rpc("mark_broker_introduction_response_reviewed", {
+      p_workspace_ref: workspaceRef,
+      p_introduction_ref: introductionRef,
+    });
+  }
+
+  acknowledgeNotice(workspaceRef: string, relationshipRef: string, noticeRef: string) {
+    return this.supabase.rpc("acknowledge_broker_portfolio_update", {
+      p_workspace_ref: workspaceRef,
+      p_relationship_ref: relationshipRef,
+      p_notice_ref: noticeRef,
+    });
+  }
 }
