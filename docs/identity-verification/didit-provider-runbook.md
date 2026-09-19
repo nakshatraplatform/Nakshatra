@@ -54,6 +54,23 @@ secrets, or raw identity data to Linear.
 
 ## Credential and webhook handling
 
+The only Didit-specific deployment variables are `DIDIT_API_KEY`,
+`DIDIT_WORKFLOW_ID`, and `DIDIT_WEBHOOK_SECRET`, as listed in the
+[official integration guide](https://docs.didit.me/integration/api-full-flow).
+Application ID, Organization ID, and a separate Didit environment variable are
+not required. Choose Sandbox or Production by configuring its matching scoped
+API key, workflow ID, and destination signing secret together. Existing
+Nakshatra configuration (app URL, Supabase credentials, and the shared
+`IDENTITY_VERIFICATION_MATCH_HMAC_KEY`) is still required.
+
+In App Settings, copy the API key from **API keys** and create a **Webhooks**
+destination with the final public HTTPS URL `/api/webhooks/didit`, version `v3`,
+and events `status.updated` and `data.updated`. Use its signing secret, avoid
+redirects or browser challenges, set the three variables in Vercel, and redeploy.
+Set the same API key on the existing worker. Complete a real sandbox session
+from Nakshatra and verify a 202 receipt, worker processing, and session purge.
+Console sample vendor references are placeholders, not local verification attempts.
+
 - An API key is scoped to a Didit Application and authenticates server-to-server
   requests. Keep it only in the production secret manager under
   `DIDIT_API_KEY`; never add it to `.env.example`, `NEXT_PUBLIC_*` variables,
@@ -63,8 +80,11 @@ secrets, or raw identity data to Linear.
   cadence recorded in the private credential inventory.
 - The deployed webhook endpoint at `/api/webhooks/didit` verifies
   `X-Signature-V2` over Didit's canonical JSON form, enforces a five-minute
-  freshness window for both the signed envelope and `X-Timestamp`, and dedupes
-  hashed provider event IDs before queueing work. It resolves an attempt only
+  freshness window for both the signed envelope and `X-Timestamp`, and validates
+  the configured workflow. It dedupes hashed provider event IDs when supplied;
+  otherwise it hashes canonical authenticated content excluding the retry's
+  dispatch timestamp. Application/environment fields are optional metadata, not
+  separately configured credentials. It resolves an attempt only
   when its server-stored provider subject reference and provider session ID both
   match; it never stores the webhook body or decision object.
 - Run `npm run identity-verification:process` every five minutes from the
@@ -130,6 +150,7 @@ processing an identity document:
 
 ## Provider references
 
+- [Configuration contract and validation](didit-configuration-contract.md)
 - [Didit API authentication](https://docs.didit.me/getting-started/api-authentication)
 - [Didit hosted sessions overview](https://docs.didit.me/api-reference/overview)
 - [Didit webhook verification](https://docs.didit.me/integration/webhooks)
