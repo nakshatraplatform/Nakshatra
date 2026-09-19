@@ -4,16 +4,12 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod/v4";
 
 const webhookConfigSchema = z.object({
-  DIDIT_APPLICATION_ID: z.uuid("DIDIT_APPLICATION_ID must be a UUID"),
-  DIDIT_ENVIRONMENT: z.enum(["sandbox", "live"]),
   DIDIT_WEBHOOK_SECRET: z.string().min(16, "DIDIT_WEBHOOK_SECRET is required"),
   DIDIT_WORKFLOW_ID: z.uuid("DIDIT_WORKFLOW_ID must be a UUID"),
 });
 
 const diditWebhookEnvelopeSchema = z.object({
-  application_id: z.uuid(),
-  environment: z.enum(["sandbox", "live"]),
-  event_id: z.uuid(),
+  event_id: z.uuid().optional(),
   session_id: z.uuid(),
   status: z.string().trim().min(1).max(64),
   timestamp: z.number().int().nonnegative(),
@@ -43,8 +39,6 @@ export type VerifiedDiditWebhook = {
 
 function getWebhookConfig() {
   const parsed = webhookConfigSchema.safeParse({
-    DIDIT_APPLICATION_ID: process.env.DIDIT_APPLICATION_ID,
-    DIDIT_ENVIRONMENT: process.env.DIDIT_ENVIRONMENT,
     DIDIT_WEBHOOK_SECRET: process.env.DIDIT_WEBHOOK_SECRET,
     DIDIT_WORKFLOW_ID: process.env.DIDIT_WORKFLOW_ID,
   });
@@ -107,8 +101,6 @@ export function verifyDiditWebhook(input: {
   if (!envelope.success) throw new DiditWebhookError("DIDIT_WEBHOOK_INVALID");
   if (
     !isCurrentTimestamp(String(envelope.data.timestamp), now)
-    || envelope.data.application_id !== config.DIDIT_APPLICATION_ID
-    || envelope.data.environment !== config.DIDIT_ENVIRONMENT
     || envelope.data.workflow_id !== config.DIDIT_WORKFLOW_ID
   ) {
     throw new DiditWebhookError("DIDIT_WEBHOOK_UNAUTHORIZED");
@@ -119,9 +111,18 @@ export function verifyDiditWebhook(input: {
   const [, providerSubjectRef, attemptId] = vendorData.data.match(vendorDataPattern)!;
   if (!providerSubjectRef || !attemptId) throw new DiditWebhookError("DIDIT_WEBHOOK_INVALID");
 
+  // Some Console/session deliveries omit event_id. Exclude the dispatch timestamp
+  // from their identity because Didit refreshes it on retry. Keep all other signed
+  // content so a corrected decision is not mistaken for an earlier notification.
+  // Only the digest crosses the persistence boundary, never the provider evidence.
+  const eventContent = { ...envelope.data } as Record<string, unknown>;
+  delete eventContent.timestamp;
+  const eventIdentity = envelope.data.event_id
+    ?? `didit:payload:v1:${JSON.stringify(canonicalize(eventContent))}`;
+
   return {
     attemptId,
-    eventHash: createHash("sha256").update(envelope.data.event_id, "utf8").digest("hex"),
+    eventHash: createHash("sha256").update(eventIdentity, "utf8").digest("hex"),
     payloadDigest: createHash("sha256").update(input.rawBody, "utf8").digest("hex"),
     providerSubjectRef,
     providerSessionRef: envelope.data.session_id,

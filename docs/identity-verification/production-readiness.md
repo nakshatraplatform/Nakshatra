@@ -65,8 +65,10 @@ system.
 - [ ] Process-and-purge recovery was exercised: a terminal decision queues
       provider redaction, the worker deletes it, and only normalized local
       status and deletion time remain.
-- [ ] Production webhook signing, five-minute freshness, application,
-      environment, workflow, subject, and session binding were validated.
+- [ ] Production webhook signing, five-minute freshness, workflow, subject,
+      and session binding were validated. The API key, workflow ID and webhook
+      secret all belong to the intended Production setup; no separate
+      Application ID or environment variable is required.
 - [ ] Billing auto-top-up and pay-as-you-go remain disabled.
 
 ## Legal and governance gate
