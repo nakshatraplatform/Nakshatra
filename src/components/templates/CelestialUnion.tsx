@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
+  ArrowRight,
   BriefcaseBusiness,
   GraduationCap,
   FileText,
@@ -675,6 +676,20 @@ export default function CelestialUnion({
               interestAction
             ) : null}
           </section>
+        )}
+
+        {!ownerPreview && (
+          <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
+            <div>
+              <p className="portfolio-eyebrow">Make an introduction of your own</p>
+              <h2 id="portfolio-creator-cta-title">Like how this portfolio was presented?</h2>
+              <p>Explore Nakshatra and join the launch waitlist to create your own portfolio when access becomes available.</p>
+            </div>
+            <a href="/pilot-access">
+              Create your own portfolio
+              <ArrowRight aria-hidden="true" />
+            </a>
+          </aside>
         )}
       </main>
 

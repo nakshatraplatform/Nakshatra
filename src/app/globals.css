@@ -1696,6 +1696,75 @@ body {
   font-size: 14px;
 }
 
+[data-template="celestial-union"] .portfolio-creator-cta {
+  width: min(1120px, calc(100% - 48px));
+  margin: 72px auto 28px;
+  padding: 32px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  border: 1px solid color-mix(in srgb, var(--portfolio-teal) 32%, var(--portfolio-border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--portfolio-teal) 8%, var(--portfolio-surface));
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta div {
+  max-width: 680px;
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta h2 {
+  margin: 7px 0 8px;
+  color: var(--portfolio-foreground);
+  font-family: var(--portfolio-display);
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta p:last-child {
+  max-width: 620px;
+  margin: 0;
+  color: var(--portfolio-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta > a {
+  min-height: 48px;
+  padding: 0 20px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--portfolio-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--portfolio-primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta > a:hover {
+  background: var(--portfolio-primary);
+  color: var(--portfolio-surface);
+  transform: translateY(-1px);
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta > a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--portfolio-teal) 45%, transparent);
+  outline-offset: 3px;
+}
+
+[data-template="celestial-union"] .portfolio-creator-cta > a svg {
+  width: 17px;
+  height: 17px;
+}
+
 [data-template="celestial-union"] .portfolio-footer {
   width: min(1320px, calc(100% - 40px));
   min-height: 110px;
@@ -1842,6 +1911,19 @@ body {
   [data-template="celestial-union"] .portfolio-protected-section > .portfolio-button,
   [data-template="celestial-union"] .portfolio-contact-list {
     grid-column: 1;
+    width: 100%;
+  }
+
+  [data-template="celestial-union"] .portfolio-creator-cta {
+    width: 100%;
+    margin: 48px 0 20px;
+    padding: 26px 22px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  [data-template="celestial-union"] .portfolio-creator-cta > a {
     width: 100%;
   }
 
