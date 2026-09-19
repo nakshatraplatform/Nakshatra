@@ -160,7 +160,7 @@ export default function PilotAccessClient() {
   const ResultIcon = resultCopy?.icon ?? ShieldCheck;
 
   return (
-    <main id="main-content" className="min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-14">
+    <main id="main-content" className="pilot-access-shell min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-14">
       <div className="mx-auto max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
           <Link href="/" className="text-sm font-bold tracking-[0.16em] text-[light-dark(#244854,var(--app-dark-ink))]">NAKSHATRA</Link>

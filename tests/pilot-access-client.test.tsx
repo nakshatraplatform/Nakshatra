@@ -59,6 +59,7 @@ describe("launch waitlist experience", () => {
     const user = userEvent.setup();
     render(<PilotAccessClient />);
     expect(await screen.findByRole("heading", { name: /join the nakshatra waitlist/i })).toBeInTheDocument();
+    expect(document.querySelector("main")).toHaveClass("pilot-access-shell");
 
     await user.type(screen.getByLabelText("Email address"), "Applicant@Example.com");
     await user.click(screen.getByRole("button", { name: /verify email/i }));
