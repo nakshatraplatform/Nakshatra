@@ -829,6 +829,13 @@ grant execute on function public.resolve_broker_portfolio_update_notices(text,te
 grant execute on function public.flag_broker_portfolio_update(text,text,text) to authenticated;
 grant execute on function public.resolve_my_broker_introduction_responses() to authenticated;
 
+comment on function public.claim_broker_introduction_pass(text,text,text) is
+  'Recipient capability endpoint guarded by an expiring single-use claim hash; intentionally does not require an Auth session.';
+comment on function public.resolve_broker_introduction(text,text) is
+  'Recipient capability endpoint that returns detailed or complete data according to an active hashed pass session.';
+comment on function public.respond_to_broker_introduction(text,text,text,text) is
+  'Recipient capability endpoint guarded by an active hashed pass session; intentionally does not require an Auth session.';
+
 -- Keep application and database quotas in lockstep for the new endpoints.
 create or replace function public.consume_api_rate_limit(p_action text, p_subject_hash text default null)
 returns jsonb language plpgsql security definer set search_path = '' as $$
