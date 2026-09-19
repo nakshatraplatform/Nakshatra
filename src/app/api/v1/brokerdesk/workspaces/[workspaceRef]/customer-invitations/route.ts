@@ -13,6 +13,7 @@ import { AUTH_BODY_LIMIT, RequestSecurityError, readJsonBody, requestSecurityErr
 import { getApiUser } from "@/lib/auth";
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
 import { getRequestId, logServerError } from "@/lib/security/logging";
+import { sendCustomerPortfolioInvitationEmail } from "@/features/broker-relationships/server/customer-invitation-email";
 
 type Context = { params: Promise<{ workspaceRef: string }> };
 const noStore = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
@@ -51,7 +52,18 @@ export async function POST(request: Request, context: Context) {
       idempotencyKey: body.data.idempotencyKey,
     });
     const base = createCanonicalAppUrl("/join/customer", request.url);
-    return NextResponse.json({ ...result, invitationUrl: `${base}#token=${token}` }, { headers: noStore });
+    const invitationUrl = `${base}#token=${token}`;
+    const delivery = await sendCustomerPortfolioInvitationEmail({
+      invitationRef: result.invitationRef,
+      recipientEmail: email,
+      invitationUrl,
+      expiresAt: result.expiresAt,
+    });
+    return NextResponse.json({
+      ...result,
+      invitationUrl,
+      emailStatus: delivery.status,
+    }, { headers: noStore });
   } catch (error) {
     if (error instanceof RequestSecurityError) return requestSecurityErrorResponse(error);
     if (error instanceof CustomerInvitationError) {

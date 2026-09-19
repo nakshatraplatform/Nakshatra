@@ -1,0 +1,18 @@
+.shell { min-height: 100vh; background: var(--workspace-canvas); }
+.banner { position: relative; z-index: 2; display: flex; gap: 8px 24px; padding: 14px clamp(20px,5vw,72px); align-items: center; justify-content: center; flex-wrap: wrap; border-bottom: 1px solid var(--workspace-border); background: var(--workspace-surface); color: var(--workspace-ink); }
+.banner strong { color: var(--workspace-teal); }
+.banner span { color: var(--workspace-ink-muted); }
+.state { min-height: 100vh; display: grid; place-content: center; gap: 12px; padding: 24px; text-align: center; background: var(--workspace-canvas); color: var(--workspace-ink); }
+.state h1 { margin: 0; font-family: var(--font-serif),Georgia,serif; font-size: clamp(32px,7vw,56px); }
+.state p { max-width: 580px; color: var(--workspace-ink-muted); line-height: 1.65; }
+.response { max-width: 720px; margin: 32px auto; padding: 28px; border: 1px solid var(--workspace-border); border-radius: 16px; background: var(--workspace-surface); color: var(--workspace-ink); }
+.response h2 { margin-top: 0; }
+.response form { display: grid; gap: 16px; }
+.response label { display: grid; gap: 8px; line-height: 1.5; }
+.response label:has(input[type="radio"]) { grid-template-columns: 22px 1fr; align-items: center; }
+.response textarea { width: 100%; padding: 12px; border: 1px solid var(--workspace-border); border-radius: 8px; background: var(--workspace-surface); color: var(--workspace-ink); font: inherit; }
+.response button { min-height: 48px; padding: 0 20px; border: 0; border-radius: 8px; background: #173f5b; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+.response button:disabled { opacity: .55; cursor: wait; }
+.recorded { padding: 18px; border-radius: 10px; background: light-dark(#edf7f3,#17363a); }
+.error { color: #b42318; }
+@media (max-width: 600px) { .banner { align-items: flex-start; justify-content: flex-start; } .response { margin: 20px 12px; padding: 20px; } }

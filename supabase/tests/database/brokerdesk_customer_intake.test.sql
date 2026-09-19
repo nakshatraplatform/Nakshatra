@@ -2,11 +2,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(43);
+select plan(44);
 
 select has_table('app_private','broker_client_intakes','customer invitation intake stays private');
 select has_function('public','create_brokerdesk_customer_invitation',array['text','text','text','text','text'],'customer invitation command exists');
-select has_function('public','claim_brokerdesk_customer_invitation',array['text'],'customer claim command exists');
+select has_function('public','claim_brokerdesk_customer_invitation',array['text','text'],'versioned customer claim command exists');
 select has_function('public','resolve_brokerdesk_customers',array['text'],'broker customer projection exists');
 select has_function('public','resolve_customer_broker_relationships',array[]::text[],'customer broker projection exists');
 select has_function('public','resolve_brokerdesk_customer',array['text','text'],'broker relationship detail projection exists');
@@ -71,9 +71,10 @@ select is((select count(*)::integer from public.candidates),0,'inviting never cr
 
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000003','d2000000-0000-4000-8000-000000000003');
-select is(public.claim_brokerdesk_customer_invitation(repeat('a',64)),'{"available": false}'::jsonb,'the wrong verified account receives a neutral result');
+select is(public.claim_brokerdesk_customer_invitation(repeat('a',64),'broker-representation-v2'),'{"available": false}'::jsonb,'the wrong verified account receives a neutral result');
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d2000000-0000-4000-8000-000000000002');
-create temporary table claimed_a as select public.claim_brokerdesk_customer_invitation(repeat('a',64)) result;
+select is(public.claim_brokerdesk_customer_invitation(repeat('a',64),'broker-representation-v1'),'{"available": false}'::jsonb,'a stale consent version cannot claim the invitation');
+create temporary table claimed_a as select public.claim_brokerdesk_customer_invitation(repeat('a',64),'broker-representation-v2') result;
 select is((select result->>'status' from claimed_a),'portfolio_required','claim waits for the customer canonical portfolio identity');
 
 reset role;
@@ -97,7 +98,7 @@ reset role;
 select is((select count(*)::integer from public.broker_clients),1,'portfolio completion activates exactly one agency relationship');
 select is((select relationship_source from public.broker_clients),'customer_invitation','the relationship retains its consented source lineage');
 select is((select count(*)::integer from app_private.broker_client_mandates where revoked_at is null),1,'activation creates one current customer mandate');
-select ok((select evidence_reference ~ '^inv_[0-9a-f]{32}:broker-representation-v1$' from app_private.broker_client_mandates where revoked_at is null),'mandate evidence binds the opaque invitation to the displayed consent version');
+select ok((select evidence_reference ~ '^inv_[0-9a-f]{32}:broker-representation-v2$' from app_private.broker_client_mandates where revoked_at is null),'mandate evidence binds the opaque invitation to the displayed consent version');
 
 create temporary table relationship_refs as
 select relationship_ref relationship_a
@@ -181,7 +182,7 @@ select public.create_brokerdesk_customer_invitation(
   'cu***@customer-intake.test',repeat('b',64),'customer-invite:b:0001'
 );
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d2000000-0000-4000-8000-000000000002');
-select is(public.claim_brokerdesk_customer_invitation(repeat('b',64))->>'status','active','the same canonical portfolio can join a second agency');
+select is(public.claim_brokerdesk_customer_invitation(repeat('b',64),'broker-representation-v2')->>'status','active','the same canonical portfolio can join a second agency');
 select is(pg_catalog.jsonb_array_length(public.resolve_customer_broker_relationships()->'relationships'),2,'only the customer sees both broker relationships together');
 
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001');

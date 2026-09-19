@@ -23,20 +23,24 @@ describe("BrokerDesk customer invitation client", () => {
         relationshipEndsAt: "2027-09-10T00:00:00Z",
       }), { status: 200 }));
     render(<CustomerInvitationClient />);
-    expect(await screen.findByRole("heading", { name: "Join your broker on Nakshatra" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Connect your portfolio to this broker" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(window.location.hash).toBe("");
-    await userEvent.click(screen.getByRole("button", { name: "Join this broker" }));
+    const accept = screen.getByRole("button", { name: "Accept and continue" });
+    expect(accept).toBeDisabled();
+    await userEvent.click(screen.getByRole("checkbox", { name: /authorize this broker relationship/i }));
+    await userEvent.click(accept);
     expect(await screen.findByRole("heading", { name: "You are connected to Agency A" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/customer/broker-invitations/claim", expect.objectContaining({
-      body: JSON.stringify({ consent: true }),
+      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
     }));
   });
 
   it("continues the same invitation through sign-in and canonical portfolio completion", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(null, { status: 401 }));
     render(<CustomerInvitationClient />);
-    await userEvent.click(await screen.findByRole("button", { name: "Join this broker" }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /authorize this broker relationship/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Accept and continue" }));
     expect(await screen.findByRole("heading", { name: "Sign in to continue" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in securely" })).toHaveAttribute("href", "/login?next=/join/customer");
 
@@ -50,7 +54,8 @@ describe("BrokerDesk customer invitation client", () => {
     }), { status: 200 }));
     history.replaceState(null, "", "/join/customer");
     const { unmount } = render(<CustomerInvitationClient />);
-    await userEvent.click(await screen.findAllByRole("button", { name: "Join this broker" }).then((buttons) => buttons.at(-1)!));
+    await userEvent.click(await screen.findAllByRole("checkbox", { name: /authorize this broker relationship/i }).then((items) => items.at(-1)!));
+    await userEvent.click(await screen.findAllByRole("button", { name: "Accept and continue" }).then((buttons) => buttons.at(-1)!));
     expect(await screen.findByRole("heading", { name: "Complete your one Nakshatra portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Complete my portfolio" })).toHaveAttribute("href", "/dashboard");
     unmount();
@@ -66,6 +71,6 @@ describe("BrokerDesk customer invitation client", () => {
 
   it("uses the customer invitation client as the public-shell page", async () => {
     render(<CustomerInvitationPage />);
-    expect(await screen.findByRole("heading", { name: "Join your broker on Nakshatra" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Connect your portfolio to this broker" })).toBeInTheDocument();
   });
 });

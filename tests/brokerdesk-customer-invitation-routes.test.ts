@@ -8,9 +8,13 @@ const resolveCustomers = vi.hoisted(() => vi.fn());
 const resolveCustomer = vi.hoisted(() => vi.fn());
 const resolveBrokers = vi.hoisted(() => vi.fn());
 const createClient = vi.hoisted(() => vi.fn());
+const sendCustomerInvitationEmail = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
+vi.mock("@/features/broker-relationships/server/customer-invitation-email", () => ({
+  sendCustomerPortfolioInvitationEmail: sendCustomerInvitationEmail,
+}));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 vi.mock("@/features/broker-relationships/server/customer-invitation.service", () => {
   class CustomerInvitationError extends Error {
@@ -58,6 +62,7 @@ describe("BrokerDesk customer invitation routes", () => {
     getApiUser.mockResolvedValue(actor);
     enforceRateLimit.mockResolvedValue(null);
     createClient.mockResolvedValue({});
+    sendCustomerInvitationEmail.mockResolvedValue({ status: "sent" });
     createInvitation.mockResolvedValue({
       status: "created", invitationRef: `inv_${"b".repeat(32)}`, workspaceRef,
       emailHint: "cu***@example.com", expiresAt: "2026-09-17T00:00:00Z",
@@ -84,6 +89,11 @@ describe("BrokerDesk customer invitation routes", () => {
     const result = await response.json();
     expect(result.invitationUrl).toMatch(/^http:\/\/local\/join\/customer#token=[A-Za-z0-9_-]{43}$/);
     expect(result.invitationUrl).not.toContain("?token=");
+    expect(result.emailStatus).toBe("sent");
+    expect(sendCustomerInvitationEmail).toHaveBeenCalledWith(expect.objectContaining({
+      recipientEmail: "customer@example.com",
+      invitationUrl: result.invitationUrl,
+    }));
     expect(createInvitation).toHaveBeenCalledWith(actor.supabase, expect.objectContaining({
       workspaceRef,
       emailHash: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -104,15 +114,35 @@ describe("BrokerDesk customer invitation routes", () => {
     const accepted = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
       method: "POST",
       headers: { Origin: origin, "Content-Type": "application/json", Cookie: `${cookie.name}=${cookie.value}` },
-      body: JSON.stringify({ consent: true }),
+      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
     }));
     expect(accepted.status).toBe(200);
-    expect(claimInvitation).toHaveBeenCalledWith(actor.supabase, expect.stringMatching(/^[a-f0-9]{64}$/));
+    expect(claimInvitation).toHaveBeenCalledWith(
+      actor.supabase,
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      "broker-representation-v2"
+    );
     expect(accepted.headers.get("set-cookie")).toContain("nakshatra_customer_invitation=;");
     const noConsent = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
       method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}",
     }));
     expect(noConsent.status).toBe(400);
+    const staleConsent = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
+      method: "POST",
+      headers: { Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v1" }),
+    }));
+    expect(staleConsent.status).toBe(400);
+  });
+
+  it("keeps the invitation usable when email delivery is unavailable", async () => {
+    sendCustomerInvitationEmail.mockResolvedValueOnce({ status: "unavailable" });
+    const response = await create(createRequest(), { params: Promise.resolve({ workspaceRef }) });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      emailStatus: "unavailable",
+      invitationUrl: expect.stringMatching(/#token=/),
+    });
   });
 
   it("returns neutral exchange and claim failures", async () => {
@@ -122,7 +152,10 @@ describe("BrokerDesk customer invitation routes", () => {
     await expect(malformed.json()).resolves.toEqual({ ready: true });
     expect(malformed.headers.get("set-cookie")).toBeNull();
     const noCookie = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
-      method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ consent: true }),
+      method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({
+        consent: true,
+        consentVersion: "broker-representation-v2",
+      }),
     }));
     expect(noCookie.status).toBe(403);
   });

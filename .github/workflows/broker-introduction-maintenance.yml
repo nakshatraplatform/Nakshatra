@@ -1,0 +1,37 @@
+name: Broker Introduction Maintenance
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: broker-introduction-maintenance-production
+  cancel-in-progress: false
+
+jobs:
+  process:
+    name: Expire broker introduction passes
+    if: ${{ github.ref == 'refs/heads/main' && vars.BROKER_INTRODUCTION_WORKER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    environment: broker-introduction-worker-production
+    permissions:
+      contents: read
+    env:
+      EXPECTED_SUPABASE_HOST: xizzzczzhqzabcipbgep.supabase.co
+    steps:
+      - name: Checkout trusted main revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 26
+          cache: npm
+      - name: Install production dependencies
+        run: npm ci --omit=dev --ignore-scripts
+      - name: Run bounded maintenance
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run broker-introductions:process

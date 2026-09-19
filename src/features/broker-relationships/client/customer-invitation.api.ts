@@ -15,7 +15,12 @@ export function inviteBrokerdeskCustomer(
   email: string,
   idempotencyKey: string
 ) {
-  return command<{ invitationUrl: string; emailHint: string; expiresAt: string }>(
+  return command<{
+    invitationUrl: string;
+    emailHint: string;
+    expiresAt: string;
+    emailStatus: "sent" | "unavailable";
+  }>(
     `/api/v1/brokerdesk/workspaces/${encodeURIComponent(workspaceRef)}/customer-invitations`,
     { email, idempotencyKey }
   );

@@ -148,6 +148,7 @@ describe("dashboard view service", () => {
       mediaUrls: {},
       horoscope: null,
       interests: [],
+      brokerIntroductionResponses: [],
       accessSummary: { grants: [], events: [] },
       publicationReadiness: {
         portfolioExists: false,

@@ -100,7 +100,10 @@ select ok(
         'public.resolve_public_portfolio_identity_verified(text)'::regprocedure,
         'public.record_public_portfolio_view(text)'::regprocedure,
         'public.consume_api_rate_limit(text,text)'::regprocedure,
-        'public.is_public_portfolio_media_path(text,text)'::regprocedure
+        'public.is_public_portfolio_media_path(text,text)'::regprocedure,
+        'public.claim_broker_introduction_pass(text,text,text)'::regprocedure,
+        'public.resolve_broker_introduction(text,text)'::regprocedure,
+        'public.respond_to_broker_introduction(text,text,text,text)'::regprocedure
       )
       and pg_catalog.strpos(
         pg_catalog.pg_get_functiondef(function_record.oid),

@@ -21,8 +21,11 @@ export class CustomerInvitationRepository {
     });
   }
 
-  claim(tokenHash: string) {
-    return this.supabase.rpc("claim_brokerdesk_customer_invitation", { p_token_hash: tokenHash });
+  claim(tokenHash: string, consentVersion: "broker-representation-v2") {
+    return this.supabase.rpc("claim_brokerdesk_customer_invitation", {
+      p_token_hash: tokenHash,
+      p_consent_version: consentVersion,
+    });
   }
 
   brokerdeskCustomers(workspaceRef: string) {

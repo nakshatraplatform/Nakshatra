@@ -26,6 +26,8 @@
     "security:audit": "npm audit --audit-level=high",
     "privacy:process-deletions": "node scripts/process-account-deletions.mjs",
     "identity-verification:process": "node scripts/process-identity-verifications.mjs",
+    "broker-introductions:process": "node scripts/process-broker-introductions.mjs",
+    "demo:broker-pilot:reset": "supabase db reset --local --sql-paths ./seeds/broker-pilot-demo.sql",
     "privacy:retention": "node scripts/run-data-retention.mjs",
     "pilot:admin": "node scripts/manage-pilot-administrator.mjs",
     "pilot:creator": "node scripts/manage-pilot-creator.mjs",

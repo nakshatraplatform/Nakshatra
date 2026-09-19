@@ -60,6 +60,7 @@ export default async function DashboardPage({
       interests={dashboard.interests}
       accessSummary={dashboard.accessSummary}
       publicationReadiness={dashboard.publicationReadiness}
+      brokerIntroductionResponses={dashboard.brokerIntroductionResponses}
     />
   );
 }

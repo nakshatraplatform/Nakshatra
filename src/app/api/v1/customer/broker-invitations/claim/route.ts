@@ -10,14 +10,18 @@ import { AUTH_BODY_LIMIT, RequestSecurityError, readJsonBody, requestSecurityErr
 import { getApiUser } from "@/lib/auth";
 import { getRequestId, logServerError } from "@/lib/security/logging";
 
-const consentSchema = z.object({ consent: z.literal(true) }).strict();
+const consentSchema = z.object({
+  consent: z.literal(true),
+  consentVersion: z.literal("broker-representation-v2"),
+}).strict();
 const noStore = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
 
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
   try {
     requireSameOrigin(request);
-    if (!consentSchema.safeParse(await readJsonBody(request, AUTH_BODY_LIMIT)).success) {
+    const consent = consentSchema.safeParse(await readJsonBody(request, AUTH_BODY_LIMIT));
+    if (!consent.success) {
       return NextResponse.json({ available: false }, { status: 400, headers: noStore });
     }
     const auth = await getApiUser();
@@ -28,7 +32,11 @@ export async function POST(request: Request) {
     if (limited) { limited.headers.set("Cache-Control", noStore["Cache-Control"]); return limited; }
     const token = readCustomerInvitationExchangeCookie(readRequestCookie(request, customerInvitationCookieName));
     if (!token) return NextResponse.json({ available: false }, { status: 403, headers: noStore });
-    const result = await claimCustomerInvitation(auth.supabase, hashCustomerInvitationToken(token));
+    const result = await claimCustomerInvitation(
+      auth.supabase,
+      hashCustomerInvitationToken(token),
+      consent.data.consentVersion
+    );
     const response = result.available
       ? NextResponse.json(result, { headers: noStore })
       : NextResponse.json(result, { status: 403, headers: noStore });
