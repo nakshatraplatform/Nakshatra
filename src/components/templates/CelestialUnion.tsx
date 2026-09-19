@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
+  ArrowRight,
   BriefcaseBusiness,
   GraduationCap,
   FileText,
@@ -14,10 +15,6 @@ import {
   CELESTIAL_THEME_COLORS,
   getCelestialAppearance,
 } from "@/features/portfolio/celestial-theme";
-import {
-  PORTFOLIO_VIEW_LABELS,
-  publicIntroductionLabel,
-} from "@/features/portfolio/template";
 import { RASHI_OPTIONS, type PortfolioData, type PortfolioHoroscopeAttachment, type RashiKey } from "@/types/portfolio";
 
 interface CelestialUnionProps {
@@ -179,11 +176,7 @@ export default function CelestialUnion({
       || clean(data.personal.long_term_goals)
     : undefined;
   const visibleCareerTitle = journeyVisible ? careerTitle : undefined;
-  const heroLine = joinValues([
-    visibleCareerTitle,
-    currentLocation,
-    age ? String(age) : undefined,
-  ]);
+  const heroLine = visibleCareerTitle;
   const contactEntries = normalizedContacts(data.contact);
   const quickFacts = compactPairs([
     ["Moon sign (Rashi)", visibleRashi && rashiOption ? `${ZODIAC_SYMBOLS[visibleRashi]} ${rashiOption.label}` : undefined],
@@ -535,13 +528,9 @@ export default function CelestialUnion({
           <nav aria-label="Portfolio quick actions">
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
-            {showInterestSection
-              ? <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>
-              : <a href="#portfolio-profile">Details</a>}
+            {!briefPublicView && <a href="#portfolio-profile">Details</a>}
           </nav>
-          <span className="portfolio-mode-label">
-            <ShieldCheck aria-hidden="true" /> {ownerPreview ? "Owner preview" : approvedViewer ? PORTFOLIO_VIEW_LABELS.complete : publicIntroductionLabel(privacyMode)}
-          </span>
+          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
         </div>
       </header>
 
@@ -554,16 +543,6 @@ export default function CelestialUnion({
               Shared with your signed-in account by the portfolio owner
               {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
             </span>
-          </div>
-        </aside>
-      )}
-
-      {identityVerified && (
-        <aside className="portfolio-verification-context" aria-label="Identity verification information">
-          <ShieldCheck aria-hidden="true" />
-          <div>
-            <strong>Identity verified</strong>
-            <span>Verification confirms that this portfolio belongs to a real person. It is not a personal, employment, financial, or background endorsement.</span>
           </div>
         </aside>
       )}
@@ -581,14 +560,19 @@ export default function CelestialUnion({
             <p className="portfolio-eyebrow">A personal portfolio</p>
             <div className="portfolio-name-row">
               <h1 id="portfolio-name">{clean(data.personal.name) || "Personal portfolio"}</h1>
+              {identityVerified && (
+                <span
+                  className="portfolio-verified-badge"
+                  aria-label="Identity verified. Verification confirms that this portfolio belongs to a real person; it is not a personal, employment, financial, or background endorsement."
+                  title="Identity verified"
+                >
+                  <ShieldCheck aria-hidden="true" />
+                  <span>Verified</span>
+                </span>
+              )}
             </div>
             {heroLine && <p className="portfolio-hero-line">{heroLine}</p>}
             {shortBio && <p className="portfolio-hero-summary">{shortBio}</p>}
-            {showInterestSection && (
-              <div className="portfolio-hero-actions">
-                <a className="portfolio-button portfolio-button-primary" href="#portfolio-interest">Introduce yourself</a>
-              </div>
-            )}
           </div>
         </section>
 
@@ -694,8 +678,18 @@ export default function CelestialUnion({
           </section>
         )}
 
-        {showInterestSection && (
-          <a className="portfolio-mobile-interest" href="#portfolio-interest">Introduce yourself</a>
+        {!ownerPreview && (
+          <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
+            <div>
+              <p className="portfolio-eyebrow">Make an introduction of your own</p>
+              <h2 id="portfolio-creator-cta-title">Like how this portfolio was presented?</h2>
+              <p>Explore Nakshatra and join the launch waitlist to create your own portfolio when access becomes available.</p>
+            </div>
+            <a href="/pilot-access">
+              Create your own portfolio
+              <ArrowRight aria-hidden="true" />
+            </a>
+          </aside>
         )}
       </main>
 

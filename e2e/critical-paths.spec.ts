@@ -80,8 +80,12 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
-  await expect(page.getByLabel("Identity verification information")).toContainText("Identity verified");
-  await expect(page.getByLabel("Identity verification information")).toContainText("not a personal, employment, financial, or background endorsement");
+  const verifiedBadge = page.getByLabel(/Identity verified\. Verification confirms/);
+  await expect(verifiedBadge).toBeVisible();
+  await expect(verifiedBadge).toHaveAttribute(
+    "aria-label",
+    /not a personal, employment, financial, or background endorsement/
+  );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
@@ -265,13 +269,14 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
 
   if (viewportWidth <= 720) {
     expect(heroBounds!.height).toBeLessThanOrEqual(370);
-    const stickyAction = page.locator(".portfolio-mobile-interest");
-    await expect(stickyAction).toBeVisible();
-    await expect(stickyAction).toHaveAttribute("href", "#portfolio-interest");
-  } else {
-    await expect(page.locator(".portfolio-mobile-interest")).toBeHidden();
   }
 
-  await expect(page.locator(".portfolio-hero-actions").getByRole("link", { name: "Introduce yourself" })).toBeVisible();
+  await expect(page.locator(".portfolio-mobile-interest")).toHaveCount(0);
+  await expect(page.locator(".portfolio-hero-actions")).toHaveCount(0);
+
+  const headerAction = page.locator(".portfolio-header-action");
+  await expect(headerAction).toBeVisible();
+  await expect(headerAction).toHaveText("Show interest");
+  await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });

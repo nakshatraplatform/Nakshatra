@@ -125,7 +125,10 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByText(/Engineer.*Boston.*\d+/)).toBeInTheDocument();
+    const heroLine = document.querySelector(".portfolio-hero-line");
+    expect(heroLine).toHaveTextContent("Engineer");
+    expect(heroLine).not.toHaveTextContent("Boston");
+    expect(heroLine).not.toHaveTextContent(/\d+ years/);
     expect(within(screen.getByLabelText("At a glance")).getByText(/Kanya \(Virgo\)/)).toBeInTheDocument();
     expect(screen.getByText("Warm, grounded, and curious about the world.")).toBeInTheDocument();
     expect(screen.getByText("English, Hindi")).toBeInTheDocument();
@@ -204,7 +207,8 @@ describe("celestial union portfolio", () => {
     const { rerender } = render(
       <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
-    expect(screen.getByText("Complete Portfolio")).toBeInTheDocument();
+    expect(screen.getByLabelText("Complete Portfolio access details")).toBeInTheDocument();
+    expect(screen.queryByText("Complete Portfolio", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
     expect(approvedPersonalStory).toBeTruthy();
@@ -240,7 +244,7 @@ describe("celestial union portfolio", () => {
     expect(within(context).getByText("Complete Portfolio access")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the portfolio owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
-    expect(screen.getByLabelText("Identity verification information")).toHaveTextContent("It is not a personal, employment, financial, or background endorsement.");
+    expect(screen.getByLabelText(/Identity verified\. Verification confirms/)).toBeInTheDocument();
   });
 
   it("always renders the public interest action, even without protected labels", () => {
@@ -253,11 +257,28 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    expect(screen.getAllByRole("link", { name: "Introduce yourself" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Introduce yourself" })[0]).toHaveAttribute("href", "#portfolio-interest");
-    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/pilot-access");
+  });
+
+  it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
+    const { rerender } = render(
+      <CelestialUnion
+        data={createApprovedPortfolioSnapshot(complete)}
+        sunSign="kanya"
+        accessMode="approved"
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Like how this portfolio was presented?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/pilot-access");
+
+    rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
+    expect(screen.queryByRole("link", { name: "Create your own portfolio" })).not.toBeInTheDocument();
   });
 
   it("links protected chapters to the interest action and explains the disclosure bundle", () => {
@@ -318,6 +339,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Kiran Rao · Doctor")).toBeInTheDocument();
     expect(screen.getByText("Bengaluru · Karnataka · India")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Protected information preview" })).toBeInTheDocument();
+    expect(screen.queryByText("Owner preview")).not.toBeInTheDocument();
     expect(screen.getByText("+91 90000 00000")).toBeInTheDocument();
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
     const personalStory = document.getElementById("personal-story");
@@ -407,7 +429,7 @@ describe("celestial union portfolio", () => {
     );
 
     expect(container.querySelector('[data-privacy-mode="private"]')).toBeTruthy();
-    expect(screen.getByText("Brief Introduction")).toBeInTheDocument();
+    expect(screen.queryByText("Brief Introduction")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "A little more about Aditi" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
     expect(screen.getByText("MS")).toBeInTheDocument();
@@ -437,7 +459,7 @@ describe("celestial union portfolio", () => {
 
     rerender(<CelestialUnion data={balancedData} sunSign="kanya" accessMode="public" photos={photos} />);
     expect(container.querySelector('[data-privacy-mode="balanced"]')).toBeTruthy();
-    expect(screen.getByText("Detailed Introduction")).toBeInTheDocument();
+    expect(screen.queryByText("Detailed Introduction")).not.toBeInTheDocument();
     expect(screen.getByText("Never Married")).toBeInTheDocument();
     expect(screen.getByText("India")).toBeInTheDocument();
     expect(screen.getByText("Hindu")).toBeInTheDocument();
@@ -488,8 +510,10 @@ describe("adaptive portfolio media", () => {
   it("opens and closes a clear gallery photo in the full-screen viewer", () => {
     render(<AdaptivePortfolioGallery photos={[photos[1]]} />);
     fireEvent.click(screen.getByRole("button", { name: "Open Landscape full screen" }));
-    expect(screen.getByRole("dialog", { name: "Gallery photo viewer" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close full-screen photo" }));
+    const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText("Close")).toBeVisible();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close full-screen photo" }));
     expect(screen.queryByRole("dialog", { name: "Gallery photo viewer" })).not.toBeInTheDocument();
   });
 
