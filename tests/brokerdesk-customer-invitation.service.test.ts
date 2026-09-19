@@ -27,8 +27,8 @@ describe("BrokerDesk customer invitation service", () => {
       workspaceName: "Agency A", relationshipRef: `bcr_${"c".repeat(32)}`,
       relationshipEndsAt: "2027-09-10T00:00:00Z",
     };
-    await expect(claimCustomerInvitation(client(claim) as never, "d".repeat(64))).resolves.toEqual(claim);
-    await expect(claimCustomerInvitation(client({ available: false }) as never, "d".repeat(64))).resolves.toEqual({ available: false });
+    await expect(claimCustomerInvitation(client(claim) as never, "d".repeat(64), "broker-representation-v2")).resolves.toEqual(claim);
+    await expect(claimCustomerInvitation(client({ available: false }) as never, "d".repeat(64), "broker-representation-v2")).resolves.toEqual({ available: false });
     const customers = { available: true, workspaceRef, customers: [] };
     await expect(resolveBrokerdeskCustomers(client(customers) as never, workspaceRef)).resolves.toEqual(customers);
     const detail = {
@@ -53,7 +53,7 @@ describe("BrokerDesk customer invitation service", () => {
       .rejects.toBeInstanceOf(CustomerInvitationError);
     await expect(createCustomerInvitation(client(created) as never, { ...input, workspaceRef: "bad" }))
       .rejects.toMatchObject({ status: 404 });
-    await expect(claimCustomerInvitation(client({ available: true, organizationId: "private" }) as never, "d".repeat(64)))
+    await expect(claimCustomerInvitation(client({ available: true, organizationId: "private" }) as never, "d".repeat(64), "broker-representation-v2"))
       .rejects.toMatchObject({ status: 403 });
     await expect(resolveBrokerdeskCustomers(client(null, { code: "x" }) as never, workspaceRef))
       .rejects.toMatchObject({ code: "BROKERDESK_CUSTOMERS_UNAVAILABLE" });

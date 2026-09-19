@@ -45,10 +45,10 @@ describe("BrokerDesk customers client", () => {
     render(<BrokerdeskCustomersClient customers={brokerdeskCustomersSchema.parse({ available: true, workspaceRef, customers: [] })} />);
     await userEvent.click(screen.getByRole("button", { name: "Invite customer" }));
     await userEvent.type(screen.getByLabelText("Email address"), "customer@example.com");
-    await userEvent.click(screen.getByRole("button", { name: "Create private invitation" }));
+    await userEvent.click(screen.getByRole("button", { name: "Email portfolio invitation" }));
     expect(await screen.findByText("Invitation ready")).toBeInTheDocument();
     expect(invite).toHaveBeenCalledWith(workspaceRef, "customer@example.com", expect.stringMatching(/^customer-invite:/));
-    await userEvent.click(screen.getByRole("button", { name: "Copy link" }));
+    await userEvent.click(screen.getByRole("button", { name: "Copy backup link" }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/join/customer#token="));
   });
 

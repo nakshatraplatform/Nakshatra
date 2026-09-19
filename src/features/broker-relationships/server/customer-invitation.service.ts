@@ -40,8 +40,12 @@ export async function createCustomerInvitation(supabase: SupabaseClient, input: 
   return parsed.data;
 }
 
-export async function claimCustomerInvitation(supabase: SupabaseClient, tokenHash: string) {
-  const { data, error } = await new CustomerInvitationRepository(supabase).claim(tokenHash);
+export async function claimCustomerInvitation(
+  supabase: SupabaseClient,
+  tokenHash: string,
+  consentVersion: "broker-representation-v2"
+) {
+  const { data, error } = await new CustomerInvitationRepository(supabase).claim(tokenHash, consentVersion);
   const parsed = claimedCustomerInvitationSchema.safeParse(data);
   if (error || !parsed.success) {
     throw new CustomerInvitationError("The invitation is unavailable.", "BROKERDESK_CUSTOMER_INVITATION_UNAVAILABLE", 403);

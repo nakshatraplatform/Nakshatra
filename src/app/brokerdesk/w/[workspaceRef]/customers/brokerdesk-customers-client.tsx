@@ -42,7 +42,9 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
         `customer-invite:${crypto.randomUUID()}`
       );
       setInvitationUrl(result.invitationUrl);
-      setNotice(`Private invitation created for ${result.emailHint}. It expires in 7 days.`);
+      setNotice(result.emailStatus === "sent"
+        ? `Portfolio setup invitation emailed to ${result.emailHint}. It expires in 7 days.`
+        : `Invitation created for ${result.emailHint}, but email delivery is unavailable. Copy the private link below.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The invitation could not be created.");
     } finally { setPending(false); }
@@ -54,7 +56,7 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
     <main>
       <div className={styles.heading}><div><p>Customers</p><h1>People you represent</h1><span>Invite customers and work from the portfolio each customer owns.</span></div><button onClick={() => setShowInvite((value) => !value)}><UserPlus /> Invite customer</button></div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
-      {showInvite && <section className={styles.invitePanel}><Mail /><div><h2>Invite one customer</h2><p>Use the customer&apos;s own email. No profile is created until that person signs in and consents.</p></div><form onSubmit={invite}><label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label><button type="submit" disabled={pending}>{pending ? "Creating…" : "Create private invitation"}</button></form>{invitationUrl && <div className={styles.invitation}><Check /><strong>Invitation ready</strong><p>Send this private link to the customer by your usual trusted channel.</p><code>{invitationUrl}</code><button onClick={() => navigator.clipboard.writeText(invitationUrl)}><Copy /> Copy link</button></div>}</section>}
+      {showInvite && <section className={styles.invitePanel}><Mail /><div><h2>Invite one customer</h2><p>Use the customer&apos;s own email. VivIntro emails a private setup link; no profile is created until that person signs in and consents.</p></div><form onSubmit={invite}><label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label><button type="submit" disabled={pending}>{pending ? "Sending…" : "Email portfolio invitation"}</button></form>{invitationUrl && <div className={styles.invitation}><Check /><strong>Invitation ready</strong><p>Keep this private link as a manual fallback if the customer cannot find the email.</p><code>{invitationUrl}</code><button onClick={() => navigator.clipboard.writeText(invitationUrl)}><Copy /> Copy backup link</button></div>}</section>}
       <section className={styles.summary}><article><Users /><span>Active customers</span><strong>{activeCount}</strong></article><article><Mail /><span>Invitations needing action</span><strong>{grouped.invitations.length}</strong></article></section>
       <CustomerGroup title="Men" items={grouped.men} workspaceRef={available.workspaceRef} />
       <CustomerGroup title="Women" items={grouped.women} workspaceRef={available.workspaceRef} />
