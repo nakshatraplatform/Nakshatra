@@ -3442,7 +3442,8 @@ body {
 /* Shared application workspace tokens, independent of portfolio appearance. */
 .site-shell,
 .account-shell,
-.dashboard-shell {
+.dashboard-shell,
+.pilot-access-shell {
   --product-background: light-dark(#f7f5ef, var(--app-dark-canvas));
   --product-surface: light-dark(#fffdf9, var(--app-dark-surface));
   --product-surface-soft: light-dark(#e9e2d5, var(--app-dark-surface-soft));
