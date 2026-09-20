@@ -95,6 +95,10 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(interestButton).toBeVisible();
   await interestButton.click();
 
+  const viewerChoiceDialog = page.getByRole("dialog", { name: /how would you like to continue/i });
+  await expect(viewerChoiceDialog).toBeVisible();
+  await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
+
   const interestDialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(interestDialog).toBeVisible();
   await expect(interestDialog.getByLabel("Your full name")).toHaveValue("");
@@ -217,6 +221,10 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
 test("interest popup stays in view and keeps extra details optional", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   await page.getByRole("button", { name: "Show interest" }).click();
+
+  const viewerChoiceDialog = page.getByRole("dialog", { name: /how would you like to continue/i });
+  await expect(viewerChoiceDialog).toBeVisible();
+  await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
 
   const dialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(dialog).toBeVisible();

@@ -158,6 +158,9 @@ export default function DashboardClient({
       : daysLeft !== null && daysLeft <= 7
         ? "warning"
         : "active";
+  const pendingInterestCount = interestItems.filter(
+    (item) => item.status === "new" || item.status === "pending_review"
+  ).length;
 
   useEffect(() => {
     if (draftSaveState === "saved") return;
@@ -734,20 +737,13 @@ export default function DashboardClient({
           </section>}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="dashboard-glass dashboard-stat-card p-4">
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm font-medium">Portfolio views</span>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
-                </div>
-                <div className="dashboard-glass dashboard-stat-card p-4">
+                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                   <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                     <Inbox className="h-4 w-4" />
                     <span className="text-sm font-medium">Interests received</span>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
-                  <p className="mt-1 text-sm text-[light-dark(#64748b,var(--app-dark-muted))]">{interestItems.filter((item) => item.status === "new" || item.status === "pending_review").length} need a response</p>
+                  <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
                 </div>
                 <div
                   className="dashboard-glass dashboard-stat-card p-4"
@@ -761,9 +757,17 @@ export default function DashboardClient({
                     {isExpired
                       ? "Expired"
                       : portfolio?.is_published && daysLeft !== null
-                      ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`
+                      ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
                       : "Not published"}
                   </p>
+                </div>
+                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
+                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                    <Eye className="h-4 w-4" />
+                    <span className="text-sm font-medium">Portfolio views</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
+                  <span className="dashboard-stat-caption">All-time opens</span>
                 </div>
               </div>
 
@@ -1288,7 +1292,7 @@ function RelationshipLifecycle({
   const waitingCount = interests.filter((interest) => interest.status === "new" || interest.status === "pending_review").length;
 
   return (
-    <section className="dashboard-glass dashboard-relationship-lifecycle" aria-labelledby="relationship-lifecycle-heading">
+    <section id="introductions-and-access" className="dashboard-glass dashboard-relationship-lifecycle" aria-labelledby="relationship-lifecycle-heading">
       <div className="dashboard-section-heading">
         <div>
           <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
@@ -1392,7 +1396,7 @@ function InterestInbox({
               ? `Via ${interest.broker_name || "broker network"}`
               : "Direct introduction";
             return (
-              <details key={interest.id} className="dashboard-interest-row">
+              <details key={interest.id} className="dashboard-interest-row" data-interest-state="awaiting-review">
                 <summary>
                   <span>
                     <strong>{interest.viewer_name || "Unnamed viewer"}</strong>
@@ -1415,7 +1419,7 @@ function InterestInbox({
                     {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their Nakshatra portfolio</Link>}
                     <button type="button" className="dashboard-secondary-action" disabled={workingId === interest.id} onClick={() => void decide(interest, "rejected")}>Not right now</button>
                     {interest.requester_user_id ? (
-                      <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Review Complete Portfolio access</button>
+                      <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Grant Complete Portfolio access</button>
                     ) : (
                       <span className="dashboard-action-note">Ask the viewer to verify their email before approving access.</span>
                     )}
@@ -1544,7 +1548,7 @@ function AccessControls({
       ) : (
         <div className="dashboard-access-list">
           {grants.map((grant) => (
-            <div key={grant.id} className="dashboard-access-row">
+            <div key={grant.id} className="dashboard-access-row" data-access-state={grant.status}>
               <span>
                 <strong>{grant.viewerName || "Verified viewer"}</strong>
                 <small>{grant.sourceType === "broker" ? `Introduced via ${grant.brokerName || "broker network"}` : "Direct introduction"}{grant.viewerEmail ? ` · ${grant.viewerEmail}` : ""}</small>

@@ -4,7 +4,8 @@ import { BiodataTemplate } from "@/components/templates";
 import type { Metadata } from "next";
 import type { PortfolioHoroscopeAttachment } from "@/types/portfolio";
 import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.contract";
-import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
+import { InterestRequestModal, type ExistingViewerProfile } from "@/components/portfolio/InterestRequestModal";
+import { portfolioDraftSchema } from "@/types/portfolio";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
 import {
   isPortfolioOwner,
@@ -69,6 +70,31 @@ export default async function PublicBiodataPage({ params }: Props) {
     notFound();
   }
   const viewingOwnPortfolio = await isPortfolioOwner(supabase, token, authData.user?.id);
+  let existingViewerProfile: ExistingViewerProfile | null = null;
+  if (authData.user?.id && verifiedEmail && !viewingOwnPortfolio) {
+    const { data: ownPortfolio } = await supabase
+      .from("portfolios")
+      .select("draft_data")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    const ownDraft = portfolioDraftSchema.safeParse(ownPortfolio?.draft_data);
+    if (ownDraft.success) {
+      const firstContact = ownDraft.data.contact?.contacts?.find((contact) => contact.phone)
+        || ownDraft.data.contact?.contacts?.[0];
+      const phone = ownDraft.data.contact?.phone || firstContact?.phone || "";
+      const name = ownDraft.data.personal.name?.trim() || "";
+      if (name && phone) {
+        existingViewerProfile = {
+          name,
+          phone,
+          profileFor: ownDraft.data.personal.profile_for || "self",
+          country: ownDraft.data.personal.country,
+          state: ownDraft.data.personal.region,
+          city: ownDraft.data.personal.city,
+        };
+      }
+    }
+  }
 
   void recordPublicPortfolioView(supabase, token);
   const horoscopeAttachment: PortfolioHoroscopeAttachment | undefined = portfolio.horoscope
@@ -90,7 +116,7 @@ export default async function PublicBiodataPage({ params }: Props) {
       identityVerified={portfolio.identityVerified}
       photos={portfolio.photos}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} /> : undefined}
+      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
     />
   );
 }

@@ -306,7 +306,7 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByText("Rohan Mehta"));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Review Complete Portfolio access" }));
+    fireEvent.click(screen.getByRole("button", { name: "Grant Complete Portfolio access" }));
 
     const approval = screen.getByRole("dialog", { name: /Grant Complete Portfolio access to Rohan Mehta/i });
     expect(within(approval).getByText(/Access expires 15 days after approval/i)).toBeInTheDocument();

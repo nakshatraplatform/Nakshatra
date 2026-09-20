@@ -2653,6 +2653,26 @@ export type Database = {
           payload: Json
         }[]
       }
+      claim_relationship_notification_outbox: {
+        Args: { p_limit?: number }
+        Returns: {
+          notification_ref: string
+          recipient_user_id: string
+          notification_type: string
+          attempt_count: number
+          interest_request_id: string | null
+          grant_id: string | null
+          payload: Json
+        }[]
+      }
+      complete_notification_outbox: {
+        Args: {
+          p_notification_ref: string
+          p_succeeded: boolean
+          p_error_code?: string | null
+        }
+        Returns: string
+      }
       manage_reveal_grant: {
         Args: { p_action: string; p_grant_id: string }
         Returns: Json
@@ -2720,6 +2740,10 @@ export type Database = {
       }
       resolve_public_portfolio: {
         Args: { p_share_token: string }
+        Returns: Json
+      }
+      resolve_complete_portfolio_access: {
+        Args: { p_grant_id: string }
         Returns: Json
       }
       resolve_public_portfolio_identity_verified: {

@@ -74,6 +74,7 @@ The repository also contains BrokerDesk/B2B foundations. They are a separate pro
 | `/preview` | Owner public Introduction preview |
 | `/approved-preview` | Owner Complete Portfolio preview |
 | `/p/[token]` | Shared Brief/Detailed Introduction or approved Complete Portfolio |
+| `/access/[grantId]` | Identity verification landing page for emailed Complete Portfolio access |
 | `/verify/[token]` | Viewer interest email verification |
 | `/verification/result` | Creator identity-verification result |
 | `/account` | Export, session, and deletion controls |
@@ -109,6 +110,12 @@ npm run test:e2e
 ```
 
 `db:verify` requires Docker or Podman because it starts local Supabase, resets all migrations, and runs the pgTAP security suite.
+
+## Relationship notification worker
+
+Complete Portfolio approvals, renewals, revocations, and expiry reminders are queued transactionally in the database. Configure a scheduler to send an authenticated `POST` request to `/api/internal/relationship-notifications` with `Authorization: Bearer $NOTIFICATION_WORKER_SECRET`. The worker uses `SUPABASE_SERVICE_ROLE_KEY` only on the server, delivers through Resend, and records success or a retryable failure through the durable outbox.
+
+For hosted Supabase Auth, keep both **Confirm signup** and **Magic Link or OTP** templates synchronized with `supabase/templates/confirmation.html` and `supabase/templates/magic_link.html`. Both templates must use `{{ .Token }}` so a new viewer and a returning viewer receive the same six-digit-code experience.
 
 ## Pilot launch status
 
