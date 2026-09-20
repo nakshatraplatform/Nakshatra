@@ -155,7 +155,14 @@ select ok(
 );
 select is((select requester_user_id from public.interest_requests limit 1), 'a1000000-0000-4000-8000-000000000002'::uuid, 'the request is bound to the authenticated identity');
 select is((select viewer_phone from public.interest_requests limit 1), null, 'a registered viewer can reuse a portfolio without supplying a phone number');
+
+-- Access audit events are intentionally visible only to portfolio managers.
+-- Inspect the immutable event from the migration-test role rather than weakening that RLS boundary.
+reset role;
 select is((select metadata ->> 'profile_source' from public.access_audit_events where event_type = 'request_submitted' limit 1), 'vivintro_portfolio', 'the request audit records that identity came from a VivIntro portfolio');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
 select is((select status::text from public.interest_requests limit 1), 'new', 'new requests start in the expected state');
 select ok(
   public.submit_public_interest(
