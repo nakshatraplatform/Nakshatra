@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import {
-  interestRequestSchema,
+  interestSubmissionSchema,
   interestRequestValidationMessage,
+  type InterestRequestInput,
 } from "@/features/interest/server/interest.contract";
+import { resolveExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import {
   InterestSubmissionError,
   submitInterestRequest,
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
     if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
     const rateLimited = await enforceRateLimit(auth.supabase, request, "interest_submit");
     if (rateLimited) return rateLimited;
-    const parsed = interestRequestSchema.safeParse(await readJsonBody(request));
+    const parsed = interestSubmissionSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) {
       return NextResponse.json(
         {
@@ -35,7 +37,35 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const result = await submitInterestRequest(auth.supabase, parsed.data);
+    let interest: InterestRequestInput;
+    if (parsed.data.useExistingProfile) {
+      const [{ data: authData }, profile] = await Promise.all([
+        auth.supabase.auth.getUser(),
+        resolveExistingViewerProfile(auth.supabase, auth.user.id),
+      ]);
+      const verifiedEmail = authData.user?.email_confirmed_at
+        ? authData.user.email?.trim().toLowerCase()
+        : null;
+      if (!profile || !verifiedEmail) {
+        return NextResponse.json(
+          {
+            code: "VIVINTRO_PROFILE_REQUIRED",
+            error: "We could not find a reusable VivIntro portfolio for this account. Continue as a new visitor instead.",
+          },
+          { status: 409 }
+        );
+      }
+      interest = {
+        portfolioToken: parsed.data.portfolioToken,
+        ...profile,
+        email: verifiedEmail,
+        familyContext: parsed.data.familyContext,
+        message: parsed.data.message,
+      };
+    } else {
+      interest = parsed.data;
+    }
+    const result = await submitInterestRequest(auth.supabase, interest);
     if (result === "unavailable") {
       return NextResponse.json(
         { code: "PORTFOLIO_UNAVAILABLE", error: "This portfolio is not available." },

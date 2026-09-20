@@ -2,7 +2,7 @@
 
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -50,11 +50,15 @@ import {
   ShieldCheck,
   Inbox,
   History,
-  UserRoundCheck,
   Settings,
   CheckCircle2,
   Circle,
   ArrowLeft,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
@@ -692,7 +696,105 @@ export default function DashboardClient({
           )}
 
           {(canCreatePortfolio || portfolio) && <>
-          {canCreatePortfolio && (
+          <div className="dashboard-overview" aria-label="Portfolio overview">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Inbox className="h-4 w-4" />
+                  <span className="text-sm font-medium">Interests received</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
+                <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
+              </div>
+              <div
+                className="dashboard-glass dashboard-stat-card p-4"
+                data-link-state={linkStatisticState}
+              >
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Public link</span>
+                </div>
+                <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
+                  {isExpired
+                    ? "Expired"
+                    : portfolio?.is_published && daysLeft !== null
+                    ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
+                    : "Not published"}
+                </p>
+              </div>
+              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">Portfolio views</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
+                <span className="dashboard-stat-caption">All-time opens</span>
+              </div>
+            </div>
+
+            {portfolio?.is_published && shareUrl ? (
+              <div className="dashboard-glass p-4">
+                <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
+                <div className="dashboard-share-link-row">
+                  <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                    {shareUrl}
+                  </code>
+                  <button
+                    onClick={copyLink}
+                    className="dashboard-secondary-action"
+                  >
+                    {copied ? "Link copied" : "Copy link"}
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {canCreatePortfolio && (
+                    <button
+                      onClick={rotateLink}
+                      disabled={rotatingLink}
+                      className="dashboard-secondary-action"
+                    >
+                      <RotateCcw className={`h-4 w-4 ${rotatingLink ? "animate-spin" : ""}`} />
+                      Rotate link
+                    </button>
+                  )}
+                  <button
+                    onClick={unpublishPortfolio}
+                    disabled={unpublishing}
+                    className="dashboard-danger-action"
+                  >
+                    <LockKeyhole className="h-4 w-4" />
+                    {unpublishing ? "Unpublishing..." : "Unpublish"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="dashboard-glass p-4">
+                <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
+                <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+                  Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
+                </p>
+              </div>
+            )}
+
+            {portfolio && <div className="dashboard-overview-actions flex flex-wrap gap-3">
+              <Link
+                href="/preview"
+                className="dashboard-secondary-action"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview public Introduction
+              </Link>
+              <Link
+                href="/approved-preview"
+                className="dashboard-secondary-action"
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Preview Complete Portfolio
+              </Link>
+            </div>}
+          </div>
+
+          {canCreatePortfolio && !(readinessState.published && completion.readyToPublish) && (
             <CreatorReadinessTracker
               completion={completion}
               readiness={readinessState}
@@ -704,6 +806,7 @@ export default function DashboardClient({
             interests={interestItems}
             grants={accessGrants}
             events={accessEvents}
+            brokerResponses={brokerIntroductionResponses}
             disclosedCategories={disclosedCategories}
             onDecision={(id, status) => {
               setInterestItems((current) =>
@@ -724,113 +827,6 @@ export default function DashboardClient({
               router.refresh();
             }}
           />
-          {brokerIntroductionResponses.length > 0 && <section className="dashboard-glass p-5 sm:p-6" aria-labelledby="broker-introduction-responses-heading">
-            <div className="dashboard-section-heading">
-              <div><h2 id="broker-introduction-responses-heading">Broker introduction responses</h2><p>Responses to introductions shared under your standing broker mandate.</p></div>
-              <span>{brokerIntroductionResponses.length}</span>
-            </div>
-            <div className="mt-4 grid gap-3">{brokerIntroductionResponses.map((response) => <article key={response.introductionRef} className="rounded-xl border border-[color:var(--workspace-border)] p-4">
-              <strong className="capitalize">{response.response}</strong>
-              <p className="mt-1 text-sm text-[color:var(--workspace-ink-muted)]">{response.recipientLabel} · shared through {response.brokerName} · {new Date(response.respondedAt).toLocaleDateString()}</p>
-              {response.comment && <p className="mt-3 text-sm">“{response.comment}”</p>}
-            </article>)}</div>
-          </section>}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Inbox className="h-4 w-4" />
-                    <span className="text-sm font-medium">Interests received</span>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
-                  <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
-                </div>
-                <div
-                  className="dashboard-glass dashboard-stat-card p-4"
-                  data-link-state={linkStatisticState}
-                >
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">Public link</span>
-                  </div>
-                  <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-                    {isExpired
-                      ? "Expired"
-                      : portfolio?.is_published && daysLeft !== null
-                      ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
-                      : "Not published"}
-                  </p>
-                </div>
-                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm font-medium">Portfolio views</span>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
-                  <span className="dashboard-stat-caption">All-time opens</span>
-                </div>
-              </div>
-
-          {portfolio?.is_published && shareUrl ? (
-                <div className="dashboard-glass p-4">
-                  <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
-                  <div className="dashboard-share-link-row">
-                    <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
-                      {shareUrl}
-                    </code>
-                    <button
-                      onClick={copyLink}
-                      className="dashboard-secondary-action"
-                    >
-                      {copied ? "Link copied" : "Copy link"}
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {canCreatePortfolio && (
-                      <button
-                        onClick={rotateLink}
-                        disabled={rotatingLink}
-                        className="dashboard-secondary-action"
-                      >
-                        <RotateCcw className={`h-4 w-4 ${rotatingLink ? "animate-spin" : ""}`} />
-                        Rotate link
-                      </button>
-                    )}
-                    <button
-                      onClick={unpublishPortfolio}
-                      disabled={unpublishing}
-                      className="dashboard-danger-action"
-                    >
-                      <LockKeyhole className="h-4 w-4" />
-                      {unpublishing ? "Unpublishing..." : "Unpublish"}
-                    </button>
-                  </div>
-                </div>
-          ) : (
-            <div className="dashboard-glass p-4">
-              <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
-              <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-                Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
-              </p>
-            </div>
-          )}
-
-          {portfolio && <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/preview"
-                  className="dashboard-secondary-action"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview public Introduction
-                </Link>
-                <Link
-                  href="/approved-preview"
-                  className="dashboard-secondary-action"
-                >
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Preview Complete Portfolio
-                </Link>
-          </div>}
           </>}
           </div>
           {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6"><IdentityVerificationDashboard candidateId={portfolio.candidate_id} /></div> : null}
@@ -1274,10 +1270,26 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function subscribeToMobileDashboard(change: () => void) {
+  if (typeof window === "undefined" || !window.matchMedia) return () => undefined;
+  const query = window.matchMedia("(max-width: 640px)");
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+}
+
+function useMobileDashboard() {
+  return useSyncExternalStore(
+    subscribeToMobileDashboard,
+    () => typeof window !== "undefined" && Boolean(window.matchMedia?.("(max-width: 640px)").matches),
+    () => false
+  );
+}
+
 function RelationshipLifecycle({
   interests,
   grants,
   events,
+  brokerResponses,
   disclosedCategories,
   onDecision,
   onGrantChange,
@@ -1285,47 +1297,68 @@ function RelationshipLifecycle({
   interests: DashboardInterest[];
   grants: AccessGrant[];
   events: AccessAuditEvent[];
+  brokerResponses: OwnerBrokerIntroductionResponse[];
   disclosedCategories: string[];
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
   onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
 }) {
-  const waitingCount = interests.filter((interest) => interest.status === "new" || interest.status === "pending_review").length;
+  type StageKey = "awaiting" | "set-aside" | "access";
+  type ListModal = StageKey | "history" | null;
+  type RecordDetail =
+    | { kind: "interest"; item: DashboardInterest }
+    | { kind: "grant"; item: AccessGrant }
+    | { kind: "broker-response"; item: OwnerBrokerIntroductionResponse }
+    | null;
 
-  return (
-    <section id="introductions-and-access" className="dashboard-glass dashboard-relationship-lifecycle" aria-labelledby="relationship-lifecycle-heading">
-      <div className="dashboard-section-heading">
-        <div>
-          <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
-          <p>Follow each relationship from introduction review through time-limited Complete Portfolio access.</p>
-        </div>
-        <span>{waitingCount} waiting</span>
-      </div>
-      <InterestInbox
-        interests={interests}
-        disclosedCategories={disclosedCategories}
-        onDecision={onDecision}
-      />
-      <AccessControls grants={grants} events={events} onGrantChange={onGrantChange} />
-    </section>
-  );
-}
-
-function InterestInbox({
-  interests,
-  disclosedCategories,
-  onDecision,
-}: {
-  interests: DashboardInterest[];
-  disclosedCategories: string[];
-  onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
-}) {
-  const newInterests = interests.filter((interest) => interest.status === "new" || interest.status === "pending_review");
-  const rejectedInterests = interests.filter((interest) => interest.status === "rejected");
+  const waitingInterests = sortByNewest(interests.filter((interest) => interest.status === "new" || interest.status === "pending_review"), (interest) => interest.created_at);
+  const setAsideInterests = sortByNewest(interests.filter((interest) => interest.status === "rejected"), (interest) => interest.created_at);
+  const activeGrants = sortByNewest(grants.filter((grant) => grant.status === "active"), (grant) => grant.renewedAt || grant.expiresAt);
+  const historicalGrants = sortByNewest(grants.filter((grant) => grant.status !== "active"), (grant) => grant.revokedAt || grant.expiresAt);
+  const archivedInterests = sortByNewest(interests.filter((interest) => !["new", "pending_review", "rejected"].includes(interest.status)), (interest) => interest.created_at);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [approvalCandidate, setApprovalCandidate] = useState<DashboardInterest | null>(null);
+  const [listModal, setListModal] = useState<ListModal>(null);
+  const [recordDetail, setRecordDetail] = useState<RecordDetail>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [recordFilter, setRecordFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [expandedStages, setExpandedStages] = useState<Record<StageKey, boolean>>({
+    awaiting: false,
+    "set-aside": false,
+    access: false,
+  });
+  const isMobileDashboard = useMobileDashboard();
   const approvalTitleId = useId();
   const approvalConfirmRef = useRef<HTMLButtonElement>(null);
+  const listTitleId = useId();
+  const detailTitleId = useId();
+  const closeListRef = useRef<HTMLButtonElement>(null);
+  const closeDetailRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!listModal && !recordDetail) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTarget = recordDetail ? closeDetailRef.current : closeListRef.current;
+    focusTarget?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      const dialog = (recordDetail ? closeDetailRef.current : closeListRef.current)?.closest<HTMLElement>("[role='dialog']") || null;
+      if (event.key === "Escape" && workingId === null) {
+        if (recordDetail) setRecordDetail(null);
+        else setListModal(null);
+        return;
+      }
+      trapDialogFocus(event, dialog);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = previousOverflow;
+      previous?.focus();
+    };
+  }, [listModal, recordDetail, workingId]);
 
   useEffect(() => {
     if (!approvalCandidate) return;
@@ -1363,6 +1396,7 @@ function InterestInbox({
         return false;
       }
       onDecision(interest.id, decision === "reopened" ? "pending_review" : decision);
+      setRecordDetail(null);
       return true;
     } catch {
       setActionError("This interest could not be updated. Please try again.");
@@ -1372,85 +1406,210 @@ function InterestInbox({
     }
   }
 
+  async function manage(grant: AccessGrant, action: "renew" | "revoke") {
+    const prompt = action === "revoke"
+      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the Complete Portfolio.`
+      : `Renew Complete Portfolio access for ${grant.viewerName || "this viewer"} for 15 days?`;
+    if (!confirm(prompt)) return;
+    setWorkingId(grant.id);
+    setActionError(null);
+    try {
+      const { manageAccessGrantRequest } = await import("@/features/access/client/access-dashboard.api");
+      const result = await manageAccessGrantRequest(grant.id, action);
+      if (!result.ok) {
+        setActionError(result.error);
+        return;
+      }
+      onGrantChange(grant.id, action, result.expiresAt);
+      setRecordDetail(null);
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
+  function openList(mode: Exclude<ListModal, null>) {
+    setSearchQuery("");
+    setRecordFilter("all");
+    setPage(1);
+    setListModal(mode);
+  }
+
+  function toggleStage(stage: StageKey) {
+    setExpandedStages((current) => ({ ...current, [stage]: !current[stage] }));
+  }
+
+  const listRecords = listModal === "awaiting"
+    ? waitingInterests.map((item) => ({ kind: "interest" as const, item }))
+    : listModal === "set-aside"
+      ? setAsideInterests.map((item) => ({ kind: "interest" as const, item }))
+      : listModal === "access"
+        ? activeGrants.map((item) => ({ kind: "grant" as const, item }))
+        : [
+            ...historicalGrants.map((item) => ({ kind: "grant" as const, item })),
+            ...archivedInterests.map((item) => ({ kind: "interest" as const, item })),
+            ...brokerResponses.map((item) => ({ kind: "broker-response" as const, item })),
+          ];
+  const filteredRecords = listRecords.filter((record) => {
+    const name = record.kind === "interest" ? record.item.viewer_name : record.kind === "grant" ? record.item.viewerName : record.item.recipientLabel;
+    const email = record.kind === "interest" ? record.item.viewer_email : record.kind === "grant" ? record.item.viewerEmail : null;
+    const source = record.kind === "interest" ? record.item.source_type : record.kind === "grant" ? record.item.sourceType || "direct" : "broker";
+    const matchesSearch = `${name || ""} ${email || ""}`.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    if (!matchesSearch) return false;
+    if (recordFilter === "direct" || recordFilter === "broker") return source === recordFilter;
+    if (recordFilter === "verified") return record.kind === "interest" && record.item.email_verified;
+    if (recordFilter === "pending") return record.kind === "interest" && ["new", "pending_review"].includes(record.item.status);
+    if (recordFilter === "active") return record.kind === "grant" && record.item.status === "active";
+    if (recordFilter === "ended") return record.kind === "grant" && record.item.status !== "active";
+    return true;
+  });
+  const pageSize = 8;
+  const pageCount = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const listTitle = listModal === "awaiting"
+    ? "Awaiting review"
+    : listModal === "set-aside"
+      ? "Requests set aside"
+      : listModal === "access"
+        ? "Active Complete Portfolio access"
+        : "Relationship history";
+
   return (
-    <div className="dashboard-relationship-stage dashboard-interest-inbox">
-      <div className="dashboard-relationship-stage-heading">
+    <section id="introductions-and-access" className="dashboard-glass dashboard-relationship-lifecycle" aria-labelledby="relationship-lifecycle-heading">
+      <div className="dashboard-section-heading">
         <div>
-          <h3>Awaiting review</h3>
-          <p>Review each person&apos;s verified contact, source, and context before sharing the Complete Portfolio.</p>
+          <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
+          <p>Your latest actionable relationships. Open a queue for complete details and history.</p>
         </div>
-        <span>{newInterests.length}</span>
+        <span>{waitingInterests.length} waiting</span>
       </div>
-      {newInterests.length === 0 ? (
-        <p className="dashboard-empty-state">New interests will appear here after viewers introduce themselves.</p>
-      ) : (
-        <div>
-          {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
-          {newInterests.map((interest) => {
-            const profileFor = typeof interest.metadata?.profile_for === "string" ? interest.metadata.profile_for : "self";
-            const location = formatInterestLocation(interest.metadata);
-            const requesterPortfolioPath = interest.requester_portfolio_token
-              ? `/p/${encodeURIComponent(interest.requester_portfolio_token)}`
-              : null;
-            const sourceLabel = interest.source_type === "broker"
-              ? `Via ${interest.broker_name || "broker network"}`
-              : "Direct introduction";
-            return (
-              <details key={interest.id} className="dashboard-interest-row" data-interest-state="awaiting-review">
-                <summary>
-                  <span>
-                    <strong>{interest.viewer_name || "Unnamed viewer"}</strong>
-                    <small>{sourceLabel} · For {formatProfileFor(profileFor)} {location ? `· ${location}` : ""} · {formatInterestDate(interest.created_at)}</small>
-                  </span>
-                  <span className="dashboard-interest-status">Awaiting review</span>
-                </summary>
-                <div className="dashboard-interest-details">
-                  <div className="dashboard-interest-facts">
-                    <p><strong>Introduced by</strong>{sourceLabel}</p>
-                    {interest.broker_representative_name && <p><strong>Representative</strong>{interest.broker_representative_name}</p>}
-                    <p><strong>Email</strong>{interest.viewer_email || "Not provided"} {interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</p>
-                    {interest.viewer_phone && <p><strong>Phone</strong>{interest.viewer_phone}</p>}
-                  </div>
-                  {interest.viewer_family_context && <p><strong>Family introduction</strong>{interest.viewer_family_context}</p>}
-                  {interest.message && <p><strong>Message</strong>{interest.message}</p>}
-                  <div className="dashboard-interest-actions">
-                    {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
-                    {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
-                    {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their Nakshatra portfolio</Link>}
-                    <button type="button" className="dashboard-secondary-action" disabled={workingId === interest.id} onClick={() => void decide(interest, "rejected")}>Not right now</button>
-                    {interest.requester_user_id ? (
-                      <button type="button" className="dashboard-primary-action" disabled={workingId === interest.id} onClick={() => setApprovalCandidate(interest)}>Grant Complete Portfolio access</button>
-                    ) : (
-                      <span className="dashboard-action-note">Ask the viewer to verify their email before approving access.</span>
-                    )}
-                  </div>
-                </div>
-              </details>
-            );
-          })}
-        </div>
-      )}
-      {rejectedInterests.length > 0 && (
-        <div className="dashboard-past-interests">
-          <h3>Requests set aside</h3>
-          {rejectedInterests.map((interest) => (
-            <div key={interest.id} className="dashboard-access-row">
-              <span>
-                <strong>{interest.viewer_name || "Unnamed viewer"}</strong>
-                <small>Set aside {formatInterestDate(interest.created_at)}</small>
-              </span>
-              <button
-                type="button"
-                className="dashboard-secondary-action"
-                disabled={workingId === interest.id}
-                onClick={() => void decide(interest, "reopened")}
-              >
-                {workingId === interest.id ? "Reopening..." : "Reopen request"}
-              </button>
+      {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
+
+      <CompactRelationshipStage
+        stage="awaiting"
+        title="Awaiting review"
+        description="Verified introductions ready for your decision."
+        count={waitingInterests.length}
+        expanded={!isMobileDashboard || expandedStages.awaiting}
+        onToggle={() => toggleStage("awaiting")}
+        onViewAll={() => openList("awaiting")}
+        empty="New interests will appear here after viewers introduce themselves."
+      >
+        {waitingInterests.slice(0, 3).map((interest) => (
+          <InterestSummaryCard key={interest.id} interest={interest} statusLabel="Awaiting review" primaryLabel="Review" onPrimary={() => setRecordDetail({ kind: "interest", item: interest })} />
+        ))}
+      </CompactRelationshipStage>
+
+      <CompactRelationshipStage
+        stage="set-aside"
+        title="Requests set aside"
+        description="Requests you can reopen when you are ready."
+        count={setAsideInterests.length}
+        expanded={!isMobileDashboard || expandedStages["set-aside"]}
+        onToggle={() => toggleStage("set-aside")}
+        onViewAll={() => openList("set-aside")}
+        empty="No requests are currently set aside."
+      >
+        {setAsideInterests.slice(0, 3).map((interest) => (
+          <InterestSummaryCard key={interest.id} interest={interest} statusLabel="Set aside" primaryLabel={workingId === interest.id ? "Reopening…" : "Reopen"} disabled={workingId === interest.id} onPrimary={() => void decide(interest, "reopened")} />
+        ))}
+      </CompactRelationshipStage>
+
+      <CompactRelationshipStage
+        stage="access"
+        title="Complete Portfolio access"
+        description="Active viewers who can currently open protected details."
+        count={activeGrants.length}
+        expanded={!isMobileDashboard || expandedStages.access}
+        onToggle={() => toggleStage("access")}
+        onViewAll={() => openList("access")}
+        empty="Nobody currently has Complete Portfolio access."
+      >
+        {activeGrants.slice(0, 3).map((grant) => (
+          <GrantSummaryCard key={grant.id} grant={grant} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
+        ))}
+      </CompactRelationshipStage>
+
+      <button type="button" className="dashboard-history-action" onClick={() => openList("history")}>
+        <History className="h-4 w-4" aria-hidden="true" />
+        Access history
+        <span>{historicalGrants.length + archivedInterests.length + brokerResponses.length + events.length}</span>
+      </button>
+
+      {listModal && !recordDetail && (
+        <DashboardModal titleId={listTitleId} title={listTitle} closeLabel="Close and return to dashboard" closeRef={closeListRef} onClose={() => setListModal(null)}>
+          <div className="dashboard-modal-tools">
+            <label>
+              <span className="sr-only">Search {listTitle.toLowerCase()}</span>
+              <Search aria-hidden="true" />
+              <input value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} placeholder="Search by name or email" />
+            </label>
+            <label>
+              <span className="sr-only">Filter records</span>
+              <select value={recordFilter} onChange={(event) => { setRecordFilter(event.target.value); setPage(1); }}>
+                <option value="all">All records</option>
+                <option value="direct">Direct introductions</option>
+                <option value="broker">Broker introductions</option>
+                <option value="verified">Verified email</option>
+                <option value="pending">Pending review</option>
+                <option value="active">Active access</option>
+                <option value="ended">Ended access</option>
+              </select>
+            </label>
+          </div>
+          <div className="dashboard-modal-list">
+            {visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
+              <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
+            ) : record.kind === "grant" ? (
+              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} onPrimary={() => setRecordDetail(record)} />
+            ) : (
+              <BrokerResponseSummaryCard key={record.item.introductionRef} response={record.item} onPrimary={() => setRecordDetail(record)} />
+            ))}
+          </div>
+          {listModal === "history" && events.length > 0 && (
+            <div className="dashboard-history-timeline">
+              <h3>Activity log</h3>
+              <ol>{events.slice(0, 20).map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol>
             </div>
-          ))}
-        </div>
+          )}
+          {pageCount > 1 && (
+            <nav className="dashboard-modal-pagination" aria-label={`${listTitle} pages`}>
+              <button type="button" className="dashboard-secondary-action" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft aria-hidden="true" /> Previous</button>
+              <span>Page {currentPage} of {pageCount}</span>
+              <button type="button" className="dashboard-secondary-action" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next <ChevronRight aria-hidden="true" /></button>
+            </nav>
+          )}
+        </DashboardModal>
       )}
+
+      {recordDetail && (
+        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Access details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail>
+          {recordDetail.kind === "interest" ? (
+            <InterestDetail interest={recordDetail.item} />
+          ) : recordDetail.kind === "grant" ? (
+            <GrantDetail grant={recordDetail.item} events={events} />
+          ) : (
+            <BrokerResponseDetail response={recordDetail.item} />
+          )}
+          <div className="dashboard-modal-sticky-actions">
+            {recordDetail.kind === "interest" ? (
+              <InterestActions
+                interest={recordDetail.item}
+                working={workingId === recordDetail.item.id}
+                onSetAside={() => void decide(recordDetail.item, "rejected")}
+                onReopen={() => void decide(recordDetail.item, "reopened")}
+                onGrant={() => setApprovalCandidate(recordDetail.item)}
+              />
+            ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
+              <>
+                <button type="button" className="dashboard-secondary-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "renew")}>Renew 15 days</button>
+                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "revoke")}>End access</button>}
+              </>
+            ) : null}
+          </div>
+        </DashboardModal>
+      )}
+
       {approvalCandidate && (
         <div className="fixed inset-0 z-[70] grid place-items-center bg-[#102027]/65 p-4" role="presentation">
           <section
@@ -1495,111 +1654,181 @@ function InterestInbox({
           </section>
         </div>
       )}
+    </section>
+  );
+}
+
+function CompactRelationshipStage({
+  stage,
+  title,
+  description,
+  count,
+  expanded,
+  onToggle,
+  onViewAll,
+  empty,
+  children,
+}: {
+  stage: string;
+  title: string;
+  description: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  onViewAll: () => void;
+  empty: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="dashboard-relationship-stage dashboard-compact-stage" data-stage={stage}>
+      <button type="button" className="dashboard-stage-toggle" aria-expanded={expanded} onClick={onToggle}>
+        <div>
+          <span className="dashboard-stage-title">{title}</span>
+          <span className="dashboard-stage-description">{description}</span>
+        </div>
+        <span className="dashboard-stage-count">{count}</span>
+        <ChevronDown className="dashboard-stage-chevron" aria-hidden="true" />
+      </button>
+      {expanded && (
+        <div className="dashboard-stage-content">
+          {count === 0 ? <p className="dashboard-empty-state">{empty}</p> : <div className="dashboard-summary-list">{children}</div>}
+          {count > 0 && <button type="button" className="dashboard-view-all" onClick={onViewAll}>View all <span>({count})</span></button>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function InterestSummaryCard({ interest, statusLabel, primaryLabel, onPrimary, disabled = false }: { interest: DashboardInterest; statusLabel: string; primaryLabel: string; onPrimary: () => void; disabled?: boolean }) {
+  const source = interest.source_type === "broker" ? "Broker introduction" : "Direct introduction";
+  return (
+    <article className="dashboard-summary-item" data-record-state={interest.status}>
+      <div className="dashboard-summary-main">
+        <div className="dashboard-summary-heading"><strong>{interest.viewer_name || "Unnamed viewer"}</strong><span className={`dashboard-source-tag is-${interest.source_type}`}>{source}</span></div>
+        <p>{formatInterestDate(interest.created_at)} · {interest.email_verified ? "Verified email" : "Verification pending"}</p>
+        <p className="dashboard-message-preview">{interest.message || interest.viewer_family_context || "No message provided."}</p>
+      </div>
+      <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{statusLabel}</span><button type="button" className="dashboard-primary-action" disabled={disabled} onClick={onPrimary}>{primaryLabel}</button></div>
+    </article>
+  );
+}
+
+function GrantSummaryCard({ grant, onPrimary }: { grant: AccessGrant; onPrimary: () => void }) {
+  const urgent = grant.status === "active" && daysUntil(grant.expiresAt) <= 3;
+  const sourceType = grant.sourceType || "direct";
+  return (
+    <article className="dashboard-summary-item" data-record-state={urgent ? "expiring" : grant.status}>
+      <div className="dashboard-summary-main">
+        <div className="dashboard-summary-heading"><strong>{grant.viewerName || "Verified viewer"}</strong><span className={`dashboard-source-tag is-${sourceType}`}>{sourceType === "broker" ? "Broker introduction" : "Direct introduction"}</span></div>
+        <p>{grant.viewerEmail || "Verified viewer"}</p>
+        <p className="dashboard-message-preview">{grant.status === "active" ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Access ended"}</p>
+      </div>
+      <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{urgent ? "Expiring soon" : grant.status === "active" ? "Active" : grant.status === "expired" ? "Expired" : "Ended"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Manage</button></div>
+    </article>
+  );
+}
+
+function BrokerResponseSummaryCard({ response, onPrimary }: { response: OwnerBrokerIntroductionResponse; onPrimary: () => void }) {
+  return (
+    <article className="dashboard-summary-item" data-record-state={response.response === "accepted" ? "active" : "revoked"}>
+      <div className="dashboard-summary-main">
+        <div className="dashboard-summary-heading"><strong>{response.recipientLabel}</strong><span className="dashboard-source-tag is-broker">Broker introduction</span></div>
+        <p>{response.brokerName} · {formatInterestDate(response.respondedAt)}</p>
+        <p className="dashboard-message-preview">{response.comment || `Recipient ${response.response} the introduction.`}</p>
+      </div>
+      <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{response.response === "accepted" ? "Accepted" : "Declined"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Open details</button></div>
+    </article>
+  );
+}
+
+function DashboardModal({ titleId, title, closeLabel, closeRef, onClose, detail = false, children }: { titleId: string; title: string; closeLabel: string; closeRef: React.RefObject<HTMLButtonElement | null>; onClose: () => void; detail?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="dashboard-modal-backdrop" role="presentation">
+      <section role="dialog" aria-modal="true" aria-labelledby={titleId} className={`dashboard-records-modal${detail ? " is-detail" : ""}`}>
+        <header><div><p className="portfolio-eyebrow">Introductions and access</p><h2 id={titleId}>{title}</h2></div><button ref={closeRef} type="button" className="dashboard-modal-close" aria-label={closeLabel} onClick={onClose}><X aria-hidden="true" /></button></header>
+        <div className="dashboard-modal-body">{children}</div>
+      </section>
     </div>
   );
 }
 
-function AccessControls({
-  grants,
-  events,
-  onGrantChange,
-}: {
-  grants: AccessGrant[];
-  events: AccessAuditEvent[];
-  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
-}) {
-  const [workingId, setWorkingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function manage(grant: AccessGrant, action: "renew" | "revoke") {
-    const prompt = action === "revoke"
-      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the Complete Portfolio.`
-      : `Renew Complete Portfolio access for ${grant.viewerName || "this viewer"} for 15 days?`;
-    if (!confirm(prompt)) return;
-    setWorkingId(grant.id);
-    setError(null);
-    try {
-      const { manageAccessGrantRequest } = await import(
-        "@/features/access/client/access-dashboard.api"
-      );
-      const result = await manageAccessGrantRequest(grant.id, action);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      onGrantChange(grant.id, action, result.expiresAt);
-    } finally {
-      setWorkingId(null);
-    }
-  }
-
+function InterestDetail({ interest }: { interest: DashboardInterest }) {
+  const profileFor = typeof interest.metadata?.profile_for === "string" ? interest.metadata.profile_for : "self";
+  const sourceLabel = interest.source_type === "broker" ? `Broker introduction via ${interest.broker_name || "broker network"}` : "Direct introduction";
   return (
-    <div className="dashboard-relationship-stage dashboard-access-controls">
-      <div className="dashboard-relationship-stage-heading">
-        <div>
-          <h3>Complete Portfolio access</h3>
-          <p>See who can open protected details, when access ends, and whether they have used it.</p>
-        </div>
-        <UserRoundCheck className="h-5 w-5" aria-hidden="true" />
-      </div>
-      {error && <p className="dashboard-action-error" role="alert">{error}</p>}
-      {grants.length === 0 ? (
-        <p className="dashboard-empty-state">Nobody has Complete Portfolio access yet. Approve a verified introduction above to grant 15-day access.</p>
-      ) : (
-        <div className="dashboard-access-list">
-          {grants.map((grant) => (
-            <div key={grant.id} className="dashboard-access-row" data-access-state={grant.status}>
-              <span>
-                <strong>{grant.viewerName || "Verified viewer"}</strong>
-                <small>{grant.sourceType === "broker" ? `Introduced via ${grant.brokerName || "broker network"}` : "Direct introduction"}{grant.viewerEmail ? ` · ${grant.viewerEmail}` : ""}</small>
-                <small>
-                  {grant.status === "active"
-                    ? `Active until ${formatAccessDate(grant.expiresAt)}`
-                    : grant.status === "expired"
-                      ? `Expired ${formatAccessDate(grant.expiresAt)}`
-                      : "Access ended"}
-                </small>
-                <small>{grant.lastAccessedAt ? `Last opened ${formatAccessDate(grant.lastAccessedAt)}` : "Not opened yet"}</small>
-              </span>
-              {grant.status !== "revoked" && (
-                <div className="dashboard-interest-actions">
-                  <button
-                    type="button"
-                    className="dashboard-secondary-action"
-                    disabled={workingId === grant.id}
-                    onClick={() => void manage(grant, "renew")}
-                  >
-                    Renew 15 days
-                  </button>
-                  <button
-                    type="button"
-                    className="dashboard-danger-action"
-                    disabled={workingId === grant.id}
-                    onClick={() => void manage(grant, "revoke")}
-                  >
-                    End access
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {events.length > 0 && (
-        <details className="dashboard-access-history">
-          <summary><History className="h-4 w-4" aria-hidden="true" /> Access history</summary>
-          <ol>
-            {events.slice(0, 12).map((event) => (
-              <li key={event.id}>
-                <span>{accessEventLabel(event.eventType, event.viewerName)}</span>
-                <time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time>
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
+    <div className="dashboard-record-detail">
+      <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${interest.source_type}`}>{sourceLabel}</span><span className="dashboard-interest-status">{interestStatusLabel(interest.status)}</span></div>
+      <dl className="dashboard-detail-grid">
+        <div><dt>Email</dt><dd>{interest.viewer_email || "Not provided"}{interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</dd></div>
+        <div><dt>Phone</dt><dd>{interest.viewer_phone || "Not provided"}</dd></div>
+        <div><dt>Contacting for</dt><dd>{formatProfileFor(profileFor)}</dd></div>
+        <div><dt>Received</dt><dd>{formatAccessDate(interest.created_at)}</dd></div>
+        {interest.broker_representative_name && <div><dt>Broker representative</dt><dd>{interest.broker_representative_name}</dd></div>}
+        {formatInterestLocation(interest.metadata) && <div><dt>Location</dt><dd>{formatInterestLocation(interest.metadata)}</dd></div>}
+      </dl>
+      <section><h3>Family context</h3><p>{interest.viewer_family_context || "No family context was provided."}</p></section>
+      <section><h3>Message</h3><p>{interest.message || "No message was provided."}</p></section>
     </div>
   );
+}
+
+function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: { interest: DashboardInterest; working: boolean; onSetAside: () => void; onReopen: () => void; onGrant: () => void }) {
+  const requesterPortfolioPath = interest.requester_portfolio_token ? `/p/${encodeURIComponent(interest.requester_portfolio_token)}` : null;
+  return (
+    <>
+      {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
+      {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
+      {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro portfolio</Link>}
+      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant Complete Portfolio access</button> : <span className="dashboard-action-note">Verified account required before access can be granted.</span>}</> : null}
+    </>
+  );
+}
+
+function GrantDetail({ grant, events }: { grant: AccessGrant; events: AccessAuditEvent[] }) {
+  const relatedEvents = events.filter((event) => !event.viewerName || event.viewerName === grant.viewerName).slice(0, 8);
+  return (
+    <div className="dashboard-record-detail">
+      <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
+      <dl className="dashboard-detail-grid">
+        <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
+        <div><dt>Access ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
+        <div><dt>Last opened</dt><dd>{grant.lastAccessedAt ? formatAccessDate(grant.lastAccessedAt) : "Not opened yet"}</dd></div>
+        <div><dt>Last renewed</dt><dd>{grant.renewedAt ? formatAccessDate(grant.renewedAt) : "Not renewed"}</dd></div>
+      </dl>
+      <section><h3>Access history</h3>{relatedEvents.length ? <ol className="dashboard-detail-history">{relatedEvents.map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol> : <p>No access activity has been recorded yet.</p>}</section>
+    </div>
+  );
+}
+
+function BrokerResponseDetail({ response }: { response: OwnerBrokerIntroductionResponse }) {
+  return (
+    <div className="dashboard-record-detail">
+      <div className="dashboard-detail-status-row"><span className="dashboard-source-tag is-broker">Broker introduction via {response.brokerName}</span><span className="dashboard-interest-status">{response.response === "accepted" ? "Accepted" : "Declined"}</span></div>
+      <dl className="dashboard-detail-grid">
+        <div><dt>Recipient</dt><dd>{response.recipientLabel}</dd></div>
+        <div><dt>Broker</dt><dd>{response.brokerName}</dd></div>
+        <div><dt>Responded</dt><dd>{formatAccessDate(response.respondedAt)}</dd></div>
+        <div><dt>Response</dt><dd className="capitalize">{response.response}</dd></div>
+      </dl>
+      <section><h3>Response message</h3><p>{response.comment || "No response message was provided."}</p></section>
+    </div>
+  );
+}
+
+function sortByNewest<T>(items: T[], dateFor: (item: T) => string | null | undefined) {
+  return [...items].sort((left, right) => new Date(dateFor(right) || 0).getTime() - new Date(dateFor(left) || 0).getTime());
+}
+
+function daysUntil(value: string) {
+  const difference = new Date(value).getTime() - Date.now();
+  return Number.isFinite(difference) ? Math.ceil(difference / 86_400_000) : Number.POSITIVE_INFINITY;
+}
+
+function interestStatusLabel(status: string) {
+  if (status === "new" || status === "pending_review") return "Awaiting review";
+  if (status === "rejected") return "Set aside";
+  if (status === "approved" || status === "revealed") return "Access granted";
+  return "Closed";
 }
 
 function formatAccessDate(value: string) {

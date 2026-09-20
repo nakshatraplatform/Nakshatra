@@ -101,6 +101,14 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   for (const route of ["/dashboard", "/account", "/brokerdesk/onboarding"]) {
     await page.goto(route);
     await expect(page).toHaveURL(new RegExp(`${route}$`));
+    if (route === "/dashboard") {
+      const overview = page.getByLabel("Portfolio overview");
+      await expect(overview).toBeVisible();
+      expect(await overview.evaluate((element) => {
+        const journey = document.querySelector('[aria-labelledby="creator-readiness-heading"]');
+        return Boolean(journey && (element.compareDocumentPosition(journey) & Node.DOCUMENT_POSITION_FOLLOWING));
+      })).toBe(true);
+    }
     await page.getByRole("button", { name: "Switch to Dark theme" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     await noOverflow(page);

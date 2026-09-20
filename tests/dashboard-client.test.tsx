@@ -4,6 +4,7 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Portfolio, PortfolioData, PortfolioMedia } from "../src/types/portfolio";
+import { brokerIntroductionRouteRefSchema } from "../src/features/security/public-reference";
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
@@ -304,7 +305,7 @@ describe("dashboard client", () => {
       }],
     });
 
-    fireEvent.click(screen.getByText("Rohan Mehta"));
+    fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Grant Complete Portfolio access" }));
 
@@ -351,15 +352,16 @@ describe("dashboard client", () => {
     });
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
     fireEvent.click(screen.getByRole("button", { name: "Renew 15 days" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "renew"));
     expect(await screen.findByText("Active until Feb 1, 2099")).toBeInTheDocument();
 
     mocks.manageAccess.mockResolvedValueOnce({ ok: true, status: "revoked" });
+    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
     fireEvent.click(screen.getByRole("button", { name: "End access" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
-    expect(await screen.findByText("Access ended")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Access history"));
+    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
     expect(screen.getByText("Complete Portfolio access granted to Rohan Mehta")).toBeInTheDocument();
   });
 
@@ -492,16 +494,116 @@ describe("dashboard client", () => {
       ],
     });
 
-    expect(screen.getByText(/Direct introduction · For themselves/i)).toBeInTheDocument();
-    expect(screen.getByText(/Via Sanskriti Introductions · For their son/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Maya Shah"));
-    expect(screen.getByRole("link", { name: "View their Nakshatra portfolio" })).toHaveAttribute(
+    expect(screen.getByText("Direct introduction")).toBeInTheDocument();
+    expect(screen.getByText("Broker introduction")).toBeInTheDocument();
+    const mayaCard = screen.getByText("Maya Shah").closest("article");
+    expect(mayaCard).not.toBeNull();
+    fireEvent.click(within(mayaCard as HTMLElement).getByRole("button", { name: "Review" }));
+    expect(screen.getByRole("link", { name: "View their VivIntro portfolio" })).toHaveAttribute(
       "href",
       "/p/maya-authenticated-token"
     );
-    fireEvent.click(screen.getByText("Arjun Nair"));
+    fireEvent.click(screen.getByRole("button", { name: "Close details" }));
+    const arjunCard = screen.getByText("Arjun Nair").closest("article");
+    expect(arjunCard).not.toBeNull();
+    fireEvent.click(within(arjunCard as HTMLElement).getByRole("button", { name: "Review" }));
     expect(screen.getByText("Priya Menon")).toBeInTheDocument();
-    expect(screen.getAllByText("Verified")).toHaveLength(2);
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+  });
+
+  it("keeps only the latest three records on the dashboard and paginates the full queue", () => {
+    const interests = Array.from({ length: 9 }, (_, index) => ({
+      id: `interest-${index + 1}`,
+      viewer_name: `Viewer ${index + 1}`,
+      viewer_phone: null,
+      viewer_email: `viewer${index + 1}@example.com`,
+      viewer_family_context: null,
+      message: `Message ${index + 1}`,
+      status: "new",
+      requester_user_id: `viewer-${index + 1}`,
+      metadata: { profile_for: "self" },
+      created_at: `2026-08-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
+      email_verified: true,
+      source_type: index % 2 === 0 ? "direct" as const : "broker" as const,
+      broker_name: index % 2 === 0 ? null : "Trusted Broker",
+      broker_representative_name: null,
+      requester_portfolio_token: null,
+    }));
+    renderDashboard({ interests });
+
+    expect(screen.getByText("Viewer 9")).toBeInTheDocument();
+    expect(screen.getByText("Viewer 8")).toBeInTheDocument();
+    expect(screen.getByText("Viewer 7")).toBeInTheDocument();
+    expect(screen.queryByText("Viewer 6")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "View all (9)" }));
+    const dialog = screen.getByRole("dialog", { name: "Awaiting review" });
+    expect(within(dialog).getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(within(dialog).queryByText("Viewer 1")).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Next/i }));
+    expect(within(dialog).getByText("Viewer 1")).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email"), { target: { value: "Viewer 4" } });
+    expect(within(dialog).getByText("Viewer 4")).toBeInTheDocument();
+    expect(within(dialog).queryByText("Viewer 5")).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close and return to dashboard" }));
+    expect(screen.queryByRole("dialog", { name: "Awaiting review" })).not.toBeInTheDocument();
+  });
+
+  it("moves ended access out of the active queue and into history", () => {
+    renderDashboard({
+      accessSummary: {
+        grants: [
+          { id: "active-grant", interestRequestId: "interest-active", viewerName: "Active Viewer", status: "active", expiresAt: "2099-01-01T00:00:00.000Z" },
+          { id: "expired-grant", interestRequestId: "interest-expired", viewerName: "Expired Viewer", status: "expired", expiresAt: "2025-01-01T00:00:00.000Z" },
+          { id: "ended-grant", interestRequestId: "interest-ended", viewerName: "Ended Viewer", status: "revoked", expiresAt: "2099-01-01T00:00:00.000Z", revokedAt: "2026-01-01T00:00:00.000Z" },
+        ],
+        events: [],
+      },
+    });
+
+    expect(screen.getByText("Active Viewer")).toBeInTheDocument();
+    expect(screen.queryByText("Expired Viewer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ended Viewer")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
+    const history = screen.getByRole("dialog", { name: "Relationship history" });
+    expect(within(history).getByText("Expired Viewer")).toBeInTheDocument();
+    expect(within(history).getByText("Ended Viewer")).toBeInTheDocument();
+  });
+
+  it("keeps broker introduction responses in relationship history instead of expanding the dashboard", () => {
+    renderDashboard({
+      brokerIntroductionResponses: [{
+        introductionRef: brokerIntroductionRouteRefSchema.parse(`bir_${"d".repeat(32)}`),
+        brokerName: "Sangam Matchmakers",
+        recipientLabel: "Priya Shah",
+        response: "accepted",
+        comment: "The family would like to continue the conversation.",
+        respondedAt: "2026-08-12T12:00:00.000Z",
+      }],
+    });
+
+    expect(screen.queryByText("Sangam Matchmakers")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
+    const history = screen.getByRole("dialog", { name: "Relationship history" });
+    expect(within(history).getByText("Priya Shah")).toBeInTheDocument();
+    expect(within(history).getByText("Broker introduction")).toBeInTheDocument();
+    fireEvent.click(within(history).getByRole("button", { name: "Open details" }));
+    expect(screen.getByRole("dialog", { name: "Priya Shah" })).toBeInTheDocument();
+    expect(screen.getByText("Sangam Matchmakers")).toBeInTheDocument();
+    expect(screen.getByText("The family would like to continue the conversation.")).toBeInTheDocument();
+  });
+
+  it("removes the publishing journey after a ready portfolio is published", () => {
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+      isExpired: false,
+      daysLeft: 30,
+    });
+
+    expect(screen.queryByText("Your publishing journey")).not.toBeInTheDocument();
+    expect(screen.getByText("Portfolio active")).toBeInTheDocument();
   });
 
   it("cancels publication review without changing the public portfolio", async () => {
@@ -551,9 +653,9 @@ describe("dashboard client", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Introductions and access" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Awaiting review" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Awaiting review/i })).toBeInTheDocument();
     expect(screen.getByText("Maya Shah")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Access history"));
+    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
     expect(screen.getByText("Portfolio unpublished")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
