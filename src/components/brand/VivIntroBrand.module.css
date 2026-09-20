@@ -20,6 +20,10 @@
   flex: none;
 }
 
+.artwork[data-brand-variant="horizontal"] {
+  width: clamp(136px, 20vw, var(--vivintro-brand-width));
+}
+
 .image {
   display: block;
   width: 100%;

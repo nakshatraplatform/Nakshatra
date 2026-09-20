@@ -49,7 +49,7 @@ export function ResetPasswordForm() {
   return (
     <div className="account-shell">
       <header className="account-header">
-        <VivIntroBrand href="/" variant="full-symbol" priority />
+        <VivIntroBrand href="/" variant="horizontal" priority />
         <div className="app-header-actions"><ThemeSwitch /><Link href="/login" className="account-home">Back to sign in</Link></div>
       </header>
       <main className="account-main">

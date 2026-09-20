@@ -3,5 +3,5 @@ import { ThemeSwitch } from "./ThemeSwitch";
 
 /** Compact navigation for standalone verification and unavailable-state screens. */
 export function ThemeNavigation() {
-  return <nav className="app-theme-navigation" aria-label="Application navigation"><VivIntroBrand href="/" variant="full-symbol" /><ThemeSwitch /></nav>;
+  return <nav className="app-theme-navigation" aria-label="Application navigation"><VivIntroBrand href="/" variant="horizontal" /><ThemeSwitch /></nav>;
 }

@@ -114,7 +114,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
       <LandingSectionRail />
 
       <header className={styles.header}>
-        <VivIntroBrand href="/" variant="full-symbol" className={styles.brand} priority />
+        <VivIntroBrand href="/" variant="horizontal" className={styles.brand} priority />
         <nav className={styles.navigation} aria-label="Main navigation">
           <ThemeSwitch />
           <div className={styles.navigationLinks}>

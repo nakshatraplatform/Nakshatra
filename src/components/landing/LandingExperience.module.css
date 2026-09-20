@@ -568,7 +568,7 @@
 
 @media (max-width: 620px) {
   .header { min-height: 68px; }
-  .header .primaryButton { display: inline-flex; min-height: 42px; padding: 0.55rem 0.7rem; font-size: 0.72rem; }
+  .header .primaryButton { display: none; }
   .signIn { display: inline-flex; }
   .brand { font-size: 0.74rem; }
   .navigation { gap: 0.65rem; }

@@ -521,7 +521,7 @@ export default function CelestialUnion({
     >
       <header className="portfolio-header">
         <div className="portfolio-header-inner">
-          <VivIntroBrand href="#main-content" variant="full-symbol" className="portfolio-brand" />
+          <VivIntroBrand href="#main-content" variant="horizontal" className="portfolio-brand" />
           <nav aria-label="Portfolio quick actions">
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}

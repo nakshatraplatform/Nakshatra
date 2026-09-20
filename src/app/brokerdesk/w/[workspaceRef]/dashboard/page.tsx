@@ -24,7 +24,7 @@ export default async function BrokerdeskDashboardPage({ params }: {
 
   return <div className={styles.shell}>
     <header>
-      <VivIntroBrand href="/brokerdesk" variant="full-symbol" />
+      <VivIntroBrand href="/brokerdesk" variant="horizontal" />
       <span>BrokerDesk</span>
       <nav><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><Link href={`/brokerdesk/w/${workspaceRef}/settings/team`}>Team</Link></nav>
       <ThemeSwitch />
