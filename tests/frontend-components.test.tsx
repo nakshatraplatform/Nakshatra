@@ -73,7 +73,7 @@ describe("landing and shared frontend components", () => {
 
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
-    expect(screen.getAllByText(/Nakshatra/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: /join.*waitlist/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Brief Introduction/i).length).toBeGreaterThan(0);
@@ -81,7 +81,7 @@ describe("landing and shared frontend components", () => {
     expect(screen.getByRole("heading", { name: /pilot is private.*waitlist is open/i })).toBeInTheDocument();
     expect(screen.getByText(/signup instructions will be sent separately/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /identity verification required/i })).toBeInTheDocument();
-    expect(screen.getByText(/these are not real Nakshatra users/i)).toBeInTheDocument();
+    expect(screen.getByText(/these are not real VivIntro users/i)).toBeInTheDocument();
   });
 
   it("offers distinct privacy and story-led landing concepts", () => {

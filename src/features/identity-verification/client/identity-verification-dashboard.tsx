@@ -49,7 +49,7 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
         </div>
       </div>
       <p className="text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
-        Didit uses the candidate&apos;s legal name, date of birth, India document country, and approved document types for its hosted check. Nakshatra stores consent and verification state, not identity evidence.
+        Didit uses the candidate&apos;s legal name, date of birth, India document country, and approved document types for its hosted check. VivIntro stores consent and verification state, not identity evidence.
       </p>
       <label className="mt-4 flex gap-3 text-sm text-[light-dark(#334155,var(--app-dark-ink))]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />

@@ -104,7 +104,7 @@ function ExpiredPortfolioLink() {
   return (
     <main id="main-content" className="grid min-h-screen place-items-center bg-[color:var(--workspace-canvas)] px-5 py-16 text-[color:var(--workspace-ink)]">
       <section className="w-full max-w-xl rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-7 text-center shadow-sm sm:p-10" aria-labelledby="expired-portfolio-title">
-        <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">Nakshatra private beta</p>
+        <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">VivIntro private beta</p>
         <h1 id="expired-portfolio-title" className="mt-3 text-3xl font-semibold">This portfolio link has expired</h1>
         <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[color:var(--workspace-ink-muted)]">
           Ask the person who shared it to renew their portfolio link. No portfolio information is available from an expired link.

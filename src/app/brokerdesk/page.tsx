@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { getBrokerdeskBootstrap } from "@/features/organizations/server/brokerdesk-onboarding.service";
 
-export const metadata = { title: "BrokerDesk · Nakshatra", robots: { index: false, follow: false } };
+export const metadata = { title: "BrokerDesk · VivIntro", robots: { index: false, follow: false } };
 
 export default async function BrokerdeskGatewayPage() {
   const { supabase } = await getAuthenticatedUser();

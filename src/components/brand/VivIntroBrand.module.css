@@ -1,0 +1,62 @@
+.root {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.link {
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.artwork {
+  position: relative;
+  display: inline-block;
+  width: var(--vivintro-brand-width);
+  aspect-ratio: var(--vivintro-brand-ratio);
+  flex: none;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.primaryArtwork,
+.reverseArtwork {
+  position: absolute;
+  inset: 0;
+}
+
+.reverseArtwork {
+  display: none;
+}
+
+:global(html[data-app-theme="dark"]) .primaryArtwork {
+  display: none;
+}
+
+:global(html[data-app-theme="dark"]) .reverseArtwork {
+  display: block;
+}
+
+:global([data-appearance="light"]) .primaryArtwork {
+  display: block;
+}
+
+:global([data-appearance="light"]) .reverseArtwork {
+  display: none;
+}
+
+:global([data-appearance="dark"]) .primaryArtwork {
+  display: none;
+}
+
+:global([data-appearance="dark"]) .reverseArtwork {
+  display: block;
+}

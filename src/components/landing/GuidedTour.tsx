@@ -147,7 +147,7 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="share" aria-label="Current portfolio link">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Published link</small></div>
-        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>nakshatra.app/p/</small><strong>ananya-rao</strong></span></div>
+        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>vivintro.com/p/</small><strong>ananya-rao</strong></span></div>
         <div className={styles.tourChannels}><span>WhatsApp</span><span>Email</span><span>Copy link</span></div>
       </div>
     );

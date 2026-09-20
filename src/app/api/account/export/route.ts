@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const data = await exportAccountData(auth.supabase);
     return new NextResponse(JSON.stringify(data, null, 2), {
       headers: {
-        "Content-Disposition": `attachment; filename="nakshatra-account-${new Date().toISOString().slice(0, 10)}.json"`,
+        "Content-Disposition": `attachment; filename="vivintro-account-${new Date().toISOString().slice(0, 10)}.json"`,
         "Content-Type": "application/json; charset=utf-8",
       },
     });

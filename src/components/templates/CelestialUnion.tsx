@@ -7,8 +7,8 @@ import {
   ExternalLink,
   LockKeyhole,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
@@ -521,10 +521,7 @@ export default function CelestialUnion({
     >
       <header className="portfolio-header">
         <div className="portfolio-header-inner">
-          <a href="#main-content" className="portfolio-brand" aria-label="Nakshatra portfolio home">
-            <Sparkles aria-hidden="true" />
-            <span>Nakshatra</span>
-          </a>
+          <VivIntroBrand href="#main-content" variant="compact-symbol" className="portfolio-brand" />
           <nav aria-label="Portfolio quick actions">
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
@@ -683,7 +680,7 @@ export default function CelestialUnion({
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
               <h2 id="portfolio-creator-cta-title">Like how this portfolio was presented?</h2>
-              <p>Explore Nakshatra and join the launch waitlist to create your own portfolio when access becomes available.</p>
+              <p>Explore VivIntro and join the launch waitlist to create your own portfolio when access becomes available.</p>
             </div>
             <a href="/pilot-access">
               Create your own portfolio
@@ -694,7 +691,7 @@ export default function CelestialUnion({
       </main>
 
       <footer className="portfolio-footer">
-        <div><Sparkles aria-hidden="true" /><strong>Nakshatra</strong></div>
+        <div><VivIntroBrand variant="compact-symbol" decorative /></div>
         <p>One clear wedding portfolio.</p>
       </footer>
     </div>

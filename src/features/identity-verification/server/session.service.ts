@@ -165,7 +165,7 @@ export async function getIdentityVerificationLinkStatus(supabase: SupabaseClient
   return parsed.data;
 }
 
-/** Revokes Nakshatra's verification projection immediately after one valid withdrawal request. */
+/** Revokes VivIntro's verification projection immediately after one valid withdrawal request. */
 export async function withdrawIdentityVerificationConsent(supabase: SupabaseClient, tokenHash: string) {
   const { error } = await new IdentityVerificationSessionRepository(supabase).withdrawConsent(tokenHash);
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_WITHDRAW_FAILED");

@@ -33,7 +33,7 @@ export async function manageAccessGrantRequest(
   } catch {
     return {
       ok: false,
-      error: "We could not reach Nakshatra. Check your connection and try again.",
+      error: "We could not reach VivIntro. Check your connection and try again.",
       code: "NETWORK_UNAVAILABLE",
       status: 0,
     };

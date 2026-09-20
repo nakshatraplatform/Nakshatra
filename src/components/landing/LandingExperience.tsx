@@ -13,9 +13,9 @@ import {
   RefreshCw,
   ShieldCheck,
   Smartphone,
-  Sparkles,
   UserCheck,
 } from "lucide-react";
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import styles from "./LandingExperience.module.css";
 import { PORTFOLIO_VIEW_LABELS } from "@/features/portfolio/template";
 import { GuidedTour } from "./GuidedTour";
@@ -95,14 +95,14 @@ const samplePortfolios = [
 ] as const;
 
 const faqs = [
-  { question: "Is Nakshatra a matchmaking website?", answer: "No. Nakshatra does not suggest matches or search for people on your behalf. It gives you one clear portfolio to share with the families you choose." },
+  { question: "Is VivIntro a matchmaking website?", answer: "No. VivIntro does not suggest matches or search for people on your behalf. It gives you one clear portfolio to share with the families you choose." },
   { question: "Can I create a portfolio after joining the waitlist?", answer: "Not yet. The waitlist only records your interest and contact details. We will send signup instructions separately when launch access becomes available. People who receive a shared portfolio can still read its public Introduction and express interest." },
   { question: "Is the pilot paid?", answer: "No. The private beta is free for invited pilot participants. Paid plans are not available during the pilot." },
   { question: "Does someone need to sign in to open my link?", answer: "No. Anyone with your link can read your Brief or Detailed Introduction straight away. A viewer verifies their email before asking to see your Complete Portfolio." },
   { question: "Is identity verification required?", answer: "Yes. Every pilot creator must complete the Didit identity check before publishing. The verified badge confirms that the owner completed the identity check; it does not guarantee that every portfolio detail is accurate." },
   { question: "How long does a public link remain active?", answer: "A published portfolio link is active for 30 days by default. The owner can unpublish or replace the link earlier." },
   { question: "How long does approved access last?", answer: "Complete Portfolio access lasts for 15 days. You can end it earlier or renew it from your dashboard." },
-  { question: "Can someone find my portfolio by searching my name?", answer: "No. Nakshatra has no public portfolio directory, and portfolio pages tell search engines not to list them. Anyone who receives or is forwarded your link can still open its public Introduction." },
+  { question: "Can someone find my portfolio by searching my name?", answer: "No. VivIntro has no public portfolio directory, and portfolio pages tell search engines not to list them. Anyone who receives or is forwarded your link can still open its public Introduction." },
 ] as const;
 
 export function LandingExperience({ variant }: { variant: LandingVariant }) {
@@ -114,9 +114,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
       <LandingSectionRail />
 
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="Nakshatra home">
-          <Sparkles aria-hidden="true" /><span>NAKSHATRA</span>
-        </Link>
+        <VivIntroBrand href="/" variant="compact-symbol" className={styles.brand} priority />
         <nav className={styles.navigation} aria-label="Main navigation">
           <ThemeSwitch />
           <div className={styles.navigationLinks}>
@@ -138,7 +136,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
               <a href={variant === "control" ? "#control" : "#samples"} className={styles.secondaryButton}>{concept.secondary}</a>
             </div>
             <p className={styles.heroNote}><Check aria-hidden="true" /> Join for launch updates. Waitlist registration does not create product access.</p>
-            <ul className={styles.heroAssurances} aria-label="Nakshatra privacy assurances">
+            <ul className={styles.heroAssurances} aria-label="VivIntro privacy assurances">
               {heroAssurances.map(({ icon: Icon, title, body }) => (
                 <li key={title}>
                   <Icon aria-hidden="true" />
@@ -174,7 +172,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
         <section id="samples" className={styles.samplesSection}>
           <div className={styles.samplesHeading}><div className={styles.sectionHeading}><p className={styles.eyebrow}>See the format</p><h2>Every portfolio follows the same clear layout.</h2></div><p>There are no themes to choose between and no templates to compare. Every portfolio is presented in the same way, so families can read each one on its own terms.</p></div>
           <div className={styles.samplesGrid}>{samplePortfolios.map((sample) => <article key={sample.name} data-accent={sample.accent}><div className={styles.samplePortrait}>{sample.initials}</div><div><span>Sample portfolio</span><h3>{sample.name}</h3><p>{sample.detail}</p><small>Story · Journey · Family · Gallery</small></div></article>)}</div>
-          <p className={styles.sampleNote}>Sample layouts. These are not real Nakshatra users.</p>
+          <p className={styles.sampleNote}>Sample layouts. These are not real VivIntro users.</p>
         </section>
 
         <section id="beta" className={styles.betaSection}>
@@ -190,7 +188,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
           </div>
           <div className={styles.betaActions}>
             <Link href="/pilot-access" className={styles.primaryButton}>Join the waitlist <ArrowRight aria-hidden="true" /></Link>
-            <Link href="/login" className={styles.secondaryButton}>Sign in to Nakshatra</Link>
+            <Link href="/login" className={styles.secondaryButton}>Sign in to VivIntro</Link>
           </div>
         </section>
 
@@ -200,13 +198,13 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
         </section>
 
         <section className={styles.finalCta}>
-          <div><p className={styles.eyebrow}>Launching soon</p><h2>Your introduction deserves more than another file.</h2><p>Join the waitlist and we will let you know when Nakshatra opens for new portfolio creators.</p></div>
+          <div><p className={styles.eyebrow}>Launching soon</p><h2>Your introduction deserves more than another file.</h2><p>Join the waitlist and we will let you know when VivIntro opens for new portfolio creators.</p></div>
           <div className={styles.finalAction}><Link href="/pilot-access" className={styles.lightButton}>Join the waitlist <ArrowRight aria-hidden="true" /></Link><span>No product access is created yet.</span></div>
         </section>
       </main>
 
       <footer className={styles.footer}>
-        <Link href="/" className={styles.brand}><Sparkles aria-hidden="true" /><span>NAKSHATRA</span></Link><p>One clear portfolio for the introduction that matters most.</p>
+        <VivIntroBrand href="/" variant="compact-symbol" className={styles.brand} /><p>One clear portfolio for the introduction that matters most.</p>
         <div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="#questions">Questions</a><Link href="/login">Sign in</Link></div>
       </footer>
     </div>
@@ -219,11 +217,11 @@ function PortfolioPreview({ mode, note, variant }: { mode: string; note: string;
   const floatingBody = variant === "clarity" ? "Updates stay in one place" : variant === "story" ? "Opens in their browser" : "For one verified viewer";
 
   return (
-    <div className={styles.visual} aria-label="Example Nakshatra portfolio">
+    <div className={styles.visual} aria-label="Example VivIntro portfolio">
       <div className={styles.visualGlow} aria-hidden="true" />
       <div className={styles.floatingMessage}><FloatingIcon aria-hidden="true" /><span><strong>{floatingTitle}</strong>{floatingBody}</span></div>
       <article className={styles.portfolioCard}>
-        <header><span><Sparkles aria-hidden="true" /> Nakshatra</span><span><ShieldCheck aria-hidden="true" /> {mode}</span></header>
+        <header><span><VivIntroBrand variant="compact-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> {mode}</span></header>
         <div className={styles.portfolioBody}>
           <div className={styles.portrait}><span>AR</span></div>
           <div className={styles.introduction}><span className={styles.verified}><BadgeCheck aria-hidden="true" /> Identity Verified</span><p>A personal portfolio</p><h2>Ananya Rao</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, curious, close to family, and always learning.</p></div>

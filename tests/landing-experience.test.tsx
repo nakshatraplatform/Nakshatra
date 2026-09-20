@@ -31,7 +31,7 @@ describe("LandingExperience pilot messaging", () => {
     for (const link of screen.getAllByRole("link", { name: /join.*waitlist/i })) {
       expect(link).toHaveAttribute("href", "/pilot-access");
     }
-    expect(screen.getByRole("link", { name: "Sign in to Nakshatra" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Sign in to VivIntro" })).toHaveAttribute("href", "/login");
   });
 
   it("keeps section navigation available and presents the lifecycle as a guided tour", () => {

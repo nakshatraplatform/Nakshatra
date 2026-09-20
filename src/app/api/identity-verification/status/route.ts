@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 }
 
-/** Uses a management bearer credential once to withdraw consent and revoke Nakshatra verification. */
+/** Uses a management bearer credential once to withdraw consent and revoke VivIntro verification. */
 export async function DELETE(request: Request) {
   const input = await requestToken(request);
   if ("response" in input) return input.response;

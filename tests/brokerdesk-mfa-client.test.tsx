@@ -78,7 +78,7 @@ describe("BrokerDesk MFA client", () => {
     expect(screen.getByText("PRIVATE-SETUP-KEY")).toBeInTheDocument();
     expect(supabase.auth.mfa.enroll).toHaveBeenCalledWith({
       factorType: "totp",
-      friendlyName: "Nakshatra BrokerDesk",
+      friendlyName: "VivIntro BrokerDesk",
     });
     expect(completeBrokerdeskMfa).not.toHaveBeenCalled();
   });

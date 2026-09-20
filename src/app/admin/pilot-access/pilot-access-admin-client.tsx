@@ -40,7 +40,7 @@ export default function PilotAccessAdminClient() {
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-5 border-b border-[light-dark(#d8d8d2,var(--app-dark-border))] pb-7 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">Nakshatra operations</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">VivIntro operations</p>
             <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium sm:text-5xl">Launch waitlist</h1>
             <p className="mt-3 max-w-2xl text-[light-dark(#475569,var(--app-dark-muted))]">Verified people who asked to hear when signup opens. Waitlist entries never grant portfolio access.</p>
           </div>

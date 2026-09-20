@@ -30,7 +30,7 @@ describe("BrokerDesk team invitation client", () => {
     expect(screen.getByRole("link", { name: "Open BrokerDesk" })).toHaveAttribute("href", "/brokerdesk");
   });
 
-  it("asks for the matching Nakshatra account without revealing invitation state", async () => {
+  it("asks for the matching VivIntro account without revealing invitation state", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(null, { status: 401 }));
     render(<TeamInvitationClient />);
     expect(await screen.findByRole("heading", { name: "Sign in to continue" })).toBeInTheDocument();

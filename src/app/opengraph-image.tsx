@@ -1,6 +1,11 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-export const alt = "Nakshatra — One introduction. On your terms.";
+const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-wordmark-primary-og.png"), "base64");
+const logoSrc = `data:image/png;base64,${logoData}`;
+
+export const alt = "VivIntro — One introduction. On your terms.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,9 +36,8 @@ export default function OpenGraphImage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", fontFamily: "Arial, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "0.18em" }}>
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "42px", height: "42px", border: "2px solid #a86708", borderRadius: "50%", color: "#a86708", fontSize: 24, letterSpacing: 0 }}>N</span>
-              NAKSHATRA
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <img src={logoSrc} alt="" width={190} height={45} />
             </div>
             <div style={{ display: "flex", border: "1px solid #8db7b1", borderRadius: "999px", padding: "10px 18px", background: "#e5efeb", color: "#174b55", fontFamily: "Arial, sans-serif", fontSize: 18, fontWeight: 700 }}>
               INVITE-ONLY PRIVATE BETA

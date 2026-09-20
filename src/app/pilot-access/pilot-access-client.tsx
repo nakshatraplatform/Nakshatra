@@ -1,5 +1,6 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
@@ -27,7 +28,7 @@ function messageForState(state: PilotAccessState) {
     return {
       icon: CheckCircle2,
       eyebrow: "Existing creator",
-      title: "Your Nakshatra access is already active.",
+      title: "Your VivIntro access is already active.",
       body: "Continue to your dashboard to create, update, and manage your portfolio.",
     };
   }
@@ -51,7 +52,7 @@ function messageForState(state: PilotAccessState) {
         icon: LockKeyhole,
         eyebrow: "Creator access paused",
         title: "Your pilot creator access is no longer active.",
-        body: "Your saved information is retained. Contact the Nakshatra team if you believe this is unexpected.",
+        body: "Your saved information is retained. Contact the VivIntro team if you believe this is unexpected.",
       };
     default:
       return null;
@@ -136,7 +137,7 @@ export default function PilotAccessClient() {
   async function submitDetails(event: FormEvent) {
     event.preventDefault();
     if (!consent) {
-      setError("Confirm that we may contact you about the Nakshatra launch.");
+      setError("Confirm that we may contact you about the VivIntro launch.");
       return;
     }
     setBusy(true);
@@ -163,11 +164,12 @@ export default function PilotAccessClient() {
     <main id="main-content" className="pilot-access-shell min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-14">
       <div className="mx-auto max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-sm font-bold tracking-[0.16em] text-[light-dark(#244854,var(--app-dark-ink))]">NAKSHATRA</Link>
+          <VivIntroBrand href="/" variant="compact-symbol" priority />
           <div className="app-header-actions"><ThemeSwitch /><span className="rounded-full bg-[light-dark(#e9e2cf,var(--app-dark-surface-soft))] px-3 py-1.5 text-xs font-semibold text-[light-dark(#725d2b,var(--app-dark-gold))]">Launch waitlist</span></div>
         </header>
 
         <section className="rounded-xl border border-[light-dark(#d0d3ce,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-6 shadow-[0_18px_50px_rgb(29_52_58/0.08)] sm:p-10">
+          <div className="mb-7 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
           {step === "loading" ? (
             <p role="status" className="py-16 text-center text-[light-dark(#475569,var(--app-dark-muted))]">Checking your access…</p>
           ) : step === "result" && resultCopy ? (
@@ -184,8 +186,8 @@ export default function PilotAccessClient() {
           ) : (
             <>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">Launching soon</p>
-              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Join the Nakshatra waitlist.</h1>
-              <p className="mt-4 max-w-xl leading-7 text-[light-dark(#475569,var(--app-dark-muted))]">Verify your email and leave a few basic details. We will send your signup invitation when Nakshatra opens—joining now does not create portfolio access.</p>
+              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Join the VivIntro waitlist.</h1>
+              <p className="mt-4 max-w-xl leading-7 text-[light-dark(#475569,var(--app-dark-muted))]">Verify your email and leave a few basic details. We will send your signup invitation when VivIntro opens—joining now does not create portfolio access.</p>
 
               {error ? <div role="alert" className="mt-6 border-l-4 border-[light-dark(#b7483e,var(--app-dark-border))] bg-[light-dark(#f8e6e2,var(--app-dark-danger-surface))] p-4 text-sm text-[light-dark(#7d302b,var(--app-dark-danger))]">{error}</div> : null}
 
@@ -223,7 +225,7 @@ export default function PilotAccessClient() {
                   <label className="grid gap-2 text-sm font-semibold">Phone number <span className="font-normal text-[light-dark(#64748b,var(--app-dark-muted))]">Optional, international format</span>
                     <input type="tel" autoComplete="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+14155550100" value={phone} onChange={(event) => setPhone(event.target.value)} className="min-h-12 rounded-lg border border-[light-dark(#adb8ba,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 outline-none focus:border-[light-dark(#477b77,var(--app-dark-border))] focus:ring-2 focus:ring-[#477b77]/20" />
                   </label>
-                  <label className="flex items-start gap-3 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#315f57]" /><span>Nakshatra may contact me by email, and by phone if provided, about launch access. I can ask to be removed at any time.</span></label>
+                  <label className="flex items-start gap-3 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#315f57]" /><span>VivIntro may contact me by email, and by phone if provided, about launch access. I can ask to be removed at any time.</span></label>
                   <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Joining…" : "Join the waitlist"}</button>
                 </form>
               ) : null}

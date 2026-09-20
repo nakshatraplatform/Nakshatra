@@ -6,7 +6,7 @@ import {
 import { BrokerdeskOnboardingClient } from "./brokerdesk-onboarding-client";
 
 export const metadata = {
-  title: "Set up BrokerDesk · Nakshatra",
+  title: "Set up BrokerDesk · VivIntro",
   description: "Set up and privately verify your matrimonial business workspace.",
   robots: { index: false, follow: false },
 };

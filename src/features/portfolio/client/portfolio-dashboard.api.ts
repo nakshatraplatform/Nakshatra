@@ -39,7 +39,7 @@ async function requestPortfolioApi<T>(url: string, init: RequestInit): Promise<P
       ok: false,
       error: {
         code: "NETWORK_UNAVAILABLE",
-        message: "We could not reach Nakshatra. Check your connection and try again.",
+        message: "We could not reach VivIntro. Check your connection and try again.",
         status: 0,
       },
     };

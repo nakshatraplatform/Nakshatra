@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { AccessVerificationClient } from "./access-verification-client";
 import { createClient } from "@/lib/supabase/server";
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 
 const grantIdSchema = z.uuid();
 const resolutionSchema = z.discriminatedUnion("status", [
@@ -47,6 +48,7 @@ function AccessShell({ title, copy, children }: { title: string; copy: string; c
   return (
     <main id="main-content" className="grid min-h-screen place-items-center bg-[color:var(--workspace-canvas)] px-5 py-16 text-[color:var(--workspace-ink)]">
       <section className="w-full max-w-lg rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-7 text-center shadow-sm sm:p-10">
+        <div className="mb-6 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--workspace-teal)]">Controlled access</p>
         <h1 className="mt-3 font-[family-name:var(--font-portfolio-display)] text-3xl font-medium">{title}</h1>
         <p className="mx-auto mt-4 max-w-md leading-7 text-[color:var(--workspace-ink-muted)]">{copy}</p>
