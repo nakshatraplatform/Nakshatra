@@ -117,12 +117,12 @@ describe("dashboard read repositories", () => {
 
     const interests = new InterestRepository(supabase);
     const horoscopes = new HoroscopeRepository(supabase);
-    await interests.listForPortfolio("portfolio", 12);
+    await interests.listForPortfolio("portfolio");
     await horoscopes.findPortfolioForOwner("owner");
     await horoscopes.findByPortfolio("portfolio");
     await horoscopes.createSignedUrl("owner/chart.webp", 300, "horoscope.webp");
 
-    expect(rpc).toHaveBeenCalledWith("list_dashboard_interests", { p_limit: 12 });
+    expect(rpc).toHaveBeenCalledWith("list_dashboard_interests", { p_limit: 50 });
     expect(createSignedUrl).toHaveBeenCalledWith(
       "owner/chart.webp",
       300,

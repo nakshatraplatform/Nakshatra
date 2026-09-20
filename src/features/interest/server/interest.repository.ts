@@ -32,7 +32,7 @@ export class InterestRepository {
    * Lists owner-visible relationships through the database-owned projection.
    * Requester portfolio links are resolved from authenticated ownership, never metadata.
    */
-  listForPortfolio(_portfolioId: string, limit = 12) {
+  listForPortfolio(_portfolioId: string, limit = 50) {
     return this.supabase.rpc("list_dashboard_interests", { p_limit: limit });
   }
 }
