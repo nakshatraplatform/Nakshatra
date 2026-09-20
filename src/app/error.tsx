@@ -1,8 +1,6 @@
 "use client";
 
-import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
-
-
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import Link from "next/link";
 
 export default function Error({
@@ -19,7 +17,9 @@ export default function Error({
       id="main-content"
       className="flex flex-1 flex-col items-center justify-center bg-[color:var(--workspace-canvas)] px-4 py-16 text-center text-[color:var(--workspace-ink)]"
     >
-      <div className="w-full max-w-sm"><ThemeNavigation /></div>
+      <div className="mb-8 flex justify-center">
+        <VivIntroBrand variant="stacked" priority />
+      </div>
       <h1 className="text-2xl font-bold">Something went wrong</h1>
       <p className="mt-2 max-w-md text-base text-[color:var(--workspace-ink-muted)]">
         We could not complete this request. Your saved information is unchanged.
