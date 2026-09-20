@@ -200,6 +200,8 @@ describe("dashboard client", () => {
 
   it("operates published-link controls and signs out", async () => {
     renderDashboard({ isExpired: false, daysLeft: 20 });
+    expect(document.querySelector(".dashboard-stats-grid")?.children).toHaveLength(3);
+    expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());

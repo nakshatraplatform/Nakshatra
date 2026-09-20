@@ -697,7 +697,7 @@ export default function DashboardClient({
 
           {(canCreatePortfolio || portfolio) && <>
           <div className="dashboard-overview" aria-label="Portfolio overview">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="dashboard-stats-grid">
               <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                 <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
                   <Inbox className="h-4 w-4" />
@@ -736,7 +736,7 @@ export default function DashboardClient({
               <div className="dashboard-glass p-4">
                 <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
                 <div className="dashboard-share-link-row">
-                  <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                  <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
                     {shareUrl}
                   </code>
                   <button
