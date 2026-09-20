@@ -120,7 +120,7 @@ export function BrokerdeskMfaClient() {
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
-        <VivIntroBrand href="/brokerdesk" variant="compact-symbol" />
+        <VivIntroBrand href="/brokerdesk" variant="full-symbol" />
         <div className="app-header-actions"><span>BrokerDesk security</span><ThemeSwitch /></div>
       </header>
       <main className={styles.main}>

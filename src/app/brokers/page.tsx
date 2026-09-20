@@ -16,7 +16,7 @@ export default async function CustomerBrokersPage() {
   const { supabase } = await getAuthenticatedUser();
   const result = await resolveCustomerBrokerRelationships(supabase);
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/dashboard" variant="compact-symbol" /><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/dashboard" variant="full-symbol" /><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link><ThemeSwitch /></header>
     <main>
       <p className={styles.eyebrow}>Privacy controls</p>
       <h1>My brokers</h1>

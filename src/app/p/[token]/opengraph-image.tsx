@@ -9,8 +9,8 @@ export const alt = "VivIntro wedding portfolio";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const primaryLogoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-wordmark-primary-og.png"), "base64");
-const reverseLogoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-wordmark-reverse-og.png"), "base64");
+const primaryLogoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-primary-og.png"), "base64");
+const reverseLogoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-reverse-og.png"), "base64");
 const primaryLogoSrc = `data:image/png;base64,${primaryLogoData}`;
 const reverseLogoSrc = `data:image/png;base64,${reverseLogoData}`;
 
@@ -76,7 +76,7 @@ export default async function OpenGraphImage({
           }}
         >
           <div style={{ display: "flex" }}>
-            <img src={isLightColor(snapshot?.themeColor) ? primaryLogoSrc : reverseLogoSrc} alt="" width={180} height={42} />
+            <img src={isLightColor(snapshot?.themeColor) ? primaryLogoSrc : reverseLogoSrc} alt="" width={150} height={128} />
           </div>
           <div style={{ color: foreground, display: "flex", fontFamily: "serif", fontSize: 78, marginTop: 18 }}>
             {name}

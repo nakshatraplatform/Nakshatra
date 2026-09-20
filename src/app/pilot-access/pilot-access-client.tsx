@@ -164,7 +164,7 @@ export default function PilotAccessClient() {
     <main id="main-content" className="pilot-access-shell min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-14">
       <div className="mx-auto max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
-          <VivIntroBrand href="/" variant="compact-symbol" priority />
+          <VivIntroBrand href="/" variant="full-symbol" priority />
           <div className="app-header-actions"><ThemeSwitch /><span className="rounded-full bg-[light-dark(#e9e2cf,var(--app-dark-surface-soft))] px-3 py-1.5 text-xs font-semibold text-[light-dark(#725d2b,var(--app-dark-gold))]">Launch waitlist</span></div>
         </header>
 

@@ -570,7 +570,7 @@ export default function DashboardClient({
     <div className="dashboard-shell flex flex-1 flex-col">
       <header className="dashboard-header px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <VivIntroBrand href="/dashboard" variant="compact-symbol" priority />
+          <VivIntroBrand href="/dashboard" variant="full-symbol" priority />
           <div className="flex items-center gap-3">
             <ThemeSwitch />
             <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
@@ -1979,7 +1979,7 @@ const EMPTY_DATA: PortfolioData = {
   contact: {},
   style: {
     appearance: "light",
-    template_name: "VivIntro Portfolio",
+    template_name: "Nakshatra Portfolio",
     theme_color: "#f7f5ef",
   },
   preferences: {},

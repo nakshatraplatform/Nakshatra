@@ -26,7 +26,7 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   ]);
 
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/brokerdesk" variant="compact-symbol" /><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/brokerdesk" variant="full-symbol" /><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
     <main>
       <Link className={styles.back} href={`/brokerdesk/w/${workspaceRef}/customers`}><ArrowLeft /> All customers</Link>
       <div className={styles.heading}><div className={styles.avatar}>{customer.displayName.slice(0, 1).toUpperCase()}</div><div><p>Customer relationship</p><h1>{customer.displayName}</h1><span>{[customer.gender, customer.location].filter(Boolean).join(" · ") || "Shared portfolio"}</span></div><span className={styles.status}>{customer.relationshipStatus}</span></div>

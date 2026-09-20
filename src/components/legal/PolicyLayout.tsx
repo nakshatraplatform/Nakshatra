@@ -18,7 +18,7 @@ export function PolicyLayout({
     <div className="min-h-screen bg-[color:var(--workspace-canvas)] text-[color:var(--workspace-ink)]">
       <header className="border-b border-[color:var(--workspace-border)] bg-[#fffdf8]/95 px-4 py-3 sm:px-8">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <VivIntroBrand href="/" variant="compact-symbol" priority />
+          <VivIntroBrand href="/" variant="full-symbol" priority />
           <div className="app-header-actions"><ThemeSwitch />
           <Link href="/signup" className="workspace-focus inline-flex min-h-12 items-center rounded-lg bg-[color:var(--workspace-action)] px-4 text-sm font-semibold text-white">
             Get started
