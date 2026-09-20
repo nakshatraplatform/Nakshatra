@@ -12,6 +12,8 @@ declare
   grant_record public.reveal_grants%rowtype;
   portfolio_record public.portfolios%rowtype;
 begin
+  perform app_private.require_current_session();
+
   if auth.uid() is null then
     return '{"status":"signin_required"}'::jsonb;
   end if;
