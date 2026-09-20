@@ -108,6 +108,29 @@ describe("authentication start route", () => {
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
+  it("returns an actionable retry response when the email provider throttles OTP delivery", async () => {
+    signInWithOtp.mockResolvedValueOnce({
+      error: {
+        name: "AuthApiError",
+        status: 429,
+        code: "over_email_send_rate_limit",
+      },
+    });
+
+    const response = await POST(request({
+      method: "email_otp",
+      email: "reader@example.com",
+      redirect: "/p/token",
+    }));
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      code: "AUTH_EMAIL_RATE_LIMITED",
+      error: "Too many verification emails were requested. Please wait a few minutes before trying again.",
+    });
+    expect(logServerError).not.toHaveBeenCalled();
+  });
+
   it("keeps public B2C password signup closed", async () => {
     const response = await POST(request({
       method: "password_signup",

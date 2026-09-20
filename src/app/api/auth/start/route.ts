@@ -56,6 +56,32 @@ const authStartSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("password_recovery"), email }),
 ]);
 
+function authEmailProviderErrorResponse(error: unknown) {
+  if (!error || typeof error !== "object") return null;
+  const providerError = error as { code?: unknown; status?: unknown };
+  const code = typeof providerError.code === "string" ? providerError.code : "";
+  const status = typeof providerError.status === "number" ? providerError.status : 0;
+
+  if (
+    status === 429
+    || code === "over_email_send_rate_limit"
+    || code === "over_request_rate_limit"
+  ) {
+    return NextResponse.json(
+      {
+        code: "AUTH_EMAIL_RATE_LIMITED",
+        error: "Too many verification emails were requested. Please wait a few minutes before trying again.",
+      },
+      {
+        status: 429,
+        headers: { "Cache-Control": "private, no-store" },
+      }
+    );
+  }
+
+  return null;
+}
+
 /** Starts owner authentication or viewer email verification behind one guarded endpoint. */
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
@@ -178,7 +204,11 @@ export async function POST(request: Request) {
           data: { entry_context: isPilotApplicant ? "pilot_applicant" : "viewer_interest" },
         },
       });
-      if (error) throw error;
+      if (error) {
+        const providerResponse = authEmailProviderErrorResponse(error);
+        if (providerResponse) return providerResponse;
+        throw error;
+      }
       return NextResponse.json(
         { sent: true },
         { headers: { "Cache-Control": "private, no-store" } }
