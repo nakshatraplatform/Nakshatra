@@ -72,7 +72,7 @@ export function BrokerdeskOnboardingClient({
   return (
     <div className="brokerdesk-onboarding-shell">
       <header className="brokerdesk-onboarding-header">
-        <VivIntroBrand href="/" variant="compact-symbol" />
+        <VivIntroBrand href="/" variant="full-symbol" />
         <span>BrokerDesk setup</span>
         <div className="app-header-actions"><ThemeSwitch /><Link href="/dashboard" className="brokerdesk-customer-link">Customer dashboard</Link></div>
       </header>

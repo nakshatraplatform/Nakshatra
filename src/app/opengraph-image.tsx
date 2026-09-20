@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-wordmark-primary-og.png"), "base64");
+const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-primary-og.png"), "base64");
 const logoSrc = `data:image/png;base64,${logoData}`;
 
 export const alt = "VivIntro — One introduction. On your terms.";
@@ -37,7 +37,7 @@ export default function OpenGraphImage() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <img src={logoSrc} alt="" width={190} height={45} />
+              <img src={logoSrc} alt="" width={120} height={102} />
             </div>
             <div style={{ display: "flex", border: "1px solid #8db7b1", borderRadius: "999px", padding: "10px 18px", background: "#e5efeb", color: "#174b55", fontFamily: "Arial, sans-serif", fontSize: 18, fontWeight: 700 }}>
               INVITE-ONLY PRIVATE BETA

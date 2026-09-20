@@ -136,7 +136,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
             <ArrowLeft aria-hidden="true" />
             Dashboard
           </Link>
-          <div className="app-header-actions"><VivIntroBrand href="/" variant="compact-symbol" /><ThemeSwitch /></div>
+          <div className="app-header-actions"><VivIntroBrand href="/" variant="full-symbol" /><ThemeSwitch /></div>
         </div>
       </header>
 

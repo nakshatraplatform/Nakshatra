@@ -114,7 +114,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
       <LandingSectionRail />
 
       <header className={styles.header}>
-        <VivIntroBrand href="/" variant="compact-symbol" className={styles.brand} priority />
+        <VivIntroBrand href="/" variant="full-symbol" className={styles.brand} priority />
         <nav className={styles.navigation} aria-label="Main navigation">
           <ThemeSwitch />
           <div className={styles.navigationLinks}>
@@ -204,7 +204,7 @@ export function LandingExperience({ variant }: { variant: LandingVariant }) {
       </main>
 
       <footer className={styles.footer}>
-        <VivIntroBrand href="/" variant="compact-symbol" className={styles.brand} /><p>One clear portfolio for the introduction that matters most.</p>
+        <VivIntroBrand href="/" variant="full-symbol" className={styles.brand} /><p>One clear portfolio for the introduction that matters most.</p>
         <div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="#questions">Questions</a><Link href="/login">Sign in</Link></div>
       </footer>
     </div>
@@ -221,7 +221,7 @@ function PortfolioPreview({ mode, note, variant }: { mode: string; note: string;
       <div className={styles.visualGlow} aria-hidden="true" />
       <div className={styles.floatingMessage}><FloatingIcon aria-hidden="true" /><span><strong>{floatingTitle}</strong>{floatingBody}</span></div>
       <article className={styles.portfolioCard}>
-        <header><span><VivIntroBrand variant="compact-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> {mode}</span></header>
+        <header><span><VivIntroBrand variant="full-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> {mode}</span></header>
         <div className={styles.portfolioBody}>
           <div className={styles.portrait}><span>AR</span></div>
           <div className={styles.introduction}><span className={styles.verified}><BadgeCheck aria-hidden="true" /> Identity Verified</span><p>A personal portfolio</p><h2>Ananya Rao</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, curious, close to family, and always learning.</p></div>
