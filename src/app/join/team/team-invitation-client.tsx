@@ -62,7 +62,7 @@ export function TeamInvitationClient() {
   }, []);
 
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/" variant="full-symbol" /><span>BrokerDesk invitation</span><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/" variant="horizontal" /><span>BrokerDesk invitation</span><ThemeSwitch /></header>
     <main>
       <section className={styles.card} aria-live="polite">
         <VivIntroBrand variant="stacked" decorative displayWidth={138} />

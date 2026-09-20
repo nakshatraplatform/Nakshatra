@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import styles from "./VivIntroBrand.module.css";
 
-export type VivIntroBrandVariant = "full-symbol" | "stacked";
+export type VivIntroBrandVariant = "full-symbol" | "horizontal" | "stacked";
 export type VivIntroBrandTone = "primary" | "reverse" | "monochrome" | "adaptive";
 
 type BrandMetrics = {
@@ -15,6 +15,7 @@ type BrandMetrics = {
 
 const BRAND_METRICS: Record<VivIntroBrandVariant, BrandMetrics> = {
   "full-symbol": { width: 650, height: 646, defaultDisplayWidth: 32, assetName: "symbol" },
+  horizontal: { width: 680, height: 180, defaultDisplayWidth: 196, assetName: "lockup-horizontal" },
   stacked: { width: 1041, height: 887, defaultDisplayWidth: 168, assetName: "lockup-stacked" },
 };
 
@@ -30,7 +31,8 @@ export type VivIntroBrandProps = {
 
 /**
  * Renders the approved VivIntro artwork with stable dimensions and one accessible name.
- * Use linked ornate symbols in application chrome and decorative stacked marks beside an existing page heading.
+ * Use the horizontal lockup in application navigation, the ornate symbol for icon-only placements,
+ * and the stacked lockup on standalone trust-sensitive screens.
  */
 export function VivIntroBrand({
   variant = "full-symbol",

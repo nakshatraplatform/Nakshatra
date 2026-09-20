@@ -27,6 +27,17 @@ describe("VivIntroBrand", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  it("uses the approved responsive horizontal lockup in navigation", () => {
+    render(<VivIntroBrand href="/" variant="horizontal" tone="primary" />);
+
+    const link = screen.getByRole("link", { name: "VivIntro home" });
+    expect(link.querySelector("img")).toHaveAttribute(
+      "src",
+      expect.stringContaining("/brand/vivintro/vivintro-lockup-horizontal-primary.svg"),
+    );
+    expect(link.querySelector('[data-brand-variant="horizontal"]')).toBeInTheDocument();
+  });
+
   it("announces an unlinked, meaningful mark once", () => {
     render(<VivIntroBrand variant="full-symbol" tone="monochrome" />);
 

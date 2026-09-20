@@ -53,7 +53,7 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
 
   const activeCount = grouped.men.length + grouped.women.length + grouped.other.length;
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/brokerdesk" variant="full-symbol" /><span>BrokerDesk</span><nav><Link href="/brokerdesk">Home</Link><strong>Customers</strong><Link href={`/brokerdesk/w/${available.workspaceRef}/settings/team`}>Settings</Link></nav><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/brokerdesk" variant="horizontal" /><span>BrokerDesk</span><nav><Link href="/brokerdesk">Home</Link><strong>Customers</strong><Link href={`/brokerdesk/w/${available.workspaceRef}/settings/team`}>Settings</Link></nav><ThemeSwitch /></header>
     <main>
       <div className={styles.heading}><div><p>Customers</p><h1>People you represent</h1><span>Invite customers and work from the portfolio each customer owns.</span></div><button onClick={() => setShowInvite((value) => !value)}><UserPlus /> Invite customer</button></div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
