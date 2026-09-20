@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(65);
+select plan(70);
 
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a1100000-0000-4000-8000-000000000001', 'owner@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000002', 'a1100000-0000-4000-8000-000000000002', 'viewer@access.test');
@@ -151,6 +151,24 @@ select ok(pg_catalog.jsonb_array_length(public.list_portfolio_access() -> 'event
 select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'already_approved', 'repeated approval is idempotent');
 select is((select count(*)::integer from public.reveal_grants), 1, 'repeated approval never duplicates the grant');
 
+reset role;
+select ok(not has_function_privilege('anon', 'public.resolve_complete_portfolio_access(uuid)', 'EXECUTE'), 'anonymous callers cannot resolve Complete Portfolio email links');
+select ok(has_function_privilege('authenticated', 'public.resolve_complete_portfolio_access(uuid)', 'EXECUTE'), 'authenticated viewers can resolve their identity-bound access link');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
+select is(public.resolve_complete_portfolio_access((select id from public.reveal_grants limit 1)) ->> 'status', 'active', 'the approved viewer can resolve the per-grant landing link');
+
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
+select is(public.resolve_complete_portfolio_access((select id from public.reveal_grants limit 1)) ->> 'status', 'unavailable', 'the same per-grant link reveals nothing to another account');
+
+reset role;
+set local role service_role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select ok(exists(select 1 from public.claim_relationship_notification_outbox(10) where notification_type = 'full_view_approved'), 'the relationship worker can claim the approval email without consuming unrelated pilot jobs');
+
+reset role;
+set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
 select is(public.resolve_approved_portfolio('phase2_secure_token_1'), null, 'another authenticated user cannot use someone else''s grant');
 

@@ -8,9 +8,10 @@ const getApiUser = vi.hoisted(() => vi.fn());
 const enforceRateLimit = vi.hoisted(() => vi.fn());
 const startAuthentication = vi.hoisted(() => vi.fn());
 const verifyAuthenticationCode = vi.hoisted(() => vi.fn());
+const continueToAuthProvider = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
-vi.mock("@/features/auth/client/auth.api", () => ({ startAuthentication, verifyAuthenticationCode }));
+vi.mock("@/features/auth/client/auth.api", () => ({ continueToAuthProvider, startAuthentication, verifyAuthenticationCode }));
 
 import { InterestRequestModal } from "../src/components/portfolio/InterestRequestModal";
 import { POST } from "../src/app/api/interest/route";
@@ -61,6 +62,7 @@ describe("interest request flow", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
     fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
     fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
     fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
@@ -73,7 +75,7 @@ describe("interest request flow", () => {
       redirect: "/p/portfolio-token",
     }));
     fireEvent.change(await screen.findByLabelText("Six-digit code"), { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm and send interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Verify email" }));
 
     await waitFor(() => expect(verifyAuthenticationCode).toHaveBeenCalledWith({
       purpose: "viewer_interest",
@@ -84,9 +86,36 @@ describe("interest request flow", () => {
     expect(await screen.findByText(/Interest sent to Ananya's family/i)).toBeInTheDocument();
   });
 
+  it("keeps verification disabled until six digits and resets an invalid code", async () => {
+    verifyAuthenticationCode.mockResolvedValueOnce({ ok: false, body: { error: "That code is incorrect or has expired." } });
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
+    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
+
+    const input = await screen.findByLabelText("Six-digit code");
+    const verifyButton = screen.getByRole("button", { name: "Verify email" });
+    expect(verifyButton).toBeDisabled();
+    fireEvent.change(input, { target: { value: "12345" } });
+    expect(verifyButton).toBeDisabled();
+    fireEvent.change(input, { target: { value: "123456" } });
+    expect(verifyButton).toBeEnabled();
+    fireEvent.click(verifyButton);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("incorrect or has expired");
+    expect(input).toHaveValue("");
+    expect(input).toHaveFocus();
+  });
+
   it("keeps location and introductions optional in the form", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
 
     expect(screen.getByLabelText("Your full name")).toBeRequired();
     expect(screen.getByLabelText("Contacting for")).toBeRequired();
@@ -104,6 +133,31 @@ describe("interest request flow", () => {
     expect(screen.getByLabelText("Family context")).toHaveValue("");
     expect(screen.getByLabelText("Message")).toHaveValue("");
     expect(screen.queryByLabelText("Your portfolio link")).not.toBeInTheDocument();
+  });
+
+  it("offers an existing VivIntro user a Google continuation", async () => {
+    startAuthentication.mockResolvedValueOnce({ ok: true, body: { url: "https://accounts.google.test/oauth" } });
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    expect(screen.getByText("Already use VivIntro?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with my VivIntro account" }));
+
+    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
+      method: "google",
+      redirect: "/p/portfolio-token#portfolio-interest",
+    }));
+    expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
+  });
+
+  it("reuses an authenticated VivIntro profile and asks only for context", () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "+1 555 010 2200", city: "Toronto" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+
+    expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
+    expect(screen.queryByLabelText("Your full name")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Family context")).toBeInTheDocument();
+    expect(screen.getByLabelText("Message")).toBeInTheDocument();
   });
 
   it("disables interest on the signed-in owner's own portfolio", () => {
