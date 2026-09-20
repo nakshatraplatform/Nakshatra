@@ -26,7 +26,7 @@ declare
   target_candidate_id uuid;
   owner_id uuid;
   normalized_email text := pg_catalog.lower(pg_catalog.btrim(p_email));
-  normalized_phone text := pg_catalog.regexp_replace(pg_catalog.coalesce(p_phone, ''), '\D', '', 'g');
+  normalized_phone text := pg_catalog.regexp_replace(coalesce(p_phone, ''::text), '\D', '', 'g');
   verified_email text;
   verified_at timestamptz;
   requester_has_portfolio boolean := false;
@@ -115,7 +115,7 @@ begin
 
   prospect_hash := pg_catalog.encode(
     extensions.digest(
-      verified_email || '|' || pg_catalog.coalesce(pg_catalog.nullif(normalized_phone, ''), 'registered:' || requester_id::text),
+      verified_email || '|' || coalesce(nullif(normalized_phone, ''::text), 'registered:'::text || requester_id::text),
       'sha256'
     ),
     'hex'
@@ -128,18 +128,18 @@ begin
     prospect_key_hash, status, attribution_status, metadata
   ) values (
     target_portfolio_id, target_candidate_id, requester_id, pg_catalog.btrim(p_name),
-    pg_catalog.nullif(pg_catalog.btrim(p_phone), ''), verified_email, verified_at, 'email',
-    pg_catalog.nullif(pg_catalog.btrim(p_family_context), ''),
-    pg_catalog.nullif(pg_catalog.btrim(p_message), ''),
-    pg_catalog.nullif(pg_catalog.btrim(p_message), ''), array['full']::text[],
+    nullif(pg_catalog.btrim(p_phone), ''::text), verified_email, verified_at, 'email',
+    nullif(pg_catalog.btrim(p_family_context), ''::text),
+    nullif(pg_catalog.btrim(p_message), ''::text),
+    nullif(pg_catalog.btrim(p_message), ''::text), array['full']::text[],
     prospect_hash, 'new', 'unattributed',
     pg_catalog.jsonb_strip_nulls(pg_catalog.jsonb_build_object(
       'profile_for', p_profile_for,
-      'country', pg_catalog.nullif(pg_catalog.btrim(p_country), ''),
-      'state', pg_catalog.nullif(pg_catalog.btrim(p_state), ''),
-      'city', pg_catalog.nullif(pg_catalog.btrim(p_city), ''),
-      'location', pg_catalog.nullif(pg_catalog.btrim(p_location), ''),
-      'portfolio_url', pg_catalog.nullif(pg_catalog.btrim(p_portfolio_url), '')
+      'country', nullif(pg_catalog.btrim(p_country), ''::text),
+      'state', nullif(pg_catalog.btrim(p_state), ''::text),
+      'city', nullif(pg_catalog.btrim(p_city), ''::text),
+      'location', nullif(pg_catalog.btrim(p_location), ''::text),
+      'portfolio_url', nullif(pg_catalog.btrim(p_portfolio_url), ''::text)
     ))
   ) returning id into request_id;
 
