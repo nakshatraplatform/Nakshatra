@@ -83,6 +83,9 @@ vi.mock("@/components/templates", () => ({
 vi.mock("@/components/auth/AuthForm", () => ({ AuthForm: ({ mode }: { mode: string }) => <div>auth:{mode}</div> }));
 vi.mock("@/app/dashboard/dashboard-client", () => ({ default: (props: { userEmail: string; shareUrl: string | null; viewCount: number }) => <div data-testid="dashboard-props">{JSON.stringify(props)}</div> }));
 vi.mock("@/app/account/account-client", () => ({ default: (props: { userEmail: string; initialDeletion: unknown }) => <div data-testid="account-props">{JSON.stringify(props)}</div> }));
+vi.mock("@/app/access/[grantId]/access-verification-client", () => ({
+  AccessVerificationClient: ({ grantId }: { grantId: string }) => <div data-testid="access-verification">{grantId}</div>,
+}));
 
 import DashboardPage from "../src/app/dashboard/page";
 import EditPage from "../src/app/edit/page";
@@ -99,6 +102,7 @@ import EditLoading from "../src/app/edit/loading";
 import PreviewLoading from "../src/app/preview/loading";
 import AppError from "../src/app/error";
 import AccountPage from "../src/app/account/page";
+import CompletePortfolioAccessPage from "../src/app/access/[grantId]/page";
 
 const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
@@ -286,6 +290,42 @@ describe("public portfolio pages", () => {
     mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
     await OpenGraphImage({ params: Promise.resolve({ token: "token" }) });
     expect(mocks.signedUrl).toHaveBeenCalledWith("hero.webp", 600);
+  });
+});
+
+describe("complete portfolio access landing", () => {
+  const grantId = "11111111-1111-4111-8111-111111111111";
+
+  it("rejects malformed links without querying the database", async () => {
+    render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId: "invalid" }) }));
+    expect(screen.getByRole("heading", { name: /access link is unavailable/i })).toBeInTheDocument();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("resolve_complete_portfolio_access", expect.anything());
+  });
+
+  it("asks signed-out viewers to verify the recipient identity", async () => {
+    render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
+    expect(screen.getByRole("heading", { name: /verify before viewing/i })).toBeInTheDocument();
+    expect(screen.getByTestId("access-verification")).toHaveTextContent(grantId);
+  });
+
+  it("redirects the intended viewer to the canonical portfolio URL", async () => {
+    mocks.authUser = { id: "viewer-1", email: "viewer@example.com" };
+    mocks.outcomes.resolve_complete_portfolio_access = {
+      data: { status: "active", shareToken: "shared token", expiresAt: "2026-10-05T12:00:00.000Z" },
+    };
+    await expect(CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }))
+      .rejects.toThrow("REDIRECT:/p/shared%20token");
+  });
+
+  it("renders safe expired and unavailable states", async () => {
+    mocks.authUser = { id: "viewer-1", email: "viewer@example.com" };
+    mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "expired" } };
+    const { rerender } = render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
+    expect(screen.getByRole("heading", { name: /access has expired/i })).toBeInTheDocument();
+
+    mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "revoked" } };
+    rerender(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
+    expect(screen.getByRole("heading", { name: /access link is unavailable/i })).toBeInTheDocument();
   });
 });
 
