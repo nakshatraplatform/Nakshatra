@@ -136,6 +136,7 @@ test("owner appearance and portaled interest forms ignore the app theme", async 
     await expect(page.getByRole("button", { name: /Switch to .* theme/ })).toHaveCount(0);
     await page.getByRole("button", { name: "Show interest" }).click();
     await expect(page.getByRole("dialog")).toHaveCSS("color-scheme", appearance);
+    await page.getByRole("button", { name: "Continue as a new visitor" }).click();
     await expect(page.getByLabel("Your full name")).toHaveCSS("color-scheme", appearance);
     await page.getByRole("button", { name: "Close interest form" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", appTheme);
