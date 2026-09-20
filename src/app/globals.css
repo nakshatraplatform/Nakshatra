@@ -677,7 +677,25 @@
 .interest-account-choice-copy { margin-bottom: 0.35rem; border: 1px solid light-dark(#d9e1de, var(--app-dark-border)); border-radius: 12px; padding: 1rem; background: light-dark(#f4f8f5, var(--app-dark-surface-soft)); }
 .interest-account-choice-copy strong { color: light-dark(#243940, var(--app-dark-ink)); font-size: 1rem; }
 .interest-account-choice-copy p { margin-top: 0.35rem; color: light-dark(#667478, var(--app-dark-muted)); font-size: 0.85rem; line-height: 1.55; }
-.interest-account-choice > .portfolio-button { width: 100%; min-height: 48px; }
+.interest-modal .portfolio-button-primary {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid light-dark(#21465b, var(--app-dark-border));
+  border-radius: 9px;
+  padding: 0.7rem 1.15rem;
+  background: #21465b;
+  color: #fffdf8;
+  font-size: 0.93rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+.interest-modal .portfolio-button-primary:hover,
+.interest-modal .portfolio-button-primary:focus-visible { background: #18394b; box-shadow: 0 8px 22px rgb(18 53 69 / 0.18); }
+.interest-modal .portfolio-button-primary:disabled { cursor: wait; opacity: 0.68; }
+.interest-account-choice > .portfolio-button { width: 100%; }
 .interest-account-choice > .interest-secondary-action { justify-self: center; }
 .interest-existing-profile { display: grid; gap: 0.3rem; border: 1px solid light-dark(#b9d3ca, var(--app-dark-border)); border-radius: 11px; padding: 0.9rem 1rem; background: light-dark(#eaf3ef, var(--app-dark-surface-soft)); color: light-dark(#315f57, var(--app-dark-accent)); }
 .interest-existing-profile > span { display: flex; align-items: center; gap: 0.45rem; }

@@ -16,7 +16,7 @@ vi.mock("@/features/auth/client/auth.api", () => ({ continueToAuthProvider, star
 import { InterestRequestModal } from "../src/components/portfolio/InterestRequestModal";
 import { POST } from "../src/app/api/interest/route";
 import {
-  interestRequestSchema,
+  interestSubmissionSchema,
   interestRequestValidationMessage,
 } from "../src/features/interest/server/interest.contract";
 
@@ -141,7 +141,9 @@ describe("interest request flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByText("Already use VivIntro?")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Continue with my VivIntro account" }));
+    const googleButton = screen.getByRole("button", { name: "Continue with Google" });
+    expect(googleButton).toHaveClass("portfolio-button-primary");
+    fireEvent.click(googleButton);
 
     await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
       method: "google",
@@ -151,13 +153,62 @@ describe("interest request flow", () => {
   });
 
   it("reuses an authenticated VivIntro profile and asks only for context", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "+1 555 010 2200", city: "Toronto" }} />);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", city: "Toronto" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
 
+    expect(screen.getByRole("heading", { name: "Add a note for Ananya's family" })).toBeInTheDocument();
     expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
     expect(screen.queryByLabelText("Your full name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Family context")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
+  });
+
+  it("derives an existing viewer identity from the authenticated account", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        draft_data: {
+          personal: { name: "Rohan Mehta", profile_for: "self", city: "Toronto" },
+          contact: { phone: "" },
+        },
+        published_data: null,
+      },
+      error: null,
+    });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const getUser = vi.fn().mockResolvedValue({
+      data: { user: { email: "ROHAN@EXAMPLE.COM", email_confirmed_at: "2026-09-20T12:00:00Z" } },
+    });
+    getApiUser.mockResolvedValue({
+      status: "authenticated",
+      user: { id: "viewer-1" },
+      supabase: { auth: { getUser }, from: vi.fn(() => ({ select })), rpc },
+    });
+
+    const response = await POST(new Request("http://local/api/interest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "http://local" },
+      body: JSON.stringify({
+        portfolioToken: "portfolio-token",
+        useExistingProfile: true,
+        familyContext: "Our families have friends in common.",
+        message: "We would be glad to connect.",
+      }),
+    }));
+
+    expect(response.status).toBe(201);
+    expect(rpc).toHaveBeenCalledWith("submit_public_interest", expect.objectContaining({
+      p_share_token: "portfolio-token",
+      p_name: "Rohan Mehta",
+      p_profile_for: "self",
+      p_phone: "",
+      p_email: "rohan@example.com",
+      p_city: "Toronto",
+      p_family_context: "Our families have friends in common.",
+      p_message: "We would be glad to connect.",
+    }));
   });
 
   it("disables interest on the signed-in owner's own portfolio", () => {
@@ -384,7 +435,7 @@ describe("interest request flow", () => {
     [{ email: "not-an-email" }, "email address"],
     [{ message: "x".repeat(601) }, "too long"],
   ])("explains the first invalid field in the interest form", (override, expectedMessage) => {
-    const parsed = interestRequestSchema.safeParse({
+    const parsed = interestSubmissionSchema.safeParse({
       portfolioToken: "portfolio-token",
       name: "Rohan Mehta",
       profileFor: "self",

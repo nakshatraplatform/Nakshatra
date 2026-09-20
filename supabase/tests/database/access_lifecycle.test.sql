@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(70);
+select plan(72);
 
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a1100000-0000-4000-8000-000000000001', 'owner@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000002', 'a1100000-0000-4000-8000-000000000002', 'viewer@access.test');
@@ -19,6 +19,14 @@ values (
   'a1000000-0000-4000-8000-000000000001',
   'Aditi Rao',
   'a1000000-0000-4000-8000-000000000001'
+);
+
+insert into public.candidates (id, primary_owner_user_id, display_name, created_by)
+values (
+  'a2000000-0000-4000-8000-000000000002',
+  'a1000000-0000-4000-8000-000000000002',
+  'Rohan Mehta',
+  'a1000000-0000-4000-8000-000000000002'
 );
 
 update app_private.identity_verification_subjects
@@ -37,6 +45,23 @@ insert into public.portfolios (
   '{"personal":{"name":"Original Draft"}}'::jsonb,
   false,
   now() + interval '90 days',
+  3,
+  '#17151c',
+  'kanya'
+);
+
+insert into public.portfolios (
+  id, user_id, candidate_id, share_token, draft_data, published_data,
+  is_published, expires_at, template_id, theme_color, sun_sign
+) values (
+  'a3000000-0000-4000-8000-000000000002',
+  'a1000000-0000-4000-8000-000000000002',
+  'a2000000-0000-4000-8000-000000000002',
+  'viewer_private_token_1',
+  '{"personal":{"name":"Rohan Mehta","profile_for":"self"}}'::jsonb,
+  null,
+  false,
+  null,
   3,
   '#17151c',
   'kanya'
@@ -121,7 +146,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
 select ok(
   public.submit_public_interest(
-    'phase2_secure_token_1', 'Rohan Mehta', 'self', '+1 555 010 2200',
+    'phase2_secure_token_1', 'Rohan Mehta', 'self', '',
     'viewer@access.test', 'Toronto, Canada',
     'A family introduction with sufficient detail.',
     'We would be glad to introduce our families.', null
@@ -129,6 +154,8 @@ select ok(
   'an authenticated viewer can submit a request'
 );
 select is((select requester_user_id from public.interest_requests limit 1), 'a1000000-0000-4000-8000-000000000002'::uuid, 'the request is bound to the authenticated identity');
+select is((select viewer_phone from public.interest_requests limit 1), null, 'a registered viewer can reuse a portfolio without supplying a phone number');
+select is((select metadata ->> 'profile_source' from public.access_audit_events where event_type = 'request_submitted' limit 1), 'vivintro_portfolio', 'the request audit records that identity came from a VivIntro portfolio');
 select is((select status::text from public.interest_requests limit 1), 'new', 'new requests start in the expected state');
 select ok(
   public.submit_public_interest(

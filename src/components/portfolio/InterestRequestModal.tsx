@@ -4,17 +4,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, CheckCircle2, ChevronDown, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
 import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
+import type { ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
 
 type ModalStep = "choice" | "details" | "verify" | "success";
-export type ExistingViewerProfile = {
-  name: string;
-  profileFor: string;
-  phone: string;
-  country?: string;
-  state?: string;
-  city?: string;
-};
 type InterestPayload = {
   portfolioToken: string;
   name: FormDataEntryValue | null;
@@ -26,6 +19,7 @@ type InterestPayload = {
   city: FormDataEntryValue | null;
   familyContext: FormDataEntryValue | null;
   message: FormDataEntryValue | null;
+  useExistingProfile?: boolean;
 };
 
 export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
@@ -128,6 +122,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       city: formData.get("city"),
       familyContext: formData.get("familyContext"),
       message: formData.get("message"),
+      useExistingProfile: Boolean(sessionEmail && existingViewerProfile),
     };
     setRequestPayload(payload);
     setEmail(payload.email);
@@ -242,8 +237,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Use your VivIntro profile, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The portfolio owner can now review your request." : "Start with your contact details. You can add more context if useful."}</p>
+                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Add a note for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "choice" ? "Use your VivIntro profile, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The portfolio owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro profile will be attached. Add only the context you want this family to see." : "Start with your contact details. You can add more context if useful."}</p>
               </div>
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
@@ -252,7 +247,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
               <div className="interest-account-choice">
                 <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with Google to reuse the profile details connected to your account.</p></div>
                 {error && <p className="interest-form-error" role="alert">{error}</p>}
-                <button type="button" className="portfolio-button portfolio-button-primary" disabled={pending} onClick={() => void continueWithVivIntro()}>{pending ? "Connecting…" : "Continue with my VivIntro account"}</button>
+                <button type="button" className="portfolio-button portfolio-button-primary" disabled={pending} onClick={() => void continueWithVivIntro()}>{pending ? "Connecting…" : "Continue with Google"}</button>
                 <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setError(""); setStep("details"); }}>Continue as a new visitor</button>
               </div>
             )}
