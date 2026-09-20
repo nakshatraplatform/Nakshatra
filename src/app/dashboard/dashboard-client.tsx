@@ -692,6 +692,104 @@ export default function DashboardClient({
           )}
 
           {(canCreatePortfolio || portfolio) && <>
+          <div className="dashboard-overview" aria-label="Portfolio overview">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Inbox className="h-4 w-4" />
+                  <span className="text-sm font-medium">Interests received</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
+                <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
+              </div>
+              <div
+                className="dashboard-glass dashboard-stat-card p-4"
+                data-link-state={linkStatisticState}
+              >
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Public link</span>
+                </div>
+                <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
+                  {isExpired
+                    ? "Expired"
+                    : portfolio?.is_published && daysLeft !== null
+                    ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
+                    : "Not published"}
+                </p>
+              </div>
+              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
+                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">Portfolio views</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
+                <span className="dashboard-stat-caption">All-time opens</span>
+              </div>
+            </div>
+
+            {portfolio?.is_published && shareUrl ? (
+              <div className="dashboard-glass p-4">
+                <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
+                <div className="dashboard-share-link-row">
+                  <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                    {shareUrl}
+                  </code>
+                  <button
+                    onClick={copyLink}
+                    className="dashboard-secondary-action"
+                  >
+                    {copied ? "Link copied" : "Copy link"}
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {canCreatePortfolio && (
+                    <button
+                      onClick={rotateLink}
+                      disabled={rotatingLink}
+                      className="dashboard-secondary-action"
+                    >
+                      <RotateCcw className={`h-4 w-4 ${rotatingLink ? "animate-spin" : ""}`} />
+                      Rotate link
+                    </button>
+                  )}
+                  <button
+                    onClick={unpublishPortfolio}
+                    disabled={unpublishing}
+                    className="dashboard-danger-action"
+                  >
+                    <LockKeyhole className="h-4 w-4" />
+                    {unpublishing ? "Unpublishing..." : "Unpublish"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="dashboard-glass p-4">
+                <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
+                <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+                  Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
+                </p>
+              </div>
+            )}
+
+            {portfolio && <div className="dashboard-overview-actions flex flex-wrap gap-3">
+              <Link
+                href="/preview"
+                className="dashboard-secondary-action"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview public Introduction
+              </Link>
+              <Link
+                href="/approved-preview"
+                className="dashboard-secondary-action"
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Preview Complete Portfolio
+              </Link>
+            </div>}
+          </div>
+
           {canCreatePortfolio && (
             <CreatorReadinessTracker
               completion={completion}
@@ -736,101 +834,6 @@ export default function DashboardClient({
             </article>)}</div>
           </section>}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Inbox className="h-4 w-4" />
-                    <span className="text-sm font-medium">Interests received</span>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
-                  <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
-                </div>
-                <div
-                  className="dashboard-glass dashboard-stat-card p-4"
-                  data-link-state={linkStatisticState}
-                >
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">Public link</span>
-                  </div>
-                  <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-                    {isExpired
-                      ? "Expired"
-                      : portfolio?.is_published && daysLeft !== null
-                      ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
-                      : "Not published"}
-                  </p>
-                </div>
-                <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
-                  <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm font-medium">Portfolio views</span>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
-                  <span className="dashboard-stat-caption">All-time opens</span>
-                </div>
-              </div>
-
-          {portfolio?.is_published && shareUrl ? (
-                <div className="dashboard-glass p-4">
-                  <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
-                  <div className="dashboard-share-link-row">
-                    <code className="flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
-                      {shareUrl}
-                    </code>
-                    <button
-                      onClick={copyLink}
-                      className="dashboard-secondary-action"
-                    >
-                      {copied ? "Link copied" : "Copy link"}
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {canCreatePortfolio && (
-                      <button
-                        onClick={rotateLink}
-                        disabled={rotatingLink}
-                        className="dashboard-secondary-action"
-                      >
-                        <RotateCcw className={`h-4 w-4 ${rotatingLink ? "animate-spin" : ""}`} />
-                        Rotate link
-                      </button>
-                    )}
-                    <button
-                      onClick={unpublishPortfolio}
-                      disabled={unpublishing}
-                      className="dashboard-danger-action"
-                    >
-                      <LockKeyhole className="h-4 w-4" />
-                      {unpublishing ? "Unpublishing..." : "Unpublish"}
-                    </button>
-                  </div>
-                </div>
-          ) : (
-            <div className="dashboard-glass p-4">
-              <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
-              <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-                Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
-              </p>
-            </div>
-          )}
-
-          {portfolio && <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/preview"
-                  className="dashboard-secondary-action"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview public Introduction
-                </Link>
-                <Link
-                  href="/approved-preview"
-                  className="dashboard-secondary-action"
-                >
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Preview Complete Portfolio
-                </Link>
-          </div>}
           </>}
           </div>
           {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6"><IdentityVerificationDashboard candidateId={portfolio.candidate_id} /></div> : null}
