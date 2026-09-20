@@ -5,8 +5,8 @@ import { getApiUser } from "@/lib/auth";
 import { isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 export const metadata = {
-  title: "Pilot access · Nakshatra",
-  description: "Create a Nakshatra portfolio with your private-beta invitation.",
+  title: "Pilot access · VivIntro",
+  description: "Create a VivIntro portfolio with your private-beta invitation.",
   robots: { index: false, follow: false },
 };
 

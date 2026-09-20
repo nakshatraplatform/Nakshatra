@@ -1,3 +1,4 @@
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import Link from "next/link";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { resolveBrokerdeskDashboard } from "@/features/broker-introductions/server/broker-introduction.service";
@@ -5,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { BrokerdeskDashboardClient } from "./brokerdesk-dashboard-client";
 import styles from "./brokerdesk-dashboard.module.css";
 
-export const metadata = { title: "Workspace · Nakshatra BrokerDesk", robots: { index: false, follow: false } };
+export const metadata = { title: "Workspace · VivIntro BrokerDesk", robots: { index: false, follow: false } };
 
 export default async function BrokerdeskDashboardPage({ params }: {
   params: Promise<{ workspaceRef: string }>;
@@ -23,7 +24,7 @@ export default async function BrokerdeskDashboardPage({ params }: {
 
   return <div className={styles.shell}>
     <header>
-      <Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link>
+      <VivIntroBrand href="/brokerdesk" variant="compact-symbol" />
       <span>BrokerDesk</span>
       <nav><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><Link href={`/brokerdesk/w/${workspaceRef}/settings/team`}>Team</Link></nav>
       <ThemeSwitch />

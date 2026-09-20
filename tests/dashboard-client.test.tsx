@@ -206,7 +206,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /share portfolio/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
-    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's Nakshatra wedding portfolio");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro wedding portfolio");
     expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the selected public Introduction");
     expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is shared only after the profile owner approves");
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));

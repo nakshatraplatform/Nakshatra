@@ -17,7 +17,7 @@ export async function identityVerificationRequest<T>(url: string, init: RequestI
     }
     return { ok: true, data: body as T };
   } catch {
-    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "Nakshatra is temporarily unreachable.", status: 0 };
+    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "VivIntro is temporarily unreachable.", status: 0 };
   }
 }
 

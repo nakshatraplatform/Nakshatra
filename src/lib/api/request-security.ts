@@ -39,7 +39,7 @@ export function requireSameOrigin(request: Request) {
 
   if (!suppliedOrigin || !expectedOrigins.has(suppliedOrigin) || (fetchSite && fetchSite !== "same-origin")) {
     throw new RequestSecurityError(
-      "This request must come from the Nakshatra application.",
+      "This request must come from the VivIntro application.",
       "CROSS_SITE_REQUEST_BLOCKED",
       403
     );

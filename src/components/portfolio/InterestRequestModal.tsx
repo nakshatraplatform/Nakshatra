@@ -1,5 +1,6 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, CheckCircle2, ChevronDown, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
@@ -234,6 +235,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       {open && createPortal(
         <div className="interest-modal-backdrop" style={{ colorScheme: appearance }} onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
           <div ref={dialogRef} className="interest-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <div className="interest-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={128} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>

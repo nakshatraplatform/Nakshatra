@@ -1,5 +1,6 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
@@ -235,7 +236,7 @@ export default function DashboardClient({
       || portfolio?.draft_data?.personal?.name
       || "this profile";
     const text = encodeURIComponent(
-      `Sharing ${profileName}'s Nakshatra wedding portfolio.\n\n`
+      `Sharing ${profileName}'s VivIntro wedding portfolio.\n\n`
       + `View the introduction: ${shareUrl}\n\n`
       + "This link opens the selected public Introduction. The Complete Portfolio is shared only after the profile owner approves an introduction."
     );
@@ -569,7 +570,7 @@ export default function DashboardClient({
     <div className="dashboard-shell flex flex-1 flex-col">
       <header className="dashboard-header px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-bold tracking-[0.12em]">NAKSHATRA</h1>
+          <VivIntroBrand href="/dashboard" variant="compact-symbol" priority />
           <div className="flex items-center gap-3">
             <ThemeSwitch />
             <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
@@ -615,7 +616,7 @@ export default function DashboardClient({
               </div>
               {pilotAccessState?.application?.status === "pending" ? (
                 <div className="rounded-xl border border-[light-dark(#c9bc91,var(--app-dark-border))] bg-[light-dark(#f4efdf,var(--app-dark-surface-soft))] px-4 py-3 text-sm text-[light-dark(#725d2b,var(--app-dark-gold))]">
-                  You are on the Nakshatra launch waitlist. This does not provide portfolio creation access.
+                  You are on the VivIntro launch waitlist. This does not provide portfolio creation access.
                 </div>
               ) : pilotAccessState?.application?.status === "declined" ? (
                 <div className="rounded-xl border border-[light-dark(#d6aaaa,var(--app-dark-border))] bg-[light-dark(#fff3f0,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#873a3a,var(--app-dark-danger))]">
@@ -1978,7 +1979,7 @@ const EMPTY_DATA: PortfolioData = {
   contact: {},
   style: {
     appearance: "light",
-    template_name: "Nakshatra Portfolio",
+    template_name: "VivIntro Portfolio",
     theme_color: "#f7f5ef",
   },
   preferences: {},

@@ -1,3 +1,4 @@
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import { Building2, CalendarClock, LockKeyhole } from "lucide-react";
@@ -5,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { resolveCustomerBrokerRelationships } from "@/features/broker-relationships/server/customer-invitation.service";
 import styles from "./brokers.module.css";
 
-export const metadata = { title: "My brokers · Nakshatra", robots: { index: false, follow: false } };
+export const metadata = { title: "My brokers · VivIntro", robots: { index: false, follow: false } };
 
 function dateLabel(value: string | null) {
   return value ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value)) : "No end date";
@@ -15,7 +16,7 @@ export default async function CustomerBrokersPage() {
   const { supabase } = await getAuthenticatedUser();
   const result = await resolveCustomerBrokerRelationships(supabase);
   return <div className={styles.shell}>
-    <header><Link href="/dashboard" className={styles.wordmark}>NAKSHATRA</Link><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/dashboard" variant="compact-symbol" /><span>Your private broker relationships</span><Link href="/dashboard">Dashboard</Link><ThemeSwitch /></header>
     <main>
       <p className={styles.eyebrow}>Privacy controls</p>
       <h1>My brokers</h1>

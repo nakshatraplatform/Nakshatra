@@ -42,8 +42,8 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   title: {
-    default: "Nakshatra — Digital Wedding Portfolio",
-    template: "%s | Nakshatra",
+    default: "VivIntro — Digital Wedding Portfolio",
+    template: "%s | VivIntro",
   },
   description:
     "Create one clear wedding portfolio for your profile, photos, family details, and horoscope.",

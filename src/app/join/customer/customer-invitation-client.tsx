@@ -1,5 +1,6 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
@@ -68,20 +69,20 @@ export function CustomerInvitationClient() {
   }
 
   return <div className={styles.shell}>
-    <header><Link href="/" className={styles.wordmark}>NAKSHATRA</Link><span>Private broker invitation</span><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/" variant="compact-symbol" /><span>Private broker invitation</span><ThemeSwitch /></header>
     <main>
       <section className={styles.card} aria-live="polite">
+        <VivIntroBrand variant="stacked" decorative displayWidth={138} />
         <div className={styles.icon}>{stage === "active" ? <ShieldCheck /> : <Building2 />}</div>
-        {stage === "exchanging" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><p>Please wait while Nakshatra safely prepares this invitation.</p></>}
+        {stage === "exchanging" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><p>Please wait while VivIntro safely prepares this invitation.</p></>}
         {stage === "review" && <><p className={styles.eyebrow}>You remain the owner</p><h1>Connect your portfolio to this broker</h1><p>Your broker cannot create, edit, publish or unpublish your portfolio. You keep control of your VivIntro account and can end this relationship later.</p><div className={styles.consentSummary}><strong><Check /> What you authorize</strong><ul><li>Review your published Complete Portfolio.</li><li>Share that published portfolio in time-limited broker-mediated introductions.</li><li>Work only within this broker&apos;s private customer relationship for up to one year.</li></ul><p>This standing mandate does not require the broker to ask you for approval before each introduction.</p></div><label className={styles.consent}><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} /><span>I understand and authorize this broker relationship.</span></label><button className={styles.button} type="button" onClick={claim} disabled={!consented}>Accept and continue</button></>}
         {stage === "claiming" && <><p className={styles.eyebrow}>Recording your choice</p><h1>Joining securely…</h1><p>Please keep this page open.</p></>}
-        {stage === "sign_in" && <><p className={styles.eyebrow}>Your account protects this invitation</p><h1>Sign in to continue</h1><p>Use the Nakshatra account with the verified email address that received this invitation.</p><Link className={styles.button} href="/login?next=/join/customer">Sign in securely</Link></>}
-        {stage === "portfolio_required" && claimed && <><p className={styles.eyebrow}>Broker joined</p><h1>Complete your one Nakshatra portfolio</h1><p>Your relationship with <strong>{claimed.workspaceName}</strong> is recorded. Complete your customer-owned portfolio and Nakshatra will activate it for this broker automatically.</p><Link className={styles.button} href="/dashboard">Complete my portfolio</Link></>}
+        {stage === "sign_in" && <><p className={styles.eyebrow}>Your account protects this invitation</p><h1>Sign in to continue</h1><p>Use the VivIntro account with the verified email address that received this invitation.</p><Link className={styles.button} href="/login?next=/join/customer">Sign in securely</Link></>}
+        {stage === "portfolio_required" && claimed && <><p className={styles.eyebrow}>Broker joined</p><h1>Complete your one VivIntro portfolio</h1><p>Your relationship with <strong>{claimed.workspaceName}</strong> is recorded. Complete your customer-owned portfolio and VivIntro will activate it for this broker automatically.</p><Link className={styles.button} href="/dashboard">Complete my portfolio</Link></>}
         {stage === "active" && claimed && <><p className={styles.eyebrow}>Broker joined</p><h1>You are connected to {claimed.workspaceName}</h1><p>This agency can now work from the shared layer of your existing portfolio. Your other broker relationships remain private from them.</p><Link className={styles.button} href="/brokers">View my brokers</Link></>}
-        {stage === "unavailable" && <><p className={styles.eyebrow}>Invitation unavailable</p><h1>Ask your broker for a new link</h1><p>This invitation may have expired, already been used, or belong to a different verified account. Nakshatra does not reveal which condition applies.</p></>}
+        {stage === "unavailable" && <><p className={styles.eyebrow}>Invitation unavailable</p><h1>Ask your broker for a new link</h1><p>This invitation may have expired, already been used, or belong to a different verified account. VivIntro does not reveal which condition applies.</p></>}
         <small><LockKeyhole /> Your other broker relationships are never revealed or connected to this broker.</small>
       </section>
     </main>
   </div>;
 }
-

@@ -15,7 +15,7 @@ async function accountRequest<T>(url: string, init: RequestInit): Promise<Accoun
     }
     return { ok: true, data: body as T };
   } catch {
-    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "Nakshatra is temporarily unreachable.", status: 0 };
+    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "VivIntro is temporarily unreachable.", status: 0 };
   }
 }
 
@@ -34,7 +34,7 @@ export async function downloadAccountExportRequest(): Promise<AccountApiResult<B
     }
     return { ok: true, data: await response.blob() };
   } catch {
-    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "Nakshatra is temporarily unreachable.", status: 0 };
+    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "VivIntro is temporarily unreachable.", status: 0 };
   }
 }
 

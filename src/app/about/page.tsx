@@ -6,18 +6,18 @@ export const metadata: Metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <PolicyLayout
-      eyebrow="About Nakshatra"
+      eyebrow="About VivIntro"
       title="A calmer, more respectful way to create and share a marriage portfolio."
-      summary="Nakshatra turns familiar wedding biodata into one clear, mobile-friendly portfolio that stays current without repeatedly sending new documents."
+      summary="VivIntro turns familiar wedding biodata into one clear, mobile-friendly portfolio that stays current without repeatedly sending new documents."
     >
       <PolicySection title="The product idea">
         <p>Start with essential details, add only what feels useful, choose a Light or Dark presentation, and decide between Balanced or Private sharing. A single active link can be updated when your story changes.</p>
       </PolicySection>
       <PolicySection title="The design promise">
-        <p>Nakshatra uses readable typography, generous spacing, plain language, and explicit privacy cues. Rashi and constellation details support the identity without overwhelming the person at its center.</p>
+        <p>VivIntro uses readable typography, generous spacing, plain language, and explicit privacy cues. Rashi and constellation details support the identity without overwhelming the person at its center.</p>
       </PolicySection>
       <PolicySection title="Contact">
-        <p>Questions or feedback are welcome at <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@nakshatra.app">hello@nakshatra.app</a>.</p>
+        <p>Questions or feedback are welcome at <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>
       </PolicySection>
     </PolicyLayout>
   );

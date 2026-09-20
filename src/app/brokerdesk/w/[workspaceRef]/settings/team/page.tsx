@@ -3,7 +3,7 @@ import { resolveBrokerDeskTeam } from "@/features/organization-access/server/org
 import { TeamSettingsClient } from "./team-settings-client";
 import { brokerdeskReauthPurposeSchema } from "@/features/organization-access/server/brokerdesk-reauth.contract";
 
-export const metadata = { title: "Team settings · Nakshatra BrokerDesk", robots: { index: false, follow: false } };
+export const metadata = { title: "Team settings · VivIntro BrokerDesk", robots: { index: false, follow: false } };
 
 export default async function TeamSettingsPage({
   params,

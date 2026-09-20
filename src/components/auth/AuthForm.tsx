@@ -1,12 +1,13 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import {
   continueToAuthProvider,
   startAuthentication,
@@ -30,7 +31,7 @@ const COPY = {
     title: "Sign in to your portfolio",
     body: "Use your email and password, or continue with Google.",
     primaryAction: "Sign in",
-    altPrompt: "New to Nakshatra?",
+    altPrompt: "New to VivIntro?",
     altCta: "Join the waitlist",
     altHref: "/pilot-access",
   },
@@ -62,16 +63,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
     ? mode === "login"
       ? {
           ...COPY.login,
-          eyebrow: "Nakshatra BrokerDesk",
+          eyebrow: "VivIntro BrokerDesk",
           title: "Sign in to your broker workspace",
-          body: "Use your Nakshatra account to continue. Your business workspace stays private while verification is completed.",
+          body: "Use your VivIntro account to continue. Your business workspace stays private while verification is completed.",
           altPrompt: "New to BrokerDesk?",
           altCta: "Create a broker account",
           altHref: "/signup",
         }
       : {
           ...COPY.signup,
-          eyebrow: "Nakshatra BrokerDesk",
+          eyebrow: "VivIntro BrokerDesk",
           title: "Create your broker account",
           body: "Start with your account. Your workspace stays private while we collect and verify your business details.",
           primaryAction: "Create broker account",
@@ -200,16 +201,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <div className="account-shell">
       <header className="account-header">
-        <Link href="/" className="account-back" aria-label="Nakshatra home">
-          <ArrowLeft aria-hidden="true" />
-          <span>NAKSHATRA</span>
-        </Link>
+        <VivIntroBrand href="/" variant="compact-symbol" priority />
         <div className="app-header-actions"><ThemeSwitch /><Link href="/" className="account-home">Back to home</Link></div>
       </header>
 
-      <main className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined}>
+      <main className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined} data-mode={mode}>
         {!brokerdeskContinuation && (
-          <aside className="account-context" aria-label="Nakshatra access model">
+          <aside className="account-context" aria-label="VivIntro access model">
             <p className="account-context-kicker">One current portfolio</p>
             <h2>{mode === "signup" ? "Begin privately. Share only when you are ready." : "Return to your portfolio and its conversations."}</h2>
             <p>{mode === "signup"
@@ -224,6 +222,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </aside>
         )}
         <section className="account-panel" aria-labelledby="account-title" aria-busy={pendingAction !== null}>
+          <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={mode === "login" ? 112 : 142} priority /></div>
           {screen === "credentials" && (
             <>
               <p className="account-eyebrow">{copy.eyebrow}</p>

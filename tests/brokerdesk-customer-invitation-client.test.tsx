@@ -56,7 +56,7 @@ describe("BrokerDesk customer invitation client", () => {
     const { unmount } = render(<CustomerInvitationClient />);
     await userEvent.click(await screen.findAllByRole("checkbox", { name: /authorize this broker relationship/i }).then((items) => items.at(-1)!));
     await userEvent.click(await screen.findAllByRole("button", { name: "Accept and continue" }).then((buttons) => buttons.at(-1)!));
-    expect(await screen.findByRole("heading", { name: "Complete your one Nakshatra portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Complete your one VivIntro portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Complete my portfolio" })).toHaveAttribute("href", "/dashboard");
     unmount();
   });

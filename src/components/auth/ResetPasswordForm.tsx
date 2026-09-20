@@ -1,12 +1,13 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { updateRecoveredPassword } from "@/features/auth/client/auth.api";
 import {
   isAcceptablePassword,
@@ -48,14 +49,12 @@ export function ResetPasswordForm() {
   return (
     <div className="account-shell">
       <header className="account-header">
-        <Link href="/login" className="account-back">
-          <ArrowLeft aria-hidden="true" />
-          <span>NAKSHATRA</span>
-        </Link>
+        <VivIntroBrand href="/" variant="compact-symbol" priority />
         <div className="app-header-actions"><ThemeSwitch /><Link href="/login" className="account-home">Back to sign in</Link></div>
       </header>
       <main className="account-main">
         <section className="account-panel">
+          <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={142} priority /></div>
           <p className="account-eyebrow">Account security</p>
           <h1 className="account-title">Choose a new password.</h1>
           <p className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account.</p>

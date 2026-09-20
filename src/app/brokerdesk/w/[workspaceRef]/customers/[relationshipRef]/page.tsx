@@ -1,3 +1,4 @@
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import { ArrowLeft, CalendarClock, LockKeyhole, MapPin, ShieldCheck, UserRound, Users } from "lucide-react";
@@ -7,7 +8,7 @@ import { listBrokerIntroductions, listBrokerPortfolioNotices } from "@/features/
 import { BrokerIntroductionPanel } from "./broker-introduction-panel";
 import styles from "./brokerdesk-customer-detail.module.css";
 
-export const metadata = { title: "Customer relationship · Nakshatra BrokerDesk", robots: { index: false, follow: false } };
+export const metadata = { title: "Customer relationship · VivIntro BrokerDesk", robots: { index: false, follow: false } };
 
 function dateLabel(value: string | null) {
   return value ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value)) : "No end date";
@@ -25,7 +26,7 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   ]);
 
   return <div className={styles.shell}>
-    <header><Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
+    <header><VivIntroBrand href="/brokerdesk" variant="compact-symbol" /><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
     <main>
       <Link className={styles.back} href={`/brokerdesk/w/${workspaceRef}/customers`}><ArrowLeft /> All customers</Link>
       <div className={styles.heading}><div className={styles.avatar}>{customer.displayName.slice(0, 1).toUpperCase()}</div><div><p>Customer relationship</p><h1>{customer.displayName}</h1><span>{[customer.gender, customer.location].filter(Boolean).join(" · ") || "Shared portfolio"}</span></div><span className={styles.status}>{customer.relationshipStatus}</span></div>

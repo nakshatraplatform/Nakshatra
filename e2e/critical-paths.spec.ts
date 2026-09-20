@@ -2,13 +2,13 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches the launch waitlist", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Nakshatra | Private Wedding Biodata Portfolio");
+  await expect(page).toHaveTitle("VivIntro | Private Wedding Biodata Portfolio");
   await expect(page.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeVisible();
   const primaryCta = page.getByRole("main").getByRole("link", { name: /join (?:the )?waitlist/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/pilot-access");
   await page.goto("/pilot-access");
   await expect(page).toHaveURL(/\/pilot-access$/);
-  await expect(page.getByRole("heading", { name: /join the nakshatra waitlist/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /join the vivintro waitlist/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
   await expect(page.getByRole("button", { name: /verify email to join/i })).toBeEnabled();
   await expect(page.getByRole("button", { name: /verify with google/i })).toBeEnabled();

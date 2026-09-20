@@ -1,8 +1,8 @@
 import { TeamInvitationClient } from "./team-invitation-client";
 
 export const metadata = {
-  title: "Join a BrokerDesk team · Nakshatra",
-  description: "Accept a private Nakshatra BrokerDesk team invitation.",
+  title: "Join a BrokerDesk team · VivIntro",
+  description: "Accept a private VivIntro BrokerDesk team invitation.",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

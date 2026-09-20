@@ -15,7 +15,7 @@ export interface TemplateProps {
 }
 
 /**
- * Routes every persisted template ID to the single supported Nakshatra portfolio renderer.
+ * Routes every persisted template ID to the single supported VivIntro portfolio renderer.
  * Input: legacy template ID plus portfolio props. Output: canonical portfolio markup.
  */
 export function BiodataTemplate(

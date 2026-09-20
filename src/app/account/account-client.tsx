@@ -1,5 +1,6 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
@@ -51,7 +52,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
     const url = URL.createObjectURL(result.data);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `nakshatra-account-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `vivintro-account-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     setMessage("Your account export has been downloaded.");
@@ -135,7 +136,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
             <ArrowLeft aria-hidden="true" />
             Dashboard
           </Link>
-          <div className="app-header-actions"><strong className="text-sm">NAKSHATRA</strong><ThemeSwitch /></div>
+          <div className="app-header-actions"><VivIntroBrand href="/" variant="compact-symbol" /><ThemeSwitch /></div>
         </div>
       </header>
 

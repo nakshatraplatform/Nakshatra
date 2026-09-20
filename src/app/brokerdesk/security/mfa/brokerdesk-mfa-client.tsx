@@ -1,10 +1,10 @@
 "use client";
 
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
 import Image from "next/image";
-import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
 import { completeBrokerdeskMfa } from "@/features/organization-access/client/brokerdesk-mfa.api";
@@ -83,7 +83,7 @@ export function BrokerdeskMfaClient() {
       }
       const enrolled = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: "Nakshatra BrokerDesk",
+        friendlyName: "VivIntro BrokerDesk",
       });
       if (enrolled.error) throw enrolled.error;
       const qrCode = safeQrCode(enrolled.data.totp.qr_code);
@@ -120,11 +120,12 @@ export function BrokerdeskMfaClient() {
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
-        <Link href="/brokerdesk" className={styles.wordmark}>NAKSHATRA</Link>
+        <VivIntroBrand href="/brokerdesk" variant="compact-symbol" />
         <div className="app-header-actions"><span>BrokerDesk security</span><ThemeSwitch /></div>
       </header>
       <main className={styles.main}>
         <section className={styles.card} aria-live="polite" aria-busy={pending || stage === "loading"}>
+          <VivIntroBrand variant="stacked" decorative displayWidth={138} />
           <div className={styles.icon}><ShieldCheck aria-hidden="true" /></div>
           <p className={styles.eyebrow}>One more security check</p>
           <h1>Protect your customers and team</h1>

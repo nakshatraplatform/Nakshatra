@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeNavigation } from "@/components/theme/ThemeNavigation";
+import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 
 
 import { useEffect, useState } from "react";
@@ -73,12 +74,13 @@ export function VerificationLinkClient({ token }: { token: string }) {
     setAction(null);
   }
 
-  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><h1>Verification link unavailable</h1><p>{error}</p></main>;
-  if (!link) return <main className="mx-auto max-w-xl px-6 py-20"><p>Loading secure verification…</p></main>;
+  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><h1>Verification link unavailable</h1><p>{error}</p></main>;
+  if (!link) return <main className="mx-auto max-w-xl px-6 py-20"><div className="mb-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><p>Loading secure verification…</p></main>;
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16"><ThemeNavigation />
-      <p className="site-eyebrow">Nakshatra identity verification</p>
+      <div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div>
+      <p className="site-eyebrow">VivIntro identity verification</p>
       <h1>{link.kind === "invitation" ? "Confirm your identity" : "Verification management"}</h1>
       <div aria-live="polite" aria-atomic="true">
         {error ? <p className="account-notice is-error">{error}</p> : null}
@@ -88,8 +90,8 @@ export function VerificationLinkClient({ token }: { token: string }) {
 
       {link.kind === "invitation" ? (
         <section>
-          <p>Didit will run the hosted identity check. Nakshatra will use your legal name, date of birth, India document country, and approved document types only to verify identity before public portfolio publication.</p>
-          <p>Nakshatra keeps your consent record and verification state. It does not store document images, document numbers, or other identity evidence. You can withdraw consent through the private management link provided after you continue.</p>
+          <p>Didit will run the hosted identity check. VivIntro will use your legal name, date of birth, India document country, and approved document types only to verify identity before public portfolio publication.</p>
+          <p>VivIntro keeps your consent record and verification state. It does not store document images, document numbers, or other identity evidence. You can withdraw consent through the private management link provided after you continue.</p>
           <label className="mt-6 flex gap-3">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
             <span>I understand and consent to this identity-verification processing.</span>
@@ -101,7 +103,7 @@ export function VerificationLinkClient({ token }: { token: string }) {
       ) : (
         <section>
           <p>Status: <strong>{link.status.replaceAll("_", " ")}</strong></p>
-          <p>This page is not verification proof. Nakshatra confirms outcomes through its protected provider process.</p>
+          <p>This page is not verification proof. VivIntro confirms outcomes through its protected provider process.</p>
           {link.canRetry ? <button className="dashboard-primary-action mt-4" disabled={action !== null} onClick={retry}>{action === "retry" ? "Restarting…" : "Retry verification"}</button> : null}
           {link.canWithdraw ? <button className="dashboard-danger-action mt-4" disabled={action !== null} onClick={withdraw}>{action === "withdraw" ? "Withdrawing…" : "Withdraw consent"}</button> : null}
         </section>

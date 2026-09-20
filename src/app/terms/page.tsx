@@ -7,8 +7,8 @@ export default function TermsPage() {
   return (
     <PolicyLayout
       eyebrow="Terms"
-      title="Clear expectations for using Nakshatra."
-      summary="Nakshatra is a tool for creating and sharing wedding biodata. It is not a matchmaking service, background-check service, or source of legal or astrological advice."
+      title="Clear expectations for using VivIntro."
+      summary="VivIntro is a tool for creating and sharing wedding biodata. It is not a matchmaking service, background-check service, or source of legal or astrological advice."
     >
       <PolicySection title="Your account and content">
         <p>You are responsible for keeping account access private and for the accuracy, permission, and legality of the information and files you add. Do not share sign-in links or upload information you are not authorized to use.</p>
@@ -19,7 +19,7 @@ export default function TermsPage() {
       </PolicySection>
 
       <PolicySection title="Acceptable use">
-        <p>Do not use Nakshatra for harassment, impersonation, fraud, unlawful discrimination, unauthorized surveillance, or distribution of illegal or harmful content. Do not attempt to bypass access controls or interfere with the service.</p>
+        <p>Do not use VivIntro for harassment, impersonation, fraud, unlawful discrimination, unauthorized surveillance, or distribution of illegal or harmful content. Do not attempt to bypass access controls or interfere with the service.</p>
       </PolicySection>
 
       <PolicySection title="Service availability">
@@ -27,7 +27,7 @@ export default function TermsPage() {
       </PolicySection>
 
       <PolicySection title="Questions">
-        <p>For questions about these terms, contact <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@nakshatra.app">hello@nakshatra.app</a>.</p>
+        <p>For questions about these terms, contact <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>
       </PolicySection>
 
       <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: August 28, 2026.</p>
