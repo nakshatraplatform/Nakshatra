@@ -19,6 +19,7 @@ type Action = "start" | "retry" | "withdraw" | null;
 export function VerificationLinkClient({ token }: { token: string }) {
   const [link, setLink] = useState<IdentityVerificationLink | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorReference, setErrorReference] = useState<string | null>(null);
   const [action, setAction] = useState<Action>(null);
   const [consent, setConsent] = useState(false);
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
@@ -28,7 +29,10 @@ export function VerificationLinkClient({ token }: { token: string }) {
     let active = true;
     void getIdentityVerificationLinkRequest(token).then((result) => {
       if (!active) return;
-      if (!result.ok) setError(result.message);
+      if (!result.ok) {
+        setError(result.message);
+        setErrorReference(result.requestId ?? null);
+      }
       else setLink(result.data.link);
     });
     return () => { active = false; };
@@ -43,9 +47,11 @@ export function VerificationLinkClient({ token }: { token: string }) {
   async function start() {
     setAction("start");
     setError(null);
+    setErrorReference(null);
     const result = await startInvitationIdentityVerificationRequest(token);
     if (!result.ok) {
       setError(result.message);
+      setErrorReference(result.requestId ?? null);
       if (result.managementUrl) setManagementUrl(result.managementUrl);
       setAction(null);
       return;
@@ -56,9 +62,12 @@ export function VerificationLinkClient({ token }: { token: string }) {
   async function retry() {
     setAction("retry");
     setError(null);
+    setErrorReference(null);
     const result = await retryIdentityVerificationRequest(token);
     if (!result.ok) {
       setError(result.message);
+      setErrorReference(result.requestId ?? null);
+      if (result.managementUrl) setManagementUrl(result.managementUrl);
       setAction(null);
       return;
     }
@@ -68,13 +77,17 @@ export function VerificationLinkClient({ token }: { token: string }) {
   async function withdraw() {
     setAction("withdraw");
     setError(null);
+    setErrorReference(null);
     const result = await withdrawIdentityVerificationConsentRequest(token);
-    if (!result.ok) setError(result.message);
+    if (!result.ok) {
+      setError(result.message);
+      setErrorReference(result.requestId ?? null);
+    }
     else setLink({ kind: "management", status: "revoked", canRetry: false, canWithdraw: false });
     setAction(null);
   }
 
-  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><h1>Verification link unavailable</h1><p>{error}</p></main>;
+  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><h1>Verification link unavailable</h1><p>{error}{errorReference ? <small className="block">Reference: {errorReference}</small> : null}</p></main>;
   if (!link) return <main className="mx-auto max-w-xl px-6 py-20"><div className="mb-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><p>Loading secure verification…</p></main>;
 
   return (
@@ -83,7 +96,7 @@ export function VerificationLinkClient({ token }: { token: string }) {
       <p className="site-eyebrow">VivIntro identity verification</p>
       <h1>{link.kind === "invitation" ? "Confirm your identity" : "Verification management"}</h1>
       <div aria-live="polite" aria-atomic="true">
-        {error ? <p className="account-notice is-error">{error}</p> : null}
+        {error ? <p className="account-notice is-error" role="alert">{error}{errorReference ? <small className="block">Reference: {errorReference}</small> : null}</p> : null}
         {managementUrl ? <p className="account-notice is-success">Save your private management link: <a href={managementUrl}>verification management</a>.</p> : null}
         {providerUrl ? <a className="dashboard-primary-action mt-4" href={providerUrl}>Continue to Didit verification</a> : null}
       </div>

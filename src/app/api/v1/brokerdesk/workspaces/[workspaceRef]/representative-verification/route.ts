@@ -97,6 +97,12 @@ export async function POST(request: Request, context: Context) {
   } catch (error) {
     if (error instanceof RequestSecurityError) return requestSecurityErrorResponse(error);
     if (error instanceof IdentityVerificationSessionError) {
+      const diagnosticCode = /^[a-z_]{3,80}$/.test(error.diagnosticCode)
+        ? error.diagnosticCode
+        : "unclassified";
+      if (error.status >= 500) {
+        logServerError(`brokerdesk.representative_verification.${diagnosticCode}`, requestId, error);
+      }
       const response = NextResponse.json(
         {
           code: error.code,
@@ -105,7 +111,7 @@ export async function POST(request: Request, context: Context) {
             ? { managementUrl: managementUrl(error.managementToken, request) }
             : {}),
         },
-        { status: error.status, headers: noStore }
+        { status: error.status, headers: { ...noStore, "X-Request-Id": requestId } }
       );
       if (workspaceRef) response.cookies.set(clearBrokerdeskProofCookie(workspaceRef));
       return response;

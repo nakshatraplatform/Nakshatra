@@ -99,6 +99,10 @@ test("public screens support both themes without layout overflow", async ({ page
 
 test("authenticated dashboard, account and BrokerDesk retain usable themed controls", async ({ page, context }, testInfo) => {
   await context.addCookies([themeTestCookie]);
+  const hydrationErrors: string[] = [];
+  page.on("console", (message) => {
+    if (/hydration|didn't match/i.test(message.text())) hydrationErrors.push(message.text());
+  });
   for (const route of ["/dashboard", "/account", "/brokerdesk/onboarding", brokerdeskTeamRoute]) {
     await page.goto(route);
     await expect(page).toHaveURL(new RegExp(`${route}$`));
@@ -132,6 +136,7 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await expect(attachment).toHaveCSS("background-color", "rgb(38, 54, 64)");
   await attachment.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("editor-attachment-dark.png"), fullPage: true, animations: "disabled" });
+  expect(hydrationErrors).toEqual([]);
 });
 
 test("deep BrokerDesk headers fit compact mobile widths", async ({ page, context }, testInfo) => {

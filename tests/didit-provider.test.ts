@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createDiditVerificationSession, DiditProviderError } from "@/features/identity-verification/server/didit.provider";
+import { createDiditVerificationSession } from "@/features/identity-verification/server/didit.provider";
 
 const input = {
   attemptId: "11111111-1111-4111-8111-111111111111",
@@ -42,20 +42,91 @@ describe("Didit provider gateway", () => {
   });
 
   it("fails closed for missing configuration, request failures, malformed results, and unexpected hosted URLs", async () => {
-    await expect(createDiditVerificationSession(input)).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      diagnosticCode: "configuration_invalid",
+    });
 
     process.env.DIDIT_API_KEY = "secret-api-key";
     process.env.DIDIT_WORKFLOW_ID = "33333333-3333-4333-8333-333333333333";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
-    await expect(createDiditVerificationSession(input)).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      diagnosticCode: "request_failed",
+    });
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 201 })));
-    await expect(createDiditVerificationSession(input)).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      diagnosticCode: "response_invalid",
+    });
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ session_id: "provider-session", url: "http://verify.didit.me/session" }), { status: 201 })));
-    await expect(createDiditVerificationSession(input)).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      diagnosticCode: "host_invalid",
+    });
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ session_id: "provider-session", url: "https://attacker.test/session" }), { status: 201 })));
-    await expect(createDiditVerificationSession(input)).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      diagnosticCode: "host_invalid",
+    });
+  });
+
+  it.each([
+    [400, "request_rejected"],
+    [403, "credentials_rejected"],
+    [429, "rate_limited"],
+    [503, "provider_unavailable"],
+  ] as const)("classifies provider HTTP %s without exposing its response", async (status, diagnosticCode) => {
+    process.env.DIDIT_API_KEY = "secret-api-key";
+    process.env.DIDIT_WORKFLOW_ID = "33333333-3333-4333-8333-333333333333";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("provider-private-response", { status })));
+
+    await expect(createDiditVerificationSession(input)).rejects.toMatchObject({
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      diagnosticCode,
+    });
+  });
+
+  it("aborts a provider request that exceeds the ten-second boundary", async () => {
+    vi.useFakeTimers();
+    try {
+      process.env.DIDIT_API_KEY = "secret-api-key";
+      process.env.DIDIT_WORKFLOW_ID = "33333333-3333-4333-8333-333333333333";
+      const fetchMock = vi.fn((_url: RequestInfo | URL, options?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        options?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+      }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const result = createDiditVerificationSession(input);
+      const rejection = expect(result).rejects.toMatchObject({ diagnosticCode: "request_timeout" });
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await rejection;
+      expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the timeout active while reading the provider response body", async () => {
+    vi.useFakeTimers();
+    try {
+      process.env.DIDIT_API_KEY = "secret-api-key";
+      process.env.DIDIT_WORKFLOW_ID = "33333333-3333-4333-8333-333333333333";
+      const fetchMock = vi.fn((_url: RequestInfo | URL, options?: RequestInit) => Promise.resolve({
+        ok: true,
+        status: 201,
+        json: () => new Promise((_resolve, reject) => {
+          options?.signal?.addEventListener("abort", () => reject(new Error("body aborted")), { once: true });
+        }),
+      } as Response));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const result = createDiditVerificationSession(input);
+      const rejection = expect(result).rejects.toMatchObject({ diagnosticCode: "request_timeout" });
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

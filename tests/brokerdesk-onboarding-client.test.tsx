@@ -162,6 +162,7 @@ describe("BrokerDesk onboarding interface", () => {
       message: "Identity verification is temporarily unavailable. Please try again.",
       status: 503,
       managementUrl: "https://nakshatra.test/verify/private-recovery",
+      requestId: "broker-request-id",
     });
     const user = userEvent.setup();
     render(<BrokerdeskOnboardingClient
@@ -181,5 +182,6 @@ describe("BrokerDesk onboarding interface", () => {
       "https://nakshatra.test/verify/private-recovery"
     );
     expect(screen.queryByRole("link", { name: "Continue to Didit" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Reference: broker-request-id");
   });
 });

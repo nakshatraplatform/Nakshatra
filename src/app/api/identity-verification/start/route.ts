@@ -7,6 +7,7 @@ import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import { AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
+import { getRequestId, logServerError } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 
 const tokenSchema = z.string().refine(isIdentityVerificationToken, "Invalid verification token");
@@ -22,6 +23,7 @@ function managementUrl(token: string, request: Request) {
 
 /** Records the standalone consent before creating a hosted session for a self-managed or invited candidate. */
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
   try {
     requireSameOrigin(request);
   } catch (error) {
@@ -76,13 +78,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: result.url, managementUrl: managementUrl(managementToken, request) }, { headers: noStore });
   } catch (error) {
     const known = error instanceof IdentityVerificationSessionError ? error : null;
+    const diagnosticCode = known && /^[a-z_]{3,80}$/.test(known.diagnosticCode)
+      ? known.diagnosticCode
+      : "unclassified";
+    if (!known || known.status >= 500) {
+      logServerError(`identity_verification.start.${diagnosticCode}`, requestId, error);
+    }
     return NextResponse.json(
       {
         code: known?.code || "IDENTITY_VERIFICATION_START_FAILED",
         error: known?.message || "We could not start identity verification. Please try again.",
         ...(known?.managementToken ? { managementUrl: managementUrl(known.managementToken, request) } : {}),
       },
-      { status: known?.status || 503, headers: noStore }
+      { status: known?.status || 503, headers: { ...noStore, "X-Request-Id": requestId } }
     );
   }
 }

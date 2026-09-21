@@ -101,6 +101,7 @@ const accessGrantId = "11111111-1111-4111-8111-111111111111";
 function renderDashboard(overrides: Partial<React.ComponentProps<typeof DashboardClient>> = {}) {
   return render(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
     canCreatePortfolio
+    renderedAt="2026-09-21T12:00:00.000Z"
     shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]}
     mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} />);
 }
@@ -232,6 +233,7 @@ describe("dashboard client", () => {
         viewCount={12}
         userEmail="aditi@example.com"
         canCreatePortfolio
+        renderedAt="2026-09-21T12:00:00.000Z"
         shareUrl="https://nakshatra.test/p/token"
         isExpired
         daysLeft={0}

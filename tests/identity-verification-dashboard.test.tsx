@@ -41,4 +41,21 @@ describe("identity-verification dashboard controls", () => {
     await waitFor(() => expect(createInvitation).toHaveBeenCalledWith("candidate-id"));
     expect(screen.getByRole("link", { name: "https://nakshatra.test/verify/invite" })).toHaveAttribute("href", "https://nakshatra.test/verify/invite");
   });
+
+  it("shows the safe request reference for an unavailable verification provider", async () => {
+    const user = userEvent.setup();
+    startSelf.mockResolvedValueOnce({
+      ok: false,
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      message: "Identity verification is temporarily unavailable. Please try again.",
+      status: 503,
+      requestId: "iv-request-id",
+    });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Verify myself" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Reference: iv-request-id");
+  });
 });

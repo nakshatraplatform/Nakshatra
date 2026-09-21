@@ -43,8 +43,8 @@ describe("identity verification client API", () => {
   });
 
   it("maps server and network errors to stable frontend failures", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "IDENTITY_VERIFICATION_LINK_INVALID", error: "Unavailable", managementUrl: "https://nakshatra.test/verify/private" }), { status: 400 })));
-    await expect(getIdentityVerificationLinkRequest("token")).resolves.toEqual({ ok: false, code: "IDENTITY_VERIFICATION_LINK_INVALID", message: "Unavailable", status: 400, managementUrl: "https://nakshatra.test/verify/private" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "IDENTITY_VERIFICATION_LINK_INVALID", error: "Unavailable", managementUrl: "https://nakshatra.test/verify/private" }), { status: 400, headers: { "X-Request-Id": "iv-request-id" } })));
+    await expect(getIdentityVerificationLinkRequest("token")).resolves.toEqual({ ok: false, code: "IDENTITY_VERIFICATION_LINK_INVALID", message: "Unavailable", status: 400, managementUrl: "https://nakshatra.test/verify/private", requestId: "iv-request-id" });
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     await expect(getIdentityVerificationLinkRequest("token")).resolves.toMatchObject({ ok: false, code: "NETWORK_UNAVAILABLE", status: 0 });
   });

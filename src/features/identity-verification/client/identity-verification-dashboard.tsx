@@ -13,6 +13,7 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
   const [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorReference, setErrorReference] = useState<string | null>(null);
   const [providerUrl, setProviderUrl] = useState<string | null>(null);
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
@@ -20,9 +21,11 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
   async function startSelfVerification() {
     setPending("self");
     setError(null);
+    setErrorReference(null);
     const result = await startSelfIdentityVerificationRequest(candidateId);
     if (!result.ok) {
       setError(result.message);
+      setErrorReference(result.requestId ?? null);
       if (result.managementUrl) setManagementUrl(result.managementUrl);
     } else {
       setProviderUrl(result.data.url);
@@ -34,8 +37,12 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
   async function createInvitation() {
     setPending("invitation");
     setError(null);
+    setErrorReference(null);
     const result = await createIdentityVerificationInvitationRequest(candidateId);
-    if (!result.ok) setError(result.message);
+    if (!result.ok) {
+      setError(result.message);
+      setErrorReference(result.requestId ?? null);
+    }
     else setInvitationUrl(result.data.invitationUrl);
     setPending(null);
   }
@@ -64,7 +71,7 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
         </button>
       </div>
       <div className="mt-4" aria-live="polite" aria-atomic="true">
-        {error ? <p className="dashboard-action-error" role="alert">{error}</p> : null}
+        {error ? <p className="dashboard-action-error" role="alert">{error}{errorReference ? <small className="block">Reference: {errorReference}</small> : null}</p> : null}
         {invitationUrl ? <p className="dashboard-action-note">Share this private invitation only with the candidate: <a href={invitationUrl}>{invitationUrl}</a></p> : null}
         {managementUrl ? <p className="dashboard-action-note">Save your private <a href={managementUrl}>verification-management link</a>.</p> : null}
         {providerUrl ? <a className="dashboard-primary-action mt-3" href={providerUrl}>Continue to Didit verification</a> : null}

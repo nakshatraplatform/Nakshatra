@@ -64,6 +64,12 @@ import {
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
+import {
+  daysUntilDashboardDate,
+  formatDashboardAccessDate,
+  formatDashboardInterestDate,
+  useDashboardClock,
+} from "@/features/access/client/dashboard-display";
 import type { OwnerBrokerIntroductionResponse } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
@@ -92,6 +98,7 @@ interface Props {
   accessSummary?: PortfolioAccessSummary;
   publicationReadiness?: PublicationReadiness;
   brokerIntroductionResponses?: OwnerBrokerIntroductionResponse[];
+  renderedAt: string;
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -113,6 +120,7 @@ export default function DashboardClient({
   accessSummary = EMPTY_ACCESS_SUMMARY,
   publicationReadiness = EMPTY_PUBLICATION_READINESS,
   brokerIntroductionResponses = [],
+  renderedAt,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -809,6 +817,7 @@ export default function DashboardClient({
             events={accessEvents}
             brokerResponses={brokerIntroductionResponses}
             disclosedCategories={disclosedCategories}
+            renderedAt={renderedAt}
             onDecision={(id, status) => {
               setInterestItems((current) =>
                 current.map((interest) =>
@@ -1292,6 +1301,7 @@ function RelationshipLifecycle({
   events,
   brokerResponses,
   disclosedCategories,
+  renderedAt,
   onDecision,
   onGrantChange,
 }: {
@@ -1300,6 +1310,7 @@ function RelationshipLifecycle({
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
   disclosedCategories: string[];
+  renderedAt: string;
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
   onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
 }) {
@@ -1312,6 +1323,7 @@ function RelationshipLifecycle({
     | null;
 
   const waitingInterests = sortByNewest(interests.filter((interest) => interest.status === "new" || interest.status === "pending_review"), (interest) => interest.created_at);
+  const dashboardClock = useDashboardClock(renderedAt);
   const setAsideInterests = sortByNewest(interests.filter((interest) => interest.status === "rejected"), (interest) => interest.created_at);
   const activeGrants = sortByNewest(grants.filter((grant) => grant.status === "active"), (grant) => grant.renewedAt || grant.expiresAt);
   const historicalGrants = sortByNewest(grants.filter((grant) => grant.status !== "active"), (grant) => grant.revokedAt || grant.expiresAt);
@@ -1527,7 +1539,7 @@ function RelationshipLifecycle({
         empty="Nobody currently has Complete Portfolio access."
       >
         {activeGrants.slice(0, 3).map((grant) => (
-          <GrantSummaryCard key={grant.id} grant={grant} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
+          <GrantSummaryCard key={grant.id} grant={grant} referenceTime={dashboardClock} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
         ))}
       </CompactRelationshipStage>
 
@@ -1562,7 +1574,7 @@ function RelationshipLifecycle({
             {visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
               <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
             ) : record.kind === "grant" ? (
-              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} onPrimary={() => setRecordDetail(record)} />
+              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} referenceTime={dashboardClock} onPrimary={() => setRecordDetail(record)} />
             ) : (
               <BrokerResponseSummaryCard key={record.item.introductionRef} response={record.item} onPrimary={() => setRecordDetail(record)} />
             ))}
@@ -1570,7 +1582,7 @@ function RelationshipLifecycle({
           {listModal === "history" && events.length > 0 && (
             <div className="dashboard-history-timeline">
               <h3>Activity log</h3>
-              <ol>{events.slice(0, 20).map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol>
+              <ol>{events.slice(0, 20).map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatDashboardAccessDate(event.createdAt)}</time></li>)}</ol>
             </div>
           )}
           {pageCount > 1 && (
@@ -1706,7 +1718,7 @@ function InterestSummaryCard({ interest, statusLabel, primaryLabel, onPrimary, d
     <article className="dashboard-summary-item" data-record-state={interest.status}>
       <div className="dashboard-summary-main">
         <div className="dashboard-summary-heading"><strong>{interest.viewer_name || "Unnamed viewer"}</strong><span className={`dashboard-source-tag is-${interest.source_type}`}>{source}</span></div>
-        <p>{formatInterestDate(interest.created_at)} · {interest.email_verified ? "Verified email" : "Verification pending"}</p>
+        <p>{formatDashboardInterestDate(interest.created_at)} · {interest.email_verified ? "Verified email" : "Verification pending"}</p>
         <p className="dashboard-message-preview">{interest.message || interest.viewer_family_context || "No message provided."}</p>
       </div>
       <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{statusLabel}</span><button type="button" className="dashboard-primary-action" disabled={disabled} onClick={onPrimary}>{primaryLabel}</button></div>
@@ -1714,15 +1726,15 @@ function InterestSummaryCard({ interest, statusLabel, primaryLabel, onPrimary, d
   );
 }
 
-function GrantSummaryCard({ grant, onPrimary }: { grant: AccessGrant; onPrimary: () => void }) {
-  const urgent = grant.status === "active" && daysUntil(grant.expiresAt) <= 3;
+function GrantSummaryCard({ grant, referenceTime, onPrimary }: { grant: AccessGrant; referenceTime: number; onPrimary: () => void }) {
+  const urgent = grant.status === "active" && daysUntilDashboardDate(grant.expiresAt, referenceTime) <= 3;
   const sourceType = grant.sourceType || "direct";
   return (
     <article className="dashboard-summary-item" data-record-state={urgent ? "expiring" : grant.status}>
       <div className="dashboard-summary-main">
         <div className="dashboard-summary-heading"><strong>{grant.viewerName || "Verified viewer"}</strong><span className={`dashboard-source-tag is-${sourceType}`}>{sourceType === "broker" ? "Broker introduction" : "Direct introduction"}</span></div>
         <p>{grant.viewerEmail || "Verified viewer"}</p>
-        <p className="dashboard-message-preview">{grant.status === "active" ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Access ended"}</p>
+        <p className="dashboard-message-preview">{grant.status === "active" ? `${urgent ? "Expires soon" : "Active"} until ${formatDashboardAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatDashboardAccessDate(grant.expiresAt)}` : "Access ended"}</p>
       </div>
       <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{urgent ? "Expiring soon" : grant.status === "active" ? "Active" : grant.status === "expired" ? "Expired" : "Ended"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Manage</button></div>
     </article>
@@ -1734,7 +1746,7 @@ function BrokerResponseSummaryCard({ response, onPrimary }: { response: OwnerBro
     <article className="dashboard-summary-item" data-record-state={response.response === "accepted" ? "active" : "revoked"}>
       <div className="dashboard-summary-main">
         <div className="dashboard-summary-heading"><strong>{response.recipientLabel}</strong><span className="dashboard-source-tag is-broker">Broker introduction</span></div>
-        <p>{response.brokerName} · {formatInterestDate(response.respondedAt)}</p>
+        <p>{response.brokerName} · {formatDashboardInterestDate(response.respondedAt)}</p>
         <p className="dashboard-message-preview">{response.comment || `Recipient ${response.response} the introduction.`}</p>
       </div>
       <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{response.response === "accepted" ? "Accepted" : "Declined"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Open details</button></div>
@@ -1763,7 +1775,7 @@ function InterestDetail({ interest }: { interest: DashboardInterest }) {
         <div><dt>Email</dt><dd>{interest.viewer_email || "Not provided"}{interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</dd></div>
         <div><dt>Phone</dt><dd>{interest.viewer_phone || "Not provided"}</dd></div>
         <div><dt>Contacting for</dt><dd>{formatProfileFor(profileFor)}</dd></div>
-        <div><dt>Received</dt><dd>{formatAccessDate(interest.created_at)}</dd></div>
+        <div><dt>Received</dt><dd>{formatDashboardAccessDate(interest.created_at)}</dd></div>
         {interest.broker_representative_name && <div><dt>Broker representative</dt><dd>{interest.broker_representative_name}</dd></div>}
         {formatInterestLocation(interest.metadata) && <div><dt>Location</dt><dd>{formatInterestLocation(interest.metadata)}</dd></div>}
       </dl>
@@ -1792,11 +1804,11 @@ function GrantDetail({ grant, events }: { grant: AccessGrant; events: AccessAudi
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
       <dl className="dashboard-detail-grid">
         <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
-        <div><dt>Access ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
-        <div><dt>Last opened</dt><dd>{grant.lastAccessedAt ? formatAccessDate(grant.lastAccessedAt) : "Not opened yet"}</dd></div>
-        <div><dt>Last renewed</dt><dd>{grant.renewedAt ? formatAccessDate(grant.renewedAt) : "Not renewed"}</dd></div>
+        <div><dt>Access ends</dt><dd>{formatDashboardAccessDate(grant.expiresAt)}</dd></div>
+        <div><dt>Last opened</dt><dd>{grant.lastAccessedAt ? formatDashboardAccessDate(grant.lastAccessedAt) : "Not opened yet"}</dd></div>
+        <div><dt>Last renewed</dt><dd>{grant.renewedAt ? formatDashboardAccessDate(grant.renewedAt) : "Not renewed"}</dd></div>
       </dl>
-      <section><h3>Access history</h3>{relatedEvents.length ? <ol className="dashboard-detail-history">{relatedEvents.map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol> : <p>No access activity has been recorded yet.</p>}</section>
+      <section><h3>Access history</h3>{relatedEvents.length ? <ol className="dashboard-detail-history">{relatedEvents.map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatDashboardAccessDate(event.createdAt)}</time></li>)}</ol> : <p>No access activity has been recorded yet.</p>}</section>
     </div>
   );
 }
@@ -1808,7 +1820,7 @@ function BrokerResponseDetail({ response }: { response: OwnerBrokerIntroductionR
       <dl className="dashboard-detail-grid">
         <div><dt>Recipient</dt><dd>{response.recipientLabel}</dd></div>
         <div><dt>Broker</dt><dd>{response.brokerName}</dd></div>
-        <div><dt>Responded</dt><dd>{formatAccessDate(response.respondedAt)}</dd></div>
+        <div><dt>Responded</dt><dd>{formatDashboardAccessDate(response.respondedAt)}</dd></div>
         <div><dt>Response</dt><dd className="capitalize">{response.response}</dd></div>
       </dl>
       <section><h3>Response message</h3><p>{response.comment || "No response message was provided."}</p></section>
@@ -1820,26 +1832,11 @@ function sortByNewest<T>(items: T[], dateFor: (item: T) => string | null | undef
   return [...items].sort((left, right) => new Date(dateFor(right) || 0).getTime() - new Date(dateFor(left) || 0).getTime());
 }
 
-function daysUntil(value: string) {
-  const difference = new Date(value).getTime() - Date.now();
-  return Number.isFinite(difference) ? Math.ceil(difference / 86_400_000) : Number.POSITIVE_INFINITY;
-}
-
 function interestStatusLabel(status: string) {
   if (status === "new" || status === "pending_review") return "Awaiting review";
   if (status === "rejected") return "Set aside";
   if (status === "approved" || status === "revealed") return "Access granted";
   return "Closed";
-}
-
-function formatAccessDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "recently";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 }
 
 function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: string | null) {
@@ -1857,12 +1854,6 @@ function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: stri
     portfolio_unpublished: "Portfolio unpublished",
   };
   return labels[type];
-}
-
-function formatInterestDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently";
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
 function formatInterestLocation(metadata: Record<string, unknown> | null) {

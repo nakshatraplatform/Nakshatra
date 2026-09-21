@@ -4,7 +4,10 @@ const createDiditVerificationSession = vi.hoisted(() => vi.fn());
 vi.mock("@/features/identity-verification/server/didit.provider", () => ({
   createDiditVerificationSession,
   DiditProviderError: class DiditProviderError extends Error {
-    constructor(readonly code: string) {
+    constructor(
+      readonly diagnosticCode: string,
+      readonly code = "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE"
+    ) {
       super(code);
     }
   },
@@ -100,6 +103,20 @@ describe("identity-verification services", () => {
       managementToken: "management-token", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
     })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
       code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE", managementToken: "management-token", status: 503,
+    }));
+  });
+
+  it("preserves a safe provider diagnostic while keeping the client error generic", async () => {
+    const { DiditProviderError } = await import("@/features/identity-verification/server/didit.provider");
+    createDiditVerificationSession.mockRejectedValueOnce(new DiditProviderError("credentials_rejected"));
+
+    await expect(startIdentityVerification({
+      supabase: supabaseWith([{ data: prepared, error: null }]), candidateId: "candidate", invitationTokenHash: null,
+      managementToken: "management-token", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
+    })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      diagnosticCode: "provider_credentials_rejected",
+      status: 503,
     }));
   });
 

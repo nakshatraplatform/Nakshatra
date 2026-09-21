@@ -29,27 +29,39 @@ const linkStatusSchema = z.discriminatedUnion("kind", [
 export type IdentityVerificationLinkStatus = z.infer<typeof linkStatusSchema>;
 
 export class IdentityVerificationSessionError extends Error {
-  constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string) {
+  constructor(
+    message: string,
+    readonly code: string,
+    readonly status: number,
+    readonly managementToken?: string,
+    readonly diagnosticCode = "unclassified"
+  ) {
     super(message);
+    this.name = "IdentityVerificationSessionError";
   }
 }
 
 function preparedSession(data: unknown) {
   const parsed = preparedSessionSchema.safeParse(Array.isArray(data) ? data[0] : data);
   if (!parsed.success) {
-    throw new IdentityVerificationSessionError("We could not prepare identity verification. Please try again.", "IDENTITY_VERIFICATION_START_FAILED", 503);
+    throw new IdentityVerificationSessionError("We could not prepare identity verification. Please try again.", "IDENTITY_VERIFICATION_START_FAILED", 503, undefined, "prepared_session_invalid");
   }
   return parsed.data;
 }
 
-function unavailableFromDatabase(error: { code?: string } | null, fallback: string, managementToken?: string): never {
+function unavailableFromDatabase(
+  error: { code?: string } | null,
+  fallback: string,
+  managementToken?: string,
+  diagnosticCode = "database_operation_failed"
+): never {
   if (error?.code === "42501") {
     throw new IdentityVerificationSessionError("This verification action is not available.", "IDENTITY_VERIFICATION_FORBIDDEN", 403, managementToken);
   }
   if (error?.code === "22023") {
     throw new IdentityVerificationSessionError("This verification link is unavailable or has expired.", "IDENTITY_VERIFICATION_LINK_INVALID", 400, managementToken);
   }
-  throw new IdentityVerificationSessionError("We could not complete identity verification. Please try again.", fallback, 503, managementToken);
+  throw new IdentityVerificationSessionError("We could not complete identity verification. Please try again.", fallback, 503, managementToken, diagnosticCode);
 }
 
 async function attachProviderSession(input: {
@@ -70,14 +82,17 @@ async function attachProviderSession(input: {
     });
   } catch (error) {
     const code = error instanceof DiditProviderError ? error.code : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE";
-    throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again.", code, 503, input.managementToken);
+    const diagnosticCode = error instanceof DiditProviderError
+      ? `provider_${error.diagnosticCode}`
+      : "provider_unclassified";
+    throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again.", code, 503, input.managementToken, diagnosticCode);
   }
   const { error } = await input.repository.attachProviderSession(
     input.prepared.attempt_id,
     didit.sessionId,
     input.managementTokenHash
   );
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken);
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken, "database_attach_failed");
   return { url: didit.url };
 }
 
@@ -92,7 +107,7 @@ export async function startIdentityVerification(input: {
 }) {
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.begin(input.candidateId, input.invitationTokenHash, input.managementTokenHash);
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED");
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", undefined, "database_begin_failed");
   return attachProviderSession({
     repository,
     prepared: preparedSession(data),
@@ -105,7 +120,7 @@ export async function startIdentityVerification(input: {
 function preparedRepresentativeSession(data: unknown, birthDate: string) {
   const parsed = preparedRepresentativeSessionSchema.safeParse(Array.isArray(data) ? data[0] : data);
   if (!parsed.success) {
-    throw new IdentityVerificationSessionError("We could not prepare identity verification. Please try again.", "IDENTITY_VERIFICATION_START_FAILED", 503);
+    throw new IdentityVerificationSessionError("We could not prepare identity verification. Please try again.", "IDENTITY_VERIFICATION_START_FAILED", 503, undefined, "prepared_representative_session_invalid");
   }
   return { ...parsed.data, birth_date: birthDate };
 }
