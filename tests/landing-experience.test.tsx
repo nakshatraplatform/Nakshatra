@@ -26,6 +26,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(screen.getByRole("heading", { name: /how vivintro works/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/create once, share carefully, and decide what comes next/i);
     expect(document.body).toHaveTextContent(/protected access lasts 15 days/i);
+    expect(document.body).toHaveTextContent(/current creator pilot is free and invitation-only/i);
     expect(document.body).toHaveTextContent(/public introduction remains available until its owner unpublishes/i);
   });
 });

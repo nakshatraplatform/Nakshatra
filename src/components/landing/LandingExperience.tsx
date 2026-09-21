@@ -22,6 +22,7 @@ export const landingFaqs = [
   { question: "What stays protected?", answer: "Contact details and owner-designated private information stay outside the public introduction. A viewer must confirm their email and request access; the owner can approve or set the request aside." },
   { question: "What does identity checked mean?", answer: "It means the introduction creator completed VivIntro’s hosted identity-check flow before publishing. It does not mean VivIntro guarantees every statement in the introduction or the suitability of a match." },
   { question: "How long does the link work?", answer: "The public introduction remains available until its owner unpublishes it. If the owner approves a viewer, protected access lasts 15 days and can be ended earlier." },
+  { question: "Is the private pilot free?", answer: "Yes. The current creator pilot is free and invitation-only. VivIntro is not offering a paid creator plan during the pilot." },
   { question: "Can I join now?", answer: "VivIntro is inviting people gradually during its private pilot. Request an invitation with verified contact details; creating an account or introduction begins only after an invitation is issued." },
 ] as const;
 
