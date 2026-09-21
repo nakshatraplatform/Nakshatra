@@ -238,6 +238,21 @@ const server = createServer((request, response) => {
   if (request.headers.authorization === `Bearer ${themeTestToken}`) {
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_team") return sendJson(response, 200, {
+      available: true,
+      workspaceRef: `wrk_${"e".repeat(32)}`,
+      members: [{
+        memberRef: `mbr_${"f".repeat(32)}`,
+        displayName: "Agency Owner",
+        email: "owner@example.test",
+        rolePreset: "owner",
+        status: "active",
+        customerAccess: "all_customers",
+        assignedCustomerCount: 0,
+        joinedAt: "2026-09-09T00:00:00Z",
+        isCurrentUser: true,
+      }],
+    });
     if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests"].includes(url.pathname)) return sendJson(response, 200, null);
   }
   if (url.pathname === "/rest/v1/public_portfolio_snapshots" || url.pathname === "/rest/v1/portfolio_media") {

@@ -1,4 +1,4 @@
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { BrokerDeskHeader } from "@/components/brokerdesk/BrokerDeskHeader";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import Link from "next/link";
 import { ArrowLeft, CalendarClock, LockKeyhole, MapPin, ShieldCheck, UserRound, Users } from "lucide-react";
@@ -26,7 +26,9 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   ]);
 
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/brokerdesk" variant="horizontal" /><span>BrokerDesk</span><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><ThemeSwitch /></header>
+    <BrokerDeskHeader>
+      <Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link>
+    </BrokerDeskHeader>
     <main>
       <Link className={styles.back} href={`/brokerdesk/w/${workspaceRef}/customers`}><ArrowLeft /> All customers</Link>
       <div className={styles.heading}><div className={styles.avatar}>{customer.displayName.slice(0, 1).toUpperCase()}</div><div><p>Customer relationship</p><h1>{customer.displayName}</h1><span>{[customer.gender, customer.location].filter(Boolean).join(" · ") || "Shared portfolio"}</span></div><span className={styles.status}>{customer.relationshipStatus}</span></div>

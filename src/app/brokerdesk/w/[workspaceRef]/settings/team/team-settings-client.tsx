@@ -1,6 +1,6 @@
 "use client";
 
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { BrokerDeskHeader } from "@/components/brokerdesk/BrokerDeskHeader";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
@@ -92,7 +92,9 @@ export function TeamSettingsClient({ team, reauthPurpose }: { team: BrokerdeskTe
   }
 
   return <div className={styles.shell}>
-    <header><VivIntroBrand href="/brokerdesk" variant="horizontal" /><span>BrokerDesk</span><Link href="/dashboard">Customer dashboard</Link><ThemeSwitch /></header>
+    <BrokerDeskHeader>
+      <Link href="/dashboard">Customer dashboard</Link>
+    </BrokerDeskHeader>
     <main>
       <div className={styles.heading}><div><p>Settings · Team</p><h1>People who work with you</h1><span>Employees see only the customers and work their role allows.</span></div>{mode === "list" && <button onClick={() => begin("team_invite")}><UserPlus /> Invite employee</button>}</div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
