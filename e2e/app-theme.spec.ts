@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { themeTestCookie } from "./support/theme-session.mjs";
 
 const key = "nakshatra-app-theme";
+const brokerdeskTeamRoute = `/brokerdesk/w/wrk_${"e".repeat(32)}/settings/team`;
 async function noOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
@@ -98,7 +99,7 @@ test("public screens support both themes without layout overflow", async ({ page
 
 test("authenticated dashboard, account and BrokerDesk retain usable themed controls", async ({ page, context }, testInfo) => {
   await context.addCookies([themeTestCookie]);
-  for (const route of ["/dashboard", "/account", "/brokerdesk/onboarding"]) {
+  for (const route of ["/dashboard", "/account", "/brokerdesk/onboarding", brokerdeskTeamRoute]) {
     await page.goto(route);
     await expect(page).toHaveURL(new RegExp(`${route}$`));
     if (route === "/dashboard") {
@@ -131,6 +132,20 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await expect(attachment).toHaveCSS("background-color", "rgb(38, 54, 64)");
   await attachment.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("editor-attachment-dark.png"), fullPage: true, animations: "disabled" });
+});
+
+test("deep BrokerDesk headers fit compact mobile widths", async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "Exact compact-width coverage runs once in the mobile browser project.");
+  await context.addCookies([themeTestCookie]);
+
+  for (const width of [412, 375, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(brokerdeskTeamRoute);
+    await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Customer dashboard" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
+    await noOverflow(page);
+  }
 });
 
 test("owner appearance and portaled interest forms ignore the app theme", async ({ page }) => {

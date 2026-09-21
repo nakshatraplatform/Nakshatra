@@ -1,4 +1,4 @@
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { BrokerDeskHeader } from "@/components/brokerdesk/BrokerDeskHeader";
 import Link from "next/link";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { resolveBrokerdeskDashboard } from "@/features/broker-introductions/server/broker-introduction.service";
@@ -23,12 +23,10 @@ export default async function BrokerdeskDashboardPage({ params }: {
   </main>;
 
   return <div className={styles.shell}>
-    <header>
-      <VivIntroBrand href="/brokerdesk" variant="horizontal" />
-      <span>BrokerDesk</span>
-      <nav><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link><Link href={`/brokerdesk/w/${workspaceRef}/settings/team`}>Team</Link></nav>
-      <ThemeSwitch />
-    </header>
+    <BrokerDeskHeader sticky>
+      <Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link>
+      <Link href={`/brokerdesk/w/${workspaceRef}/settings/team`}>Team</Link>
+    </BrokerDeskHeader>
     <BrokerdeskDashboardClient dashboard={dashboard} />
   </div>;
 }
