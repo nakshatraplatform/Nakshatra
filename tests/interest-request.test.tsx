@@ -28,11 +28,11 @@ describe("interest request flow", () => {
     verifyAuthenticationCode.mockResolvedValue({ ok: true, body: { verified: true, email: "rohan@example.com" } });
   });
 
-  it("submits from a modal and returns to the portfolio confirmation state", async () => {
+  it("submits from a modal and returns to the introduction confirmation state", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })));
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(document.body.style.overflow).toBe("hidden");
     fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
@@ -41,7 +41,7 @@ describe("interest request flow", () => {
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
 
-    expect(await screen.findByText(/Interest sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
     const request = vi.mocked(fetch).mock.calls[0];
     const submitted = JSON.parse(String((request[1] as RequestInit).body));
     expect(submitted).toMatchObject({
@@ -61,7 +61,7 @@ describe("interest request flow", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })));
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
     fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
     fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
@@ -83,14 +83,14 @@ describe("interest request flow", () => {
       token: "123456",
       redirect: "/p/portfolio-token",
     }));
-    expect(await screen.findByText(/Interest sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
   });
 
   it("keeps verification disabled until six digits and resets an invalid code", async () => {
     verifyAuthenticationCode.mockResolvedValueOnce({ ok: false, body: { error: "That code is incorrect or has expired." } });
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
     fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
     fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
@@ -114,7 +114,7 @@ describe("interest request flow", () => {
 
   it("keeps location and introductions optional in the form", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
 
     expect(screen.getByLabelText("Your full name")).toBeRequired();
@@ -139,7 +139,7 @@ describe("interest request flow", () => {
     startAuthentication.mockResolvedValueOnce({ ok: true, body: { url: "https://accounts.google.test/oauth" } });
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
     expect(screen.getByText("Already use VivIntro?")).toBeInTheDocument();
     const googleButton = screen.getByRole("button", { name: "Continue with Google" });
     expect(googleButton).toHaveClass("portfolio-button-primary");
@@ -154,7 +154,7 @@ describe("interest request flow", () => {
 
   it("reuses an authenticated VivIntro profile and asks only for context", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", city: "Toronto" }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Request protected access" }));
 
     expect(screen.getByRole("heading", { name: "Add a note for Ananya's family" })).toBeInTheDocument();
     expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
@@ -214,9 +214,9 @@ describe("interest request flow", () => {
   it("disables interest on the signed-in owner's own portfolio", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="owner@example.com" isOwner />);
 
-    const action = screen.getByRole("button", { name: "Show interest" });
+    const action = screen.getByRole("button", { name: "Request protected access" });
     expect(action).toBeDisabled();
-    expect(screen.getByText("This is your portfolio.")).toBeInTheDocument();
+    expect(screen.getByText("This is your introduction.")).toBeInTheDocument();
     fireEvent.click(action);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

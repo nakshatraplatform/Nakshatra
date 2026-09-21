@@ -522,22 +522,22 @@ export default function CelestialUnion({
       <header className="portfolio-header">
         <div className="portfolio-header-inner">
           <VivIntroBrand href="#main-content" variant="horizontal" className="portfolio-brand" />
-          <nav aria-label="Portfolio quick actions">
+          <nav aria-label="Introduction quick actions">
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
             {!briefPublicView && <a href="#portfolio-profile">Details</a>}
           </nav>
-          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
+          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Request access</a>}
         </div>
       </header>
 
       {approvedViewer && (
-        <aside className="portfolio-access-context" aria-label="Complete Portfolio access details">
+        <aside className="portfolio-access-context" aria-label="Protected access details">
           <ShieldCheck aria-hidden="true" />
           <div>
-            <strong>Complete Portfolio access</strong>
+            <strong>Protected access</strong>
             <span>
-              Shared with your signed-in account by the portfolio owner
+              Shared with your signed-in account by the introduction owner
               {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
             </span>
           </div>
@@ -554,13 +554,13 @@ export default function CelestialUnion({
             </div>
           </div>
           <div className="portfolio-hero-copy">
-            <p className="portfolio-eyebrow">A personal portfolio</p>
+            <p className="portfolio-eyebrow">A private introduction</p>
             <div className="portfolio-name-row">
-              <h1 id="portfolio-name">{clean(data.personal.name) || "Personal portfolio"}</h1>
+              <h1 id="portfolio-name">{clean(data.personal.name) || "Private introduction"}</h1>
               {identityVerified && (
                 <span
                   className="portfolio-verified-badge"
-                  aria-label="Identity verified. Verification confirms that this portfolio belongs to a real person; it is not a personal, employment, financial, or background endorsement."
+                  aria-label="Identity checked. The check confirms that the creator completed VivIntro’s identity process; it does not verify every statement or endorse a match."
                   title="Identity verified"
                 >
                   <ShieldCheck aria-hidden="true" />
@@ -640,13 +640,13 @@ export default function CelestialUnion({
           <section id="portfolio-interest" className="portfolio-protected-section">
             <div className="portfolio-protected-copy">
               <p className="portfolio-eyebrow">Respectful access</p>
-              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the profile owner" : "More can be shared after approval."}</h2>
+              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the introduction owner" : "More can be shared after approval."}</h2>
               <p>
                 {ownerPreview
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
-                    ? "These contact details became visible when the profile owner approved your request."
-                    : "Introduce yourself using a verified email. The profile owner decides whether to share the Complete Portfolio with you."}
+                    ? "These contact details became visible when the introduction owner approved your request."
+                    : "Introduce yourself using a verified email. The introduction owner decides whether to share the protected details with you."}
               </p>
             </div>
             {protectedItems.length > 0 && (
@@ -655,7 +655,7 @@ export default function CelestialUnion({
                   {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
                 </div>
                 {!hasApprovedAccess && (
-                  <p className="portfolio-protected-clarifier">One approved request shares everything listed above in the Complete Portfolio.</p>
+                  <p className="portfolio-protected-clarifier">One approved request shares everything listed above for up to 15 days.</p>
                 )}
               </div>
             )}
@@ -679,11 +679,11 @@ export default function CelestialUnion({
           <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
-              <h2 id="portfolio-creator-cta-title">Like how this portfolio was presented?</h2>
-              <p>Explore VivIntro and join the launch waitlist to create your own portfolio when access becomes available.</p>
+              <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
+              <p>Request a private-pilot invitation to create one current introduction and keep sensitive details protected until you approve access.</p>
             </div>
             <a href="/waitlist">
-              Create your own portfolio
+              Request an invitation
               <ArrowRight aria-hidden="true" />
             </a>
           </aside>
@@ -692,7 +692,8 @@ export default function CelestialUnion({
 
       <footer className="portfolio-footer">
         <div><VivIntroBrand variant="full-symbol" decorative /></div>
-        <p>One clear wedding portfolio.</p>
+        <p>Private marriage introductions, shared with care.</p>
+        <a href="/received-a-link">Received this link? Read the viewer guide</a>
       </footer>
     </div>
   );
@@ -777,7 +778,7 @@ function ProtectedInline({ heading, detail, showAction }: { heading: string; det
   return (
     <div className="portfolio-protected-note">
       <LockKeyhole aria-hidden="true" />
-      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p>
+      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Request access</a>}</p>
     </div>
   );
 }
@@ -793,7 +794,7 @@ function protectedChapter(id: string, eyebrow: string, title: string, message: s
     id,
     eyebrow,
     title,
-    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p></div>,
+    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Request access</a>}</p></div>,
   };
 }
 

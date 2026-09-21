@@ -26,7 +26,7 @@ const tourSteps = [
     number: "02",
     label: "Preview and verify",
     title: "See every view before anyone else does.",
-    body: "Compare the shared Introduction with the protected Complete Portfolio, then complete the required identity check before publication.",
+    body: "Compare the shared introduction with its protected details, then complete the required identity check before publication.",
     points: ["Shared Introduction preview", "Protected view preview", "Identity check"],
     icon: BadgeCheck,
   },
@@ -42,7 +42,7 @@ const tourSteps = [
     number: "04",
     label: "Approve",
     title: "Open protected details deliberately.",
-    body: "Review verified interest in your dashboard and decide who receives Complete Portfolio access for 15 days.",
+    body: "Review email-confirmed requests in your dashboard and decide who receives protected access for 15 days.",
     points: ["Verified email request", "Owner approval", "Access can end early"],
     icon: UserCheck,
   },
@@ -78,8 +78,8 @@ export function GuidedTour() {
       <div className={styles.guidedTourInner}>
         <div className={styles.guidedTourIntro}>
           <p className={styles.eyebrow}>A guided tour</p>
-          <h2>Four moves from a private draft to approved access.</h2>
-          <p>Choose a step or scroll through the four-stage path from private draft to approved access.</p>
+          <h2>How VivIntro works</h2>
+          <p>Create once, share carefully, and decide what comes next—from a private draft to time-limited protected access.</p>
           <nav className={styles.tourNavigation} aria-label="Guided tour steps">
             {tourSteps.map((step) => (
               <a
@@ -125,7 +125,7 @@ export function GuidedTour() {
 function TourVisual({ step }: { step: string }) {
   if (step === "01") {
     return (
-      <div className={styles.tourVisual} data-visual="create" aria-label="Example private portfolio draft">
+      <div className={styles.tourVisual} data-visual="create" aria-label="Example private introduction draft">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Private draft</small></div>
         <div className={styles.tourFormRows}><span /><span /><span /><span /></div>
         <div className={styles.tourSaveState}><Check aria-hidden="true" />Changes saved</div>
@@ -145,7 +145,7 @@ function TourVisual({ step }: { step: string }) {
 
   if (step === "03") {
     return (
-      <div className={styles.tourVisual} data-visual="share" aria-label="Current portfolio link">
+      <div className={styles.tourVisual} data-visual="share" aria-label="Current introduction link">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Published link</small></div>
         <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>vivintro.com/p/</small><strong>3Gk7mP2xQ8vL5cN1</strong></span></div>
         <div className={styles.tourChannels}><span>WhatsApp</span><span>Email</span><span>Copy link</span></div>

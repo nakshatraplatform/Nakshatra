@@ -9,7 +9,7 @@ export default function AboutPage() {
   return (
     <PolicyLayout
       eyebrow="About VivIntro"
-      title="Consent infrastructure for private marriage introductions."
+      title="A more thoughtful way to share marriage introductions."
       summary="VivIntro is not a biodata generator or matchmaking directory. It separates a thoughtful first introduction from the sensitive information that should be disclosed only with permission."
     >
       <PolicySection title="The product idea">

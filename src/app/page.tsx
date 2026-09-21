@@ -4,20 +4,20 @@ import { LandingExperience, landingFaqs } from "@/components/landing/LandingExpe
 export const metadata: Metadata = {
   title: { absolute: "VivIntro — Private Marriage Introductions You Control" },
   description:
-    "Share one marriage introduction with any family. Your phone number, horoscope, and documents stay private until you approve each request.",
+    "Create one current marriage introduction link instead of repeatedly sharing biodata PDFs. Keep contact details and horoscope files protected until you approve access.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "/",
     title: "VivIntro — Private Marriage Introductions You Control",
     description:
-      "One private introduction link. Contact details and documents stay protected until the owner approves access.",
+      "One thoughtful marriage introduction to share and update anytime. Contact details and horoscope files remain protected until you approve access.",
   },
   twitter: {
     card: "summary_large_image",
     title: "VivIntro — Private Marriage Introductions You Control",
     description:
-      "One private introduction link. Contact details and documents stay protected until the owner approves access.",
+      "One thoughtful marriage introduction to share and update anytime. Contact details and horoscope files remain protected until you approve access.",
   },
 };
 

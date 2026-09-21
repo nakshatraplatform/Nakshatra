@@ -166,7 +166,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Female")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Explore profile" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "How privacy works" })).not.toBeInTheDocument();
-    const quickActions = screen.getByRole("navigation", { name: "Portfolio quick actions" });
+    const quickActions = screen.getByRole("navigation", { name: "Introduction quick actions" });
     expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
@@ -207,7 +207,7 @@ describe("celestial union portfolio", () => {
     const { rerender } = render(
       <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
-    expect(screen.getByLabelText("Complete Portfolio access details")).toBeInTheDocument();
+    expect(screen.getByLabelText("Protected access details")).toBeInTheDocument();
     expect(screen.queryByText("Complete Portfolio", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
@@ -222,7 +222,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Future plans" })).toBeInTheDocument();
     expect(screen.getByText("Near family, in a separate home")).toBeInTheDocument();
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Contact shared by the profile owner" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Contact shared by the introduction owner" })).toBeInTheDocument();
 
     rerender(<CelestialUnion data={createPublicPortfolioSnapshot(complete)} sunSign="kanya" accessMode="public" />);
     expect(screen.queryByRole("link", { name: /original horoscope/i })).not.toBeInTheDocument();
@@ -240,11 +240,11 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const context = screen.getByLabelText("Complete Portfolio access details");
-    expect(within(context).getByText("Complete Portfolio access")).toBeInTheDocument();
-    expect(within(context).getByText(/Shared with your signed-in account by the portfolio owner/)).toBeInTheDocument();
+    const context = screen.getByLabelText("Protected access details");
+    expect(within(context).getByText("Protected access")).toBeInTheDocument();
+    expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Identity verified\. Verification confirms/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Identity checked\. The check confirms/)).toBeInTheDocument();
   });
 
   it("always renders the public interest action, even without protected labels", () => {
@@ -258,11 +258,11 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Request access" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Request access" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/waitlist");
+    expect(screen.getByRole("link", { name: "Request an invitation" })).toHaveAttribute("href", "/waitlist");
   });
 
   it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
@@ -274,11 +274,11 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Like how this portfolio was presented?" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/waitlist");
+    expect(screen.getByRole("heading", { name: "Want to share an introduction with this level of care?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Request an invitation" })).toHaveAttribute("href", "/waitlist");
 
     rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
-    expect(screen.queryByRole("link", { name: "Create your own portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Request an invitation" })).not.toBeInTheDocument();
   });
 
   it("links protected chapters to the interest action and explains the disclosure bundle", () => {
@@ -298,8 +298,8 @@ describe("celestial union portfolio", () => {
     const family = document.getElementById("family");
     expect(family).toBeTruthy();
     expect(within(family!).getByText("Family shared after approval")).toBeInTheDocument();
-    expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(screen.getByText("One approved request shares everything listed above in the Complete Portfolio.")).toBeInTheDocument();
+    expect(within(family!).getByRole("link", { name: "Request access" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
   });
 
   it("keeps protected gallery slots visible in the Brief Introduction", () => {
