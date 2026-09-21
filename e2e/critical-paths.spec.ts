@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("landing page presents the product and reaches the launch waitlist", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("VivIntro — Private Marriage Introductions You Control");
-  await expect(page.getByRole("heading", { name: /phone number shouldn’t travel together/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
   const primaryCta = page.getByRole("main").getByRole("link", { name: /request an invitation/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/waitlist");
   await page.goto("/waitlist");
@@ -57,7 +57,7 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   await expect(main.getByRole("link", { name: /request an invitation/i }).first()).toBeVisible();
-  await expect(main.getByRole("link", { name: /see a real introduction/i })).toBeVisible();
+  await expect(main.getByRole("link", { name: /view a sample introduction/i })).toBeVisible();
 });
 
 test("landing concepts keep the same clear path to the launch waitlist", async ({ page }) => {
@@ -80,11 +80,11 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
-  const verifiedBadge = page.getByLabel(/Identity verified\. Verification confirms/);
+  const verifiedBadge = page.getByLabel(/Identity checked\. The check confirms/);
   await expect(verifiedBadge).toBeVisible();
   await expect(verifiedBadge).toHaveAttribute(
     "aria-label",
-    /not a personal, employment, financial, or background endorsement/
+    /does not verify every statement or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();

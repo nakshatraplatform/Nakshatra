@@ -527,7 +527,7 @@ export default function CelestialUnion({
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
             {!briefPublicView && <a href="#portfolio-profile">Details</a>}
           </nav>
-          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Request access</a>}
+          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
         </div>
       </header>
 
@@ -778,7 +778,7 @@ function ProtectedInline({ heading, detail, showAction }: { heading: string; det
   return (
     <div className="portfolio-protected-note">
       <LockKeyhole aria-hidden="true" />
-      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Request access</a>}</p>
+      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p>
     </div>
   );
 }
@@ -794,7 +794,7 @@ function protectedChapter(id: string, eyebrow: string, title: string, message: s
     id,
     eyebrow,
     title,
-    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Request access</a>}</p></div>,
+    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p></div>,
   };
 }
 

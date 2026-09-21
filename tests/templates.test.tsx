@@ -258,8 +258,8 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Request access" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Request access" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request an invitation" })).toHaveAttribute("href", "/waitlist");
@@ -298,7 +298,7 @@ describe("celestial union portfolio", () => {
     const family = document.getElementById("family");
     expect(family).toBeTruthy();
     expect(within(family!).getByText("Family shared after approval")).toBeInTheDocument();
-    expect(within(family!).getByRole("link", { name: "Request access" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
   });
 

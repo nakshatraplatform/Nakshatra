@@ -272,7 +272,7 @@ describe("public portfolio pages", () => {
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
 
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
-    expect(screen.getByRole("button", { name: "Request protected access" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Show interest" })).toBeDisabled();
     expect(screen.getByText("This is your introduction.")).toBeInTheDocument();
     expect(screen.queryByText(/Owner-only approved data/)).not.toBeInTheDocument();
     expect(mocks.rpc).toHaveBeenCalledWith("resolve_approved_portfolio", { p_share_token: "token" });
