@@ -81,6 +81,11 @@ vi.mock("@/components/templates", () => ({
   ),
 }));
 vi.mock("@/components/auth/AuthForm", () => ({ AuthForm: ({ mode }: { mode: string }) => <div>auth:{mode}</div> }));
+vi.mock("@/app/pilot-access/pilot-access-client", () => ({
+  default: (props: { initialStep: string; initialError?: string | null; initialState?: unknown }) => (
+    <div data-testid="pilot-access-props">{JSON.stringify(props)}</div>
+  ),
+}));
 vi.mock("@/app/dashboard/dashboard-client", () => ({ default: (props: { userEmail: string; shareUrl: string | null; viewCount: number }) => <div data-testid="dashboard-props">{JSON.stringify(props)}</div> }));
 vi.mock("@/app/account/account-client", () => ({ default: (props: { userEmail: string; initialDeletion: unknown }) => <div data-testid="account-props">{JSON.stringify(props)}</div> }));
 vi.mock("@/app/access/[grantId]/access-verification-client", () => ({
@@ -103,6 +108,15 @@ import PreviewLoading from "../src/app/preview/loading";
 import AppError from "../src/app/error";
 import AccountPage from "../src/app/account/page";
 import CompletePortfolioAccessPage from "../src/app/access/[grantId]/page";
+import AboutPage from "../src/app/about/page";
+import DemoPage from "../src/app/demo/page";
+import PrivacyPage from "../src/app/privacy/page";
+import ReceivedALinkPage from "../src/app/received-a-link/page";
+import TermsPage from "../src/app/terms/page";
+import TrustPage from "../src/app/trust/page";
+import WaitlistPage from "../src/app/waitlist/page";
+import robots from "../src/app/robots";
+import sitemap from "../src/app/sitemap";
 
 const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
@@ -330,6 +344,38 @@ describe("complete portfolio access landing", () => {
 });
 
 describe("static app surfaces", () => {
+  it("renders the public trust, legal, viewer, and demo routes", () => {
+    const pages = [
+      <AboutPage key="about" />,
+      <PrivacyPage key="privacy" />,
+      <TermsPage key="terms" />,
+      <TrustPage key="trust" />,
+      <ReceivedALinkPage key="received" />,
+      <DemoPage key="demo" />,
+    ];
+
+    const { rerender } = render(pages[0]);
+    expect(screen.getByRole("heading", { name: /consent infrastructure/i })).toBeInTheDocument();
+    for (const page of pages.slice(1)) rerender(page);
+    expect(screen.getByText(/fictional demo portfolio/i)).toBeInTheDocument();
+    expect(screen.getByTestId("template")).toHaveTextContent("Ananya Mehta:public");
+  });
+
+  it("publishes canonical crawler metadata for public routes only", () => {
+    expect(robots().rules).toEqual(expect.arrayContaining([
+      expect.objectContaining({ disallow: expect.arrayContaining(["/api/", "/dashboard/"]) }),
+    ]));
+    expect(sitemap()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ url: "https://www.vivintro.com", priority: 1 }),
+      expect.objectContaining({ url: "https://www.vivintro.com/demo", priority: 0.8 }),
+    ]));
+  });
+
+  it("renders the invitation route for signed-out visitors", async () => {
+    render(await WaitlistPage());
+    expect(screen.getByTestId("pilot-access-props")).toHaveTextContent('"initialStep":"identify"');
+  });
+
   it("renders auth pages, layout, and loading states", async () => {
     const layout = RootLayout({ children: <main>child</main> });
     expect(layout.props.lang).toBe("en");

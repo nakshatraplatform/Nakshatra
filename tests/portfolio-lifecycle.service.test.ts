@@ -238,6 +238,22 @@ describe("portfolio lifecycle services", () => {
   });
 
   it.each([
+    ["publication_verification_required", "IDENTITY_VERIFICATION_REQUIRED", 409],
+    ["publication_payment_required", "PAYMENT_REQUIRED", 409],
+    ["publication_disclosure_required", "DISCLOSURE_REQUIRED", 409],
+    ["publication_content_required", "PORTFOLIO_NOT_READY", 400],
+  ])("maps the database %s guard to a safe publish error", async (message, code, status) => {
+    repository.publishPortfolioTransaction.mockResolvedValue({
+      data: null,
+      error: new Error(message),
+    });
+
+    await expect(
+      publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
+    ).rejects.toMatchObject({ code, status });
+  });
+
+  it.each([
     [{ verificationStatus: "required" }, "IDENTITY_VERIFICATION_REQUIRED"],
     [{ paymentActive: false }, "PAYMENT_REQUIRED"],
     [{ disclosureConfirmed: false }, "DISCLOSURE_REQUIRED"],
