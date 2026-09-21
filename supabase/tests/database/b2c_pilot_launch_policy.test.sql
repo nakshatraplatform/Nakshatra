@@ -122,9 +122,9 @@ select is(
   'an invited and currently verified owner can publish'
 );
 select ok(
-  (select expires_at between now() + interval '29 days' and now() + interval '31 days'
+  (select expires_at is null
    from public.portfolios where id = '74000000-0000-4000-8000-000000000001'),
-  'the database replaces the caller expiry with a 30-day public window'
+  'the database keeps the public introduction active until it is unpublished'
 );
 
 reset role;

@@ -262,7 +262,7 @@ describe("celestial union portfolio", () => {
     expect(within(screen.getByRole("navigation", { name: "Portfolio quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/pilot-access");
+    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/waitlist");
   });
 
   it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
@@ -275,7 +275,7 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Like how this portfolio was presented?" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/pilot-access");
+    expect(screen.getByRole("link", { name: "Create your own portfolio" })).toHaveAttribute("href", "/waitlist");
 
     rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
     expect(screen.queryByRole("link", { name: "Create your own portfolio" })).not.toBeInTheDocument();

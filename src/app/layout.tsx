@@ -39,14 +39,19 @@ const portfolioSection = Tenor_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.vivintro.com"
   ),
   title: {
-    default: "VivIntro — Digital Wedding Portfolio",
+    default: "VivIntro — Private Marriage Introductions You Control",
     template: "%s | VivIntro",
   },
   description:
-    "Create one clear wedding portfolio for your profile, photos, family details, and horoscope.",
+    "Share one private marriage introduction. Keep contact details and documents protected until you approve each request.",
+  openGraph: {
+    type: "website",
+    siteName: "VivIntro",
+    locale: "en_IN",
+  },
 };
 
 export default function RootLayout({

@@ -19,7 +19,7 @@ export default async function SignupPage({
   const requested = (await searchParams).redirect;
   const destination = sanitizeInternalRedirect(typeof requested === "string" ? requested : undefined);
   if (auth.status === "authenticated") redirect(destination);
-  if (!isBrokerdeskAuthRedirect(destination)) redirect("/pilot-access");
+  if (!isBrokerdeskAuthRedirect(destination)) redirect("/waitlist");
 
   return (
     <Suspense>

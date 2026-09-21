@@ -35,7 +35,7 @@ const publishTransactionResultSchema = z.object({
   ]),
   action: z.enum(["created", "updated"]).optional(),
   shareToken: z.string().optional(),
-  expiresAt: z.string().optional(),
+  expiresAt: z.string().nullable().optional(),
 });
 
 export class PortfolioPublishError extends Error {
@@ -183,13 +183,13 @@ export async function publishPortfolio({
       409
     );
   }
-  if (transaction.data.status !== "ok" || !transaction.data.action || !transaction.data.shareToken || !transaction.data.expiresAt) {
+  if (transaction.data.status !== "ok" || !transaction.data.action || !transaction.data.shareToken) {
     throw new PortfolioPublishError("We could not authorize this portfolio update.", "PORTFOLIO_NOT_FOUND", 404);
   }
 
   return {
     action: transaction.data.action,
-    expiresAt: transaction.data.expiresAt,
+    expiresAt: transaction.data.expiresAt ?? null,
     shareToken: transaction.data.shareToken,
     shareUrl: createShareUrl(transaction.data.shareToken),
   } as const;

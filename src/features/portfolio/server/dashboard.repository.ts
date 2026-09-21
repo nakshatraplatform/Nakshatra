@@ -33,7 +33,7 @@ export interface PublishPortfolioTransactionPayload {
   publicData: Record<string, unknown>;
   approvedData: Record<string, unknown>;
   shareToken: string;
-  expiresAt: string;
+  expiresAt: string | null;
   templateId: number;
   themeColor: string | null;
   sunSign: string | null;
@@ -133,7 +133,7 @@ export class DashboardRepository {
   }
 
   /** Atomically extends owner and public snapshot expiry. */
-  async renewPortfolioTransaction(expiresAt: string) {
+  async renewPortfolioTransaction(expiresAt: string | null) {
     return this.supabase.rpc("renew_portfolio_transaction", { p_expires_at: expiresAt });
   }
 

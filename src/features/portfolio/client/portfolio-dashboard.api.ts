@@ -48,7 +48,7 @@ async function requestPortfolioApi<T>(url: string, init: RequestInit): Promise<P
 
 /** Publishes the supplied private draft into the owner's sanitized public snapshot. */
 export function publishPortfolioRequest(data: PortfolioData) {
-  return requestPortfolioApi<{ shareUrl: string; expiresAt: string; action: "created" | "updated" }>(
+  return requestPortfolioApi<{ shareUrl: string; expiresAt: string | null; action: "created" | "updated" }>(
     "/api/portfolio/publish",
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data }) }
   );
@@ -70,7 +70,7 @@ export function updatePublicationProgressRequest(action: PublicationProgressActi
   );
 }
 
-/** Extends an already published portfolio link for another 30 days. */
+/** Reactivates an already published portfolio link until it is unpublished. */
 export function renewPortfolioLinkRequest() {
   return requestPortfolioApi<{ ok: true }>("/api/portfolio/renew", { method: "POST" });
 }

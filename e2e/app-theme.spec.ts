@@ -84,7 +84,7 @@ test("invalid and blocked storage are safe and do not prevent switching", async 
 });
 
 test("public screens support both themes without layout overflow", async ({ page }, testInfo) => {
-  for (const route of ["/", "/login", "/signup", "/reset-password", "/pilot-access", "/privacy", "/verification/result", "/verify/unavailable"]) {
+  for (const route of ["/", "/login", "/signup", "/reset-password", "/waitlist", "/privacy", "/verification/result", "/verify/unavailable"]) {
     await page.goto(route);
     await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
     await noOverflow(page);
@@ -92,7 +92,7 @@ test("public screens support both themes without layout overflow", async ({ page
     await page.getByRole("button", { name: "Switch to Dark theme" }).click();
     await expect(page.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
     await noOverflow(page);
-    if (route === "/" || route === "/login" || route === "/pilot-access") await page.screenshot({ path: testInfo.outputPath(`${route === "/" ? "landing" : route.slice(1)}-dark.png`), fullPage: true, animations: "disabled" });
+    if (route === "/" || route === "/login" || route === "/waitlist") await page.screenshot({ path: testInfo.outputPath(`${route === "/" ? "landing" : route.slice(1)}-dark.png`), fullPage: true, animations: "disabled" });
     await page.getByRole("button", { name: "Switch to Light theme" }).click();
   }
 });
