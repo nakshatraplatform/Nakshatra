@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       const isBrokerdeskContinuation = isBrokerdeskAuthRedirect(redirect);
       if (!isBrokerdeskContinuation) {
         return NextResponse.json(
-          { code: "SIGNUP_CLOSED", error: "Public signup is not open yet. Join the waitlist for launch updates." },
+          { code: "SIGNUP_CLOSED", error: "Public signup is not open yet. Request an invitation to the private pilot." },
           { status: 403, headers: { "Cache-Control": "private, no-store" } }
         );
       }
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
     if (parsed.data.method === "email_otp" || parsed.data.method === "pilot_access_otp") {
       const isPilotApplicant = parsed.data.method === "pilot_access_otp";
       const redirect = isPilotApplicant
-        ? "/pilot-access"
+        ? "/waitlist"
         : sanitizeInternalRedirect("redirect" in parsed.data ? parsed.data.redirect : undefined, "/");
       const callbackUrl = createCanonicalAppUrl(
         `/api/auth/callback?next=${encodeURIComponent(redirect)}`,

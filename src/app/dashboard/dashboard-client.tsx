@@ -264,7 +264,7 @@ export default function DashboardClient({
 
   async function renewLink() {
     if (!portfolio) return;
-    if (!confirm("Renew link for 30 days?")) return;
+    if (!confirm("Reactivate this link until you unpublish it?")) return;
     setRenewing(true);
     setDraftError(null);
     try {
@@ -627,8 +627,8 @@ export default function DashboardClient({
                   Creator access for this account has been paused. Your saved information remains protected.
                 </div>
               ) : (
-                <Link href="/pilot-access" className="dashboard-primary-action">
-                  Join the waitlist
+                <Link href="/waitlist" className="dashboard-primary-action">
+                  Request an invitation
                 </Link>
               )}
               <Link href="/" className="text-sm font-semibold text-[light-dark(#315f57,var(--app-dark-accent))]">
@@ -688,7 +688,7 @@ export default function DashboardClient({
                     ? canCreatePortfolio && (
                       <button type="button" onClick={renewLink} disabled={renewing} className="dashboard-primary-action">
                         <RefreshCw className={`h-4 w-4 ${renewing ? "animate-spin" : ""}`} />
-                        {renewing ? "Renewing link..." : "Renew public link"}
+                        {renewing ? "Reactivating link..." : "Reactivate public link"}
                       </button>
                     )
                     : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share portfolio</button>}
@@ -718,6 +718,8 @@ export default function DashboardClient({
                 <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
                   {isExpired
                     ? "Expired"
+                    : portfolio?.is_published && daysLeft === null
+                    ? "Active until unpublished"
                     : portfolio?.is_published && daysLeft !== null
                     ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
                     : "Not published"}

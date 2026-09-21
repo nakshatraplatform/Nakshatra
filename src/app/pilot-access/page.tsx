@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import PilotAccessClient from "./pilot-access-client";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Join the waitlist",
-  description: "Join the VivIntro launch waitlist.",
+  title: "Waitlist moved",
+  robots: { index: false, follow: false },
 };
 
 export default function PilotAccessPage() {
-  return <PilotAccessClient />;
+  redirect("/waitlist");
 }

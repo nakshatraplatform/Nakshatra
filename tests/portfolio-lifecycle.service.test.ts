@@ -106,8 +106,7 @@ describe("portfolio lifecycle services", () => {
     });
   });
 
-  it("publishes a saved draft with a share token, expiry, and safe snapshot", async () => {
-    const before = Date.now();
+  it("publishes a saved draft with a durable share token and safe snapshot", async () => {
     const result = await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
     expect(repository.publishPortfolioTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -127,9 +126,7 @@ describe("portfolio lifecycle services", () => {
         }),
       })
     );
-    const requestedExpiry = Date.parse(repository.publishPortfolioTransaction.mock.calls[0][0].expiresAt);
-    expect(requestedExpiry).toBeGreaterThan(before + 29 * 86_400_000);
-    expect(requestedExpiry).toBeLessThan(before + 31 * 86_400_000);
+    expect(repository.publishPortfolioTransaction.mock.calls[0][0].expiresAt).toBeNull();
     expect(result).toMatchObject({ action: "created", shareUrl: expect.stringContaining("/p/") });
   });
 
@@ -171,7 +168,7 @@ describe("portfolio lifecycle services", () => {
     await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
     expect(repository.publishPortfolioTransaction.mock.calls[0][0]).toMatchObject({
       shareToken: "123456789012345678901",
-      expiresAt: "2099-01-01T00:00:00.000Z",
+      expiresAt: null,
     });
   });
 
@@ -266,12 +263,9 @@ describe("portfolio lifecycle services", () => {
     expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
   });
 
-  it("renews for 30 days and returns a safe error on failure", async () => {
-    const before = Date.now();
+  it("reactivates until unpublished and returns a safe error on failure", async () => {
     await renewPortfolioLink({ supabase: {} as never });
-    const expiresAt = new Date(repository.renewPortfolioTransaction.mock.calls[0][0]).getTime();
-    expect(expiresAt).toBeGreaterThan(before + 29 * 86_400_000);
-    expect(expiresAt).toBeLessThan(before + 31 * 86_400_000);
+    expect(repository.renewPortfolioTransaction).toHaveBeenCalledWith(null);
 
     repository.renewPortfolioTransaction.mockResolvedValue({ data: null, error: new Error("db") });
     await expect(

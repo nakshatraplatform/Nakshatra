@@ -101,7 +101,7 @@ describe("authentication start route", () => {
       email: "applicant@example.com",
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fpilot-access`,
+        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fwaitlist`,
         data: { entry_context: "pilot_applicant" },
       },
     });

@@ -58,7 +58,7 @@ describe("launch waitlist experience", () => {
 
     const user = userEvent.setup();
     render(<PilotAccessClient />);
-    expect(await screen.findByRole("heading", { name: /join the vivintro waitlist/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /request your vivintro invitation/i })).toBeInTheDocument();
     expect(document.querySelector("main")).toHaveClass("pilot-access-shell");
 
     await user.type(screen.getByLabelText("Email address"), "Applicant@Example.com");
@@ -74,20 +74,20 @@ describe("launch waitlist experience", () => {
       purpose: "pilot_access",
       email: "Applicant@Example.com",
       token: "123456",
-      redirect: "/pilot-access",
+      redirect: "/waitlist",
     });
 
     await user.type(await screen.findByLabelText("Your name"), "Aditi Rao");
     await user.type(screen.getByLabelText(/Phone number/), "+14155550100");
     await user.click(screen.getByRole("checkbox"));
-    fireEvent.submit(screen.getByRole("button", { name: "Join the waitlist" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "Request invitation" }).closest("form")!);
     expect(submitPilotAccess).toHaveBeenCalledWith({
       displayName: "Aditi Rao",
       phoneE164: "+14155550100",
       contactConsentVersion: "launch_waitlist_v1",
       idempotencyKey: "pilot-submit:11111111-1111-4111-8111-111111111111",
     });
-    expect(await screen.findByRole("heading", { name: /waitlist is confirmed/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /invitation request is confirmed/i })).toBeInTheDocument();
   });
 
   it("shows approved access and begins Google authentication safely", async () => {
@@ -136,7 +136,7 @@ describe("launch waitlist experience", () => {
     const user = userEvent.setup();
     render(<PilotAccessClient />);
     await user.type(await screen.findByLabelText("Your name"), "Aditi Rao");
-    fireEvent.submit(screen.getByRole("button", { name: "Join the waitlist" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "Request invitation" }).closest("form")!);
     expect(await screen.findByRole("alert")).toHaveTextContent(/confirm that we may contact/i);
     expect(submitPilotAccess).not.toHaveBeenCalled();
   });

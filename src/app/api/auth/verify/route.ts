@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const redirect = parsed.data.purpose === "pilot_access"
-      ? "/pilot-access"
+      ? "/waitlist"
       : sanitizeInternalRedirect(parsed.data.redirect);
     if (parsed.data.purpose === "owner_signup" && !isBrokerdeskAuthRedirect(redirect)) {
       await ensureOwnerPortfolio(supabase, data.user.id);

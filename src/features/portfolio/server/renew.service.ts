@@ -3,11 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 import { DashboardRepository } from "./dashboard.repository";
-import { createPublicPortfolioExpiry } from "./lifecycle-policy";
 
 const renewalResultSchema = z.object({
   status: z.enum(["renewed", "not_published", "unauthorized", "creator_entitlement_required"]),
-  expiresAt: z.string().optional(),
+  expiresAt: z.string().nullable().optional(),
 });
 
 export class PortfolioRenewalError extends Error {
@@ -21,15 +20,14 @@ export class PortfolioRenewalError extends Error {
 }
 
 /**
- * Extends the authenticated owner's portfolio link by the canonical public lifetime.
- * Input: authenticated Supabase client. Output: the synchronized public expiry.
+ * Reactivates the authenticated owner's public link until they unpublish it.
  */
 export async function renewPortfolioLink({
   supabase,
 }: {
   supabase: SupabaseClient;
 }) {
-  const expiresAt = createPublicPortfolioExpiry();
+  const expiresAt = null;
 
   const repository = new DashboardRepository(supabase);
   const { data, error } = await repository.renewPortfolioTransaction(expiresAt);
@@ -47,5 +45,5 @@ export async function renewPortfolioLink({
   if (result.data.status !== "renewed") {
     throw new PortfolioRenewalError("Generate your portfolio before renewing its link.", "PORTFOLIO_NOT_PUBLISHED", 400);
   }
-  return { expiresAt: result.data.expiresAt ?? expiresAt };
+  return { expiresAt: result.data.expiresAt ?? null };
 }

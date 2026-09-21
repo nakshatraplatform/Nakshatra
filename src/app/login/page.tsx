@@ -5,8 +5,8 @@ import { getApiUser } from "@/lib/auth";
 import { sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 export const metadata = {
-  title: "Sign in · VivIntro",
-  description: "Sign in to continue building your digital wedding portfolio.",
+  title: "Sign in",
+  description: "Sign in to manage your private VivIntro marriage introduction.",
   robots: { index: false, follow: false },
 };
 

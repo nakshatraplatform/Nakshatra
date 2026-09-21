@@ -32,8 +32,8 @@ const COPY = {
     body: "Use your email and password, or continue with Google.",
     primaryAction: "Sign in",
     altPrompt: "New to VivIntro?",
-    altCta: "Join the waitlist",
-    altHref: "/pilot-access",
+    altCta: "Request an invitation",
+    altHref: "/waitlist",
   },
   signup: {
     eyebrow: "Invite-only private beta",

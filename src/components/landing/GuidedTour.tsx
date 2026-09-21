@@ -26,8 +26,8 @@ const tourSteps = [
     number: "02",
     label: "Preview and verify",
     title: "See every view before anyone else does.",
-    body: "Compare the public Introduction with the Complete Portfolio, then complete the required identity check before publication.",
-    points: ["Brief and Detailed previews", "Complete Portfolio preview", "Identity verification"],
+    body: "Compare the shared Introduction with the protected Complete Portfolio, then complete the required identity check before publication.",
+    points: ["Shared Introduction preview", "Protected view preview", "Identity check"],
     icon: BadgeCheck,
   },
   {
@@ -137,7 +137,7 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="preview" aria-label="Introduction preview choices">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Preview views</small></div>
-        <div className={styles.tourPreviewTabs}><strong>Brief</strong><strong>Detailed</strong><strong>Complete</strong></div>
+        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Protected</strong><strong>Owner</strong></div>
         <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Identity status</small><strong>Ready for verification</strong></span></div>
       </div>
     );
@@ -147,7 +147,7 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="share" aria-label="Current portfolio link">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Published link</small></div>
-        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>vivintro.com/p/</small><strong>ananya-rao</strong></span></div>
+        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>vivintro.com/p/</small><strong>3Gk7mP2xQ8vL5cN1</strong></span></div>
         <div className={styles.tourChannels}><span>WhatsApp</span><span>Email</span><span>Copy link</span></div>
       </div>
     );
@@ -156,7 +156,7 @@ function TourVisual({ step }: { step: string }) {
   return (
     <div className={styles.tourVisual} data-visual="approve" aria-label="Verified interest request">
       <div className={styles.tourWindowBar}><span /><span /><span /><small>Interest request</small></div>
-      <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Verified viewer</small><strong>Complete Portfolio requested</strong></span></div>
+      <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Email confirmed</small><strong>Protected access requested</strong></span></div>
       <div className={styles.tourDecision}><span>Set aside</span><strong>Approve 15 days</strong></div>
     </div>
   );

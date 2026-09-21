@@ -89,7 +89,7 @@ describe("authentication verification routes", () => {
       redirect: "/dashboard",
     }));
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ redirect: "/pilot-access" });
+    await expect(response.json()).resolves.toMatchObject({ redirect: "/waitlist" });
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 

@@ -211,11 +211,11 @@ describe("public portfolio pages", () => {
 
   it("builds missing and complete metadata", async () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
-    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toEqual({ title: "Biodata Not Found" });
+    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction not found", robots: { index: false } });
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     const metadata = await generateMetadata({ params: Promise.resolve({ token: "token" }) });
-    expect(metadata.title).toBe("Aditi Rao — Wedding Biodata");
-    expect(metadata.description).toContain("Kanya");
+    expect(metadata.title).toBe("Aditi’s private introduction");
+    expect(metadata.description).toContain("Aditi");
   });
 
   it("rejects inactive tokens and renders sanitized public snapshots", async () => {
@@ -283,13 +283,13 @@ describe("public portfolio pages", () => {
     expect(mocks.signedUrl).toHaveBeenCalledWith("owner/portfolio-1/private.webp", expect.any(Number), undefined);
   });
 
-  it("generates fallback and hero-backed Open Graph images", async () => {
+  it("generates privacy-minimised Open Graph images without signing hero media", async () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
     await OpenGraphImage({ params: Promise.resolve({ token: "missing" }) });
     expect(mocks.imageResponse).toHaveBeenLastCalledWith(expect.anything(), { width: 1200, height: 630 });
     mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
     await OpenGraphImage({ params: Promise.resolve({ token: "token" }) });
-    expect(mocks.signedUrl).toHaveBeenCalledWith("hero.webp", 600);
+    expect(mocks.signedUrl).not.toHaveBeenCalled();
   });
 });
 
@@ -335,7 +335,7 @@ describe("static app surfaces", () => {
     expect(layout.props.lang).toBe("en");
     const { rerender } = render(await LoginPage());
     expect(screen.getByText("auth:login")).toBeInTheDocument();
-    await expect(SignupPage()).rejects.toThrow("REDIRECT:/pilot-access");
+    await expect(SignupPage()).rejects.toThrow("REDIRECT:/waitlist");
     rerender(<DashboardLoading />);
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
     rerender(<EditLoading />);

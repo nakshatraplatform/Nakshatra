@@ -74,24 +74,24 @@ describe("landing and shared frontend components", () => {
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /join.*waitlist/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /one marriage introduction\. shared on your terms/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Brief Introduction/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /request.*invitation/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /phone number shouldn’t travel together/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Complete Portfolio/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /pilot is private.*waitlist is open/i })).toBeInTheDocument();
-    expect(screen.getByText(/signup instructions will be sent separately/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /identity verification required/i })).toBeInTheDocument();
-    expect(screen.getByText(/these are not real VivIntro users/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /small by design.*open by invitation/i })).toBeInTheDocument();
+    expect(screen.getByText(/No account is created until you are invited/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /identity check before publishing/i })).toBeInTheDocument();
+    expect(screen.getByText(/every detail in the demo are fictional/i)).toBeInTheDocument();
   });
 
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
-    expect(screen.getByRole("heading", { name: /share your story\. not your privacy/i })).toBeInTheDocument();
-    expect(screen.getByText(/Complete Portfolio needs approval/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /keep personal details personal/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Approval required/i).length).toBeGreaterThan(0);
 
     rerender(<LandingExperience variant="story" />);
-    expect(screen.getByRole("heading", { name: /a biodata is a list\. this is how you’re introduced/i })).toBeInTheDocument();
-    expect(screen.getByText(/opens in their browser/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /more human way to make a marriage introduction/i })).toBeInTheDocument();
+    expect(screen.getByText(/Present the person, not another attachment/i)).toBeInTheDocument();
   });
 
   it("handles empty, selected, disabled, and selectable rashi palettes", async () => {

@@ -682,7 +682,7 @@ export default function CelestialUnion({
               <h2 id="portfolio-creator-cta-title">Like how this portfolio was presented?</h2>
               <p>Explore VivIntro and join the launch waitlist to create your own portfolio when access becomes available.</p>
             </div>
-            <a href="/pilot-access">
+            <a href="/waitlist">
               Create your own portfolio
               <ArrowRight aria-hidden="true" />
             </a>

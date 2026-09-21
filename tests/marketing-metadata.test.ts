@@ -10,17 +10,17 @@ import { metadata } from "../src/app/page";
 import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-image";
 
 describe("marketing metadata", () => {
-  it("uses the biodata recognition anchor and controlled-introduction promise", () => {
-    expect(metadata.title).toBe("VivIntro | Private Wedding Biodata Portfolio");
-    expect(metadata.description).toMatch(/wedding biodata portfolio/i);
-    expect(metadata.description).toMatch(/approve who receives protected details/i);
+  it("uses the controlled-introduction category and consent promise", () => {
+    expect(metadata.title).toEqual({ absolute: "VivIntro — Private Marriage Introductions You Control" });
+    expect(metadata.description).toMatch(/marriage introduction/i);
+    expect(metadata.description).toMatch(/until you approve/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
-      title: "VivIntro | One introduction. On your terms.",
+      title: "VivIntro — Private Marriage Introductions You Control",
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
-      title: "VivIntro | One introduction. On your terms.",
+      title: "VivIntro — Private Marriage Introductions You Control",
     });
   });
 

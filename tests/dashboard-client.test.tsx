@@ -244,7 +244,7 @@ describe("dashboard client", () => {
       "data-link-state",
       "expired"
     );
-    fireEvent.click(screen.getByRole("button", { name: "Renew public link" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reactivate public link" }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
   });
 

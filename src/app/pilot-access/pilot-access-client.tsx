@@ -36,9 +36,9 @@ function messageForState(state: PilotAccessState) {
     case "pending":
       return {
         icon: Clock3,
-      eyebrow: "You're on the list",
-      title: "Your place on the launch waitlist is confirmed.",
-      body: "We will contact your verified email when signup opens. Joining the waitlist does not create portfolio access.",
+      eyebrow: "Request received",
+      title: "Your invitation request is confirmed.",
+      body: "We will contact your verified email when a private-pilot place is available. No account or portfolio access has been created yet.",
       };
     case "declined":
       return {
@@ -59,16 +59,16 @@ function messageForState(state: PilotAccessState) {
   }
 }
 
-export default function PilotAccessClient() {
-  const [step, setStep] = useState<Step>("loading");
-  const [state, setState] = useState<PilotAccessState | null>(null);
+export default function PilotAccessClient({ initialStep = "loading", initialState = null, initialError = null }: { initialStep?: Step; initialState?: PilotAccessState | null; initialError?: string | null }) {
+  const [step, setStep] = useState<Step>(initialStep);
+  const [state, setState] = useState<PilotAccessState | null>(initialState);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
 
   async function refreshState() {
     const result = await getPilotAccessState();
@@ -86,9 +86,10 @@ export default function PilotAccessClient() {
   }
 
   useEffect(() => {
+    if (initialStep !== "loading") return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial state comes from an external authenticated API response.
     void refreshState();
-  }, []);
+  }, [initialStep]);
 
   async function sendCode(event: FormEvent) {
     event.preventDefault();
@@ -111,7 +112,7 @@ export default function PilotAccessClient() {
       purpose: "pilot_access",
       email,
       token: otp,
-      redirect: "/pilot-access",
+      redirect: "/waitlist",
     });
     if (!result.ok) {
       setBusy(false);
@@ -125,7 +126,7 @@ export default function PilotAccessClient() {
   async function continueWithGoogle() {
     setBusy(true);
     setError(null);
-    const result = await startAuthentication({ method: "google", redirect: "/pilot-access" });
+    const result = await startAuthentication({ method: "google", redirect: "/waitlist" });
     if (result.ok && result.body?.url) {
       continueToAuthProvider(result.body.url);
       return;
@@ -165,13 +166,13 @@ export default function PilotAccessClient() {
       <div className="mx-auto max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
           <VivIntroBrand href="/" variant="horizontal" priority />
-          <div className="app-header-actions"><ThemeSwitch /><span className="rounded-full bg-[light-dark(#e9e2cf,var(--app-dark-surface-soft))] px-3 py-1.5 text-xs font-semibold text-[light-dark(#725d2b,var(--app-dark-gold))]">Launch waitlist</span></div>
+          <div className="app-header-actions"><ThemeSwitch /><span className="rounded-full bg-[light-dark(#e9e2cf,var(--app-dark-surface-soft))] px-3 py-1.5 text-xs font-semibold text-[light-dark(#725d2b,var(--app-dark-gold))]">Private pilot</span></div>
         </header>
 
         <section className="rounded-xl border border-[light-dark(#d0d3ce,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-6 shadow-[0_18px_50px_rgb(29_52_58/0.08)] sm:p-10">
           <div className="mb-7 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
           {step === "loading" ? (
-            <p role="status" className="py-16 text-center text-[light-dark(#475569,var(--app-dark-muted))]">Checking your access…</p>
+            <p role="status" className="py-16 text-center text-[light-dark(#475569,var(--app-dark-muted))]">Preparing your invitation request…</p>
           ) : step === "result" && resultCopy ? (
             <div className="text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] text-[light-dark(#315f57,var(--app-dark-accent))]"><ResultIcon aria-hidden className="h-6 w-6" /></span>
@@ -185,9 +186,9 @@ export default function PilotAccessClient() {
             </div>
           ) : (
             <>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">Launching soon</p>
-              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Join the VivIntro waitlist.</h1>
-              <p className="mt-4 max-w-xl leading-7 text-[light-dark(#475569,var(--app-dark-muted))]">Verify your email and leave a few basic details. We will send your signup invitation when VivIntro opens—joining now does not create portfolio access.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">Private pilot · by invitation</p>
+              <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Request your VivIntro invitation.</h1>
+              <p className="mt-4 max-w-xl leading-7 text-[light-dark(#475569,var(--app-dark-muted))]">We are inviting a small number of creators at a time. Confirm your email and tell us who you are; we will contact you when a pilot place is available.</p>
 
               {error ? <div role="alert" className="mt-6 border-l-4 border-[light-dark(#b7483e,var(--app-dark-border))] bg-[light-dark(#f8e6e2,var(--app-dark-danger-surface))] p-4 text-sm text-[light-dark(#7d302b,var(--app-dark-danger))]">{error}</div> : null}
 
@@ -199,7 +200,7 @@ export default function PilotAccessClient() {
                       <input required type="email" autoComplete="email" maxLength={180} value={email} onChange={(event) => setEmail(event.target.value)} className="min-w-0 flex-1 bg-transparent py-3 outline-none" placeholder="you@example.com" />
                     </span>
                   </label>
-                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Sending code…" : "Verify email to join"}</button>
+                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Sending code…" : "Verify email to request"}</button>
                   <div className="flex items-center gap-3 text-sm text-[light-dark(#64748b,var(--app-dark-muted))]"><span className="h-px flex-1 bg-[light-dark(#d8d8d2,var(--app-dark-surface-soft))]" />or<span className="h-px flex-1 bg-[light-dark(#d8d8d2,var(--app-dark-surface-soft))]" /></div>
                   <button type="button" disabled={busy} onClick={continueWithGoogle} className="dashboard-secondary-action w-full">Verify with Google</button>
                 </form>
@@ -226,14 +227,14 @@ export default function PilotAccessClient() {
                     <input type="tel" autoComplete="tel" pattern="\+[1-9][0-9]{7,14}" placeholder="+14155550100" value={phone} onChange={(event) => setPhone(event.target.value)} className="min-h-12 rounded-lg border border-[light-dark(#adb8ba,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 outline-none focus:border-[light-dark(#477b77,var(--app-dark-border))] focus:ring-2 focus:ring-[#477b77]/20" />
                   </label>
                   <label className="flex items-start gap-3 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#315f57]" /><span>VivIntro may contact me by email, and by phone if provided, about launch access. I can ask to be removed at any time.</span></label>
-                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Joining…" : "Join the waitlist"}</button>
+                  <button disabled={busy} className="dashboard-primary-action w-full">{busy ? "Sending request…" : "Request invitation"}</button>
                 </form>
               ) : null}
             </>
           )}
         </section>
 
-        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>The waitlist does not grant creator or portfolio access. We will send signup instructions separately when launch access is available.</p></div>
+        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>An invitation request does not create an account or portfolio. Signup begins only after VivIntro issues an invitation.</p></div>
       </div>
     </main>
   );

@@ -2686,7 +2686,7 @@ export type Database = {
         Args: {
           p_approved_data: Json
           p_draft_data: Json
-          p_expires_at: string
+          p_expires_at: string | null
           p_portfolio_id: string
           p_public_data: Json
           p_share_token: string
@@ -2705,7 +2705,7 @@ export type Database = {
         Returns: boolean
       }
       renew_portfolio_transaction: {
-        Args: { p_expires_at: string }
+        Args: { p_expires_at: string | null }
         Returns: Json
       }
       replace_candidate_relationships_and_timeline: {

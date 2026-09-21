@@ -26,30 +26,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const portfolio = await resolvePublicPortfolio(supabase, token);
 
   if (!portfolio?.data) {
-    return { title: "Biodata Not Found" };
+    return { title: "Introduction not found", robots: { index: false, follow: false, noarchive: true } };
   }
 
   const data = portfolio.data;
-  const name = data.personal?.name || "Wedding Biodata";
-  const rashi = data.astrology?.rashi || "";
-  const rashiLabel = rashi
-    ? ` | ${rashi.charAt(0).toUpperCase() + rashi.slice(1)}`
-    : "";
-  const description = `${name}'s Wedding Biodata${rashiLabel}`;
+  const firstName = data.personal?.first_name || data.personal?.name?.split(" ")[0] || "A VivIntro member";
+  const description = `A private marriage introduction from ${firstName}, shared through VivIntro.`;
 
   return {
-    title: `${name} — Wedding Biodata`,
+    title: `${firstName}’s private introduction`,
     description,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: false, noarchive: true },
     openGraph: {
-      title: `${name} — Wedding Biodata`,
+      title: `${firstName}’s private introduction`,
       description,
       type: "profile",
       images: [{
         url: `/p/${token}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: `${name}'s wedding portfolio`,
+        alt: `${firstName}’s private VivIntro introduction`,
       }],
     },
   };

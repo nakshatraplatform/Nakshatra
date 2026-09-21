@@ -2,10 +2,9 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createClient } from "@/lib/supabase/server";
-import { PublicPortfolioRepository } from "@/features/portfolio/server/public-portfolio.repository";
 import { resolvePublicPortfolio } from "@/features/portfolio/server/public-portfolio.service";
 
-export const alt = "VivIntro wedding portfolio";
+export const alt = "A private marriage introduction shared through VivIntro";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,8 +14,7 @@ const primaryLogoSrc = `data:image/png;base64,${primaryLogoData}`;
 const reverseLogoSrc = `data:image/png;base64,${reverseLogoData}`;
 
 /**
- * Generates a social preview from the same sanitized snapshot and public hero media as the public page.
- * Input: a share-token route parameter. Output: an Open Graph image without querying owner portfolio data.
+ * Generates a privacy-minimised social preview from the sanitized public snapshot.
  */
 export default async function OpenGraphImage({
   params,
@@ -28,19 +26,7 @@ export default async function OpenGraphImage({
   const snapshot = await resolvePublicPortfolio(supabase, token);
   const data = snapshot?.data;
   const foreground = isLightColor(snapshot?.themeColor) ? "#17151c" : "#fffdf8";
-  let heroUrl: string | undefined;
-
-  if (snapshot) {
-    const hero = snapshot.media.find((item) => item.mediaType === "hero" && item.presentation === "clear");
-    if (hero) {
-      const { data: signedUrl } = await new PublicPortfolioRepository(supabase)
-        .createPhotoUrl(hero.accessPath, 60 * 10);
-      heroUrl = signedUrl?.signedUrl;
-    }
-  }
-
-  const name = data?.personal?.name || "Wedding Biodata";
-  const rashi = data?.astrology?.rashi || snapshot?.sunSign || "";
+  const firstName = data?.personal?.first_name || data?.personal?.name?.split(" ")[0] || "A VivIntro member";
   const background = snapshot?.themeColor || "#17151c";
 
   return new ImageResponse(
@@ -56,36 +42,25 @@ export default async function OpenGraphImage({
           width: "100%",
         }}
       >
-        {heroUrl ? (
-          // Image comes from the portfolio's explicitly public hero media only.
-          <img
-            alt=""
-            src={heroUrl}
-            style={{ height: "100%", objectFit: "cover", opacity: 0.5, width: "52%" }}
-          />
-        ) : null}
         <div
           style={{
-            background: heroUrl ? "rgba(0, 0, 0, 0.28)" : "transparent",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
             padding: "64px",
-            ...(heroUrl ? { inset: 0, position: "absolute" as const } : { position: "relative" as const }),
+            position: "relative" as const,
             width: "100%",
           }}
         >
           <div style={{ display: "flex" }}>
+            {/* next/image is not supported inside ImageResponse rendering. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={isLightColor(snapshot?.themeColor) ? primaryLogoSrc : reverseLogoSrc} alt="" width={150} height={128} />
           </div>
           <div style={{ color: foreground, display: "flex", fontFamily: "serif", fontSize: 78, marginTop: 18 }}>
-            {name}
+            {firstName}’s introduction
           </div>
-          {rashi ? (
-            <div style={{ color: foreground, display: "flex", fontSize: 28, marginTop: 18, opacity: 0.86 }}>
-              {rashi}
-            </div>
-          ) : null}
+          <div style={{ color: foreground, display: "flex", fontSize: 28, marginTop: 18, opacity: 0.86 }}>Private details require the owner’s approval</div>
         </div>
       </div>
     ),
