@@ -10,6 +10,7 @@ import "./globals.css";
 import "./app-theme.css";
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { ThemeBootstrap } from "@/components/theme/ThemeBootstrap";
+import { PrivacySafeAnalytics } from "@/components/analytics/PrivacySafeAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,6 +71,7 @@ export default function RootLayout({
         <ThemeBootstrap />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <AppThemeProvider>{children}</AppThemeProvider>
+        <PrivacySafeAnalytics />
       </body>
     </html>
   );

@@ -28,7 +28,7 @@ describe("interest request flow", () => {
     verifyAuthenticationCode.mockResolvedValue({ ok: true, body: { verified: true, email: "rohan@example.com" } });
   });
 
-  it("submits from a modal and returns to the portfolio confirmation state", async () => {
+  it("submits from a modal and returns to the introduction confirmation state", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })));
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
 
@@ -41,7 +41,7 @@ describe("interest request flow", () => {
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
 
-    expect(await screen.findByText(/Interest sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
     const request = vi.mocked(fetch).mock.calls[0];
     const submitted = JSON.parse(String((request[1] as RequestInit).body));
     expect(submitted).toMatchObject({
@@ -83,7 +83,7 @@ describe("interest request flow", () => {
       token: "123456",
       redirect: "/p/portfolio-token",
     }));
-    expect(await screen.findByText(/Interest sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
   });
 
   it("keeps verification disabled until six digits and resets an invalid code", async () => {
@@ -216,7 +216,7 @@ describe("interest request flow", () => {
 
     const action = screen.getByRole("button", { name: "Show interest" });
     expect(action).toBeDisabled();
-    expect(screen.getByText("This is your portfolio.")).toBeInTheDocument();
+    expect(screen.getByText("This is your introduction.")).toBeInTheDocument();
     fireEvent.click(action);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

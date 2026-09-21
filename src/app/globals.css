@@ -1936,6 +1936,13 @@ body {
   text-transform: none;
 }
 
+[data-template="celestial-union"] .portfolio-footer > a {
+  color: var(--portfolio-primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
 @media (max-width: 980px) {
   [data-template="celestial-union"] .portfolio-header-inner {
     grid-template-columns: 1fr auto;

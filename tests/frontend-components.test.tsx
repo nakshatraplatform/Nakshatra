@@ -75,13 +75,14 @@ describe("landing and shared frontend components", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: /request.*invitation/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /phone number shouldn’t travel together/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
+    expect(screen.getByText(/Private marriage introductions, shared with care/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Complete Portfolio/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /small by design.*open by invitation/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/protected access/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /built for families with introductions already in motion/i })).toBeInTheDocument();
     expect(screen.getByText(/No account is created until you are invited/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /identity check before publishing/i })).toBeInTheDocument();
-    expect(screen.getByText(/every detail in the demo are fictional/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /what does identity checked mean/i })).toBeInTheDocument();
+    expect(screen.getByText(/every detail in this demonstration are fictional/i)).toBeInTheDocument();
   });
 
   it("offers distinct privacy and story-led landing concepts", () => {

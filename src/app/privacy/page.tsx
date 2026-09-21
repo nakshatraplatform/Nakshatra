@@ -23,14 +23,18 @@ export default function PrivacyPage() {
       </PolicySection>
 
       <PolicySection title="Storage and service providers">
-        <p>VivIntro currently uses Supabase for authentication, database and file storage; Vercel for hosting; Didit for the hosted identity-check flow; Google when you choose Google sign-in; and Resend when transactional email delivery is enabled.</p>
+        <p>VivIntro currently uses Supabase for authentication, database and file storage; Vercel for hosting and privacy-focused, cookie-free traffic analytics on public marketing pages; Didit for the hosted identity-check flow; Google when you choose Google sign-in; and Resend when transactional email delivery is enabled. Introduction links, account routes, and URL query strings are excluded from traffic analytics.</p>
         <p>VivIntro stores identity-check consent and verification status. Identity-document images and document numbers are handled in the hosted Didit flow and are not copied into VivIntro.</p>
         <p>Public pages are marked not to be indexed by search engines, but this cannot prevent a person who has the link from saving or forwarding what they can view.</p>
       </PolicySection>
 
+      <PolicySection title="Retention">
+        <p>VivIntro deletes anonymous viewer sessions after 90 days and introduction-view analytics after 395 days. Personal details on rejected or closed access requests are anonymized after 180 days. Security audit events are retained for up to 730 days, completed deletion receipts for 30 days, and provider-managed database backups have a 30-day retention target.</p>
+      </PolicySection>
+
       <PolicySection title="Your choices and requests">
-        <p>You can edit a draft, change appearance and privacy mode, unpublish an introduction, or replace its public link. Public introductions remain active until you unpublish them; approved Complete Portfolio access lasts 15 days and can be ended earlier.</p>
-        <p>Self-service account deletion is not available yet. To request access, correction, deletion, consent withdrawal, or help with a privacy concern, email <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>.</p>
+        <p>You can edit a draft, change appearance and privacy mode, unpublish an introduction, or replace its public link. Public introductions remain active until you unpublish them; approved access to protected details lasts 15 days and can be ended earlier.</p>
+        <p>Signed-in users can download an account export or schedule account deletion from Account and Privacy after a fresh sign-in. You can also request access, correction, deletion, consent withdrawal, or help with a privacy concern by emailing <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>.</p>
       </PolicySection>
 
       <PolicySection title="Privacy and grievance contact">

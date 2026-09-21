@@ -222,11 +222,11 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> You can continue viewing the portfolio.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> You can continue reading the introduction.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
-          <span id="own-portfolio-interest-note">This is your portfolio.</span>
+          <span id="own-portfolio-interest-note">This is your introduction.</span>
         </div>
       ) : (
         <button type="button" className="portfolio-button portfolio-button-primary" onClick={openModal}><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -239,8 +239,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Add a note for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Use your VivIntro profile, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The portfolio owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro profile will be attached. Add only the context you want this family to see." : "Start with your contact details. You can add more context if useful."}</p>
+                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Add a note for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "choice" ? "Use your saved VivIntro details, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The introduction owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro details will be attached. Add only the context you want this family to see." : "Start with your contact details. You can add more context if useful."}</p>
               </div>
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
@@ -274,9 +274,9 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             {step === "success" && (
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
-                <h3>Interest sent to {firstName(profileName)}&apos;s family.</h3>
-                <p>This window will close and return you to the portfolio.</p>
-                <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to portfolio</button>
+                <h3>Request sent to {firstName(profileName)}&apos;s family.</h3>
+                <p>This window will close and return you to the introduction.</p>
+                <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
           </div>
@@ -367,5 +367,5 @@ function Field({ label, name, type = "text", required = false, autoComplete, inp
 }
 
 function firstName(name: string) {
-  return name.trim().split(/\s+/)[0] || "the profile owner";
+  return name.trim().split(/\s+/)[0] || "the introduction owner";
 }

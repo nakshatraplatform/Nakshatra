@@ -273,7 +273,7 @@ describe("public portfolio pages", () => {
 
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
     expect(screen.getByRole("button", { name: "Show interest" })).toBeDisabled();
-    expect(screen.getByText("This is your portfolio.")).toBeInTheDocument();
+    expect(screen.getByText("This is your introduction.")).toBeInTheDocument();
     expect(screen.queryByText(/Owner-only approved data/)).not.toBeInTheDocument();
     expect(mocks.rpc).toHaveBeenCalledWith("resolve_approved_portfolio", { p_share_token: "token" });
   });
@@ -355,9 +355,9 @@ describe("static app surfaces", () => {
     ];
 
     const { rerender } = render(pages[0]);
-    expect(screen.getByRole("heading", { name: /consent infrastructure/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /thoughtful way to share marriage introductions/i })).toBeInTheDocument();
     for (const page of pages.slice(1)) rerender(page);
-    expect(screen.getByText(/fictional demo portfolio/i)).toBeInTheDocument();
+    expect(screen.getByText(/fictional sample introduction/i)).toBeInTheDocument();
     expect(screen.getByTestId("template")).toHaveTextContent("Ananya Mehta:public");
   });
 
