@@ -21,7 +21,7 @@ describe("verification bearer-link page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     startInvitation.mockResolvedValue({ ok: false, message: "Provider is unavailable", managementUrl: "https://nakshatra.test/verify/manage" });
-    retry.mockResolvedValue({ ok: false, message: "Retry unavailable" });
+    retry.mockResolvedValue({ ok: false, message: "Retry unavailable", requestId: "retry-request-id" });
     withdraw.mockResolvedValue({ ok: true, data: { withdrawn: true } });
   });
 
@@ -50,6 +50,7 @@ describe("verification bearer-link page", () => {
     expect(screen.getByText("failed")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Retry verification" }));
     expect(retry).toHaveBeenCalledWith("management-token");
+    expect(screen.getByRole("alert")).toHaveTextContent("Reference: retry-request-id");
     await user.click(screen.getByRole("button", { name: "Withdraw consent" }));
     await waitFor(() => expect(withdraw).toHaveBeenCalledWith("management-token"));
     expect(await screen.findByText("revoked")).toBeInTheDocument();

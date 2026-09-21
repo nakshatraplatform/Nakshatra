@@ -1,4 +1,4 @@
-export type IdentityVerificationApiFailure = { ok: false; code: string; message: string; status: number; managementUrl?: string };
+export type IdentityVerificationApiFailure = { ok: false; code: string; message: string; status: number; managementUrl?: string; requestId?: string };
 export type IdentityVerificationApiResult<T> = { ok: true; data: T } | IdentityVerificationApiFailure;
 export type HostedIdentityVerification = { url: string; managementUrl: string };
 
@@ -7,12 +7,14 @@ export async function identityVerificationRequest<T>(url: string, init: RequestI
     const response = await fetch(url, init);
     const body = (await response.json().catch(() => null)) as (T & { code?: string; error?: string; managementUrl?: string }) | null;
     if (!response.ok) {
+      const requestId = response.headers.get("X-Request-Id");
       return {
         ok: false,
         code: body?.code || "IDENTITY_VERIFICATION_REQUEST_FAILED",
         message: body?.error || "We could not complete identity verification.",
         status: response.status,
         ...(body?.managementUrl ? { managementUrl: body.managementUrl } : {}),
+        ...(requestId && /^[A-Za-z0-9_-]{8,80}$/.test(requestId) ? { requestId } : {}),
       };
     }
     return { ok: true, data: body as T };

@@ -3,15 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getApiUser = vi.hoisted(() => vi.fn());
 const enforceRateLimit = vi.hoisted(() => vi.fn());
 const startVerification = vi.hoisted(() => vi.fn());
+const logServerError = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 vi.mock("@/features/identity-verification/server/session.service", () => ({
   IdentityVerificationSessionError: class IdentityVerificationSessionError extends Error {
-    constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string) { super(message); }
+    constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string, readonly diagnosticCode = "unclassified") { super(message); }
   },
   startBrokerdeskRepresentativeVerification: startVerification,
 }));
-vi.mock("@/lib/security/logging", () => ({ getRequestId: () => "request-id", logServerError: vi.fn() }));
+vi.mock("@/lib/security/logging", () => ({ getRequestId: () => "request-id", logServerError }));
 
 import { POST } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/representative-verification/route";
 import { createBrokerdeskProofCookie } from "@/features/organization-access/server/brokerdesk-reauth-cookie";
@@ -88,14 +89,21 @@ describe("BrokerDesk representative verification route", () => {
       "Identity verification is temporarily unavailable. Please try again.",
       "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
       503,
-      "private-management-token"
+      "private-management-token",
+      "provider_credentials_rejected"
     ));
     const response = await POST(request({ birthDate: "1985-05-12", consent: true }), context);
     expect(response.status).toBe(503);
+    expect(response.headers.get("X-Request-Id")).toBe("request-id");
     await expect(response.json()).resolves.toMatchObject({
       code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
       managementUrl: expect.stringContaining("/verify/private-management-token"),
     });
     expect(response.headers.get("set-cookie")).toContain("nakshatra_brokerdesk_proof=;");
+    expect(logServerError).toHaveBeenCalledWith(
+      "brokerdesk.representative_verification.provider_credentials_rejected",
+      "request-id",
+      expect.any(IdentityVerificationSessionError)
+    );
   });
 });

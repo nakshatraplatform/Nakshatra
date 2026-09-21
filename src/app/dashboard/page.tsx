@@ -17,6 +17,7 @@ export default async function DashboardPage({
   const { supabase, user } = await getAuthenticatedUser();
   const dashboard = await loadDashboardView({ supabase, userId: user.id });
   const { portfolio } = dashboard;
+  const renderedAt = new Date();
 
   let shareUrl: string | null = null;
   if (portfolio?.share_token) {
@@ -30,8 +31,7 @@ export default async function DashboardPage({
   let daysLeft: number | null = null;
   if (portfolio?.expires_at) {
     const expiresAt = new Date(portfolio.expires_at).getTime();
-    // eslint-disable-next-line react-hooks/purity -- server component evaluated per request
-    const now = Date.now();
+    const now = renderedAt.getTime();
     isExpired = expiresAt < now;
     daysLeft = Math.max(0, Math.ceil((expiresAt - now) / 86_400_000));
   }
@@ -61,6 +61,7 @@ export default async function DashboardPage({
       accessSummary={dashboard.accessSummary}
       publicationReadiness={dashboard.publicationReadiness}
       brokerIntroductionResponses={dashboard.brokerIntroductionResponses}
+      renderedAt={renderedAt.toISOString()}
     />
   );
 }

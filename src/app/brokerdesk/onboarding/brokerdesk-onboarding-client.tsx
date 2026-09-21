@@ -247,6 +247,7 @@ function VerificationStep({
   const [error, setError] = useState(
     securityFailed ? "The security check did not finish. Please start it again." : ""
   );
+  const [errorReference, setErrorReference] = useState("");
   const [hosted, setHosted] = useState<{ url?: string; managementUrl: string } | null>(null);
   const labels = { representative_identity: "Representative identity", business_registration: "Business registration", business_contact: "Business contact" };
   const statuses = { required: "Required", under_review: "Under review", verified: "Verified", needs_attention: "Needs attention", expired: "Expired" };
@@ -256,7 +257,7 @@ function VerificationStep({
     || representativeCheck?.status === "expired";
 
   async function beginSecurity(method: "google" | "email") {
-    setPending(true); setError(""); setNotice("");
+    setPending(true); setError(""); setErrorReference(""); setNotice("");
     try {
       const result = await startBrokerdeskActionSecurity(
         onboarding.workspaceRef,
@@ -275,7 +276,7 @@ function VerificationStep({
   async function startVerification(event: FormEvent) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setPending(true); setError(""); setNotice("");
+    setPending(true); setError(""); setErrorReference(""); setNotice("");
     try {
       const result = await startRepresentativeVerification(
         onboarding.workspaceRef,
@@ -283,6 +284,7 @@ function VerificationStep({
       );
       if (!result.ok) {
         setError(result.message);
+        setErrorReference(result.requestId ?? "");
         if (result.managementUrl) setHosted({ managementUrl: result.managementUrl });
         return;
       }
@@ -296,7 +298,7 @@ function VerificationStep({
 
   return <div className="brokerdesk-form">
     <StepHeading icon={<ShieldCheck />} eyebrow="Verification" title="Your details are ready for review" body="Your workspace remains private until the required checks are complete. We will never mark it verified from form submission alone." />
-    {error && <p className="brokerdesk-form-error" role="alert">{error}</p>}
+    {error && <p className="brokerdesk-form-error" role="alert">{error}{errorReference && <small className="block">Reference: {errorReference}</small>}</p>}
     {notice && <p className="account-notice is-success">{notice}</p>}
     <div className="brokerdesk-verification-list">{onboarding.verificationChecks.map((check) => <div key={check.type}><span><strong>{labels[check.type]}</strong><small>{check.attentionReason || "We will guide you if more information is needed."}</small></span><b className={`is-${check.status}`}>{statuses[check.status]}</b></div>)}</div>
     {canStart && !showSecurity && <div className="brokerdesk-hold-note"><ShieldCheck aria-hidden="true" /><p><strong>Verify the person responsible for this business</strong><span>This checks your identity only. It does not create a matrimonial profile or approve the business.</span></p><button type="button" className="brokerdesk-primary-button" onClick={() => setShowSecurity(true)}>Verify my identity</button></div>}

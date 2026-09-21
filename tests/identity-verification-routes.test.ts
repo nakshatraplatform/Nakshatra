@@ -10,6 +10,7 @@ const getLinkStatus = vi.hoisted(() => vi.fn());
 const withdrawConsent = vi.hoisted(() => vi.fn());
 const createToken = vi.hoisted(() => vi.fn());
 const hashToken = vi.hoisted(() => vi.fn());
+const logServerError = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
@@ -26,13 +27,17 @@ vi.mock("@/features/identity-verification/server/session.service", () => ({
   getIdentityVerificationLinkStatus: getLinkStatus,
   withdrawIdentityVerificationConsent: withdrawConsent,
   IdentityVerificationSessionError: class IdentityVerificationSessionError extends Error {
-    constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string) { super(message); }
+    constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string, readonly diagnosticCode = "unclassified") { super(message); }
   },
 }));
 vi.mock("@/features/identity-verification/server/identity-verification.tokens", () => ({
   createIdentityVerificationToken: createToken,
   hashIdentityVerificationToken: hashToken,
   isIdentityVerificationToken: (value: string) => value === "valid-token",
+}));
+vi.mock("@/lib/security/logging", () => ({
+  getRequestId: () => "iv-request-id",
+  logServerError,
 }));
 
 import { POST as createInvitationRoute } from "../src/app/api/identity-verification/invitations/route";
@@ -98,6 +103,36 @@ describe("identity-verification API routes", () => {
     expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: true }))).status).toBe(429);
   });
 
+  it("correlates a failed provider start without returning private diagnostics", async () => {
+    const SessionError = (await import("@/features/identity-verification/server/session.service")).IdentityVerificationSessionError;
+    startVerification.mockRejectedValueOnce(new SessionError(
+      "Identity verification is temporarily unavailable. Please try again.",
+      "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      503,
+      "private-management-token",
+      "provider_credentials_rejected"
+    ));
+
+    const response = await startRoute(request("http://local/api/identity-verification/start", {
+      authorization: "self",
+      candidateId: "11111111-1111-4111-8111-111111111111",
+      consent: true,
+    }));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("X-Request-Id")).toBe("iv-request-id");
+    await expect(response.json()).resolves.toEqual({
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      error: "Identity verification is temporarily unavailable. Please try again.",
+      managementUrl: "http://local/verify/private-management-token",
+    });
+    expect(logServerError).toHaveBeenCalledWith(
+      "identity_verification.start.provider_credentials_rejected",
+      "iv-request-id",
+      expect.any(SessionError)
+    );
+  });
+
   it("returns generic link state, supports one withdrawal, and protects both calls", async () => {
     const status = await statusRoute(request("http://local/api/identity-verification/status", { token: "valid-token" }));
     if (!status) throw new Error("Expected a status response");
@@ -115,5 +150,31 @@ describe("identity-verification API routes", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ url: "https://verify.didit.test/retry", managementUrl: "http://local/verify/generated-token" });
     expect(retryVerification).toHaveBeenCalledWith(expect.objectContaining({ tokenHash: "valid-token-hash", managementTokenHash: "generated-token-hash" }));
+  });
+
+  it("correlates a failed retry and returns its replacement management link", async () => {
+    const SessionError = (await import("@/features/identity-verification/server/session.service")).IdentityVerificationSessionError;
+    retryVerification.mockRejectedValueOnce(new SessionError(
+      "Identity verification is temporarily unavailable. Please try again.",
+      "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      503,
+      "retry-management-token",
+      "provider_request_timeout"
+    ));
+
+    const response = await retryRoute(request("http://local/api/identity-verification/retry", { token: "valid-token" }));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("X-Request-Id")).toBe("iv-request-id");
+    await expect(response.json()).resolves.toEqual({
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      error: "Identity verification is temporarily unavailable. Please try again.",
+      managementUrl: "http://local/verify/retry-management-token",
+    });
+    expect(logServerError).toHaveBeenCalledWith(
+      "identity_verification.retry.provider_request_timeout",
+      "iv-request-id",
+      expect.any(SessionError)
+    );
   });
 });
