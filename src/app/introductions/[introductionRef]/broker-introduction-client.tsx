@@ -14,6 +14,7 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
   const [state, setState] = useState<"loading" | "ready" | "signed-out" | "unavailable">("loading");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [selectedResponse, setSelectedResponse] = useState<"accepted" | "declined" | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -37,13 +38,32 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     const response = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}/response`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ response: responseValue, comment: String(form.get("comment") || "") }),
+      body: JSON.stringify({
+        response: responseValue,
+        comment: String(form.get("comment") || ""),
+        confirmCompleteAccess: form.get("confirmCompleteAccess") === "on",
+      }),
     }).catch(() => null);
-    const result = await response?.json().catch(() => null) as { available?: boolean; response?: "accepted" | "declined" } | null;
+    const result = await response?.json().catch(() => null) as {
+      available?: boolean;
+      response?: "accepted" | "declined";
+      completeAccessConfirmed?: boolean;
+    } | null;
     if (!response?.ok || !result?.available || !result.response) {
       setError("Your response could not be recorded. The link may have expired or already been answered.");
     } else {
-      setIntroduction((current) => current ? { ...current, response: result.response!, respondedAt: new Date().toISOString() } : current);
+      const refreshedResponse = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}`, { cache: "no-store" }).catch(() => null);
+      const refreshed = await refreshedResponse?.json().catch(() => null) as ResolvedBrokerIntroduction | null;
+      if (refreshedResponse?.ok && refreshed?.available) {
+        setIntroduction(refreshed);
+      } else {
+        setIntroduction((current) => current ? {
+          ...current,
+          response: result.response!,
+          respondedAt: current.respondedAt ?? new Date().toISOString(),
+          completeAccessConfirmed: result.completeAccessConfirmed ?? current.completeAccessConfirmed,
+        } : current);
+      }
     }
     setPending(false);
   }
@@ -69,11 +89,15 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     languageLabel: introduction.horoscope.languageLabel,
     pageCount: introduction.horoscope.pageCount,
   } : undefined;
+  const needsLegacyConsentConfirmation = introduction.response === "accepted"
+    && !introduction.completeAccessConfirmed;
 
   return <div className={styles.shell}>
     <aside className={styles.banner}>
-      <strong>Broker Standard Profile · trusted broker introduction</strong>
-      <span>{`Shared through your broker with contact, financial and other protected details kept private. Version ${introduction.versionNumber} remains fixed for this introduction.`}</span>
+      <strong>{introduction.disclosureLevel === "complete" ? "Complete Portfolio · mutual interest confirmed" : "Broker Standard Profile · trusted broker introduction"}</strong>
+      <span>{introduction.disclosureLevel === "complete"
+        ? `Both customers chose Interested. Protected Contact is available until ${new Date(introduction.expiresAt).toLocaleDateString()}. Version ${introduction.versionNumber} remains fixed.`
+        : `Shared through your broker with contact, financial and other protected details kept private. Version ${introduction.versionNumber} remains fixed for this introduction.`}</span>
     </aside>
     <BiodataTemplate
       templateId={introduction.templateId}
@@ -85,10 +109,18 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
       horoscopeAttachment={horoscope}
       interestAction={<section className={styles.response}>
         <h2>Your response</h2>
-        {introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response}</strong>. Contact details remain protected until both customers are interested and the later contact-release step is completed.</p> : <form onSubmit={respond}>
-          <p>Choose one response. Your broker can see it. Protected Contact remains hidden until both customers are interested.</p>
-          <label><input required type="radio" name="response" value="accepted" /> Interested in continuing</label>
-          <label><input required type="radio" name="response" value="declined" /> Decline respectfully</label>
+        {needsLegacyConsentConfirmation ? <form onSubmit={respond}>
+          <p>Your earlier Interested response was recorded before this disclosure rule existed. Confirm the updated meaning before Complete Portfolio access can begin.</p>
+          <input type="hidden" name="response" value="accepted" />
+          <input type="hidden" name="comment" value={introduction.responseComment ?? ""} />
+          <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, we will each see the other customer’s Complete Portfolio, including Protected Contact, for 30 days.</label>
+          {error && <p role="alert" className={styles.error}>{error}</p>}
+          <button disabled={pending} type="submit">{pending ? "Recording…" : "Confirm Interested terms"}</button>
+        </form> : introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response}</strong>. {introduction.disclosureLevel === "complete" ? "Both customers are interested, so the Complete Portfolio and Protected Contact are now available for 30 days." : "Protected Contact remains hidden unless the other customer also chooses Interested."}</p> : <form onSubmit={respond}>
+          <p>Choose one response. Your broker can see it. Protected Contact remains hidden unless both customers choose Interested.</p>
+          <label><input required type="radio" name="response" value="accepted" onChange={() => setSelectedResponse("accepted")} /> Interested in continuing</label>
+          <label><input required type="radio" name="response" value="declined" onChange={() => setSelectedResponse("declined")} /> Decline respectfully</label>
+          {selectedResponse === "accepted" && <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, we will each see the other customer’s Complete Portfolio, including Protected Contact, for 30 days.</label>}
           <label>Optional note<textarea name="comment" maxLength={1000} rows={4} /></label>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <button disabled={pending} type="submit">{pending ? "Recording…" : "Submit response"}</button>

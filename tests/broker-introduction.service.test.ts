@@ -71,6 +71,7 @@ describe("broker introduction service", () => {
       status: "shared", response: null, responseComment: null, respondedAt: null,
       sourceResponse: null, sourceResponseComment: null, sourceRespondedAt: null,
       recipientResponse: null, recipientResponseComment: null, recipientRespondedAt: null,
+      mutualInterestConfirmedAt: null, completeAccessExpiresAt: null,
       createdAt: "2026-09-19T00:00:00Z",
     };
     await expect(listBrokerIntroductions(client(() => ({ data: { available: true, introductions: [item] } })) as never, workspaceRef, relationshipRef)).resolves.toMatchObject({ available: true });
@@ -78,9 +79,13 @@ describe("broker introduction service", () => {
     await expect(markBrokerIntroductionShared(client(() => ({ data: { available: true, status: "shared", rowVersion: 2 } })) as never, workspaceRef, introductionRef, 1)).resolves.toMatchObject({ status: "shared" });
     await expect(revokeBrokerIntroduction(client(() => ({ data: { available: true, status: "revoked", rowVersion: 2 } })) as never, workspaceRef, introductionRef, 1)).resolves.toMatchObject({ status: "revoked" });
     await expect(claimBrokerIntroductionPass(client(() => ({ data: { available: true, expiresAt: "2026-10-01T00:00:00Z" } })) as never, introductionRef, "a".repeat(64), "b".repeat(64))).resolves.toMatchObject({ available: true });
-    await expect(respondToBrokerIntroduction(client(() => ({ data: { available: true, status: "responded", response: "accepted" } })) as never, introductionRef, "accepted", "Proceed")).resolves.toMatchObject({ response: "accepted" });
+    const responseClient = client(() => ({ data: { available: true, status: "responded", response: "accepted", disclosureLevel: "broker_standard", completeAccessExpiresAt: null } }));
+    await expect(respondToBrokerIntroduction(responseClient as never, introductionRef, "accepted", "Proceed", true)).resolves.toMatchObject({ response: "accepted" });
+    expect(responseClient.rpc).toHaveBeenCalledWith("respond_to_broker_introduction", expect.objectContaining({
+      p_confirm_complete_access: true,
+    }));
     await expect(listEligibleBrokerIntroductionRecipients(client(() => ({ data: { available: true, recipients: [{ relationshipRef: recipientRelationshipRef, displayName: "Priya", gender: null, location: null }] } })) as never, workspaceRef, relationshipRef)).resolves.toMatchObject({ available: true });
-    await expect(listReceivedBrokerIntroductions(client(() => ({ data: { available: true, introductions: [{ introductionRef, sourceName: "Priya", brokerName: "Agency", status: "shared", response: null, expiresAt: "2026-10-01T00:00:00Z", createdAt: "2026-09-19T00:00:00Z" }] } })) as never)).resolves.toHaveLength(1);
+    await expect(listReceivedBrokerIntroductions(client(() => ({ data: { available: true, introductions: [{ introductionRef, sourceName: "Priya", brokerName: "Agency", status: "shared", response: null, disclosureLevel: "broker_standard", completeAccessExpiresAt: null, expiresAt: "2026-10-01T00:00:00Z", createdAt: "2026-09-19T00:00:00Z" }] } })) as never)).resolves.toHaveLength(1);
     await expect(flagBrokerPortfolioUpdate(client(() => ({ data: { available: true, status: "clarification" } })) as never, workspaceRef, relationshipRef, noticeRef)).resolves.toMatchObject({ status: "clarification" });
     await expect(listOwnerBrokerIntroductionResponses(client(() => ({ data: { available: true, responses: [{ introductionRef, brokerName: "Agency", recipientLabel: "Priya", response: "accepted", comment: null, respondedAt: "2026-09-19T00:00:00Z" }] } })) as never)).resolves.toHaveLength(1);
     await expect(resolveBrokerdeskDashboard(client(() => ({ data: {
@@ -95,6 +100,9 @@ describe("broker introduction service", () => {
   it("signs media only for an authenticated participant's Broker Standard Profile", async () => {
     const base = { available: true, introductionRef, data, templateId: 1, themeColor: null, sunSign: null,
       expiresAt: "2026-10-01T00:00:00Z", recipientLabel: "Priya", response: null,
+      responseExpiresAt: "2026-10-01T00:00:00Z", completeAccessExpiresAt: null,
+      mutualInterestConfirmedAt: null, completeAccessConfirmed: false,
+      disclosureLevel: "broker_standard",
       responseComment: null, respondedAt: null, versionNumber: 2, participantSide: "recipient" };
 
     await expect(resolveBrokerIntroduction(client(() => ({ data: { ...base, accessMode: "complete", media: [], horoscope: null } })) as never, introductionRef))

@@ -16,7 +16,8 @@ rules from multiple generations of the design.
 3. The relevant current feature record:
    [`NAK-76`](./engineering-loop/features/nak-76-broker-standard-profile.md),
    [`NAK-77`](./engineering-loop/features/nak-77-customer-broker-consent-controls.md),
-   or [`NAK-78`](./engineering-loop/features/nak-78-authenticated-broker-introduction-access.md).
+   [`NAK-78`](./engineering-loop/features/nak-78-authenticated-broker-introduction-access.md),
+   or [`NAK-79`](./engineering-loop/features/nak-79-mutual-interest-complete-access.md).
 4. Current source, migrations, and tests. Documentation never overrides the
    implemented security boundary silently; reconcile any mismatch explicitly.
 
@@ -50,7 +51,8 @@ its claim-token/device-pass Introduction delivery rules are retired.
 Feature records are evidence of what a phase intended and learned. Later feature
 records may supersede parts of earlier ones; for example, NAK-78 supersedes the
 NAK-76 device-pass and Detailed-fallback transport while retaining its Broker
-Standard projection.
+Standard projection, and NAK-79 adds the explicit mutual-interest Complete
+Portfolio release that NAK-78 deliberately deferred.
 
 ## Conflict rule
 

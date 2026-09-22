@@ -28,7 +28,7 @@ select has_function('public','revoke_broker_introduction',array['text','text','b
 select has_function('public','resolve_broker_introductions',array['text','text'],'broker-scoped list projection exists');
 select has_function('public','claim_broker_introduction_pass',array['text','text','text'],'single-use claim command exists');
 select has_function('public','resolve_broker_introduction',array['text','text'],'device-scoped resolver exists');
-select has_function('public','respond_to_broker_introduction',array['text','text','text','text'],'immutable response command exists');
+select has_function('public','respond_to_broker_introduction',array['text','text','text','text','boolean'],'confirmation-aware immutable response command exists');
 select has_function('public','resolve_broker_portfolio_update_notices',array['text','text'],'isolated notice projection exists');
 select has_function('public','flag_broker_portfolio_update',array['text','text','text'],'optional clarification command exists');
 select has_function('public','resolve_my_broker_introduction_responses',array[]::text[],'owner response projection exists');
@@ -42,9 +42,9 @@ select has_trigger('app_private','broker_introductions','scrub_closed_broker_int
 select ok(
   (select pg_get_constraintdef(oid) from pg_constraint
    where conrelid='app_private.broker_introduction_events'::regclass
-     and contype='c' and pg_get_constraintdef(oid) like '%created%shared%claimed%response_submitted%revoked%expired%')
+     and contype='c' and pg_get_constraintdef(oid) like '%created%shared%claimed%response_submitted%complete_access_confirmed%mutual_access_granted%revoked%expired%')
   not like '%approved%',
-  'audit vocabulary is limited to the six approved lifecycle events'
+  'audit vocabulary is limited to the approved lifecycle events'
 );
 select has_trigger('public','approved_portfolio_snapshots','capture_portfolio_disclosure_version','publication captures an immutable disclosure version');
 

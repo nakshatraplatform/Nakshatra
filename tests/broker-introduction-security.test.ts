@@ -65,7 +65,11 @@ describe("broker introduction credentials and contracts", () => {
       idempotencyKey: "broker-introduction:1111111111111111",
       targetBrokerId: "forbidden",
     }).success).toBe(false);
-    expect(brokerIntroductionResponseSchema.parse({ response: "accepted" })).toEqual({ response: "accepted", comment: "" });
+    expect(brokerIntroductionResponseSchema.parse({ response: "accepted", confirmCompleteAccess: true }))
+      .toEqual({ response: "accepted", comment: "", confirmCompleteAccess: true });
+    expect(brokerIntroductionResponseSchema.safeParse({ response: "accepted" }).success).toBe(false);
+    expect(brokerIntroductionResponseSchema.parse({ response: "declined" }))
+      .toEqual({ response: "declined", comment: "", confirmCompleteAccess: false });
     expect(resolvedBrokerIntroductionSchema.parse({ available: false })).toEqual({ available: false });
   });
 });

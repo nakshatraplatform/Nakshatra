@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(27);
+select plan(43);
 
 select has_column('app_private','broker_introductions','recipient_broker_client_id','an Introduction pins its second customer relationship');
 select has_column('app_private','broker_introductions','recipient_portfolio_version_id','an Introduction pins the second customer portfolio version');
@@ -124,7 +124,7 @@ where id='78500000-0000-4000-8000-000000000002';
 set local role authenticated;
 select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
 select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null),'{"available":false}'::jsonb,'an ownership change that collapses both participants onto one account fails closed');
-select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested'),'{"available":false}'::jsonb,'collapsed ownership cannot submit either participant response');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true),'{"available":false}'::jsonb,'collapsed ownership cannot submit either participant response');
 select is(pg_catalog.jsonb_array_length(public.resolve_received_broker_introductions()->'introductions'),0,'collapsed ownership hides the Introduction from the customer dashboard');
 reset role;
 update public.candidates
@@ -136,15 +136,57 @@ select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000004','
 select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null),'{"available":false}'::jsonb,'an unrelated signed-in customer learns nothing from the URL');
 select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
 select ok(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)#>>'{data,personal,name}'='Customer B' and not (public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->'data'?'contact'),'Customer A sees Customer B Broker Standard Profile without Protected Contact');
-select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested')->>'response','accepted','Customer A records an independent response');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',false),'{"available":false}'::jsonb,'Interested is rejected without explicit Complete Portfolio consent');
+reset role;
+select is((select source_response from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),null,'failed consent validation writes no response');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true)->>'response','accepted','Customer A records an independent response');
+select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel','broker_standard','one Interested response does not release Complete Portfolio');
+reset role;
+update app_private.broker_introductions
+set source_complete_access_confirmed_at=null
+where introduction_ref=(select data->>'introductionRef' from nak78_created);
+set local role authenticated;
 select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000003','78100000-0000-4000-8000-000000000003');
 select ok(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)#>>'{data,personal,name}'='Customer A' and not (public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->'data'?'contact'),'Customer B sees Customer A Broker Standard Profile without Protected Contact');
-select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','declined','Not proceeding')->>'response','declined','Customer B records a separate response');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true)->>'response','accepted','the second confirmed acceptance records Customer B response');
+select ok(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel'='broker_standard' and not (public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->'data'?'contact'),'a pre-migration Interested response cannot release Protected Contact without that participant confirming the new meaning');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true)->>'disclosureLevel','broker_standard','an identical confirmed retry cannot bypass the other participant missing consent');
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'completeAccessConfirmed','false','the migrated participant is told that the old Interested response lacks Complete-access consent');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true)->>'disclosureLevel','complete','the migrated participant can explicitly confirm the unchanged Interested response and start mutual access');
 reset role;
-select ok((select source_response='accepted' and response='declined' from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),'the two responses remain independently auditable');
+select ok((select source_response='accepted' and response='accepted' and mutual_interest_confirmed_at is not null from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),'the two accepted responses and mutual-interest time remain independently auditable');
+select ok((select complete_access_expires_at between mutual_interest_confirmed_at+interval '29 days 23 hours' and mutual_interest_confirmed_at+interval '30 days 1 hour' from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),'mutual interest grants 30 days of Complete access');
+select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='mutual_access_granted'),1,'mutual Complete access has one explicit audit event');
+select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='response_submitted'),2,'an idempotent retry does not duplicate response events');
+select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='complete_access_confirmed'),1,'a migrated acceptance records one distinct consent-confirmation event');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select ok(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel'='complete' and public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)#>>'{data,contact,phone}'='+91 9000000002','Customer A receives Customer B pinned Complete Portfolio with Protected Contact');
+reset role;
+insert into app_private.portfolio_disclosure_versions(portfolio_id,candidate_id,version_number,public_data,complete_data,template_id,published_at) values
+  ('78600000-0000-4000-8000-000000000002','78500000-0000-4000-8000-000000000002',2,'{"personal":{"name":"Public B updated"}}','{"personal":{"name":"Customer B updated"},"contact":{"phone":"+91 9999999999"}}',1,pg_catalog.now()+interval '1 second');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)#>>'{data,contact,phone}','+91 9000000002','later portfolio versions do not change pinned Complete access');
+reset role;
+update app_private.broker_introductions
+set created_at=pg_catalog.now()-interval '16 days',expires_at=pg_catalog.now()-interval '1 second'
+where introduction_ref=(select data->>'introductionRef' from nak78_created);
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel','complete','30-day Complete access continues after the separate response deadline');
+reset role;
 
 update public.broker_clients set relationship_status='paused' where id='78800000-0000-4000-8000-000000000002';
 select ok((select revoked_at is not null from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),'pausing either participant relationship revokes the disclosure');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
+select is(public.resolve_broker_introductions((select workspace_ref from nak78_refs),(select source_ref from nak78_refs))#>>'{introductions,0,status}','revoked','a broker reload projects a revoked responded Introduction as revoked');
+select is(public.resolve_broker_introductions((select workspace_ref from nak78_refs),(select source_ref from nak78_refs))#>>'{introductions,0,completeAccessExpiresAt}',null,'a broker reload does not present revoked Complete access as active');
+reset role;
 
 select * from finish();
 rollback;

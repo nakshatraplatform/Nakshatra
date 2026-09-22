@@ -81,11 +81,11 @@ Introduction.
   identity-verified; completion automatically controls broker eligibility.
 - Each customer's response is independent and immutable.
 - Revocation, mandate termination, unpublishing and expiry fail closed.
-- Contact release after mutual interest is not implemented through NAK-78. The
-  next contract must make the meaning of **Interested** explicit: if both
-  customers choose it, each receives the other customer's Complete Portfolio,
-  including Protected Contact, for 15 days. There is no second contact-approval
-  step, but this disclosure consequence must be confirmed at response time.
+- NAK-79 makes the meaning of **Interested** explicit: if both customers choose
+  it within the 15-day response window, each receives the other customer's
+  pinned Complete Portfolio, including Protected Contact, for 30 days from the
+  second acceptance. There is no second contact-approval step; each customer
+  confirms this disclosure consequence when choosing Interested.
 
 ## URL and authorization contract
 
@@ -105,7 +105,7 @@ its existing B2C progressive-disclosure rules.
 - cross-broker discovery, notification or coordination;
 - linked-family accounts and email membership;
 - custom agency questionnaires and sensitive package fields;
-- mutual-interest Protected Contact release and split-representation resolution;
+- split-representation resolution across different brokers;
 - VivIntro Plus entitlements, payments and usage metering;
 - broker task management and general-purpose CRM functionality.
 
@@ -132,16 +132,11 @@ its active credentials are revoked/scrubbed by NAK-78.
 
 ## Recommended next implementation sequence
 
-1. **NAK-79 — Mutual-interest Complete Portfolio release.** Confirm disclosure
-   when each customer chooses Interested; after both accept, create reciprocal,
-   identity-bound 15-day Complete access using existing Protected Contact and
-   grant foundations. Rejection, expiry, revocation, and split/invalid ownership
-   must fail closed.
-2. **Notifications and recovery.** Deliver and retry Introduction, response,
+1. **Notifications and recovery.** Deliver and retry Introduction, response,
    mutual-interest, expiry, and revocation notifications through the existing
    outbox without making email delivery the source of truth.
-3. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+2. **Pilot operations.** Add only the minimum operator activation, expiry worker,
    monitoring, and two-broker staging evidence needed for a bounded pilot.
-4. **Broker UX refinement.** Validate dashboard, customer selection, response
+3. **Broker UX refinement.** Validate dashboard, customer selection, response
    follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
    analytics, recommendations, questionnaires, or payments.

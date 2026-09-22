@@ -46,6 +46,8 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
         recipientResponse: null,
         recipientResponseComment: null,
         recipientRespondedAt: null,
+        mutualInterestConfirmedAt: null,
+        completeAccessExpiresAt: null,
         expiresAt: result.expiresAt,
         versionNumber: result.versionNumber,
         rowVersion: result.rowVersion,
@@ -127,7 +129,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       {created && <div className={styles.createdLink}><strong>Customer-only introduction link</strong><code>{created.introductionUrl}</code><button disabled={pending} type="button" onClick={activateAndCopy}><Copy /> Activate and copy</button><small>Only the selected customer can open this link after signing in to VivIntro. Forwarding the URL does not grant anyone else access.</small></div>}
       {message && <p className={styles.notice} role="status">{message}</p>}
       <div className={styles.timeline}>{introductions.length === 0 ? <p className={styles.empty}>No broker introductions yet.</p> : introductions.map((item) => <article className={styles.introductionRow} key={item.introductionRef}>
-        <div>{item.sourceResponse === "accepted" && item.recipientResponse === "accepted" ? <CheckCircle2 /> : item.sourceResponse === "declined" || item.recipientResponse === "declined" ? <XCircle /> : <Link2 />}<span><strong>{item.recipientLabel}</strong><small>Selected customer: {item.sourceResponse ?? "waiting"} · {item.recipientLabel}: {item.recipientResponse ?? "waiting"}</small><small>Version {item.versionNumber} · {item.status} · expires {new Date(item.expiresAt).toLocaleDateString()}</small>{item.recipientResponseComment && <em>“{item.recipientResponseComment}”</em>}</span></div>
+        <div>{item.sourceResponse === "accepted" && item.recipientResponse === "accepted" ? <CheckCircle2 /> : item.sourceResponse === "declined" || item.recipientResponse === "declined" ? <XCircle /> : <Link2 />}<span><strong>{item.recipientLabel}</strong><small>Selected customer: {item.sourceResponse ?? "waiting"} · {item.recipientLabel}: {item.recipientResponse ?? "waiting"}</small><small>Version {item.versionNumber} · {item.status} · respond by {new Date(item.expiresAt).toLocaleDateString()}</small>{item.completeAccessExpiresAt && <small>Mutual-interest Complete access until {new Date(item.completeAccessExpiresAt).toLocaleDateString()}</small>}{item.recipientResponseComment && <em>“{item.recipientResponseComment}”</em>}</span></div>
         {!['revoked','expired'].includes(item.status) && <button disabled={pending} type="button" onClick={() => revoke(item)}>Revoke</button>}
       </article>)}</div>
     </section>

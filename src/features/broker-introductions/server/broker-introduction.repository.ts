@@ -59,12 +59,13 @@ export class BrokerIntroductionRepository {
     });
   }
 
-  respond(introductionRef: string, response: string, comment: string) {
+  respond(introductionRef: string, response: string, comment: string, confirmCompleteAccess: boolean) {
     return this.supabase.rpc("respond_to_broker_introduction", {
       p_introduction_ref: introductionRef,
       p_session_token_hash: "",
       p_response: response,
       p_comment: comment,
+      p_confirm_complete_access: confirmCompleteAccess,
     });
   }
 
