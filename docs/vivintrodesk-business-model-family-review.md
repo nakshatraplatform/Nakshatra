@@ -1,6 +1,6 @@
 # VivIntroDesk — business model for family and friend review
 
-Status: current discussion baseline through NAK-78  
+Status: current discussion baseline through NAK-79
 Last updated: 22 September 2026
 
 ## The simple idea
@@ -78,16 +78,18 @@ existing B2C Detailed/Brief and approval rules and never inherit broker authorit
 
 ## What happens after responses
 
-Today the system records each customer's independent Interested or Declined
-response. The next planned phase will make mutual interest useful:
+The system records each customer's independent Interested or Declined response
+and makes confirmed mutual interest useful:
 
 1. Before choosing Interested, each customer is clearly told that if the other
    person also chooses Interested, Complete Portfolio and Protected Contact will
-   be shared for 15 days.
-2. If both choose Interested, reciprocal identity-bound Complete access begins.
+   be shared for 30 days.
+2. If both choose Interested within the 15-day response window, reciprocal
+   identity-bound Complete access begins for 30 days from the second confirmed
+   acceptance.
 3. There is no second contact-approval step.
-4. Either customer's revocation or a broken mandate/publication condition ends
-   access according to the final NAK-79 contract.
+4. Either customer's revocation or a broken mandate, verification, relationship,
+   or publication condition ends access immediately.
 
 ## What is deliberately not in the first pilot
 
