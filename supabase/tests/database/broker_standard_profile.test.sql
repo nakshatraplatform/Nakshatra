@@ -194,7 +194,7 @@ insert into public.portfolios (
   '76800000-0000-4000-8000-000000000001',
   '76000000-0000-4000-8000-000000000002',
   '76500000-0000-4000-8000-000000000001',
-  'nak76_public_token_0001',
+  'nak76_public_token_01',
   pg_temp.complete_portfolio_draft('{"personal":{"name":"Asha Rao","dob":"1995-05-06"},"career":{"title":"Architect","company":"Example Studio","annual_income":"2500000","income_currency":"INR"},"family":{"father":{"name":"Ravi Rao"}},"astrology":{"nakshatra":"Rohini"},"contact":{"phone":"+91 9999999999","email":"family@example.com"}}'::jsonb),
   '{}'::jsonb, false
 );
@@ -232,7 +232,7 @@ select is(
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Asha Rao","dob":"1995-05-06"},"career":{"title":"Architect","company":"Example Studio","annual_income":"2500000","income_currency":"INR"},"family":{"father":{"name":"Ravi Rao"}},"astrology":{"nakshatra":"Rohini"},"contact":{"phone":"+91 9999999999","email":"family@example.com"}}'::jsonb),
     '{"personal":{"name":"Public Asha"},"career":{"title":"Architect"}}'::jsonb,
     '{"personal":{"name":"Asha Rao","dob":"1995-05-06"},"career":{"title":"Architect","company":"Example Studio","annual_income":"2500000","income_currency":"INR"},"family":{"father":{"name":"Ravi Rao"}},"astrology":{"nakshatra":"Rohini"},"contact":{"phone":"+91 9999999999","email":"family@example.com"}}'::jsonb,
-    'nak76_public_token_0001', pg_catalog.now() + interval '90 days', 1, null, null
+    'nak76_public_token_01', pg_catalog.now() + interval '90 days', 1, null, null
   ) ->> 'status', 'ok',
   'the fixture passes the real identity, media, payment and disclosure publication gates'
 );
