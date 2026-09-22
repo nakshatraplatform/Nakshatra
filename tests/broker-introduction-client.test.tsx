@@ -22,7 +22,7 @@ describe("broker introduction recipient client", () => {
   beforeEach(() => window.history.replaceState(null, "", "/"));
   afterEach(() => vi.unstubAllGlobals());
 
-  it("exchanges a fragment pass, clears it, and renders the pinned Complete Portfolio", async () => {
+  it("exchanges a fragment pass, clears it, and renders the pinned Broker Standard Profile", async () => {
     window.history.replaceState(null, "", `/introductions/${introductionRef}#pass=${"p".repeat(43)}`);
     const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ ready: true }), { status: 200 }))
@@ -30,7 +30,7 @@ describe("broker introduction recipient client", () => {
     vi.stubGlobal("fetch", fetch);
     render(<BrokerIntroductionClient introductionRef={introductionRef} />);
     expect(screen.getByText("Opening this introduction…")).toBeInTheDocument();
-    await screen.findByText("Complete Portfolio · trusted broker introduction");
+    await screen.findByText("Broker Standard Profile · trusted broker introduction");
     expect(window.location.hash).toBe("");
     expect(screen.getByTestId("template")).toHaveAttribute("data-mode", "approved");
     expect(screen.getByText("Your response")).toBeInTheDocument();

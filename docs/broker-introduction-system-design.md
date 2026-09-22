@@ -15,15 +15,23 @@ target organization, or target broker foreign key.
 The database checks the workspace membership, role scope, customer assignment,
 active customer mandate, active portfolio publication, and both
 `introductions.create` and `introductions.send` capabilities. It then creates a
-14-day introduction and one hashed claim capability. Creation never asks the
+15-day introduction and one hashed claim capability. Creation never asks the
 portfolio owner for per-introduction approval.
 
 ### Phase 5 — Freeze the disclosure version
 
 Every successful portfolio publication appends an immutable
-`portfolio_disclosure_versions` row. It records the public data, Complete
-Portfolio data, media manifests, horoscope manifest, presentation settings, and
-publication timestamp.
+`portfolio_disclosure_versions` row. It records the public data, owner-approved
+Complete data, a generated Broker Standard projection, media manifests,
+horoscope manifest, presentation settings, and publication timestamp. Broker
+RPCs never return the stored Complete data.
+
+The Broker Standard projection keeps the Complete Portfolio's identity,
+personal, family, education, career, lifestyle, preference and astrology
+content, while removing all contact fields, financial fields, geographic
+reference identifiers, credit information and owner-private questionnaire
+fields. The projection is generated in the database from an explicit allowlist
+and pinned with the publication version.
 
 An introduction references exactly one version and also stores its generated
 Detailed Introduction snapshot. Later portfolio publications cannot change an
@@ -47,10 +55,10 @@ Only the SHA-256 claim hash is stored. A successful one-time exchange removes
 the claim hash and establishes an HttpOnly, Secure-in-production, SameSite=Lax,
 time-limited device cookie. Exchange retries derive the same device secret and
 are idempotent. Each introduction uses its own cookie name, so claiming a later
-introduction does not silently remove Complete Portfolio access to an earlier
+introduction does not silently remove Broker Standard access to an earlier
 active introduction on the same device.
 
-The claimed device receives the pinned Complete Portfolio. A copied, forwarded,
+The claimed device receives the pinned Broker Standard Profile. A copied, forwarded,
 reused, invalid, or missing pass receives only the pinned Detailed Introduction.
 Revoked and expired introductions disclose neither view.
 
@@ -76,7 +84,7 @@ raw recipient email addresses, portfolio JSON, or another broker identity.
 
 ### Phase 8 — Response and notification
 
-Only the device holding the active Complete Portfolio pass can submit one
+Only the device holding the active Broker Standard pass can submit one
 `accepted` or `declined` response and an optional 1,000-character comment. A
 same-value retry is idempotent; a conflicting second response is rejected.
 
@@ -136,7 +144,7 @@ manual pilot checklist. Production sample identities are never auto-created.
 ## Workflow
 
 `Broker customer page -> create link -> activate and copy -> manual WhatsApp ->
-first device claims pass -> Complete Portfolio -> accept/decline -> owner and
+first device claims pass -> Broker Standard Profile -> accept/decline -> owner and
 source broker dashboards update`
 
 If the URL is forwarded after claim:
@@ -153,14 +161,14 @@ If the URL is forwarded after claim:
 | Same idempotency key and same request | Original introduction and URL capability are returned |
 | Same idempotency key with changed input | Request is rejected |
 | Claim link is opened twice on the original device | Deterministic exchange retry restores the same session |
-| Claim link is forwarded or opened on another device | Complete claim fails; Detailed Introduction remains available |
+| Claim link is forwarded or opened on another device | Broker Standard claim fails; Detailed Introduction remains available |
 | Introduction expires before claim or response | Pass is revoked and one `expired` event is recorded |
 | Broker revokes after claim | Device session stops resolving immediately |
 | Recipient submits the same response twice | Idempotent success without a duplicate event |
 | Recipient attempts to change an answer | Rejected; broker resolves any change offline during the pilot |
 | Customer has mandates with two brokers | Each organization gets an isolated version notice; neither sees the other |
 | Recipient email omitted | WhatsApp-only flow works; label still provides broker context |
-| Service-role media signing is unavailable | No media is returned; private paths and Complete data authorization remain safe |
+| Service-role media signing is unavailable | No media is returned; private paths and Broker Standard authorization remain safe |
 
 ## Deployment requirements
 

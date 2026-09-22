@@ -12,14 +12,16 @@ introduction transaction or recipient device pass yet.
    is not a public portfolio link.
 3. The customer signs in with the invited verified email, retains canonical
    ownership and explicitly accepts `broker-representation-v2`.
-4. The v2 mandate permits the inviting broker to review the published Complete
-   Portfolio and share it in time-limited broker-mediated introductions. The
-   broker does not request approval for each introduction.
+4. The v2 mandate permits the inviting broker to review and share the published
+   Broker Standard Profile in time-limited broker-mediated introductions. This
+   is a generated Complete-like projection that excludes contact, financial and
+   owner-private questionnaire fields. The broker does not request approval for
+   each introduction.
 5. A broker can act only for customers connected to that broker's workspace by
    an active mandate. Brokers never discover another broker relationship.
 6. No broker-to-broker communication, authorization, notification, lookup or
    customer-data exchange is part of this product.
-7. A future introduction automatically references the latest published
+7. An introduction automatically references the latest published
    disclosure version at creation. Existing introductions remain pinned to the
    version with which they were created.
 8. Every broker holding an independent active mandate receives an independent
@@ -48,4 +50,6 @@ Phases 4–8 add versioned disclosure references, broker-created introduction
 records, one-time device passes, Detailed Introduction fallback, responses, the
 six-event audit trail and isolated version notifications. See
 `docs/broker-introduction-system-design.md`. The implementation contains no
-per-introduction customer approval state and no recipient-broker lookup.
+per-introduction customer approval state and no recipient-broker lookup. The
+one-recipient model remains the MVP primitive: the recipient does not need an
+existing VivIntro account or a mandate to the source broker.

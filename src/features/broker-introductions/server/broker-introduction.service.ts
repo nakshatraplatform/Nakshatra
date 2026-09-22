@@ -57,6 +57,8 @@ export async function createBrokerIntroduction(
     const preparedResult = await repository.prepare(input.workspaceRef, input.relationshipRef);
     const prepared = parseOrThrow(preparedBrokerIntroductionSchema, preparedResult.data, preparedResult.error);
     if (!prepared.available) throw new BrokerIntroductionError();
+    // `completeData` is the rollout-compatible database key for the bounded
+    // Broker Standard projection. Derive only the Detailed fallback from it.
     const detailed = createPublicPortfolioSnapshot({ ...prepared.completeData, privacy_mode: "balanced" });
     const createdResult = await repository.create({
       p_workspace_ref: input.workspaceRef,
