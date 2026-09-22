@@ -24,11 +24,12 @@ values (
 );
 insert into public.broker_clients (
   id,organization_id,candidate_id,relationship_status,relationship_source,
-  consented_at,starts_at,ends_at
+  claimed_at,consented_at,starts_at,ends_at
 ) values (
   'e6000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001',
   'e4000000-0000-4000-8000-000000000001','active','customer_invitation',
-  pg_catalog.now()-interval '1 day',pg_catalog.now()-interval '1 day',pg_catalog.now()+interval '1 year'
+  pg_catalog.now()-interval '2 days',pg_catalog.now()-interval '1 day',
+  pg_catalog.now()-interval '1 day',pg_catalog.now()+interval '1 year'
 );
 insert into app_private.broker_client_mandates (
   organization_id,broker_client_id,purpose,permitted_capabilities,

@@ -11,6 +11,7 @@ vi.mock("@/features/broker-relationships/server/customer-invitation.service", as
 });
 
 import { POST } from "../src/app/api/v1/customer/brokers/[relationshipRef]/consent/route";
+import { CustomerInvitationError } from "@/features/broker-relationships/server/customer-invitation.service";
 
 const origin = "https://vivintro.test";
 const relationshipRef = `bcr_${"a".repeat(32)}`;
@@ -49,5 +50,34 @@ describe("customer broker consent route", () => {
     expect((await POST(request({ action: "pause", idempotencyKey: "broker-consent:1111111111111111" }), context)).status).toBe(401);
     manageConsent.mockResolvedValueOnce({ available: false });
     expect((await POST(request({ action: "pause", idempotencyKey: "broker-consent:1111111111111111" }), context)).status).toBe(404);
+  });
+
+  it("returns safe responses for malformed input and service failures", async () => {
+    const malformed = new Request(
+      `${origin}/api/v1/customer/brokers/${relationshipRef}/consent`,
+      { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{" }
+    );
+    expect((await POST(malformed, context)).status).toBe(400);
+
+    manageConsent.mockRejectedValueOnce(new CustomerInvitationError(
+      "Check the action and try again.", "CUSTOMER_BROKER_ACTION_INVALID", 400
+    ));
+    const invalidAction = await POST(request({
+      action: "pause", idempotencyKey: "broker-consent:1111111111111111",
+    }), context);
+    expect(invalidAction.status).toBe(400);
+    await expect(invalidAction.json()).resolves.toEqual({
+      available: false, error: "Check the action and try again.",
+    });
+
+    manageConsent.mockRejectedValueOnce(new Error("database details must remain private"));
+    const unavailable = await POST(request({
+      action: "pause", idempotencyKey: "broker-consent:1111111111111111",
+    }), context);
+    expect(unavailable.status).toBe(503);
+    await expect(unavailable.json()).resolves.toEqual({
+      available: false, error: "The broker access change could not be saved.",
+    });
+    expect(unavailable.headers.get("x-request-id")).toBeTruthy();
   });
 });

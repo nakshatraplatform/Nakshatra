@@ -80,5 +80,8 @@ describe("BrokerDesk customer invitation service", () => {
     await expect(manageCustomerBrokerConsent(client(null, { code: "22023" }) as never, {
       relationshipRef: `bcr_${"c".repeat(32)}`, action: "pause", idempotencyKey: "broker-consent:1111111111111111",
     })).rejects.toMatchObject({ code: "CUSTOMER_BROKER_ACTION_INVALID", status: 400 });
+    await expect(manageCustomerBrokerConsent(client(null, { code: "unexpected" }) as never, {
+      relationshipRef: `bcr_${"c".repeat(32)}`, action: "pause", idempotencyKey: "broker-consent:1111111111111111",
+    })).rejects.toMatchObject({ code: "CUSTOMER_BROKER_ACTION_UNAVAILABLE", status: 503 });
   });
 });

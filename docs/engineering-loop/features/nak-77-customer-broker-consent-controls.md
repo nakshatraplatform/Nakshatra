@@ -106,12 +106,18 @@ the interface before the transaction succeeds.
 - Independent critical review found and drove fixes for responded-link revival,
   premature renewal from intake states, and a pause/create race. Re-review found
   no remaining blockers.
+- PR CI exposed two verification gaps and both were corrected: the pgTAP fixture
+  now records `claimed_at` before `consented_at`, matching the existing database
+  constraint, and the consent error paths now have explicit safe-response and
+  unavailable-service coverage.
 - Verification completed:
   - `npm run lint -- --max-warnings=0`
   - `npm run typecheck`
-  - `npm run test:unit` — 134 files, 792 tests passed
+  - full source coverage — 134 files, 793 tests passed; statements 85.14%,
+    branches 78.07%, functions 84.56%, lines 88.72%
+  - `npm run coverage:check:features` — 52 feature files passed at 80% per metric
   - `npm run db:smoke`
-  - focused NAK-77 tests — 5 files, 11 tests passed
+  - focused NAK-77 tests — 5 files, 12 tests passed
   - `npm run build` — passed with non-secret build-time Supabase placeholders
 - Verification pending:
   - pgTAP/runtime migration execution. `npm run test:db:local` cannot start
