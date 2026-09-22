@@ -11,7 +11,7 @@ type AvailableIntroduction = Extract<ResolvedBrokerIntroduction, { available: tr
 
 export function BrokerIntroductionClient({ introductionRef }: { introductionRef: string }) {
   const [introduction, setIntroduction] = useState<AvailableIntroduction | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "signed-out" | "unavailable">("loading");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,19 +19,10 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     let active = true;
     async function load() {
       if (!introductionRef) { setState("unavailable"); return; }
-      const fragment = new URLSearchParams(window.location.hash.slice(1));
-      const pass = fragment.get("pass");
-      if (pass) {
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-        await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}/exchange`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pass }),
-        }).catch(() => null);
-      }
       const response = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}`, { cache: "no-store" });
       const result = await response.json().catch(() => null) as ResolvedBrokerIntroduction | null;
       if (!active) return;
+      if (response.status === 401) { setState("signed-out"); return; }
       if (!response.ok || !result?.available) { setState("unavailable"); return; }
       setIntroduction(result); setState("ready");
     }
@@ -57,7 +48,8 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     setPending(false);
   }
 
-  if (state === "loading") return <main className={styles.state}><h1>Opening this introduction…</h1><p>The private access pass is checked only on this device.</p></main>;
+  if (state === "loading") return <main className={styles.state}><h1>Opening this introduction…</h1><p>We are checking that you are one of the two customers in this introduction.</p></main>;
+  if (state === "signed-out") return <main className={styles.state}><h1>Sign in to view this introduction</h1><p>Broker introductions are visible only to the two customers selected by the broker. The URL alone never grants access.</p><a href={`/login?redirect=${encodeURIComponent(`/introductions/${introductionRef}`)}`}>Sign in to VivIntro</a></main>;
   if (state === "unavailable" || !introduction) return <main className={styles.state}><h1>This introduction is unavailable</h1><p>It may have expired or been withdrawn. Ask the broker who shared it for a current link.</p></main>;
 
   const photos: PortfolioPhoto[] = introduction.media.map((item) => ({
@@ -80,30 +72,28 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
 
   return <div className={styles.shell}>
     <aside className={styles.banner}>
-      <strong>{introduction.accessMode === "complete" ? "Broker Standard Profile · trusted broker introduction" : "Detailed Introduction · forwarded-link protection"}</strong>
-      <span>{introduction.accessMode === "complete"
-        ? `Shared through a broker with your contact and financial details kept private. Version ${introduction.versionNumber} remains fixed for this introduction.`
-        : "The broker access pass was not available on this device. Contact, financial and other protected details remain hidden."}</span>
+      <strong>Broker Standard Profile · trusted broker introduction</strong>
+      <span>{`Shared through your broker with contact, financial and other protected details kept private. Version ${introduction.versionNumber} remains fixed for this introduction.`}</span>
     </aside>
     <BiodataTemplate
       templateId={introduction.templateId}
       data={introduction.data}
       sunSign={introduction.sunSign}
-      accessMode={introduction.accessMode === "complete" ? "approved" : "public"}
+      accessMode="approved"
       accessExpiresAt={introduction.expiresAt}
       photos={photos}
       horoscopeAttachment={horoscope}
-      interestAction={introduction.accessMode === "complete" ? <section className={styles.response}>
+      interestAction={<section className={styles.response}>
         <h2>Your response</h2>
-        {introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response}</strong>. The broker and portfolio owner can now continue the conversation outside VivIntro.</p> : <form onSubmit={respond}>
-          <p>Choose one response. This notifies the broker and the portfolio owner; it does not contact another broker.</p>
+        {introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response}</strong>. Contact details remain protected until both customers are interested and the later contact-release step is completed.</p> : <form onSubmit={respond}>
+          <p>Choose one response. Your broker can see it. Protected Contact remains hidden until both customers are interested.</p>
           <label><input required type="radio" name="response" value="accepted" /> Interested in continuing</label>
           <label><input required type="radio" name="response" value="declined" /> Decline respectfully</label>
           <label>Optional note<textarea name="comment" maxLength={1000} rows={4} /></label>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <button disabled={pending} type="submit">{pending ? "Recording…" : "Submit response"}</button>
         </form>}
-      </section> : undefined}
+      </section>}
     />
   </div>;
 }

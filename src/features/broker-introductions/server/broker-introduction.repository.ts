@@ -5,15 +5,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export class BrokerIntroductionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  prepare(workspaceRef: string, relationshipRef: string) {
-    return this.supabase.rpc("prepare_broker_introduction", {
+  recipients(workspaceRef: string, relationshipRef: string) {
+    return this.supabase.rpc("resolve_broker_introduction_recipients", {
       p_workspace_ref: workspaceRef,
-      p_relationship_ref: relationshipRef,
+      p_source_relationship_ref: relationshipRef,
     });
   }
 
-  create(input: Record<string, unknown>) {
-    return this.supabase.rpc("create_broker_introduction", input);
+  createIdentityBound(workspaceRef: string, relationshipRef: string, recipientRelationshipRef: string, idempotencyKey: string) {
+    return this.supabase.rpc("create_identity_bound_broker_introduction", {
+      p_workspace_ref: workspaceRef,
+      p_source_relationship_ref: relationshipRef,
+      p_recipient_relationship_ref: recipientRelationshipRef,
+      p_idempotency_key: idempotencyKey,
+    });
   }
 
   list(workspaceRef: string, relationshipRef: string) {
@@ -47,17 +52,17 @@ export class BrokerIntroductionRepository {
     });
   }
 
-  resolve(introductionRef: string, sessionHash: string | null) {
+  resolve(introductionRef: string) {
     return this.supabase.rpc("resolve_broker_introduction", {
       p_introduction_ref: introductionRef,
-      p_session_token_hash: sessionHash,
+      p_session_token_hash: null,
     });
   }
 
-  respond(introductionRef: string, sessionHash: string, response: string, comment: string) {
+  respond(introductionRef: string, response: string, comment: string) {
     return this.supabase.rpc("respond_to_broker_introduction", {
       p_introduction_ref: introductionRef,
-      p_session_token_hash: sessionHash,
+      p_session_token_hash: "",
       p_response: response,
       p_comment: comment,
     });
@@ -80,6 +85,10 @@ export class BrokerIntroductionRepository {
 
   ownerResponses() {
     return this.supabase.rpc("resolve_my_broker_introduction_responses");
+  }
+
+  received() {
+    return this.supabase.rpc("resolve_received_broker_introductions");
   }
 
   dashboard(workspaceRef: string) {

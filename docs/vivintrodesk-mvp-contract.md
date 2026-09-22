@@ -1,27 +1,31 @@
 # VivIntroDesk MVP contract
 
-Status: approved implementation contract for NAK-76 and subsequent MVP phases.
+Status: approved implementation contract, reconciled through NAK-78.
 
 ## Product primitive
 
-The Introduction remains a one-recipient transaction. A broker selects one
-customer under an active mandate, enters a recipient family label and optionally
-an email, and shares an opaque link active for 15 days unless revoked earlier.
-The recipient does not need
-to be an existing VivIntro customer. This avoids making broker adoption depend
-on both sides completing onboarding.
+The Introduction is a bilateral relationship between two canonical VivIntro
+customers selected from one broker workspace. Both customers must have an
+active broker relationship and mandate, a completed and published portfolio,
+and current Didit identity verification. Selecting one customer dynamically
+shows every other eligible customer in that workspace; no label, email field or
+fixed customer position defines the second participant.
 
-There is no target-customer, target-agency or target-broker lookup. A customer
-may be represented independently by multiple brokers; each agency remains
-isolated and cannot discover the others.
+One Introduction pins both customers' current disclosure versions and remains
+active for 15 days unless revoked earlier. Each customer signs in, sees the
+other customer's Broker Standard Profile and responds independently. A customer
+may still be represented by multiple brokers, but every agency has independent
+Introduction lineage and cannot discover another agency's activity.
+Within one agency, the unordered customer pair has at most one active
+Introduction, preventing duplicate or reversed sends by different employees.
 
 ## Disclosure contract
 
 | Context | Data shown | Contact | Financial | Horoscope attachment | Response |
 | --- | --- | --- | --- | --- | --- |
-| Broker link with active pass | Broker Standard Profile | Hidden | Hidden | Visible when published | Allowed |
-| Broker link without active pass | Detailed Introduction | Hidden | Hidden | Hidden | Not allowed |
-| Personal VivIntro link | Detailed Introduction | Hidden | Hidden | Per existing B2C rules | Existing B2C flow |
+| Broker Introduction opened by either selected signed-in customer | Other customer's Broker Standard Profile | Hidden | Hidden | Visible when published | Independent accept/decline |
+| Broker Introduction opened signed-out or by anyone else | Nothing; sign-in or neutral unavailable state | Hidden | Hidden | Hidden | Not allowed |
+| Personal VivIntro link | Detailed Introduction; guest account not required | Hidden | Hidden | Per existing B2C rules | Existing B2C flow |
 | Personally approved access | Complete Portfolio | Visible for the approved period | Existing Complete rules | Per existing Complete rules | Existing B2C flow |
 
 Broker Standard is generated from the published Complete data. It is not an
@@ -44,29 +48,32 @@ Introduction.
 - An active, time-bound broker mandate authorizes Broker Standard sharing.
 - The broker cannot edit, publish or unpublish the customer portfolio.
 - No per-Introduction owner approval is required during the pilot.
+- Creating an Introduction requires both customers to be publishable and
+  identity-verified; completion automatically controls broker eligibility.
+- Each customer's response is independent and immutable.
 - Revocation, mandate termination, unpublishing and expiry fail closed.
 - Contact release after mutual interest is not implemented in NAK-76; it needs a
   separate explicit consent contract before development.
 
 ## URL and authorization contract
 
-An opaque URL identifies a possible Introduction but grants no disclosure by
-itself. The current MVP retains the single-use pass and HttpOnly device session.
-The server derives disclosure from stored Introduction state and the validated
-pass; a URL or request-body change cannot select a customer, agency, version or
-disclosure tier.
+An opaque broker URL identifies a possible Introduction but grants no
+disclosure. It contains no bearer pass. The server derives the participant from
+the current live VivIntro session and the two stored candidate owners; changing
+the URL or request body cannot select a customer, agency, version, side or
+disclosure tier. Forwarding a broker URL grants no access and never falls back
+to a public profile.
 
-Identity-bound verified-email access and linked-family membership are later
-phases. Until then, a forwarded or unclaimed broker URL fails down to Detailed
-Introduction rather than attempting to infer family identity.
+This restriction applies only to BrokerDesk Introductions. The personal
+VivIntro `/p/<opaque-token>` flow deliberately remains guest-viewable and keeps
+its existing B2C progressive-disclosure rules.
 
 ## Explicitly deferred
 
-- two-party/pair Introduction records and mutual broker selection;
 - cross-broker discovery, notification or coordination;
 - linked-family accounts and email membership;
 - custom agency questionnaires and sensitive package fields;
-- automatic contact release and split-representation resolution;
+- mutual-interest Protected Contact release and split-representation resolution;
 - VivIntro Plus entitlements, payments and usage metering;
 - broker task management and general-purpose CRM functionality.
 

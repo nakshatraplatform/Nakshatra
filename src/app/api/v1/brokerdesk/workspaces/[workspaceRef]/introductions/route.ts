@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createBrokerIntroductionSchema } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { createBrokerIntroduction, listBrokerIntroductions, BrokerIntroductionError } from "@/features/broker-introductions/server/broker-introduction.service";
-import { deriveBrokerIntroductionClaimToken, hashBrokerIntroductionToken } from "@/features/broker-introductions/server/broker-introduction.token";
-import { hashInvitationEmail, invitationEmailHint, normalizeInvitationEmail } from "@/features/organization-access/server/brokerdesk-team-invitation.token";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import { AUTH_BODY_LIMIT, RequestSecurityError, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
@@ -36,26 +34,14 @@ export async function POST(request: Request, context: Context) {
     const limited = await enforceRateLimit(auth.supabase, request, "brokerdesk_introduction_create");
     if (limited) return limited;
     const { workspaceRef } = await context.params;
-    const email = parsed.data.recipientEmail ? normalizeInvitationEmail(parsed.data.recipientEmail) : null;
-    const token = deriveBrokerIntroductionClaimToken({
-      actorUserId: auth.user.id,
-      workspaceRef,
-      relationshipRef: parsed.data.relationshipRef,
-      recipientLabel: parsed.data.recipientLabel,
-      recipientEmail: email || undefined,
-      idempotencyKey: parsed.data.idempotencyKey,
-    });
     const result = await createBrokerIntroduction(auth.supabase, {
       workspaceRef,
       relationshipRef: parsed.data.relationshipRef,
-      recipientLabel: parsed.data.recipientLabel,
-      recipientEmailHash: email ? hashInvitationEmail(email) : null,
-      recipientEmailHint: email ? invitationEmailHint(email) : null,
-      claimTokenHash: hashBrokerIntroductionToken(token),
+      recipientRelationshipRef: parsed.data.recipientRelationshipRef,
       idempotencyKey: parsed.data.idempotencyKey,
     });
-    const base = createCanonicalAppUrl(`/introductions/${result.introductionRef}`, request.url);
-    return NextResponse.json({ ...result, introductionUrl: `${base}#pass=${token}` }, { status: 201, headers });
+    const introductionUrl = createCanonicalAppUrl(`/introductions/${result.introductionRef}`, request.url);
+    return NextResponse.json({ ...result, introductionUrl }, { status: 201, headers });
   } catch (error) {
     if (error instanceof RequestSecurityError) return requestSecurityErrorResponse(error);
     if (error instanceof BrokerIntroductionError) return NextResponse.json({ code: error.code, error: error.message }, { status: error.status, headers });

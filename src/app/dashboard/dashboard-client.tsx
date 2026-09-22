@@ -65,7 +65,7 @@ import {
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
-import type { OwnerBrokerIntroductionResponse } from "@/features/broker-introductions/server/broker-introduction.contract";
+import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
@@ -93,6 +93,7 @@ interface Props {
   accessSummary?: PortfolioAccessSummary;
   publicationReadiness?: PublicationReadiness;
   brokerIntroductionResponses?: OwnerBrokerIntroductionResponse[];
+  receivedBrokerIntroductions?: ReceivedBrokerIntroduction[];
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -114,6 +115,7 @@ export default function DashboardClient({
   accessSummary = EMPTY_ACCESS_SUMMARY,
   publicationReadiness = EMPTY_PUBLICATION_READINESS,
   brokerIntroductionResponses = [],
+  receivedBrokerIntroductions = [],
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -814,6 +816,7 @@ export default function DashboardClient({
               onPreview={openEarlyPreview}
             />
           )}
+          <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
           <RelationshipLifecycle
             interests={interestItems}
             grants={accessGrants}
@@ -1295,6 +1298,30 @@ function useMobileDashboard() {
     () => typeof window !== "undefined" && Boolean(window.matchMedia?.("(max-width: 640px)").matches),
     () => false
   );
+}
+
+function ReceivedBrokerIntroductions({ introductions }: { introductions: ReceivedBrokerIntroduction[] }) {
+  if (introductions.length === 0) return null;
+  return <section className="dashboard-glass p-5 sm:p-6" aria-labelledby="broker-introductions-heading">
+    <div className="flex items-start gap-3">
+      <Inbox className="mt-0.5 h-5 w-5 text-[light-dark(#477b77,var(--app-dark-accent))]" />
+      <div>
+        <h2 id="broker-introductions-heading" className="text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Broker introductions</h2>
+        <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Profiles selected for you by your broker. Only you and the other customer can open each introduction.</p>
+      </div>
+    </div>
+    <div className="mt-4 grid gap-3">
+      {introductions.map((introduction) => <article key={introduction.introductionRef} className="flex flex-col gap-3 rounded-xl border border-[light-dark(#d9d3c7,var(--app-dark-border))] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <strong className="text-sm text-[light-dark(#18272e,var(--app-dark-ink))]">{introduction.sourceName}</strong>
+          <p className="mt-1 text-xs text-[light-dark(#64748b,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · expires {new Date(introduction.expiresAt).toLocaleDateString()}</p>
+        </div>
+        <Link className="dashboard-secondary-action" href={`/introductions/${introduction.introductionRef}`}>
+          View introduction
+        </Link>
+      </article>)}
+    </div>
+  </section>;
 }
 
 function RelationshipLifecycle({
