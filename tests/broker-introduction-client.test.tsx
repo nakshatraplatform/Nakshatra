@@ -16,32 +16,31 @@ const base = {
   media: [], horoscope: null, templateId: 1, themeColor: null, sunSign: null,
   expiresAt: "2026-10-01T00:00:00Z", recipientLabel: "Priya",
   response: null, responseComment: null, respondedAt: null, versionNumber: 3,
+  participantSide: "recipient",
 };
 
 describe("broker introduction recipient client", () => {
   beforeEach(() => window.history.replaceState(null, "", "/"));
   afterEach(() => vi.unstubAllGlobals());
 
-  it("exchanges a fragment pass, clears it, and renders the pinned Broker Standard Profile", async () => {
-    window.history.replaceState(null, "", `/introductions/${introductionRef}#pass=${"p".repeat(43)}`);
+  it("renders the pinned Broker Standard Profile for an authenticated participant", async () => {
     const fetch = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ready: true }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ...base, accessMode: "complete" }), { status: 200 }));
     vi.stubGlobal("fetch", fetch);
     render(<BrokerIntroductionClient introductionRef={introductionRef} />);
     expect(screen.getByText("Opening this introduction…")).toBeInTheDocument();
     await screen.findByText("Broker Standard Profile · trusted broker introduction");
-    expect(window.location.hash).toBe("");
     expect(screen.getByTestId("template")).toHaveAttribute("data-mode", "approved");
     expect(screen.getByText("Your response")).toBeInTheDocument();
-    expect(fetch.mock.calls[0][0]).toContain("/exchange");
+    expect(fetch.mock.calls[0][0]).toContain(`/introductions/${introductionRef}`);
   });
 
-  it("renders forwarded links as Detailed Introduction without response controls", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ...base, accessMode: "detailed" }), { status: 200 })));
+  it("requires sign-in and never falls back to a public broker profile", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: "AUTH_SESSION_MISSING" }), { status: 401 })));
     render(<BrokerIntroductionClient introductionRef={introductionRef} />);
-    await screen.findByText("Detailed Introduction · forwarded-link protection");
-    expect(screen.getByTestId("template")).toHaveAttribute("data-mode", "public");
+    await screen.findByText("Sign in to view this introduction");
+    expect(screen.getByRole("link", { name: "Sign in to VivIntro" })).toHaveAttribute("href", expect.stringContaining("redirect="));
+    expect(screen.queryByTestId("template")).not.toBeInTheDocument();
     expect(screen.queryByText("Your response")).not.toBeInTheDocument();
   });
 

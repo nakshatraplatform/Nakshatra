@@ -15,8 +15,7 @@ async function command<T>(url: string, method: "POST" | "DELETE", body: object):
 
 export function createIntroduction(workspaceRef: string, input: {
   relationshipRef: string;
-  recipientLabel: string;
-  recipientEmail?: string;
+  recipientRelationshipRef: string;
   idempotencyKey: string;
 }) {
   return command<{

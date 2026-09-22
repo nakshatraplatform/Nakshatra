@@ -13,10 +13,24 @@ export const brokerIntroductionTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43
 
 export const createBrokerIntroductionSchema = z.object({
   relationshipRef: brokerCustomerRelationshipRefSchema,
-  recipientLabel: z.string().trim().min(1).max(120),
-  recipientEmail: z.union([z.email().max(254), z.literal("")]).optional(),
+  recipientRelationshipRef: brokerCustomerRelationshipRefSchema,
   idempotencyKey: idempotencyKeySchema,
 }).strict();
+
+export const eligibleBrokerIntroductionRecipientSchema = z.object({
+  relationshipRef: brokerCustomerRelationshipRefSchema,
+  displayName: z.string().min(1).max(180),
+  gender: z.string().max(80).nullable(),
+  location: z.string().max(240).nullable(),
+}).strict();
+
+export const eligibleBrokerIntroductionRecipientsSchema = z.discriminatedUnion("available", [
+  z.object({ available: z.literal(false) }).strict(),
+  z.object({
+    available: z.literal(true),
+    recipients: z.array(eligibleBrokerIntroductionRecipientSchema).max(500),
+  }).strict(),
+]);
 
 export const preparedBrokerIntroductionSchema = z.discriminatedUnion("available", [
   z.object({ available: z.literal(false) }).strict(),
@@ -48,6 +62,12 @@ export const brokerIntroductionItemSchema = z.object({
   response: z.enum(["accepted", "declined"]).nullable(),
   responseComment: z.string().max(1000).nullable(),
   respondedAt: z.string().nullable(),
+  sourceResponse: z.enum(["accepted", "declined"]).nullable(),
+  sourceResponseComment: z.string().max(1000).nullable(),
+  sourceRespondedAt: z.string().nullable(),
+  recipientResponse: z.enum(["accepted", "declined"]).nullable(),
+  recipientResponseComment: z.string().max(1000).nullable(),
+  recipientRespondedAt: z.string().nullable(),
   expiresAt: z.string(),
   versionNumber: z.number().int().positive(),
   rowVersion: z.number().int().positive(),
@@ -77,9 +97,10 @@ export const resolvedBrokerIntroductionSchema = z.discriminatedUnion("available"
   z.object({
     available: z.literal(true),
     introductionRef: brokerIntroductionRouteRefSchema,
+    participantSide: z.enum(["source", "recipient"]),
     // `complete` is a legacy transport value retained for a database-first
     // rollout. For broker introductions it means Broker Standard Profile.
-    accessMode: z.enum(["detailed", "complete"]),
+    accessMode: z.literal("complete"),
     data: portfolioDataSchema,
     media: z.array(publicMediaDescriptorSchema).max(8),
     horoscope: z.object({
@@ -117,6 +138,19 @@ export const ownerBrokerIntroductionResponsesSchema = z.object({
   }).strict()).max(200),
 }).strict();
 
+export const receivedBrokerIntroductionsSchema = z.object({
+  available: z.literal(true),
+  introductions: z.array(z.object({
+    introductionRef: brokerIntroductionRouteRefSchema,
+    sourceName: z.string().min(1).max(180),
+    brokerName: z.string().min(1).max(180),
+    status: z.enum(["shared", "responded"]),
+    response: z.enum(["accepted", "declined"]).nullable(),
+    expiresAt: z.string(),
+    createdAt: z.string(),
+  }).strict()).max(200),
+}).strict();
+
 export const brokerdeskDashboardActionSchema = z.object({
   type: z.enum(["response", "portfolio_update", "clarification", "expiring"]),
   occurredAt: z.string(),
@@ -148,8 +182,10 @@ export const brokerdeskDashboardSchema = z.discriminatedUnion("available", [
 ]);
 
 export type BrokerIntroductionItem = z.infer<typeof brokerIntroductionItemSchema>;
+export type EligibleBrokerIntroductionRecipient = z.infer<typeof eligibleBrokerIntroductionRecipientSchema>;
 export type BrokerPortfolioNotice = z.infer<typeof brokerPortfolioNoticeSchema>;
 export type ResolvedBrokerIntroduction = z.infer<typeof resolvedBrokerIntroductionSchema>;
 export type OwnerBrokerIntroductionResponse = z.infer<typeof ownerBrokerIntroductionResponsesSchema>["responses"][number];
+export type ReceivedBrokerIntroduction = z.infer<typeof receivedBrokerIntroductionsSchema>["introductions"][number];
 export type BrokerdeskDashboard = z.infer<typeof brokerdeskDashboardSchema>;
 export type BrokerdeskDashboardAction = z.infer<typeof brokerdeskDashboardActionSchema>;

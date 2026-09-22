@@ -23,10 +23,10 @@ describe("broker introduction client API", () => {
   });
 
   it("creates and surfaces neutral API errors", async () => {
-    const result = { introductionRef: `bir_${"a".repeat(32)}`, introductionUrl: "https://app.test/introduction#pass=x", sourceName: "Arun", recipientLabel: "Priya", recipientEmailHint: null, expiresAt: "2026-10-01", versionNumber: 1, rowVersion: 1, status: "created" };
+    const result = { introductionRef: `bir_${"a".repeat(32)}`, introductionUrl: "https://app.test/introduction", sourceName: "Arun", recipientLabel: "Priya", recipientEmailHint: null, expiresAt: "2026-10-01", versionNumber: 1, rowVersion: 1, status: "created" };
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(result), { status: 201, headers: { "Content-Type": "application/json" } })));
-    await expect(createIntroduction("wrk_a", { relationshipRef: "bcr_b", recipientLabel: "Priya", idempotencyKey: "key" })).resolves.toEqual(result);
+    await expect(createIntroduction("wrk_a", { relationshipRef: "bcr_b", recipientRelationshipRef: "bcr_c", idempotencyKey: "key" })).resolves.toEqual(result);
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "Unavailable" }), { status: 503, headers: { "Content-Type": "application/json" } })));
-    await expect(createIntroduction("wrk_a", { relationshipRef: "bcr_b", recipientLabel: "Priya", idempotencyKey: "key" })).rejects.toThrow("Unavailable");
+    await expect(createIntroduction("wrk_a", { relationshipRef: "bcr_b", recipientRelationshipRef: "bcr_c", idempotencyKey: "key" })).rejects.toThrow("Unavailable");
   });
 });

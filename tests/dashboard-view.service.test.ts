@@ -149,6 +149,7 @@ describe("dashboard view service", () => {
       horoscope: null,
       interests: [],
       brokerIntroductionResponses: [],
+      receivedBrokerIntroductions: [],
       accessSummary: { grants: [], events: [] },
       publicationReadiness: {
         portfolioExists: false,

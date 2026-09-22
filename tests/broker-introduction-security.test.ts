@@ -17,6 +17,7 @@ import {
 
 const introductionRef = `bir_${"a".repeat(32)}`;
 const relationshipRef = `bcr_${"b".repeat(32)}`;
+const recipientRelationshipRef = `bcr_${"d".repeat(32)}`;
 const workspaceRef = `wrk_${"c".repeat(32)}`;
 
 describe("broker introduction credentials and contracts", () => {
@@ -55,13 +56,12 @@ describe("broker introduction credentials and contracts", () => {
   it("rejects caller-expanded identity fields and keeps fallback projections bounded", () => {
     expect(createBrokerIntroductionSchema.safeParse({
       relationshipRef,
-      recipientLabel: "Priya and family",
-      recipientEmail: "priya@example.com",
+      recipientRelationshipRef,
       idempotencyKey: "broker-introduction:1111111111111111",
     }).success).toBe(true);
     expect(createBrokerIntroductionSchema.safeParse({
       relationshipRef,
-      recipientLabel: "Priya and family",
+      recipientRelationshipRef,
       idempotencyKey: "broker-introduction:1111111111111111",
       targetBrokerId: "forbidden",
     }).success).toBe(false);

@@ -40,6 +40,7 @@ export default async function DashboardPage({
     portfolio?.updated_at ?? "new",
     dashboard.interests[0]?.id ?? "no-interest",
     dashboard.accessSummary.events[0]?.id ?? "no-access-event",
+    dashboard.receivedBrokerIntroductions?.[0]?.introductionRef ?? "no-broker-introduction",
   ].join(":");
 
   return (
@@ -61,6 +62,7 @@ export default async function DashboardPage({
       accessSummary={dashboard.accessSummary}
       publicationReadiness={dashboard.publicationReadiness}
       brokerIntroductionResponses={dashboard.brokerIntroductionResponses}
+      receivedBrokerIntroductions={dashboard.receivedBrokerIntroductions ?? []}
     />
   );
 }

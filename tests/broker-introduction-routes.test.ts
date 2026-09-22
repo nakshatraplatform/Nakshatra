@@ -65,6 +65,7 @@ import { POST as acknowledgeNotice } from "../src/app/api/v1/brokerdesk/workspac
 const origin = "http://localhost:3000";
 const workspaceRef = `wrk_${"a".repeat(32)}`;
 const relationshipRef = `bcr_${"b".repeat(32)}`;
+const recipientRelationshipRef = `bcr_${"e".repeat(32)}`;
 const introductionRef = `bir_${"c".repeat(32)}`;
 const noticeRef = `bpn_${"d".repeat(32)}`;
 const actor = { status: "authenticated" as const, user: { id: "11111111-1111-4111-8111-111111111111" }, supabase: { kind: "actor" } };
@@ -93,16 +94,16 @@ describe("broker introduction routes", () => {
     acknowledged.mockResolvedValue({ available: true, status: "acknowledged" });
   });
 
-  it("creates a fragment-only pass and lists only one broker relationship", async () => {
+  it("creates an opaque identity-bound URL and lists one broker relationship", async () => {
     const request = mutation(`/api/v1/brokerdesk/workspaces/${workspaceRef}/introductions`, {
-      relationshipRef, recipientLabel: "Priya", recipientEmail: "priya@example.com",
+      relationshipRef, recipientRelationshipRef,
       idempotencyKey: "broker-introduction:1111111111111111",
     });
     const created = await create(request, context);
     expect(created.status).toBe(201);
-    expect((await created.json()).introductionUrl).toMatch(new RegExp(`/introductions/${introductionRef}#pass=[A-Za-z0-9_-]{43}$`));
+    expect((await created.json()).introductionUrl).toMatch(new RegExp(`/introductions/${introductionRef}$`));
     expect(createIntroduction).toHaveBeenCalledWith(actor.supabase, expect.objectContaining({
-      workspaceRef, relationshipRef, recipientEmailHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      workspaceRef, relationshipRef, recipientRelationshipRef,
     }));
     const listed = await list(new Request(`${origin}/api?relationshipRef=${relationshipRef}`), context);
     expect(listed.status).toBe(200);
@@ -129,26 +130,26 @@ describe("broker introduction routes", () => {
     expect(acknowledged).toHaveBeenCalledWith(actor.supabase, workspaceRef, relationshipRef, noticeRef);
   });
 
-  it("claims once, reads through the device cookie, and records a response", async () => {
+  it("retires bearer-pass exchange and authorizes reads and responses through the live user session", async () => {
     const pass = "p".repeat(43);
     const exchanged = await exchange(mutation("/exchange", { pass }), context);
-    expect(exchanged.status).toBe(200);
-    expect(exchanged.headers.get("set-cookie")).toContain(`vivintro_broker_introduction_${introductionRef}=signed`);
-    expect(claim).toHaveBeenCalledWith({ kind: "public" }, introductionRef, expect.stringMatching(/^[a-f0-9]{64}$/), expect.stringMatching(/^[a-f0-9]{64}$/));
+    expect(exchanged.status).toBe(410);
+    expect(exchanged.headers.get("set-cookie")).toBeNull();
+    expect(claim).not.toHaveBeenCalled();
     const viewed = await publicRead(new Request(`${origin}/introduction`, { headers: { Cookie: "x=y" } }), context);
     expect(viewed.status).toBe(404);
-    expect(resolve).toHaveBeenCalledWith({ kind: "public" }, introductionRef, expect.stringMatching(/^[a-f0-9]{64}$/));
+    expect(resolve).toHaveBeenCalledWith(actor.supabase, introductionRef);
     const answered = await response(mutation("/response", { response: "accepted", comment: "Proceed" }), context);
     expect(answered.status).toBe(200);
-    expect(respond).toHaveBeenCalledWith({ kind: "public" }, introductionRef, expect.stringMatching(/^[a-f0-9]{64}$/), "accepted", "Proceed");
+    expect(respond).toHaveBeenCalledWith(actor.supabase, introductionRef, "accepted", "Proceed");
   });
 
   it("rejects malformed and cross-origin mutations without touching services", async () => {
-    expect((await create(mutation("/create", { relationshipRef, recipientLabel: "" }), context)).status).toBe(400);
+    expect((await create(mutation("/create", { relationshipRef, recipientRelationshipRef: "bad" }), context)).status).toBe(400);
     expect((await share(mutation("/shared", { expectedVersion: 0 }), context)).status).toBe(400);
     expect((await response(mutation("/response", { response: "maybe" }), context)).status).toBe(400);
     const hostile = new Request(`${origin}/exchange`, { method: "POST", headers: { Origin: "https://attacker.example", "Content-Type": "application/json" }, body: JSON.stringify({ pass: "p".repeat(43) }) });
-    expect((await exchange(hostile, context)).status).toBe(403);
+    expect((await exchange(hostile, context)).status).toBe(410);
   });
 
   it("fails closed for missing authentication, throttling, bad references, and dependencies", async () => {
@@ -158,8 +159,8 @@ describe("broker introduction routes", () => {
     expect((await publicRead(new Request(`${origin}/introduction`), context)).status).toBe(429);
     const bad = { params: Promise.resolve({ introductionRef: "bad", workspaceRef, noticeRef }) };
     expect((await publicRead(new Request(`${origin}/bad`), bad)).status).toBe(404);
-    readCookie.mockReturnValueOnce(null);
-    expect((await response(mutation("/response", { response: "declined", comment: "" }), context)).status).toBe(403);
+    getApiUser.mockResolvedValueOnce({ status: "missing_session" });
+    expect((await response(mutation("/response", { response: "declined", comment: "" }), context)).status).toBe(401);
     listNotices.mockRejectedValueOnce(new Error("database details"));
     expect((await notices(new Request(`${origin}/updates?relationshipRef=${relationshipRef}`), context)).status).toBe(404);
   });

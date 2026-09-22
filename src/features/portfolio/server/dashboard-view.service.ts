@@ -20,7 +20,7 @@ import { DashboardRepository } from "./dashboard.repository";
 import { canCreatePortfolio } from "@/features/auth/server/portfolio-bootstrap";
 import { loadPilotAccessState } from "@/features/pilot-access/server/pilot-access.service";
 import { getPublicationReadiness } from "./publication-readiness.service";
-import { listOwnerBrokerIntroductionResponses } from "@/features/broker-introductions/server/broker-introduction.service";
+import { listOwnerBrokerIntroductionResponses, listReceivedBrokerIntroductions } from "@/features/broker-introductions/server/broker-introduction.service";
 
 type PortfolioRow = Database["public"]["Tables"]["portfolios"]["Row"];
 
@@ -71,13 +71,14 @@ export async function loadDashboardView({
       accessSummary: { grants: [], events: [] },
       publicationReadiness: await getPublicationReadiness(supabase),
       brokerIntroductionResponses: [],
+      receivedBrokerIntroductions: [],
     };
   }
 
   const mediaRepository = new PortfolioMediaRepository(supabase);
   const horoscopeRepository = new HoroscopeRepository(supabase);
   const interestRepository = new InterestRepository(supabase);
-  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, publicationReadiness, brokerIntroductionResponses] = await Promise.all([
+  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, publicationReadiness, brokerIntroductionResponses, receivedBrokerIntroductions] = await Promise.all([
     dashboardRepository.countPortfolioViews(portfolio.id),
     mediaRepository.findPortfolioPhotos(portfolio.id),
     horoscopeRepository.findByPortfolio(portfolio.id),
@@ -85,6 +86,7 @@ export async function loadDashboardView({
     getPortfolioAccessSummary(supabase),
     getPublicationReadiness(supabase),
     listOwnerBrokerIntroductionResponses(supabase).catch(() => []),
+    listReceivedBrokerIntroductions(supabase).catch(() => []),
   ]);
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
@@ -103,5 +105,6 @@ export async function loadDashboardView({
     accessSummary,
     publicationReadiness,
     brokerIntroductionResponses,
+    receivedBrokerIntroductions,
   };
 }

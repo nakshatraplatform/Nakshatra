@@ -1,5 +1,13 @@
 # Broker introduction system design — phases 4–12
 
+> Historical note: the device-pass and Detailed-fallback sections in this
+> document describe the retired NAK-76 pilot design. NAK-78 replaces broker-link
+> authority with a bilateral Introduction between two same-agency, published,
+> Didit-verified VivIntro customers. Both sign in and see the other participant's
+> pinned Broker Standard Profile; forwarding the URL grants nothing. Personal
+> VivIntro guest links are unchanged. The authoritative current contract is
+> `docs/vivintrodesk-mvp-contract.md`.
+
 The broker-facing product remains named `BrokerDesk` internally. That label is
 not a public brand commitment and can be replaced when the B2B product is named.
 

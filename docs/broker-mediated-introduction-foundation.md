@@ -46,10 +46,11 @@ uses the same provider idempotency identity.
 
 ## Implemented introduction journey
 
-Phases 4–8 add versioned disclosure references, broker-created introduction
-records, one-time device passes, Detailed Introduction fallback, responses, the
-six-event audit trail and isolated version notifications. See
-`docs/broker-introduction-system-design.md`. The implementation contains no
-per-introduction customer approval state and no recipient-broker lookup. The
-one-recipient model remains the MVP primitive: the recipient does not need an
-existing VivIntro account or a mandate to the source broker.
+Phases 4–8 originally added one-recipient device passes. NAK-78 retires that
+authority model: new BrokerDesk Introductions are bilateral, require two
+same-workspace customers with published and Didit-verified portfolios, pin both
+versions, and authorize each side only through their live VivIntro identity.
+The personal VivIntro guest-sharing flow remains separate and unchanged. See
+`docs/vivintrodesk-mvp-contract.md` for the current contract; the earlier device
+pass material in `docs/broker-introduction-system-design.md` is retained only as
+historical design context.

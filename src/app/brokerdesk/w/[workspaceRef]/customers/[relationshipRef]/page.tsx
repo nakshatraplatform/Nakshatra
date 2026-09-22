@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, CalendarClock, LockKeyhole, MapPin, ShieldCheck, UserRound, Users } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { resolveBrokerdeskCustomer } from "@/features/broker-relationships/server/customer-invitation.service";
-import { listBrokerIntroductions, listBrokerPortfolioNotices } from "@/features/broker-introductions/server/broker-introduction.service";
+import { listBrokerIntroductions, listBrokerPortfolioNotices, listEligibleBrokerIntroductionRecipients } from "@/features/broker-introductions/server/broker-introduction.service";
 import { BrokerIntroductionPanel } from "./broker-introduction-panel";
 import styles from "./brokerdesk-customer-detail.module.css";
 
@@ -20,9 +20,10 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   const { supabase } = await getAuthenticatedUser();
   const customer = await resolveBrokerdeskCustomer(supabase, workspaceRef, relationshipRef);
   if (!customer.available) return <main className={styles.unavailable}><div className="app-header-actions"><ThemeSwitch /></div><h1>Customer unavailable</h1><p>This relationship may not exist, may not be assigned to you, or may no longer permit access.</p><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Return to customers</Link></main>;
-  const [introductionResult, noticeResult] = await Promise.all([
+  const [introductionResult, noticeResult, eligibleRecipientResult] = await Promise.all([
     listBrokerIntroductions(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
     listBrokerPortfolioNotices(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
+    listEligibleBrokerIntroductionRecipients(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
   ]);
 
   return <div className={styles.shell}>
@@ -42,7 +43,8 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
       <BrokerIntroductionPanel
         workspaceRef={workspaceRef}
         relationshipRef={relationshipRef}
-        canCreate={customer.actions.canCreateIntroduction && customer.portfolio.status === "published"}
+        canCreate={customer.actions.canCreateIntroduction && customer.portfolio.status === "published" && eligibleRecipientResult.available}
+        eligibleRecipients={eligibleRecipientResult.available ? eligibleRecipientResult.recipients : []}
         initialIntroductions={introductionResult.available ? introductionResult.introductions : []}
         initialNotices={noticeResult.available ? noticeResult.notices : []}
       />

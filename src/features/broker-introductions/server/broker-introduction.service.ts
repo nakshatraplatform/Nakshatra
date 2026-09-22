@@ -2,15 +2,15 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
-import { createPublicPortfolioSnapshot } from "@/features/portfolio/server/public-snapshot.service";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import {
   brokerIntroductionListSchema,
   brokerPortfolioNoticeListSchema,
   createdBrokerIntroductionSchema,
-  preparedBrokerIntroductionSchema,
+  eligibleBrokerIntroductionRecipientsSchema,
   resolvedBrokerIntroductionSchema,
   ownerBrokerIntroductionResponsesSchema,
+  receivedBrokerIntroductionsSchema,
   brokerdeskDashboardSchema,
 } from "./broker-introduction.contract";
 import { BrokerIntroductionRepository } from "./broker-introduction.repository";
@@ -45,41 +45,27 @@ export async function createBrokerIntroduction(
   input: {
     workspaceRef: string;
     relationshipRef: string;
-    recipientLabel: string;
-    recipientEmailHash: string | null;
-    recipientEmailHint: string | null;
-    claimTokenHash: string;
+    recipientRelationshipRef: string;
     idempotencyKey: string;
   }
 ) {
   const repository = new BrokerIntroductionRepository(supabase);
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const preparedResult = await repository.prepare(input.workspaceRef, input.relationshipRef);
-    const prepared = parseOrThrow(preparedBrokerIntroductionSchema, preparedResult.data, preparedResult.error);
-    if (!prepared.available) throw new BrokerIntroductionError();
-    // `completeData` is the rollout-compatible database key for the bounded
-    // Broker Standard projection. Derive only the Detailed fallback from it.
-    const detailed = createPublicPortfolioSnapshot({ ...prepared.completeData, privacy_mode: "balanced" });
-    const createdResult = await repository.create({
-      p_workspace_ref: input.workspaceRef,
-      p_relationship_ref: input.relationshipRef,
-      p_version_ref: prepared.versionRef,
-      p_detailed_snapshot: detailed,
-      p_recipient_label: input.recipientLabel,
-      p_recipient_email_hash: input.recipientEmailHash,
-      p_recipient_email_hint: input.recipientEmailHint,
-      p_claim_token_hash: input.claimTokenHash,
-      p_idempotency_key: input.idempotencyKey,
-    });
-    if (createdResult.error) throw new BrokerIntroductionError();
-    if ((createdResult.data as { status?: unknown } | null)?.status === "version_changed") continue;
-    return parseOrThrow(createdBrokerIntroductionSchema, createdResult.data, null);
-  }
-  throw new BrokerIntroductionError(
-    "The customer published a new version while this introduction was being prepared. Try again.",
-    "BROKER_INTRODUCTION_VERSION_CHANGED",
-    409
+  const result = await repository.createIdentityBound(
+    input.workspaceRef,
+    input.relationshipRef,
+    input.recipientRelationshipRef,
+    input.idempotencyKey
   );
+  return parseOrThrow(createdBrokerIntroductionSchema, result.data, result.error);
+}
+
+export async function listEligibleBrokerIntroductionRecipients(
+  supabase: SupabaseClient,
+  workspaceRef: string,
+  relationshipRef: string
+) {
+  const result = await new BrokerIntroductionRepository(supabase).recipients(workspaceRef, relationshipRef);
+  return parseOrThrow(eligibleBrokerIntroductionRecipientsSchema, result.data, result.error);
 }
 
 export async function listBrokerIntroductions(supabase: SupabaseClient, workspaceRef: string, relationshipRef: string) {
@@ -107,8 +93,8 @@ export async function claimBrokerIntroductionPass(supabase: SupabaseClient, intr
   return parseOrThrow(claimSchema, result.data, result.error);
 }
 
-export async function resolveBrokerIntroduction(supabase: SupabaseClient, introductionRef: string, sessionHash: string | null) {
-  const result = await new BrokerIntroductionRepository(supabase).resolve(introductionRef, sessionHash);
+export async function resolveBrokerIntroduction(supabase: SupabaseClient, introductionRef: string) {
+  const result = await new BrokerIntroductionRepository(supabase).resolve(introductionRef);
   const resolved = parseOrThrow(resolvedBrokerIntroductionSchema, result.data, result.error);
   if (!resolved.available) return resolved;
 
@@ -132,8 +118,8 @@ export async function resolveBrokerIntroduction(supabase: SupabaseClient, introd
   };
 }
 
-export async function respondToBrokerIntroduction(supabase: SupabaseClient, introductionRef: string, sessionHash: string, response: "accepted" | "declined", comment: string) {
-  const result = await new BrokerIntroductionRepository(supabase).respond(introductionRef, sessionHash, response, comment);
+export async function respondToBrokerIntroduction(supabase: SupabaseClient, introductionRef: string, response: "accepted" | "declined", comment: string) {
+  const result = await new BrokerIntroductionRepository(supabase).respond(introductionRef, response, comment);
   return parseOrThrow(transitionSchema, result.data, result.error);
 }
 
@@ -145,6 +131,11 @@ export async function flagBrokerPortfolioUpdate(supabase: SupabaseClient, worksp
 export async function listOwnerBrokerIntroductionResponses(supabase: SupabaseClient) {
   const result = await new BrokerIntroductionRepository(supabase).ownerResponses();
   return parseOrThrow(ownerBrokerIntroductionResponsesSchema, result.data, result.error).responses;
+}
+
+export async function listReceivedBrokerIntroductions(supabase: SupabaseClient) {
+  const result = await new BrokerIntroductionRepository(supabase).received();
+  return parseOrThrow(receivedBrokerIntroductionsSchema, result.data, result.error).introductions;
 }
 
 export async function resolveBrokerdeskDashboard(supabase: SupabaseClient, workspaceRef: string) {
