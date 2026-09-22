@@ -1,7 +1,16 @@
 # Nakshatra BrokerDesk — Living Product and Engineering Plan
 
-Status: Planning approved; Phase 2 representative verification, Slice 3 manual customer intake, and secure customer detail implemented on the combined feature branch
+Status: Historical planning index and implementation log; implementation is
+merged through NAK-78 bilateral authenticated Introductions.
 Maintainer: Update this document whenever a product decision, architectural decision, phase status, risk, or implementation deviation is approved.
+
+> **Current contract:** Read
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md)
+> and the
+> [VivIntroDesk document map](../../docs/vivintrodesk-document-map.md) first.
+> Earlier sections below preserve planning history and include superseded
+> multi-route, 30-day, task, and contact-approval assumptions. They are not
+> implementation authority when they conflict with the current contract.
 
 ## Purpose
 
@@ -18,6 +27,20 @@ The central workflow object is the Introduction. BrokerDesk is not a CRM; it is 
 - Preserve the broker's human judgement and conventional communication methods.
 - Keep the customer in control of their identity, portfolio, decisions, and private disclosures.
 - Make every important action attributable, reversible where appropriate, and auditable.
+
+## Current implementation checkpoint
+
+- NAK-76: immutable generated Broker Standard projection, with contact,
+  financial, owner-private, exact birth time, and internal fields excluded.
+- NAK-77: customer-owned pause, renew, and terminate controls for broker consent.
+- NAK-78: two same-agency eligible customers per Introduction, both portfolio
+  versions pinned, authenticated participant-only access, two independent
+  responses, and retired device-pass authority.
+- Personal VivIntro sharing remains a separate B2C flow.
+- Mutual-interest Complete Portfolio and Protected Contact release is the
+  recommended next capability and requires its own explicit contract.
+- Tasks/general CRM, linked family, questionnaires, payments, recommendations,
+  and cross-broker coordination remain deferred.
 
 ## Approved principles
 

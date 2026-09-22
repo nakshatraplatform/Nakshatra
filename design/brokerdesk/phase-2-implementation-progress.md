@@ -1,10 +1,17 @@
 # BrokerDesk Phase 2 — Implementation Progress
 
-Status: Slice 1 and Slice 2 team-access foundation merged; representative verification, Slice 3 manual customer intake, and secure customer detail implemented on the current stacked feature branch
+Status: Historical implementation log; merged implementation now continues
+through NAK-76 Broker Standard, NAK-77 customer broker-consent controls, and
+NAK-78 bilateral authenticated Introduction access.
 Started: 2026-09-08  
 Approved plan: [Phase 1 Implementation Plan](./phase-1-implementation-plan.md)
 
 ## Tracking approach
+
+For the current product contract and next work, use
+[`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md).
+Branch names and “current” status below describe their point in history and are
+not the present repository state.
 
 The user has opted out of Linear updates for this work. Decisions, changed files, verification results, risks, and deviations are recorded here, in the master plan, and in associated GitHub pull requests. The safety foundation merged through PR #40, the capability foundation through PR #41, private onboarding through PR #42, and the secure team-access foundation through PR #43. Related implementation units remain on one feature branch with local checkpoint commits; a pull request and merge happen only at a deliberate, reviewable checkpoint instead of after every small phase.
 

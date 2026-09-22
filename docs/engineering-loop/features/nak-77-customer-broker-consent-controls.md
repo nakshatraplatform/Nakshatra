@@ -5,7 +5,7 @@
 - Risk: Critical — customer consent, authorization, revocation and database migration.
 - Source snapshot: `origin/main` at `6df0c59` after NAK-76 merged.
 - Branch: `feat/nak-77-customer-broker-consent-controls`.
-- Current step: implementation complete; local PostgreSQL runtime verification remains pending because Docker/Podman is unavailable on this host.
+- Current step: merged through PR #63 as `fd858ba`; required CI checks passed.
 - Canonical locations:
   - `public.resolve_customer_broker_relationships()` — customer-only relationship projection.
   - `app_private.broker_client_mandates` — time-bound broker authority.
@@ -124,7 +124,5 @@ the interface before the transaction succeeds.
   - `npm run db:smoke`
   - focused NAK-77 tests — 5 files, 12 tests passed
   - `npm run build` — passed with non-secret build-time Supabase placeholders
-- Verification pending:
-  - pgTAP/runtime migration execution. `npm run test:db:local` cannot start
-    because neither Docker nor Podman is installed on this host. CI must run the
-    migration and `customer_broker_consent_controls.test.sql` before merge.
+- Runtime migration replay and the pgTAP suite passed in PR CI before merge.
+  Local database execution remains unavailable on hosts without Docker/Podman.

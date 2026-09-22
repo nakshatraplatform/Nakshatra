@@ -1,12 +1,18 @@
 # Nakshatra — Current Repository and Product Reference
 
-**Updated:** 2026-09-11
+**Updated:** 2026-09-22
 
 **Repository:** `nakshatra`
 
 **Product:** Nakshatra
 
 **Detailed B2C pilot assessment:** [`docs/b2c-pilot-product-assessment.md`](docs/b2c-pilot-product-assessment.md)
+
+**VivIntroDesk document routing:**
+[`docs/vivintrodesk-document-map.md`](docs/vivintrodesk-document-map.md)
+
+**Authoritative VivIntroDesk contract:**
+[`docs/vivintrodesk-mvp-contract.md`](docs/vivintrodesk-mvp-contract.md)
 
 **Didit configuration (2026-09-19):** Only `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`,
 and `DIDIT_WEBHOOK_SECRET` are provider-specific settings. See the
@@ -22,7 +28,15 @@ Nakshatra is not a matrimony marketplace, dating product, search directory, matc
 It is a consent-based introduction platform with two product contexts:
 
 - **B2C:** An adult candidate creates one current marriage portfolio, shares a Brief or Detailed Introduction through their existing network, receives verified interest requests, and decides who receives time-limited Complete Portfolio access.
-- **BrokerDesk / B2B:** Organization onboarding, role-based staff access, invitations, reauthentication, and MFA foundations. This is implemented in the repository but is not part of the current B2C pilot.
+- **VivIntroDesk / B2B:** Broker onboarding and team access, customer
+  invitations and time-bound mandates, Broker Standard disclosure, customer
+  consent controls, and bilateral authenticated Introductions between two
+  same-agency published and Didit-verified customers. This is implemented
+  through NAK-78 but is not automatically enabled for a B2C-only pilot.
+
+For current VivIntroDesk behavior, the MVP contract wins over older Phase 0/1
+plans and the retired device-pass design. Broker links have no public Detailed
+fallback; personal VivIntro links remain a separate guest-viewable B2C flow.
 
 The core product loop is:
 
@@ -144,10 +158,12 @@ BrokerDesk
 ├── /brokerdesk
 ├── /brokerdesk/onboarding
 ├── /brokerdesk/security/mfa
+├── /brokerdesk/w/[workspaceRef]/dashboard
 ├── /brokerdesk/w/[workspaceRef]/customers
 ├── /brokerdesk/w/[workspaceRef]/customers/[relationshipRef]
 ├── /brokerdesk/w/[workspaceRef]/settings/team
 ├── /brokers                 Candidate view of broker relationships
+├── /introductions/[introductionRef]
 ├── /join/customer           Customer invitation acceptance
 ├── /join/team
 ├── /api/v1/brokerdesk/*
@@ -167,6 +183,8 @@ BrokerDesk
 - `access` — Complete Portfolio grant lifecycle.
 - `account` — export, session display, reauthentication, deletion.
 - `auth` — password rules and portfolio bootstrap.
+- `broker-introductions` — bilateral creation, participant resolution,
+  independent responses, broker queues, and portfolio-version notices.
 - `broker-relationships` — customer invitations and candidate/agency relationship access.
 - `horoscope` — private attachment access.
 - `identity-verification` — Didit provider/session/invitation/webhook processing.
@@ -193,7 +211,9 @@ The database is migration-driven. Important domains include:
 - Interest requests, requester verification, grants, and access events.
 - Account deletion requests, leases, receipts, and retention operations.
 - Identity verification sessions/invitations/webhook events.
-- Organizations, memberships, role capability sets, onboarding, MFA, team invitations, customer invitations, and candidate/broker relationships.
+- Organizations, memberships, role capability sets, onboarding, MFA, team
+  invitations, customer invitations, candidate/broker relationships, mandates,
+  immutable disclosure versions, and bilateral broker Introductions.
 
 The current model is intentionally hybrid while normalized data replaces legacy JSON. Never remove compatibility paths without an explicit migration and recovery plan.
 

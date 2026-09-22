@@ -1,5 +1,12 @@
 # BrokerDesk Phase 0C — Introduction State Contract
 
+> **Superseded state model:** NAK-78 does not use a global customer-pair case
+> with multiple private broker routes. The current primitive is one bilateral
+> Introduction per unordered customer pair per agency, active for 15 days, with
+> both participants authenticated through their VivIntro accounts. Preserve
+> this file only as decision history. See
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md).
+
 Status: Approved baseline for Phase 0D; deferred decisions remain fail closed
 
 Scope: Broker-originated introductions involving two customers and one or more private broker routes. This document defines product states and permissions before database, API, URL, or application implementation.

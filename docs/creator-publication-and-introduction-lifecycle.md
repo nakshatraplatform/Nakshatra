@@ -1,5 +1,12 @@
 # Creator publication and introduction lifecycle
 
+> **Shared readiness boundary:** A published portfolio that satisfies this
+> lifecycle becomes eligible for broker selection only when its candidate also
+> has current Didit verification and an active same-agency broker relationship
+> and mandate. Broker Introductions then use the pinned Broker Standard
+> projection; personal links continue to use the B2C disclosure flow. See
+> [`vivintrodesk-mvp-contract.md`](./vivintrodesk-mvp-contract.md).
+
 ## Creator journey
 
 The dashboard presents one resumable journey:

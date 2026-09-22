@@ -1,6 +1,34 @@
-# VivIntroDesk MVP contract
+# VivIntroDesk MVP product, business, and engineering contract
 
-Status: approved implementation contract, reconciled through NAK-78.
+Status: **authoritative current contract**, reconciled through merged NAK-78 on
+22 September 2026. When an older BrokerDesk plan, prototype, feature record, or
+chat summary conflicts with this file, this file wins. See
+[the document map](./vivintrodesk-document-map.md) before using historical plans.
+
+## Product and business position
+
+VivIntroDesk is the broker-facing extension of VivIntro. It helps matrimonial
+brokers replace Excel sheets, biodata folders, untracked WhatsApp forwarding,
+and personal memory with a small, accountable Introduction workflow. It is not
+a general CRM and does not replace the broker's judgement or conversations.
+
+The broker agency is the planned paying customer. The initial commercial
+hypothesis is subscription pricing by active-customer capacity, team seats, and
+Introduction volume. Exact plans and prices remain pilot hypotheses, not launch
+commitments. Customers use the canonical VivIntro portfolio and all
+broker-sponsored actions without a separate consumer charge.
+
+VivIntro remains usable outside a broker relationship through its personal
+sharing workflow. Personal monetization, VivIntro Plus, usage allowances, and
+payments are deferred until the broker pilot and B2C usage produce evidence.
+Decline, block, report, revocation, broker consent, and responding to a broker
+Introduction must never be paywalled.
+
+Broker package names and benefits remain agency-defined. VivIntroDesk may
+record operational labels, dates, payment state, and renewal dates without
+interpreting or enforcing what a broker's Silver, Gold, or other package means.
+Custom agency questionnaires are deferred from the MVP; they must not expand
+the canonical portfolio or Broker Standard projection accidentally.
 
 ## Product primitive
 
@@ -36,6 +64,7 @@ information, but excludes:
 - every contact, email and phone field;
 - annual income, currency, wealth stage and credit information;
 - owner-private notes and private package-questionnaire answers;
+- exact birth time and other restricted identity details;
 - internal identifiers and geographic reference identifiers.
 
 The projection and media manifest are pinned to the publication version used by
@@ -52,8 +81,11 @@ Introduction.
   identity-verified; completion automatically controls broker eligibility.
 - Each customer's response is independent and immutable.
 - Revocation, mandate termination, unpublishing and expiry fail closed.
-- Contact release after mutual interest is not implemented in NAK-76; it needs a
-  separate explicit consent contract before development.
+- Contact release after mutual interest is not implemented through NAK-78. The
+  next contract must make the meaning of **Interested** explicit: if both
+  customers choose it, each receives the other customer's Complete Portfolio,
+  including Protected Contact, for 15 days. There is no second contact-approval
+  step, but this disclosure consequence must be confirmed at response time.
 
 ## URL and authorization contract
 
@@ -79,3 +111,37 @@ its existing B2C progressive-disclosure rules.
 
 These items require separate validation and must not be added as incidental
 extensions of the Broker Standard Profile.
+
+## Current implementation checkpoint
+
+Merged on `main`:
+
+- broker organization onboarding, representative verification foundations,
+  entitlement gates, team roles, invitations, MFA and fresh reauthentication;
+- customer invitations, canonical portfolio ownership, agency relationships,
+  time-bound mandates, and customer pause/renew/terminate controls;
+- immutable disclosure versions and the generated Broker Standard projection;
+- bilateral same-agency Introduction creation between two eligible customers;
+- authenticated participant-only Broker Standard access and independent
+  responses; and
+- fail-closed revocation, cross-agency isolation, audit foundations, and
+  customer-dashboard visibility.
+
+The legacy one-recipient device-pass path is retired for new Introductions and
+its active credentials are revoked/scrubbed by NAK-78.
+
+## Recommended next implementation sequence
+
+1. **NAK-79 — Mutual-interest Complete Portfolio release.** Confirm disclosure
+   when each customer chooses Interested; after both accept, create reciprocal,
+   identity-bound 15-day Complete access using existing Protected Contact and
+   grant foundations. Rejection, expiry, revocation, and split/invalid ownership
+   must fail closed.
+2. **Notifications and recovery.** Deliver and retry Introduction, response,
+   mutual-interest, expiry, and revocation notifications through the existing
+   outbox without making email delivery the source of truth.
+3. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+   monitoring, and two-broker staging evidence needed for a bounded pilot.
+4. **Broker UX refinement.** Validate dashboard, customer selection, response
+   follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
+   analytics, recommendations, questionnaires, or payments.

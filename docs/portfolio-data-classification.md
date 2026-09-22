@@ -3,17 +3,17 @@
 This classification governs every portfolio projection and is enforced by the
 snapshot builders, token-scoped database functions, RLS, and Storage policies.
 
-| Class | Examples | Public link | Approved viewer | Owner |
-|---|---|---:|---:|---:|
-| Public presentation | Published display name, age, selected biography, rashi, selected career/education/lifestyle fields, theme | Yes, from the sanitized snapshot only | Yes | Yes |
-| Public media | A primary or gallery photo explicitly set to Visible to all | Temporary URL | Temporary URL | Yes |
-| Protected preview | Generated low-detail derivative for blurred or approval-only photos | Temporary preview URL only | Original temporary URL | Yes |
-| Restricted identity | Exact date/time/place of birth, detailed astrology, immigration and location reference IDs | No | Yes when included in the approved snapshot | Yes |
-| Restricted family | Family-member names, occupations, locations, family notes | No | Yes when included in the approved snapshot | Yes |
-| Restricted contact | Contact names, phone numbers and email addresses | No | Yes, after identity-bound approval | Yes |
-| Owner-only contact notes | Secure contact notes and internal context | No | No | Yes |
-| Restricted financial/internal | Income, wealth stage, credit data, private preference notes, attribution metadata | No | No | Yes |
-| Private storage metadata | Original protected paths, thumbnails, database UUIDs, horoscope paths | No | Only the minimum path needed after an active identity-bound grant | Yes |
+| Class | Examples | Personal public link | Broker Standard | Complete / approved viewer | Owner |
+|---|---|---:|---:|---:|---:|
+| Public presentation | Published display name, age, selected biography, rashi, selected career/education/lifestyle fields, theme | Sanitized snapshot only | Yes when allowlisted | Yes | Yes |
+| Public media | A primary or gallery photo explicitly set to Visible to all | Temporary URL | Temporary URL from pinned manifest | Temporary URL | Yes |
+| Protected preview | Generated low-detail derivative for blurred or approval-only photos | Preview only | Pinned eligible media | Original temporary URL | Yes |
+| Restricted identity | Exact birth time, precise birth/location references, detailed verification data | No | No for exact birth time/internal references | Only when explicitly part of Complete | Yes |
+| Restricted family | Family-member names, occupations, locations, family notes | Bounded by personal projection | Allowlisted non-contact family presentation | Yes when included in Complete | Yes |
+| Restricted contact | Contact names, phone numbers and email addresses | No | No | Yes after identity-bound approval | Yes |
+| Owner-only contact notes | Secure contact notes and internal context | No | No | No | Yes |
+| Restricted financial/internal | Income, wealth stage, credit data, private preference or package answers, attribution metadata | No | No | No unless a later explicit contract says otherwise | Yes |
+| Private storage metadata | Original protected paths, thumbnails, database UUIDs, horoscope paths | No | Never raw; only short-lived authorized delivery | Minimum authorized delivery only | Yes |
 
 ## Disclosure Rules
 
@@ -30,6 +30,12 @@ snapshot builders, token-scoped database functions, RLS, and Storage policies.
    first public gallery original; every later item uses a generated derivative.
 6. Missing, malformed, expired, rotated, and unpublished links all resolve to
    the same unavailable result.
+7. Broker Standard is a generated allowlist projection stored on an immutable
+   disclosure version. It cannot contain Protected Contact, financial/private
+   package data, exact birth time, raw storage paths, or internal identifiers.
+8. A broker Introduction URL grants no disclosure by possession. Only either
+   stored participant's current authenticated owner may resolve the other
+   participant's pinned Broker Standard Profile.
 
 ## Complete Portfolio Lifecycle
 

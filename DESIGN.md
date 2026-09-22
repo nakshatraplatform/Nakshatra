@@ -4,6 +4,15 @@ Status: research-backed design baseline
 Scope: individual portfolio, public viewer experience, trust and disclosure controls, and future broker workspace  
 Last reviewed: 2026-09-04
 
+> **Current VivIntroDesk note (22 September 2026):** This is a broad design and
+> research baseline. The active MVP uses bilateral, same-agency,
+> authenticated Introductions between two completed, published, Didit-verified
+> customers; Broker Standard is the only pre-interest broker disclosure and
+> broker URLs have no public fallback. Tasks, general CRM features, linked
+> family, questionnaires, recommendations, and payments are deferred. Use
+> [`docs/vivintrodesk-mvp-contract.md`](docs/vivintrodesk-mvp-contract.md) for
+> implementation decisions.
+
 ## 1. Product stance
 
 Nakshatra is a trust platform for personal representation, introductions, and controlled disclosure. It is not a dating product and should not borrow swipe mechanics, desirability scoring, infinite discovery feeds, or gamified matching.

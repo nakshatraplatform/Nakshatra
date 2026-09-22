@@ -1,5 +1,12 @@
 # NAK-76 — Broker Standard Profile
 
+> **Later contract:** NAK-78 retains this document's immutable Broker Standard
+> projection but supersedes its one-recipient device pass and Detailed fallback.
+> Broker Introductions now require two eligible same-agency VivIntro customers;
+> each signs in and sees the other pinned projection. Exact birth time is also
+> excluded by the forward privacy migration added during NAK-78. See
+> [`../../vivintrodesk-mvp-contract.md`](../../vivintrodesk-mvp-contract.md).
+
 ## Problem
 
 Broker-mediated links currently unlock the stored Complete Portfolio, including
@@ -88,6 +95,8 @@ Complete data to broker RPCs is not an acceptable rollback.
 
 ## Implementation progress
 
+- Merged through PR #62 as `6df0c59`; required application, migration, pgTAP,
+  secret-scan, and deployment checks passed.
 - Contract reconciled and recorded in `docs/vivintrodesk-mvp-contract.md`.
 - Database projection, backfill, derivation trigger and resolver change added.
 - Recipient-facing copy updated to name Broker Standard Profile.
@@ -100,8 +109,8 @@ Complete data to broker RPCs is not an acceptable rollback.
   keeps the generator fail-closed while explicitly admitting those persisted
   portfolio-version and broker-notice prefixes.
 - `npm test`, lint, typecheck, production build, `db:smoke`, SQL parsing and
-  independent review passed locally. A clean migration replay and pgTAP run
-  remain required in CI because Docker/Podman is unavailable on this host.
+  independent review passed locally; clean migration replay and pgTAP passed in
+  PR CI before merge.
 
 ## Decisions and deviations
 
