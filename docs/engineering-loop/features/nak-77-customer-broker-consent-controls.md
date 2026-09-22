@@ -110,6 +110,11 @@ the interface before the transaction succeeds.
   now records `claimed_at` before `consented_at`, matching the existing database
   constraint, and the consent error paths now have explicit safe-response and
   unavailable-service coverage.
+- The next runtime pgTAP run exposed an invalid `pg_catalog.greatest(...)`
+  qualification in the atomic pause/terminate update. PostgreSQL implements
+  `GREATEST`/`LEAST` as conditional expressions rather than ordinary catalog
+  functions. The migration now uses valid `greatest(...)` syntax, and
+  `db:smoke` rejects future schema-qualified uses before CI.
 - Verification completed:
   - `npm run lint -- --max-warnings=0`
   - `npm run typecheck`

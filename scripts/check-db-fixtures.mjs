@@ -13,6 +13,7 @@ const directJwtClaimsPattern = /set\s+local\s+request\.jwt\.claims\s*=\s*'(\{.*\
 const invalidAuthClaimsMarker = "-- db:smoke: allow-invalid-auth-claims";
 const pgTapPlanPattern = /^\s*select\s+plan\(\s*(\d+)\s*\)\s*;/im;
 const pgTapAssertionPattern = /^\s*select\s+(?:has_column|has_function|has_index|has_schema|has_table|has_trigger|is|is_empty|isnt|lives_ok|ok|throws_ok)\s*\(/gim;
+const qualifiedConditionalPattern = /\bpg_catalog\.(?:greatest|least)\s*\(/i;
 
 function fail(message) {
   process.stderr.write(`db:smoke: ${message}\n`);
@@ -34,6 +35,11 @@ async function checkMigrations() {
     if (previous && file <= previous) fail(`migration ordering is not strictly increasing: ${file}`);
     versions.add(match[1]);
     previous = file;
+
+    const source = await readFile(path.join(migrationsDirectory, file), "utf8");
+    if (qualifiedConditionalPattern.test(source)) {
+      fail(`${file} schema-qualifies GREATEST/LEAST even though PostgreSQL treats them as conditional expressions`);
+    }
   }
 }
 

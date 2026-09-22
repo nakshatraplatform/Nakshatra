@@ -198,7 +198,7 @@ begin
     update public.broker_clients
     set relationship_status = case when p_action = 'pause' then 'paused' else 'terminated' end,
         ends_at = case when p_action = 'terminate'
-          then pg_catalog.greatest(pg_catalog.now(), starts_at + interval '1 microsecond')
+          then greatest(pg_catalog.now(), starts_at + interval '1 microsecond')
           else ends_at end,
         row_version = row_version + 1,
         updated_at = pg_catalog.now()
