@@ -95,6 +95,10 @@ Complete data to broker RPCs is not an acceptable rollback.
   derivation and tamper resistance, Detailed fallback, pass-authorized Broker
   Standard resolution, horoscope inclusion, 15-day expiry, mandate termination
   and unpublishing.
+- The clean CI replay exposed that the shared opaque-reference generator had
+  never admitted the later `pvr` and `bpn` reference types. The migration now
+  keeps the generator fail-closed while explicitly admitting those persisted
+  portfolio-version and broker-notice prefixes.
 - `npm test`, lint, typecheck, production build, `db:smoke`, SQL parsing and
   independent review passed locally. A clean migration replay and pgTAP run
   remain required in CI because Docker/Podman is unavailable on this host.

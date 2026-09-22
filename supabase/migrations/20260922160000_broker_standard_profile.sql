@@ -6,6 +6,29 @@
 -- projection is derived and version-pinned in the database so a caller cannot
 -- increase disclosure by changing an RPC body or URL.
 
+-- The disclosure-version and portfolio-notice tables were introduced after the
+-- shared opaque-reference generator's allowlist was last extended. Keep the
+-- generator closed to unknown prefixes while admitting those two persisted
+-- reference types. A real publication would otherwise fail while capturing its
+-- immutable disclosure version.
+create or replace function app_private.generate_public_reference(p_prefix text)
+returns text
+language plpgsql
+volatile
+set search_path = ''
+as $$
+begin
+  if p_prefix is null or p_prefix <> all(
+    array['wrk', 'bcr', 'bir', 'bpn', 'pvr', 'inc', 'tsk', 'imp', 'inv', 'mbr']::text[]
+  ) then
+    raise exception 'unsupported public reference type' using errcode = '22023';
+  end if;
+  return p_prefix || '_' || pg_catalog.encode(extensions.gen_random_bytes(16), 'hex');
+end;
+$$;
+
+revoke all on function app_private.generate_public_reference(text) from public, anon, authenticated;
+
 create or replace function app_private.pick_jsonb_keys(p_data jsonb, p_allowed_keys text[])
 returns jsonb
 language sql
