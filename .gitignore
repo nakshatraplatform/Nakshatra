@@ -15,6 +15,7 @@
 /playwright-report
 /test-results
 /tmp/
+/graphify-out/
 
 # next.js
 /.next/

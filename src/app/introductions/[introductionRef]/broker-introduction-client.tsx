@@ -80,10 +80,10 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
 
   return <div className={styles.shell}>
     <aside className={styles.banner}>
-      <strong>{introduction.accessMode === "complete" ? "Complete Portfolio · trusted broker introduction" : "Detailed Introduction · forwarded-link protection"}</strong>
+      <strong>{introduction.accessMode === "complete" ? "Broker Standard Profile · trusted broker introduction" : "Detailed Introduction · forwarded-link protection"}</strong>
       <span>{introduction.accessMode === "complete"
-        ? `This device claimed the one-time pass. Version ${introduction.versionNumber} remains fixed for this introduction.`
-        : "The one-time Complete Portfolio pass was not available on this device. Protected details remain hidden."}</span>
+        ? `Shared through a broker with your contact and financial details kept private. Version ${introduction.versionNumber} remains fixed for this introduction.`
+        : "The broker access pass was not available on this device. Contact, financial and other protected details remain hidden."}</span>
     </aside>
     <BiodataTemplate
       templateId={introduction.templateId}

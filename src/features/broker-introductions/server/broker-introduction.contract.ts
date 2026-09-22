@@ -23,6 +23,8 @@ export const preparedBrokerIntroductionSchema = z.discriminatedUnion("available"
   z.object({
     available: z.literal(true),
     versionRef: portfolioVersionRefSchema,
+    // Compatibility key: the database now returns the bounded Broker Standard
+    // projection here. It never returns the stored Complete Portfolio.
     completeData: portfolioDataSchema,
   }).strict(),
 ]);
@@ -75,6 +77,8 @@ export const resolvedBrokerIntroductionSchema = z.discriminatedUnion("available"
   z.object({
     available: z.literal(true),
     introductionRef: brokerIntroductionRouteRefSchema,
+    // `complete` is a legacy transport value retained for a database-first
+    // rollout. For broker introductions it means Broker Standard Profile.
     accessMode: z.enum(["detailed", "complete"]),
     data: portfolioDataSchema,
     media: z.array(publicMediaDescriptorSchema).max(8),

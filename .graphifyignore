@@ -1,0 +1,6 @@
+# Keep the code graph focused on application and database source.
+/*
+!/src/
+!/src/**
+!/supabase/
+!/supabase/**

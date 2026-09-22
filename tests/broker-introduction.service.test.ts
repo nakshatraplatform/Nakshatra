@@ -92,7 +92,7 @@ describe("broker introduction service", () => {
     await expect(acknowledgeBrokerPortfolioUpdate(client(() => ({ data: { available: true, status: "acknowledged" } })) as never, workspaceRef, relationshipRef, noticeRef)).resolves.toMatchObject({ status: "acknowledged" });
   });
 
-  it("returns detailed fallback without private media and signs authorized complete media", async () => {
+  it("returns detailed fallback without private media and signs authorized broker-standard media", async () => {
     const base = { available: true, introductionRef, data, templateId: 1, themeColor: null, sunSign: null,
       expiresAt: "2026-10-01T00:00:00Z", recipientLabel: "Priya", response: null,
       responseComment: null, respondedAt: null, versionNumber: 2 };
@@ -101,8 +101,8 @@ describe("broker introduction service", () => {
 
     const createSignedUrl = vi.fn(async (path: string) => ({ data: { signedUrl: `signed:${path}` } }));
     createServiceRoleClient.mockReturnValue({ storage: { from: vi.fn(() => ({ createSignedUrl })) } });
-    const complete = { ...base, accessMode: "complete", media: [{ key: "1", accessPath: "private/photo.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }], horoscope: { accessPath: "private/chart.pdf", fileExtension: "pdf", languageLabel: null, pageCount: 2 } };
-    await expect(resolveBrokerIntroduction(client(() => ({ data: complete })) as never, introductionRef, "a".repeat(64)))
+    const brokerStandard = { ...base, accessMode: "complete", media: [{ key: "1", accessPath: "private/photo.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }], horoscope: { accessPath: "private/chart.pdf", fileExtension: "pdf", languageLabel: null, pageCount: 2 } };
+    await expect(resolveBrokerIntroduction(client(() => ({ data: brokerStandard })) as never, introductionRef, "a".repeat(64)))
       .resolves.toMatchObject({ media: [{ accessPath: "signed:private/photo.webp" }], horoscope: { accessPath: "signed:private/chart.pdf" } });
   });
 
