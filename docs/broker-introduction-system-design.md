@@ -7,6 +7,12 @@
 > pinned Broker Standard Profile; forwarding the URL grants nothing. Personal
 > VivIntro guest links are unchanged. The authoritative current contract is
 > `docs/vivintrodesk-mvp-contract.md`.
+>
+> **Do not implement Phases 4–12 below as written.** Their recipient label,
+> claim fragment, device cookie, Detailed fallback, one-sided response, and demo
+> workflow are retained only to explain the migration history. NAK-78 pins two
+> relationship/version pairs, authorizes by live participant ownership, and
+> records two independent responses.
 
 The broker-facing product remains named `BrokerDesk` internally. That label is
 not a public brand commitment and can be replaced when the B2B product is named.

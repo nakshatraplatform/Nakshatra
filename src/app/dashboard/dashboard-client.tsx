@@ -1314,7 +1314,7 @@ function ReceivedBrokerIntroductions({ introductions }: { introductions: Receive
       {introductions.map((introduction) => <article key={introduction.introductionRef} className="flex flex-col gap-3 rounded-xl border border-[light-dark(#d9d3c7,var(--app-dark-border))] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <strong className="text-sm text-[light-dark(#18272e,var(--app-dark-ink))]">{introduction.sourceName}</strong>
-          <p className="mt-1 text-xs text-[light-dark(#64748b,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · expires {new Date(introduction.expiresAt).toLocaleDateString()}</p>
+          <p className="mt-1 text-xs text-[light-dark(#64748b,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · {introduction.disclosureLevel === "complete" ? "Complete access" : "respond by"} {new Date(introduction.expiresAt).toLocaleDateString()}</p>
         </div>
         <Link className="dashboard-secondary-action" href={`/introductions/${introduction.introductionRef}`}>
           View introduction

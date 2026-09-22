@@ -1,5 +1,11 @@
 # Dashboard relationship lifecycle
 
+> **Scope clarification:** This document describes the personal B2C interest and
+> owner-approved Complete Portfolio lifecycle. Broker-sponsored bilateral
+> Introductions use the separate NAK-78 authenticated response model documented
+> in [`vivintrodesk-mvp-contract.md`](./vivintrodesk-mvp-contract.md). Do not
+> apply B2C guest-link or owner-approval behavior to broker URLs implicitly.
+
 ## Product decision
 
 An introduction and its Complete Portfolio access are one relationship lifecycle, not

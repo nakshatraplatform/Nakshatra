@@ -26,7 +26,8 @@ export async function POST(request: Request, context: Context) {
       auth.supabase,
       introductionRef,
       body.data.response,
-      body.data.comment
+      body.data.comment,
+      body.data.confirmCompleteAccess
     ), { headers });
   } catch (error) {
     if (error instanceof RequestSecurityError) return requestSecurityErrorResponse(error);

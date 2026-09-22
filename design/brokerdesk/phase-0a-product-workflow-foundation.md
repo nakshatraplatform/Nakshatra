@@ -1,5 +1,11 @@
 # BrokerDesk Phase 0A — Product and Workflow Foundation
 
+> **Historical baseline:** This document preserves early product discovery. Its
+> route selection, 30-day clock, Tasks, contact-approval, and multi-broker pair
+> concepts are not the current MVP. Use
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md)
+> for implementation.
+
 Status: Approved baseline; later refinements are captured in Phases 0C–0E  
 Purpose: Preserve the original BrokerDesk business intent, actors, MVP workflows, privacy boundaries, and day-one operating model.
 

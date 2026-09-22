@@ -1,5 +1,13 @@
 # Broker-mediated introduction foundation
 
+> **Partially superseded:** The customer invitation, canonical ownership, and
+> time-bound mandate rules remain current. The Introduction delivery rules,
+> recipient labels, claim tokens, and single-use device-pass assumptions below
+> are historical. NAK-78 requires two eligible same-agency customers and uses
+> their live VivIntro identities; a broker URL contains no bearer authority and
+> forwarding it grants nothing. See
+> [`vivintrodesk-mvp-contract.md`](./vivintrodesk-mvp-contract.md).
+
 ## Approved product rules
 
 This increment covers customer invitation, customer-owned onboarding and the
@@ -30,8 +38,10 @@ introduction transaction or recipient device pass yet.
    conversation and never blocks publication or sharing.
 9. Future audit events are limited to `created`, `shared`, `claimed`,
    `response_submitted`, `revoked` and `expired`.
-10. Hashed tokens, single-use claims, rate limits and authorization isolation
-    are mandatory for the pilot.
+10. **Retired for Introduction access:** hashed invitation tokens remain valid
+    for broker/customer onboarding, but single-use claim tokens and device
+    passes no longer authorize broker Introductions. Rate limits and
+    authorization isolation remain mandatory.
 
 ## Implemented journey
 

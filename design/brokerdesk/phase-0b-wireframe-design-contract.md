@@ -1,5 +1,10 @@
 # BrokerDesk Phase 0B — Wireframe and UX Design Contract
 
+> **Historical wireframe baseline:** Reuse its simplicity and visual language,
+> not superseded workflow rules. Tasks, 30-day broker routes, and multi-route
+> customer selection are outside the current MVP. See
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md).
+
 Status: Approved core wireframes; refinement continues as later contracts are finalized  
 Prototype: [Open the standalone clickable Phase 0B prototype](../prototypes/brokerdesk-phase-0b.html)  
 Purpose: Preserve the UX reasoning, screen structure, language rules, and privacy behavior represented by the clickable prototype.

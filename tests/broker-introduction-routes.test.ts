@@ -88,7 +88,7 @@ describe("broker introduction routes", () => {
     flagNotice.mockResolvedValue({ available: true, status: "clarification" });
     claim.mockResolvedValue({ available: true, expiresAt: "2026-10-01T00:00:00Z" });
     resolve.mockResolvedValue({ available: false });
-    respond.mockResolvedValue({ available: true, status: "responded", response: "accepted" });
+    respond.mockResolvedValue({ available: true, status: "responded", response: "accepted", disclosureLevel: "broker_standard", completeAccessExpiresAt: null });
     dashboard.mockResolvedValue({ available: true, workspaceRef, workspaceName: "Agency", metrics: { activeCustomers: 1, openIntroductions: 1, responsesAwaitingReview: 1, portfolioUpdates: 0 }, actions: [] });
     reviewed.mockResolvedValue({ available: true, status: "reviewed" });
     acknowledged.mockResolvedValue({ available: true, status: "acknowledged" });
@@ -139,15 +139,16 @@ describe("broker introduction routes", () => {
     const viewed = await publicRead(new Request(`${origin}/introduction`, { headers: { Cookie: "x=y" } }), context);
     expect(viewed.status).toBe(404);
     expect(resolve).toHaveBeenCalledWith(actor.supabase, introductionRef);
-    const answered = await response(mutation("/response", { response: "accepted", comment: "Proceed" }), context);
+    const answered = await response(mutation("/response", { response: "accepted", comment: "Proceed", confirmCompleteAccess: true }), context);
     expect(answered.status).toBe(200);
-    expect(respond).toHaveBeenCalledWith(actor.supabase, introductionRef, "accepted", "Proceed");
+    expect(respond).toHaveBeenCalledWith(actor.supabase, introductionRef, "accepted", "Proceed", true);
   });
 
   it("rejects malformed and cross-origin mutations without touching services", async () => {
     expect((await create(mutation("/create", { relationshipRef, recipientRelationshipRef: "bad" }), context)).status).toBe(400);
     expect((await share(mutation("/shared", { expectedVersion: 0 }), context)).status).toBe(400);
     expect((await response(mutation("/response", { response: "maybe" }), context)).status).toBe(400);
+    expect((await response(mutation("/response", { response: "accepted", confirmCompleteAccess: false }), context)).status).toBe(400);
     const hostile = new Request(`${origin}/exchange`, { method: "POST", headers: { Origin: "https://attacker.example", "Content-Type": "application/json" }, body: JSON.stringify({ pass: "p".repeat(43) }) });
     expect((await exchange(hostile, context)).status).toBe(410);
   });

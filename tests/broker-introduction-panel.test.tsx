@@ -36,7 +36,7 @@ describe("broker introduction panel", () => {
       canCreate
       eligibleRecipients={eligibleRecipients}
       initialNotices={[{ noticeRef, status: "unread", versionNumber: 4, publishedAt: "2026-09-19T00:00:00Z", createdAt: "2026-09-19T00:00:00Z" }]}
-      initialIntroductions={[{ introductionRef, recipientLabel: "Existing family", recipientEmailHint: null, status: "shared", response: null, responseComment: null, respondedAt: null, sourceResponse: null, sourceResponseComment: null, sourceRespondedAt: null, recipientResponse: null, recipientResponseComment: null, recipientRespondedAt: null, expiresAt: "2026-10-01T00:00:00Z", versionNumber: 3, rowVersion: 2, createdAt: "2026-09-18T00:00:00Z" }]}
+      initialIntroductions={[{ introductionRef, recipientLabel: "Existing family", recipientEmailHint: null, status: "shared", response: null, responseComment: null, respondedAt: null, sourceResponse: null, sourceResponseComment: null, sourceRespondedAt: null, recipientResponse: null, recipientResponseComment: null, recipientRespondedAt: null, mutualInterestConfirmedAt: null, completeAccessExpiresAt: null, expiresAt: "2026-10-01T00:00:00Z", versionNumber: 3, rowVersion: 2, createdAt: "2026-09-18T00:00:00Z" }]}
     />);
     fireEvent.click(screen.getByRole("button", { name: "Flag for clarification" }));
     await screen.findByText(/Flagged for clarification/);

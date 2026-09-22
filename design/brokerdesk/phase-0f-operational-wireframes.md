@@ -1,5 +1,11 @@
 # BrokerDesk Phase 0F — Complete Operational Wireframes
 
+> **Historical prototype:** Use this for interaction and language research only.
+> Tasks, bulk operations, 30-day routes, matching suggestions, multi-route
+> customer views, and contact approvals exceed or conflict with the current MVP.
+> The production workflow is governed by
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md).
+
 Status: Approved clickable design baseline; no production UI implementation is authorized  
 Prototype: [Open the standalone Phase 0F clickable prototype](../prototypes/brokerdesk-phase-0f.html)  
 Depends on: Phase 0A product foundation, Phase 0C state contract, Phase 0D database/authorization architecture, and Phase 0E URL/API/security contract.

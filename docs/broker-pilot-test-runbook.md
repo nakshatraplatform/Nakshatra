@@ -1,5 +1,14 @@
 # BrokerDesk pilot test runbook
 
+> **Paused historical runbook:** The seeded scenario and one-time `#pass=` URL
+> below exercise the retired device-pass model and must not be used to approve a
+> NAK-78 pilot. Before the next pilot, replace the seed with two same-agency
+> customers who each have an active mandate, completed published portfolio,
+> current Didit verification, and distinct owner account. Each owner must sign
+> in to the same opaque Introduction URL, see the other pinned Broker Standard
+> Profile, and respond independently. The current contract is
+> [`vivintrodesk-mvp-contract.md`](./vivintrodesk-mvp-contract.md).
+
 ## Safe scope
 
 The repository’s sample scenario is local-only. It uses the requested email

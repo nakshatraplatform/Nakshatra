@@ -4,7 +4,14 @@ Nakshatra is a consent-based introduction platform for adult candidates and fami
 
 **Nakshatra is not a matrimony site.** It does not provide public profile search, match recommendations, compatibility ranking, or marketplace discovery.
 
-For the current repository map, product journeys, architecture, design system, security baseline, and launch constraints, read [CLAUDE.md](CLAUDE.md). The full B2C review is in [docs/b2c-pilot-product-assessment.md](docs/b2c-pilot-product-assessment.md).
+For the current repository map, product journeys, architecture, design system,
+security baseline, and launch constraints, read [CLAUDE.md](CLAUDE.md). The full
+B2C review is in
+[docs/b2c-pilot-product-assessment.md](docs/b2c-pilot-product-assessment.md).
+For VivIntroDesk, begin with the
+[document map](docs/vivintrodesk-document-map.md) and the
+[authoritative MVP contract](docs/vivintrodesk-mvp-contract.md); do not derive
+current requirements from an older BrokerDesk phase plan in isolation.
 
 ## B2C pilot contract
 
@@ -61,7 +68,11 @@ The product separates data by disclosure purpose rather than hiding private fiel
 - Original protected media remains private; short-lived URLs are issued only after access resolution.
 - Interest requests, access grants, revocation, link rotation, account export, and staged deletion have separate server/database controls.
 
-The repository also contains BrokerDesk/B2B foundations. They are a separate product context and must be disabled for the B2C pilot.
+The repository also contains the VivIntroDesk/B2B implementation through
+NAK-78: broker onboarding and team access, customer mandates, Broker Standard,
+customer consent controls, and bilateral authenticated Introductions. These
+capabilities remain a separate launch context and must stay disabled for a
+B2C-only pilot unless a bounded BrokerDesk pilot is explicitly activated.
 
 ## Important routes
 

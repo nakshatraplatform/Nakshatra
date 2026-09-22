@@ -1,5 +1,12 @@
 # BrokerDesk Phase 1 — Implementation Plan
 
+> **Historical implementation plan:** The repository has progressed beyond this
+> plan through NAK-78. Do not implement its proposed global case/route schema,
+> Tasks, 30-day route expiry, linked-family, or bilateral contact approvals
+> without a new current contract. See
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md)
+> and the NAK-76–78 feature records.
+
 Status: Approved implementation baseline; Phase 2 authorized on 2026-09-08  
 Depends on: Approved Phase 0A–0E contracts and reviewed Phase 0F wireframes  
 Repository review date: 2026-09-08

@@ -205,3 +205,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## VivIntroDesk product context
+
+Before planning or implementing VivIntroDesk/BrokerDesk work, read in order:
+
+1. `docs/vivintrodesk-document-map.md`
+2. `docs/vivintrodesk-mvp-contract.md`
+3. the relevant current feature record under `docs/engineering-loop/features/`
+4. current source, migrations, and tests
+
+The Phase 0A–0F plans, Phase 1 plan, prototypes, and device-pass design are
+historical inputs. Do not implement a historical rule that conflicts with the
+authoritative MVP contract. Record and resolve material conflicts explicitly.
+
+## Graphify
+
+This project has a knowledge graph at `graphify-out/` with god nodes, community
+structure, and cross-file relationships.
+
+For codebase questions, run `graphify query "<question>"` first when
+`graphify-out/graph.json` exists. Use `graphify path "<A>" "<B>"` for
+relationships and `graphify explain "<concept>"` for focused concepts. Dirty
+graph files are expected after hooks or incremental updates and are not a reason
+to skip Graphify. After modifying code, run `graphify update .` to keep the AST
+graph current without API usage.

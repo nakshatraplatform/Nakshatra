@@ -5,8 +5,12 @@
 - Risk: Critical — authentication, authorization, disclosure, response writes and migration.
 - Branch: `feat/nak-78-authenticated-broker-introduction-access`.
 - Base: squash-merged NAK-77 checkpoint `fd858ba`; NAK-78 is delivered as a separate, NAK-78-only PR.
-- Current source: the previous one-recipient device-pass flow is implemented in
-  `broker-introduction.service.ts` and `20260919170000_broker_introduction_lifecycle.sql`.
+- Delivery: merged through PR #64 as `e0d61ff` after all required checks passed.
+- Pre-NAK-78 source: the one-recipient device-pass flow originated in
+  `20260919170000_broker_introduction_lifecycle.sql`. Current identity-bound
+  behavior is defined by
+  `20260924120000_authenticated_broker_introduction_access.sql`, its forward
+  privacy migration, and the current broker-introduction service/repository.
 - User decision superseding the earlier MVP contract: both participants must
   own published, currently Didit-verified VivIntro portfolios before a broker
   creates an Introduction.
@@ -109,3 +113,5 @@ respond independently.
   every stored Broker Standard snapshot from its immutable Complete source so
   already-pinned Introductions cannot retain that sensitive field.
 - Graphify AST knowledge graph updated after implementation with no LLM/API use.
+- The final clean migration replay and full pgTAP suite passed in PR CI before
+  squash merge.

@@ -1,5 +1,12 @@
 # BrokerDesk Phase 0D — Database and Authorization Architecture
 
+> **Historical target architecture:** Cross-tenant, opaque-reference,
+> customer-ownership, and command/projection principles remain useful. The
+> proposed global pair/round/route schema, 30-day route expiry, Tasks, and
+> combined customer route projection were not adopted by NAK-78. Current source
+> and [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md)
+> are authoritative.
+
 Status: Approved baseline; no production migration is authorized  
 Depends on: Phase 0C Introduction State Contract  
 Purpose: Define durable data ownership, cross-agency isolation, concurrency rules, disclosure controls, and an incremental path from the current Nakshatra schema.

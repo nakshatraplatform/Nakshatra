@@ -1,5 +1,12 @@
 # BrokerDesk Phase 0E — URL, API, and Security Contract
 
+> **Historical API plan:** Its opaque-reference, server-authorization,
+> same-origin, rate-limit, and neutral-error principles remain current. Its
+> separate global case/private route model and planned Tasks endpoints are not
+> current MVP requirements. Broker Introduction URLs now grant no bearer
+> authority and have no Detailed fallback. See
+> [`docs/vivintrodesk-mvp-contract.md`](../../docs/vivintrodesk-mvp-contract.md).
+
 Status: Approved baseline for Phase 0F; no route or production security change is authorized  
 Depends on: Phase 0C state contract and Phase 0D database/authorization architecture  
 Scope: Browser URLs, application APIs, identifiers, sessions, tokens, rate limits, network controls, response projections, and abuse testing for the B2C and BrokerDesk surfaces.

@@ -68,6 +68,8 @@ export const brokerIntroductionItemSchema = z.object({
   recipientResponse: z.enum(["accepted", "declined"]).nullable(),
   recipientResponseComment: z.string().max(1000).nullable(),
   recipientRespondedAt: z.string().nullable(),
+  mutualInterestConfirmedAt: z.string().nullable(),
+  completeAccessExpiresAt: z.string().nullable(),
   expiresAt: z.string(),
   versionNumber: z.number().int().positive(),
   rowVersion: z.number().int().positive(),
@@ -98,9 +100,10 @@ export const resolvedBrokerIntroductionSchema = z.discriminatedUnion("available"
     available: z.literal(true),
     introductionRef: brokerIntroductionRouteRefSchema,
     participantSide: z.enum(["source", "recipient"]),
-    // `complete` is a legacy transport value retained for a database-first
-    // rollout. For broker introductions it means Broker Standard Profile.
+    // `complete` is a legacy transport value retained for compatibility.
+    // `disclosureLevel` is the authoritative Broker Standard/Complete tier.
     accessMode: z.literal("complete"),
+    disclosureLevel: z.enum(["broker_standard", "complete"]),
     data: portfolioDataSchema,
     media: z.array(publicMediaDescriptorSchema).max(8),
     horoscope: z.object({
@@ -113,6 +116,10 @@ export const resolvedBrokerIntroductionSchema = z.discriminatedUnion("available"
     themeColor: z.string().nullable(),
     sunSign: z.string().nullable(),
     expiresAt: z.string(),
+    responseExpiresAt: z.string(),
+    completeAccessExpiresAt: z.string().nullable(),
+    mutualInterestConfirmedAt: z.string().nullable(),
+    completeAccessConfirmed: z.boolean(),
     recipientLabel: z.string().min(1).max(120),
     response: z.enum(["accepted", "declined"]).nullable(),
     responseComment: z.string().max(1000).nullable(),
@@ -124,7 +131,16 @@ export const resolvedBrokerIntroductionSchema = z.discriminatedUnion("available"
 export const brokerIntroductionResponseSchema = z.object({
   response: z.enum(["accepted", "declined"]),
   comment: z.string().trim().max(1000).default(""),
-}).strict();
+  confirmCompleteAccess: z.boolean().default(false),
+}).strict().superRefine((value, context) => {
+  if (value.response === "accepted" && !value.confirmCompleteAccess) {
+    context.addIssue({
+      code: "custom",
+      path: ["confirmCompleteAccess"],
+      message: "Complete Portfolio disclosure must be confirmed.",
+    });
+  }
+});
 
 export const ownerBrokerIntroductionResponsesSchema = z.object({
   available: z.literal(true),
@@ -146,6 +162,8 @@ export const receivedBrokerIntroductionsSchema = z.object({
     brokerName: z.string().min(1).max(180),
     status: z.enum(["shared", "responded"]),
     response: z.enum(["accepted", "declined"]).nullable(),
+    disclosureLevel: z.enum(["broker_standard", "complete"]),
+    completeAccessExpiresAt: z.string().nullable(),
     expiresAt: z.string(),
     createdAt: z.string(),
   }).strict()).max(200),

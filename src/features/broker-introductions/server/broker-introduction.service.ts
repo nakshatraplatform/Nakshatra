@@ -20,6 +20,9 @@ const transitionSchema = z.object({
   status: z.enum(["shared", "responded", "revoked"]),
   rowVersion: z.number().int().positive().optional(),
   response: z.enum(["accepted", "declined"]).optional(),
+  disclosureLevel: z.enum(["broker_standard", "complete"]).optional(),
+  completeAccessExpiresAt: z.string().nullable().optional(),
+  completeAccessConfirmed: z.boolean().optional(),
 }).strict();
 const claimSchema = z.object({ available: z.literal(true), expiresAt: z.string() }).strict();
 const flagSchema = z.object({ available: z.literal(true), status: z.literal("clarification") }).strict();
@@ -118,8 +121,15 @@ export async function resolveBrokerIntroduction(supabase: SupabaseClient, introd
   };
 }
 
-export async function respondToBrokerIntroduction(supabase: SupabaseClient, introductionRef: string, response: "accepted" | "declined", comment: string) {
-  const result = await new BrokerIntroductionRepository(supabase).respond(introductionRef, response, comment);
+export async function respondToBrokerIntroduction(
+  supabase: SupabaseClient,
+  introductionRef: string,
+  response: "accepted" | "declined",
+  comment: string,
+  confirmCompleteAccess: boolean
+) {
+  const result = await new BrokerIntroductionRepository(supabase)
+    .respond(introductionRef, response, comment, confirmCompleteAccess);
   return parseOrThrow(transitionSchema, result.data, result.error);
 }
 
