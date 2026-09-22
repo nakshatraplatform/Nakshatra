@@ -35,9 +35,28 @@ set status='verified',verified_at=pg_catalog.now()-interval '1 day',expires_at=p
 where candidate_id in ('78500000-0000-4000-8000-000000000001','78500000-0000-4000-8000-000000000002');
 
 insert into public.portfolios(id,user_id,candidate_id,draft_data,published_data,is_published,expires_at) values
-  ('78600000-0000-4000-8000-000000000001','78000000-0000-4000-8000-000000000002','78500000-0000-4000-8000-000000000001','{}','{"personal":{"name":"Customer A"},"contact":{"phone":"+91 9000000001"}}',true,pg_catalog.now()+interval '90 days'),
-  ('78600000-0000-4000-8000-000000000002','78000000-0000-4000-8000-000000000003','78500000-0000-4000-8000-000000000002','{}','{"personal":{"name":"Customer B"},"contact":{"phone":"+91 9000000002"}}',true,pg_catalog.now()+interval '90 days'),
-  ('78600000-0000-4000-8000-000000000003','78000000-0000-4000-8000-000000000004','78500000-0000-4000-8000-000000000003','{}','{"personal":{"name":"Other Customer"}}',true,pg_catalog.now()+interval '90 days');
+  ('78600000-0000-4000-8000-000000000001','78000000-0000-4000-8000-000000000002','78500000-0000-4000-8000-000000000001',pg_temp.complete_portfolio_draft('{"personal":{"name":"Customer A"},"contact":{"phone":"+91 9000000001"}}'::jsonb),'{"personal":{"name":"Customer A"},"contact":{"phone":"+91 9000000001"}}',false,pg_catalog.now()+interval '90 days'),
+  ('78600000-0000-4000-8000-000000000002','78000000-0000-4000-8000-000000000003','78500000-0000-4000-8000-000000000002',pg_temp.complete_portfolio_draft('{"personal":{"name":"Customer B"},"contact":{"phone":"+91 9000000002"}}'::jsonb),'{"personal":{"name":"Customer B"},"contact":{"phone":"+91 9000000002"}}',false,pg_catalog.now()+interval '90 days'),
+  ('78600000-0000-4000-8000-000000000003','78000000-0000-4000-8000-000000000004','78500000-0000-4000-8000-000000000003',pg_temp.complete_portfolio_draft('{"personal":{"name":"Other Customer"}}'::jsonb),'{"personal":{"name":"Other Customer"}}',false,pg_catalog.now()+interval '90 days');
+insert into public.portfolio_media (
+  portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order
+) values
+  ('78600000-0000-4000-8000-000000000001','78500000-0000-4000-8000-000000000001','hero','78000000-0000-4000-8000-000000000002/78600000-0000-4000-8000-000000000001/hero.webp','public',0),
+  ('78600000-0000-4000-8000-000000000002','78500000-0000-4000-8000-000000000002','hero','78000000-0000-4000-8000-000000000003/78600000-0000-4000-8000-000000000002/hero.webp','public',0);
+select pg_temp.prime_paid_publication(
+  '78600000-0000-4000-8000-000000000001',
+  (select draft_data from public.portfolios where id='78600000-0000-4000-8000-000000000001')
+);
+select pg_temp.prime_paid_publication(
+  '78600000-0000-4000-8000-000000000002',
+  (select draft_data from public.portfolios where id='78600000-0000-4000-8000-000000000002')
+);
+update public.portfolios
+set is_published=true
+where id in (
+  '78600000-0000-4000-8000-000000000001',
+  '78600000-0000-4000-8000-000000000002'
+);
 insert into app_private.portfolio_disclosure_versions(id,portfolio_id,candidate_id,version_number,public_data,complete_data,template_id,published_at) values
   ('78700000-0000-4000-8000-000000000001','78600000-0000-4000-8000-000000000001','78500000-0000-4000-8000-000000000001',1,'{"personal":{"name":"Public A"}}','{"personal":{"name":"Customer A"},"contact":{"phone":"+91 9000000001"}}',1,pg_catalog.now()),
   ('78700000-0000-4000-8000-000000000002','78600000-0000-4000-8000-000000000002','78500000-0000-4000-8000-000000000002',1,'{"personal":{"name":"Public B"}}','{"personal":{"name":"Customer B"},"contact":{"phone":"+91 9000000002"}}',1,pg_catalog.now()),

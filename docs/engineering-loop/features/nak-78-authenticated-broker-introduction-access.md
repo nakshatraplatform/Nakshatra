@@ -100,4 +100,12 @@ respond independently.
   name collision on `source_response`. The value-domain constraint now has the
   distinct stable name `broker_introductions_source_response_value_check`, while
   the response-state constraint retains `broker_introductions_source_response_check`.
+- The subsequent pgTAP run exposed a fixture that marked incomplete portfolios
+  published directly. The NAK-78 fixture now satisfies the same completeness,
+  verification, payment/disclosure and primary-photo gates as real publication;
+  no production gate was weakened.
+- The Broker Standard regression suite also caught exact birth time in the
+  original projection allowlist. A forward migration removes it and rebuilds
+  every stored Broker Standard snapshot from its immutable Complete source so
+  already-pinned Introductions cannot retain that sensitive field.
 - Graphify AST knowledge graph updated after implementation with no LLM/API use.
