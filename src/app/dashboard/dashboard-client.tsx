@@ -52,6 +52,7 @@ import {
   Inbox,
   History,
   Settings,
+  UserRoundCog,
   CheckCircle2,
   Circle,
   ArrowLeft,
@@ -576,6 +577,14 @@ export default function DashboardClient({
             <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
               {userEmail}
             </span>
+            <Link
+              href="/brokers"
+              aria-label="My brokers"
+              title="My brokers"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
+            >
+              <UserRoundCog className="h-4 w-4" />
+            </Link>
             <Link
               href="/account"
               aria-label="Account and privacy"

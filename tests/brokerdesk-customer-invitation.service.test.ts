@@ -3,6 +3,7 @@ import {
   claimCustomerInvitation,
   createCustomerInvitation,
   CustomerInvitationError,
+  manageCustomerBrokerConsent,
   resolveBrokerdeskCustomer,
   resolveBrokerdeskCustomers,
   resolveCustomerBrokerRelationships,
@@ -42,6 +43,15 @@ describe("BrokerDesk customer invitation service", () => {
     await expect(resolveBrokerdeskCustomer(client(detail) as never, workspaceRef, detail.relationshipRef)).resolves.toEqual(detail);
     const brokers = { available: true, relationships: [] };
     await expect(resolveCustomerBrokerRelationships(client(brokers) as never)).resolves.toEqual(brokers);
+    const consentResult = {
+      available: true, relationshipRef: detail.relationshipRef,
+      relationshipStatus: "paused", endsAt: detail.endsAt,
+    };
+    await expect(manageCustomerBrokerConsent(client(consentResult) as never, {
+      relationshipRef: detail.relationshipRef,
+      action: "pause",
+      idempotencyKey: "broker-consent:1111111111111111",
+    })).resolves.toEqual(consentResult);
   });
 
   it("maps denied, invalid, malformed, and unavailable results without leaking database details", async () => {
@@ -64,5 +74,11 @@ describe("BrokerDesk customer invitation service", () => {
       .rejects.toMatchObject({ code: "BROKERDESK_CUSTOMER_UNAVAILABLE" });
     await expect(resolveCustomerBrokerRelationships(client({ internal: true }) as never))
       .rejects.toMatchObject({ code: "CUSTOMER_BROKERS_UNAVAILABLE" });
+    await expect(manageCustomerBrokerConsent(client(null) as never, {
+      relationshipRef: "bad", action: "pause", idempotencyKey: "broker-consent:1111111111111111",
+    })).resolves.toEqual({ available: false });
+    await expect(manageCustomerBrokerConsent(client(null, { code: "22023" }) as never, {
+      relationshipRef: `bcr_${"c".repeat(32)}`, action: "pause", idempotencyKey: "broker-consent:1111111111111111",
+    })).rejects.toMatchObject({ code: "CUSTOMER_BROKER_ACTION_INVALID", status: 400 });
   });
 });

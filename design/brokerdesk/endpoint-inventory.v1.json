@@ -128,6 +128,24 @@
       "auditEvent": null
     },
     {
+      "id": "brokerdesk.customer.brokers.consent.manage",
+      "status": "active",
+      "method": "POST",
+      "path": "/api/v1/customer/brokers/[relationshipRef]/consent",
+      "owner": "broker-relationships",
+      "audience": "customer",
+      "authentication": "live_session",
+      "capability": null,
+      "resourceScope": "assigned_customer",
+      "inputSchema": "customerBrokerConsentCommandSchema",
+      "outputSchema": "customerBrokerConsentResultSchema",
+      "dataClass": "restricted",
+      "rateLimitAction": "customer_broker_relationship_manage",
+      "idempotency": "required",
+      "stepUp": "not_required",
+      "auditEvent": "customer.broker_consent.{action}"
+    },
+    {
       "id": "brokerdesk.introductions.create",
       "status": "planned",
       "method": "POST",

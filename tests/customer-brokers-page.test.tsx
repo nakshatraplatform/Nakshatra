@@ -3,6 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 const getAuthenticatedUser = vi.hoisted(() => vi.fn());
 const resolveRelationships = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser }));
@@ -23,11 +25,14 @@ describe("customer broker relationships page", () => {
         relationshipStatus: "active",
         startsAt: "2026-09-10T00:00:00Z",
         endsAt: "2027-09-10T00:00:00Z",
+        actions: { canPause: true, canRenew: false, canTerminate: true },
       }],
     });
     render(await CustomerBrokersPage());
     expect(screen.getByRole("heading", { name: "My brokers" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agency A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pause broker access" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "End broker relationship" })).toBeInTheDocument();
     expect(screen.getByText("Only you can see this complete list.")).toBeInTheDocument();
   });
 

@@ -26,3 +26,19 @@ export function inviteBrokerdeskCustomer(
   );
 }
 
+export function manageCustomerBrokerConsent(
+  relationshipRef: string,
+  action: "pause" | "renew" | "terminate",
+  idempotencyKey: string
+) {
+  return command<{
+    available: true;
+    relationshipRef: string;
+    relationshipStatus: "active" | "paused" | "terminated";
+    endsAt: string | null;
+  }>(
+    `/api/v1/customer/brokers/${encodeURIComponent(relationshipRef)}/consent`,
+    { action, idempotencyKey }
+  );
+}
+
