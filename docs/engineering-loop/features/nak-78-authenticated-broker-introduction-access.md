@@ -96,4 +96,8 @@ respond independently.
 - Fresh-context review found and verified fixes for PostgreSQL pair
   canonicalization and same-owner authorization. Its final bounded re-review
   found no remaining material issue in those paths.
+- PR #64 clean migration replay exposed an auto-generated PostgreSQL constraint
+  name collision on `source_response`. The value-domain constraint now has the
+  distinct stable name `broker_introductions_source_response_value_check`, while
+  the response-state constraint retains `broker_introductions_source_response_check`.
 - Graphify AST knowledge graph updated after implementation with no LLM/API use.

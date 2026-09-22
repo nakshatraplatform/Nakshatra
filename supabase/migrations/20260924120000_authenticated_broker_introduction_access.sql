@@ -4,7 +4,9 @@
 alter table app_private.broker_introductions
   add column recipient_broker_client_id uuid,
   add column recipient_portfolio_version_id uuid references app_private.portfolio_disclosure_versions(id) on delete restrict,
-  add column source_response text check (source_response in ('accepted','declined')),
+  add column source_response text
+    constraint broker_introductions_source_response_value_check
+    check (source_response in ('accepted','declined')),
   add column source_response_comment text,
   add column source_responded_at timestamptz,
   add column access_model text not null default 'legacy_device_pass';
