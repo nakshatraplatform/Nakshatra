@@ -50,6 +50,7 @@ export const rateLimitActionSchema = z.enum([
   "brokerdesk_customer_invitation_exchange",
   "brokerdesk_customer_invitation_claim",
   "customer_broker_relationships_read",
+  "customer_broker_relationship_manage",
   "brokerdesk_introduction_create",
   "brokerdesk_introduction_read",
   "brokerdesk_introduction_update",

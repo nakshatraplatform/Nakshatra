@@ -9,6 +9,7 @@ import {
   claimedCustomerInvitationSchema,
   createdCustomerInvitationSchema,
   customerBrokerRelationshipsSchema,
+  customerBrokerConsentResultSchema,
 } from "./customer-invitation.contract";
 import { CustomerInvitationRepository } from "./customer-invitation.repository";
 
@@ -86,6 +87,25 @@ export async function resolveCustomerBrokerRelationships(supabase: SupabaseClien
   const parsed = customerBrokerRelationshipsSchema.safeParse(data);
   if (error || !parsed.success) {
     throw new CustomerInvitationError("Broker relationships are temporarily unavailable.", "CUSTOMER_BROKERS_UNAVAILABLE", 503);
+  }
+  return parsed.data;
+}
+
+export async function manageCustomerBrokerConsent(supabase: SupabaseClient, input: {
+  relationshipRef: string;
+  action: "pause" | "renew" | "terminate";
+  idempotencyKey: string;
+}) {
+  if (!brokerCustomerRelationshipRefSchema.safeParse(input.relationshipRef).success) {
+    return { available: false } as const;
+  }
+  const { data, error } = await new CustomerInvitationRepository(supabase).manageCustomerConsent(input);
+  const parsed = customerBrokerConsentResultSchema.safeParse(data);
+  if (error?.code === "22023") {
+    throw new CustomerInvitationError("Check the action and try again.", "CUSTOMER_BROKER_ACTION_INVALID", 400);
+  }
+  if (error || !parsed.success) {
+    throw new CustomerInvitationError("The broker access change could not be saved.", "CUSTOMER_BROKER_ACTION_UNAVAILABLE", 503);
   }
   return parsed.data;
 }

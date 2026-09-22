@@ -42,4 +42,16 @@ export class CustomerInvitationRepository {
   customerRelationships() {
     return this.supabase.rpc("resolve_customer_broker_relationships");
   }
+
+  manageCustomerConsent(input: {
+    relationshipRef: string;
+    action: "pause" | "renew" | "terminate";
+    idempotencyKey: string;
+  }) {
+    return this.supabase.rpc("manage_customer_broker_consent", {
+      p_relationship_ref: input.relationshipRef,
+      p_action: input.action,
+      p_idempotency_key: input.idempotencyKey,
+    });
+  }
 }

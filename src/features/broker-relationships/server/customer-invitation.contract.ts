@@ -67,8 +67,28 @@ export const customerBrokerRelationshipsSchema = z.object({
     relationshipStatus: z.enum(["active", "paused", "expired", "terminated"]),
     startsAt: z.string(),
     endsAt: z.string().nullable(),
+    actions: z.object({
+      canPause: z.boolean(),
+      canRenew: z.boolean(),
+      canTerminate: z.boolean(),
+    }).strict(),
   }).strict()).max(100),
 }).strict();
+
+export const customerBrokerConsentCommandSchema = z.object({
+  action: z.enum(["pause", "renew", "terminate"]),
+  idempotencyKey: idempotencyKeySchema,
+}).strict();
+
+export const customerBrokerConsentResultSchema = z.discriminatedUnion("available", [
+  z.object({ available: z.literal(false) }).strict(),
+  z.object({
+    available: z.literal(true),
+    relationshipRef: brokerCustomerRelationshipRefSchema,
+    relationshipStatus: z.enum(["active", "paused", "terminated"]),
+    endsAt: z.string().nullable(),
+  }).strict(),
+]);
 
 export const brokerdeskCustomerDetailSchema = z.discriminatedUnion("available", [
   z.object({ available: z.literal(false) }).strict(),
@@ -101,4 +121,6 @@ export const brokerdeskCustomerDetailSchema = z.discriminatedUnion("available", 
 
 export type BrokerdeskCustomers = z.infer<typeof brokerdeskCustomersSchema>;
 export type CustomerBrokerRelationships = z.infer<typeof customerBrokerRelationshipsSchema>;
+export type CustomerBrokerRelationship = CustomerBrokerRelationships["relationships"][number];
+export type CustomerBrokerConsentAction = z.infer<typeof customerBrokerConsentCommandSchema>["action"];
 export type BrokerdeskCustomerDetail = z.infer<typeof brokerdeskCustomerDetailSchema>;
