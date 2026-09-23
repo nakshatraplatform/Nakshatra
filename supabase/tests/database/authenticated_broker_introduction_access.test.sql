@@ -250,7 +250,9 @@ select notification_ref from app_private.notification_outbox
 where broker_introduction_id=(
   select id from app_private.broker_introductions
   where introduction_ref=(select data->>'introductionRef' from nak78_created)
-) and notification_type='broker_introduction_response';
+) and notification_type='broker_introduction_response'
+order by id
+limit 1;
 grant select on nak80_notification_job to service_role;
 update app_private.notification_outbox
 set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
