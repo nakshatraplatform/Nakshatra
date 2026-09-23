@@ -217,7 +217,7 @@ begin
   )
   select recipient.user_id,'broker_complete_access_expired',introduction.id,
     'broker-complete-expired:'||introduction.id::text||':'||recipient.audience||':'
-      ||pg_catalog.extract(epoch from introduction.complete_access_expires_at)::bigint::text,
+      ||extract(epoch from introduction.complete_access_expires_at)::bigint::text,
     pg_catalog.jsonb_build_object(
       'introductionRef',introduction.introduction_ref,
       'audience',recipient.audience

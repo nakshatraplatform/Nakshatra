@@ -143,6 +143,11 @@ queued facts; do not drop or reinterpret customer consent or Introduction state.
     worker run counts provider acceptance or failure.
   - `NAK80-REV-005` resolved by a single-job recovery RPC that requires explicit
     duplicate-risk acknowledgement for uncertain transport outcomes.
-- Status: Implemented and locally verified except for local migration replay and
-  pgTAP, which require hosted CI on the final branch. No production configuration,
-  push, PR or deployment performed.
+- Hosted-CI correction: the first clean migration replay rejected the
+  schema-qualified special form `pg_catalog.extract(epoch from ...)`. The
+  migration now uses PostgreSQL's valid `extract(epoch from ...)` syntax, and
+  the database smoke check rejects future schema-qualified uses of
+  `EXTRACT`, `GREATEST`, or `LEAST` before push.
+- Status: Implemented and locally verified. PR #66 is open; its corrected clean
+  migration replay and pgTAP run remain the final database gate. No production
+  configuration or live notification delivery was performed.
