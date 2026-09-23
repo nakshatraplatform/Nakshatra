@@ -136,8 +136,8 @@
   text-transform: uppercase;
 }
 
-.sectionRail a span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width 180ms ease, opacity 180ms ease; white-space: nowrap; }
-.sectionRail a i { position: relative; z-index: 1; display: block; width: 15px; height: 2px; background: light-dark(#a9aaa5, var(--app-dark-muted)); transition: width 180ms ease, background 180ms ease; }
+.sectionRail a span { max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; }
+.sectionRail a i { position: relative; z-index: 1; display: block; width: 15px; height: 2px; background: light-dark(#a9aaa5, var(--app-dark-muted)); }
 .sectionRail a:hover span,
 .sectionRail a:focus-visible span,
 .sectionRail a[aria-current="location"] span { max-width: 72px; opacity: 1; }
@@ -240,7 +240,7 @@
 .heroAssurances strong { color: var(--ink); font-size: 0.76rem; }
 .heroAssurances small { color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
 
-.visual { position: relative; min-width: 0; padding: 2rem 0.65rem 0; }
+.visual { position: relative; min-width: 0; padding: 5rem 0.65rem 0; }
 .visualGlow { position: absolute; inset: 12% 5%; border-radius: 50%; background: light-dark(#dce5df, var(--app-dark-surface-soft)); filter: blur(54px); opacity: 0.8; }
 
 .portfolioCard {
@@ -377,7 +377,7 @@
 .tourNavigation a:last-child { border-bottom: 0; }
 .tourNavigation a > span { color: var(--gold); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.12em; }
 .tourNavigation strong { font-size: 0.78rem; font-weight: 690; }
-.tourNavigation a::after { position: absolute; right: 0; width: 14px; height: 2px; background: light-dark(#a8aaa5, var(--app-dark-muted)); content: ""; transition: width 180ms ease, background 180ms ease; }
+.tourNavigation a::after { position: absolute; right: 0; width: 14px; height: 2px; background: light-dark(#a8aaa5, var(--app-dark-muted)); content: ""; }
 .tourNavigation a { position: relative; }
 .tourNavigation a[aria-current="step"] { color: var(--ink); }
 .tourNavigation a[aria-current="step"]::after { width: 32px; background: light-dark(#1f7880, var(--app-dark-accent)); }
@@ -385,6 +385,7 @@
 .tourCard {
   position: sticky;
   top: 98px;
+  scroll-margin-top: 6rem;
   z-index: calc(var(--tour-index) + 1);
   display: grid;
   min-height: calc(100vh - 122px);
@@ -516,6 +517,13 @@
 .page a:focus-visible,
 .page summary:focus-visible { outline: 3px solid light-dark(rgb(35 118 125 / 0.32), var(--app-dark-accent)); outline-offset: 4px; border-radius: 0.3rem; }
 
+@media (min-width: 861px) and (max-height: 760px) {
+  .guidedTourInner { max-width: 740px; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  .guidedTourIntro { position: static; }
+  .tourStack { display: grid; gap: 1rem; padding-bottom: 0; }
+  .tourCard { position: relative; top: auto; min-height: auto; margin-bottom: 0; }
+}
+
 @media (max-width: 1080px) {
   .navigationLinks { display: none; }
   .hero { grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr); gap: 2rem; }
@@ -578,8 +586,8 @@
   .heroLead { margin-top: 1.25rem !important; font-size: 0.98rem; line-height: 1.6; }
   .heroActions { flex-direction: column; align-items: stretch; margin-top: 1.5rem; }
   .heroActions a { width: 100%; }
-  .visual { padding: 1rem 0 1.5rem; }
-  .floatingMessage { top: -0.5rem; right: 0.6rem; }
+  .visual { padding: 5rem 0 1.5rem; }
+  .floatingMessage { top: 0.5rem; right: 0.6rem; }
   .floatingNote { right: 0.5rem; bottom: 0; }
   .heroAssurances { margin-top: 1.35rem; }
   .heroAssurances span { grid-template-columns: 1fr; gap: 0.15rem; }
@@ -648,6 +656,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryButton, .secondaryButton, .lightButton, .faqList summary svg, .sectionRail a span, .sectionRail a i, .tourNavigation a::after { transition: none; }
+  .primaryButton, .secondaryButton, .lightButton, .faqList summary svg { transition: none; }
   .tourCard { position: relative; top: auto; min-height: auto; margin-bottom: 1rem; }
 }
