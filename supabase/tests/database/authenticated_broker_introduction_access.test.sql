@@ -245,55 +245,58 @@ select is((public.run_broker_introduction_maintenance()->>'processed')::integer,
 reset role;
 select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak80_expiring)) and notification_type='broker_introduction_expired'),2,'response-window expiry notifies both customers without becoming a rejection');
 
-update app_private.notification_outbox
-set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
-where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
 create temporary table nak80_notification_job as
 select notification_ref from app_private.notification_outbox
-where notification_type='broker_introduction_response' order by created_at limit 1;
+where broker_introduction_id=(
+  select id from app_private.broker_introductions
+  where introduction_ref=(select data->>'introductionRef' from nak78_created)
+) and notification_type='broker_introduction_response';
 grant select on nak80_notification_job to service_role;
+update app_private.notification_outbox
+set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_NOT_CONFIGURED',false),'failed','a non-retryable provider configuration failure becomes terminal immediately');
 reset role;
-select is((select status from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'failed','the terminal failure remains durable for operator recovery');
+select is((select status from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'failed','the terminal failure remains durable for operator recovery');
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.requeue_failed_relationship_notifications(1),1,'the service-role recovery command requeues one corrected terminal failure');
 reset role;
 update app_private.notification_outbox
 set status='processing',attempt_count=2,lease_expires_at=pg_catalog.now()+interval '5 minutes'
-where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_RATE_LIMITED',true),'unavailable','a stale worker cannot complete a reclaimed attempt');
 reset role;
-select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'a stale attempt leaves the current claim unchanged');
+select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'a stale attempt leaves the current claim unchanged');
 update app_private.notification_outbox
 set lease_expires_at=pg_catalog.now()-interval '1 second'
-where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),2,false,'EMAIL_RATE_LIMITED',true),'unavailable','a worker cannot complete after its lease expires');
 reset role;
-select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'an expired completion leaves the job available for a fresh claim');
+select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'an expired completion leaves the job available for a fresh claim');
 update app_private.notification_outbox
 set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
-where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_RATE_LIMITED',true),'queued','a retryable provider failure is returned to the bounded queue');
 reset role;
-select ok((select status='queued' and attempt_count=1 and available_at>pg_catalog.now() from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'retry scheduling preserves the attempt count and applies a future backoff');
+select ok((select status='queued' and attempt_count=1 and available_at>pg_catalog.now() from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'retry scheduling preserves the attempt count and applies a future backoff');
 
 update app_private.notification_outbox
 set status='failed',attempt_count=5,last_error_code='EMAIL_TIMEOUT',lease_expires_at=null
-where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.requeue_failed_relationship_notification((select notification_ref from nak80_notification_job),false),'manual_review_required','an uncertain transport outcome cannot be replayed without explicit duplicate-risk acknowledgement');
 reset role;
-select is((select status from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'failed','an unacknowledged uncertain outcome stays terminal for operator review');
+select is((select status from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'failed','an unacknowledged uncertain outcome stays terminal for operator review');
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.requeue_failed_relationship_notification((select notification_ref from nak80_notification_job),true),'queued','an operator can requeue one reviewed outage failure explicitly');

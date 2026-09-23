@@ -148,6 +148,10 @@ queued facts; do not drop or reinterpret customer consent or Introduction state.
   migration now uses PostgreSQL's valid `extract(epoch from ...)` syntax, and
   the database smoke check rejects future schema-qualified uses of
   `EXTRACT`, `GREATEST`, or `LEAST` before push.
+- pgTAP fixture correction: recovery and lease-fencing assertions now pin one
+  notification by its Introduction association and opaque notification ref.
+  This removes nondeterministic `created_at` ordering when multiple jobs are
+  inserted in the same transaction.
 - Status: Implemented and locally verified. PR #66 is open; its corrected clean
   migration replay and pgTAP run remain the final database gate. No production
   configuration or live notification delivery was performed.
