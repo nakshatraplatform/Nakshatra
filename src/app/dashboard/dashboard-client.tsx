@@ -1,6 +1,7 @@
 "use client";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
@@ -310,6 +311,8 @@ export default function DashboardClient({
       setFormOpen(false);
       setReviewOpen(false);
       router.refresh();
+    } catch {
+      setDraftError("We could not publish your portfolio. Please try again.");
     } finally {
       setPublishing(false);
     }
@@ -860,7 +863,11 @@ export default function DashboardClient({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Review before publishing</p>
                 <h2 id="portfolio-review-heading" className="mt-1 text-xl font-semibold">Check both views before publishing</h2>
-                <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Your draft is saved. Open each preview in a new tab; nothing public changes from this review.</p>
+                <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                  {publishing
+                    ? "Your reviewed portfolio is being published. This page will update when the result is ready."
+                    : "Your draft is saved. Open each preview in a new tab; nothing public changes from this review."}
+                </p>
               </div>
               <div className="app-header-actions"><ThemeSwitch /><button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>
                 Back to editing
@@ -868,45 +875,56 @@ export default function DashboardClient({
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-              <div className="grid gap-4 lg:grid-cols-2">
-              <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
-                <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
-                  <h3 className="font-semibold">{publicIntroductionLabel(normalizePortfolioPrivacyMode(draftData.privacy_mode))}</h3>
-                  <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What anyone with the share link can see.</p>
-                </div>
-                <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
-                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the public introduction, primary photo and the details visible before approval.</p>
-                  <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
-                    <ExternalLink className="h-4 w-4" />
-                    Open public Introduction
-                  </a>
-                </div>
-              </article>
-              <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
-                <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
-                  <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
-                  <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What a verified person receives after your approval.</p>
-                </div>
-                <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
-                  <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in the Complete Portfolio unexpectedly.</p>
-                  <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
-                    <ExternalLink className="h-4 w-4" />
-                    Open Complete Portfolio
-                  </a>
-                </div>
-              </article>
-              </div>
+              {publishing ? (
+                <PortfolioLoadingStatus
+                  title={portfolio?.is_published ? "Publishing your changes" : "Publishing your portfolio"}
+                  detail="We are preparing your Introduction link. Keep this page open until the result appears."
+                  state="weaving"
+                  className="mx-auto min-h-full justify-center py-12"
+                />
+              ) : (
+                <>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
+                      <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
+                        <h3 className="font-semibold">{publicIntroductionLabel(normalizePortfolioPrivacyMode(draftData.privacy_mode))}</h3>
+                        <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What anyone with the share link can see.</p>
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
+                        <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the public introduction, primary photo and the details visible before approval.</p>
+                        <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                          <ExternalLink className="h-4 w-4" />
+                          Open public Introduction
+                        </a>
+                      </div>
+                    </article>
+                    <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
+                      <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
+                        <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
+                        <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What a verified person receives after your approval.</p>
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
+                        <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in the Complete Portfolio unexpectedly.</p>
+                        <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                          <ExternalLink className="h-4 w-4" />
+                          Open Complete Portfolio
+                        </a>
+                      </div>
+                    </article>
+                  </div>
 
-              <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
-                <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
-                <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
-                  <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
-                  <ReviewRequirement complete={readinessState.paymentActive} label="Active plan confirmed" pendingLabel="Plan payment integration coming soon" />
-                  <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
-                </div>
-              </section>
+                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
+                    <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
+                    <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
+                      <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
+                      <ReviewRequirement complete={readinessState.paymentActive} label="Active plan confirmed" pendingLabel="Plan payment integration coming soon" />
+                      <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
+                    </div>
+                  </section>
+                </>
+              )}
             </div>
 
             <footer className="flex flex-none flex-col gap-3 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -931,7 +949,7 @@ export default function DashboardClient({
                 >
                   <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
                   {publishing
-                    ? "Working..."
+                    ? "Publishing..."
                     : !completion.readyToPublish
                       ? "Complete required details"
                       : readinessState.verificationStatus !== "verified"

@@ -1,3 +1,5 @@
+import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
+
 export default function DashboardLoading() {
   return (
     <div className="flex flex-1 flex-col">
@@ -9,6 +11,11 @@ export default function DashboardLoading() {
       </div>
       <main id="main-content" className="flex-1 px-4 py-8">
         <div className="mx-auto max-w-3xl">
+          <PortfolioLoadingStatus
+            title="Opening your dashboard"
+            detail="Getting your portfolio and requests ready."
+            className="mb-8 py-5"
+          />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />
