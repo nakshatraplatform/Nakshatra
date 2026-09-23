@@ -1,6 +1,6 @@
 # VivIntroDesk MVP product, business, and engineering contract
 
-Status: **authoritative current contract**, reconciled through merged NAK-78 on
+Status: **authoritative current contract**, reconciled through merged NAK-79 on
 22 September 2026. When an older BrokerDesk plan, prototype, feature record, or
 chat summary conflicts with this file, this file wins. See
 [the document map](./vivintrodesk-document-map.md) before using historical plans.
@@ -35,7 +35,7 @@ the canonical portfolio or Broker Standard projection accidentally.
 The Introduction is a bilateral relationship between two canonical VivIntro
 customers selected from one broker workspace. Both customers must have an
 active broker relationship and mandate, a completed and published portfolio,
-and current Didit identity verification. Selecting one customer dynamically
+and current approved biometric/liveness verification. Selecting one customer dynamically
 shows every other eligible customer in that workspace; no label, email field or
 fixed customer position defines the second participant.
 
@@ -125,18 +125,39 @@ Merged on `main`:
 - authenticated participant-only Broker Standard access and independent
   responses; and
 - fail-closed revocation, cross-agency isolation, audit foundations, and
-  customer-dashboard visibility.
+  customer-dashboard visibility; and
+- 30-day reciprocal pinned Complete Portfolio access, including Protected
+  Contact, after both customers explicitly confirm Interested.
+
+In progress on NAK-80: transactionally queued Broker Introduction, response,
+mutual-interest, revocation and expiry notifications through the existing
+provider-neutral outbox. Email delivery remains informational and never grants
+access.
+
+## Verification provider decision
+
+The intended Didit workflow is a hosted facial biometric and liveness check,
+without an ID-document verification module. VivIntro must not request or copy a
+physical identity card, identity-document image, or document number. This is a
+locked product/privacy direction, but it is not yet production-ready: the
+current provider request and older runbooks still contain document-oriented
+configuration and must be reconciled and verified against Didit's supported
+workflow before Didit is enabled. See
+[the liveness-only decision](./identity-verification/liveness-only-decision.md).
 
 The legacy one-recipient device-pass path is retired for new Introductions and
 its active credentials are revoked/scrubbed by NAK-78.
 
 ## Recommended next implementation sequence
 
-1. **Notifications and recovery.** Deliver and retry Introduction, response,
-   mutual-interest, expiry, and revocation notifications through the existing
-   outbox without making email delivery the source of truth.
-2. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+1. **Complete NAK-80 notifications and recovery.** Validate the migration in
+   hosted pgTAP, configure Resend privately, rehearse one real inbox, then
+   enable the existing authenticated worker schedule.
+2. **Reconcile Didit liveness-only verification.** Remove document-oriented
+   provider inputs and copy, validate the exact provider decision contract, and
+   complete biometric retention/deletion and consent evidence before activation.
+3. **Pilot operations.** Add only the minimum operator activation, expiry worker,
    monitoring, and two-broker staging evidence needed for a bounded pilot.
-3. **Broker UX refinement.** Validate dashboard, customer selection, response
+4. **Broker UX refinement.** Validate dashboard, customer selection, response
    follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
    analytics, recommendations, questionnaires, or payments.

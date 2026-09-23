@@ -2662,8 +2662,38 @@ export type Database = {
           attempt_count: number
           interest_request_id: string | null
           grant_id: string | null
+          broker_introduction_id: string | null
           payload: Json
         }[]
+      }
+      broker_notification_recipient_is_current: {
+        Args: {
+          p_broker_introduction_id: string
+          p_recipient_user_id: string
+          p_notification_type: string
+        }
+        Returns: boolean
+      }
+      complete_relationship_notification_outbox: {
+        Args: {
+          p_notification_ref: string
+          p_attempt_count: number
+          p_succeeded: boolean
+          p_error_code?: string | null
+          p_retryable?: boolean
+        }
+        Returns: string
+      }
+      requeue_failed_relationship_notifications: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      requeue_failed_relationship_notification: {
+        Args: {
+          p_notification_ref: string
+          p_acknowledge_duplicate_risk?: boolean
+        }
+        Returns: string
       }
       complete_notification_outbox: {
         Args: {

@@ -1,5 +1,11 @@
 # Didit India document support matrix
 
+> **Deprecated for the planned product workflow (22 September 2026).** VivIntro
+> has chosen liveness/biometric facial verification without ID-document
+> verification. Do not use this matrix to enable document collection. It is
+> retained only as historical research; see
+> [the liveness-only decision](./liveness-only-decision.md).
+
 This is an evidence template, not a provider-support claim. Do not enable a
 document type in Production because it appears in marketing material or a
 generic global coverage list. Each exact document variant must pass in the

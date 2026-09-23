@@ -1,5 +1,11 @@
 # Identity verification production readiness
 
+> **Important:** the current approved direction is liveness/biometric facial
+> verification without an ID-document module. The application and the remainder
+> of this older runbook are not fully reconciled yet. Follow
+> [the liveness-only decision](./liveness-only-decision.md) and keep live Didit
+> disabled until the provider request, UI, tests and operational evidence agree.
+
 Live identity verification remains disabled until every gate below has an
 owner and dated evidence in the approved private compliance store. Do not put
 provider credentials, session identifiers, identity evidence, or personal data
@@ -54,8 +60,9 @@ system.
 
 - [ ] Sandbox and Production use separate Didit applications, keys, workflows,
       webhook secrets, and webhook destinations.
-- [ ] The Production workflow contains exactly one ID-document verification,
-      passive liveness, face match, and device/IP analysis; optional modules
+- [ ] The Production workflow contains no ID-document verification and no
+      document-number/image collection; the approved liveness and profile-face
+      comparison modules have been validated in Sandbox; optional modules
       remain disabled.
 - [ ] The shortest available retention period is configured independently in
       both Sandbox and Production.

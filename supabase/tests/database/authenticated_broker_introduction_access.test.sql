@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(43);
+select plan(80);
 
 select has_column('app_private','broker_introductions','recipient_broker_client_id','an Introduction pins its second customer relationship');
 select has_column('app_private','broker_introductions','recipient_portfolio_version_id','an Introduction pins the second customer portfolio version');
@@ -10,6 +10,14 @@ select has_column('app_private','broker_introductions','source_response','the fi
 select has_function('public','resolve_broker_introduction_recipients',array['text','text'],'eligible customer discovery is server-authorized');
 select has_function('public','create_identity_bound_broker_introduction',array['text','text','text','text'],'bilateral Introduction creation exists');
 select has_function('public','resolve_received_broker_introductions',array[]::text[],'the customer dashboard projection exists');
+select has_column('app_private','notification_outbox','broker_introduction_id','notification jobs can retain a private Introduction association');
+select has_function('public','complete_relationship_notification_outbox',array['text','integer','boolean','text','boolean'],'relationship notification completion is fenced by the claimed attempt');
+select has_function('public','requeue_failed_relationship_notifications',array['integer'],'failed relationship notifications have an explicit recovery command');
+select has_function('public','requeue_failed_relationship_notification',array['text','boolean'],'one uncertain provider outcome has an explicit operator recovery command');
+select has_function('public','broker_notification_recipient_is_current',array['uuid','uuid','text'],'delivery revalidates the stored recipient against current ownership or membership');
+select ok(not has_function_privilege('authenticated','public.claim_relationship_notification_outbox(integer)','execute'),'customers and brokers cannot claim notification work');
+select ok(not has_function_privilege('authenticated','public.broker_notification_recipient_is_current(uuid,uuid,text)','execute'),'customers and brokers cannot probe notification recipients');
+select ok(not has_function_privilege('authenticated','public.requeue_failed_relationship_notification(text,boolean)','execute'),'customers and brokers cannot recover terminal notification jobs');
 select ok(not has_function_privilege('authenticated','public.create_broker_introduction(text,text,text,jsonb,text,text,text,text,text)','execute'),'authenticated callers cannot create legacy device-pass introductions');
 select ok(not has_function_privilege('anon','public.resolve_broker_introduction(text,text)','execute'),'anonymous URL possession grants no broker profile access');
 
@@ -118,6 +126,15 @@ select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','
 select is(public.mark_broker_introduction_shared((select workspace_ref from nak78_refs),(select data->>'introductionRef' from nak78_created),1)->>'status','shared','the broker activates the Introduction');
 
 reset role;
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_ready'),2,'sharing enqueues one durable notification for each customer');
+select ok((select pg_catalog.bool_and(not (payload ?| array['name','email','phone','response','contact','portfolio'])) from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_ready'),'customer notification payloads contain no profile, contact, email, or response data');
+create temporary table nak80_current_intro as
+select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created);
+grant select on nak80_current_intro to service_role;
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select ok(public.broker_notification_recipient_is_current((select id from nak80_current_intro),'78000000-0000-4000-8000-000000000002','broker_introduction_ready'),'the worker accepts a customer who still owns one selected candidate');
+reset role;
 update public.candidates
 set primary_owner_user_id='78000000-0000-4000-8000-000000000002'
 where id='78500000-0000-4000-8000-000000000002';
@@ -144,6 +161,9 @@ select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','
 select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak78_created),'','accepted','Interested',true)->>'response','accepted','Customer A records an independent response');
 select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel','broker_standard','one Interested response does not release Complete Portfolio');
 reset role;
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_response'),1,'one customer response creates one broker notification');
+select is((select recipient_user_id from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_response'),'78000000-0000-4000-8000-000000000001'::uuid,'the response notification goes only to the broker who created the Introduction');
+select ok((select not (payload ?| array['response','comment','name','email','phone','contact','portfolio']) from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_response'),'the broker email job does not contain the response or customer profile data');
 update app_private.broker_introductions
 set source_complete_access_confirmed_at=null
 where introduction_ref=(select data->>'introductionRef' from nak78_created);
@@ -162,6 +182,8 @@ select ok((select complete_access_expires_at between mutual_interest_confirmed_a
 select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='mutual_access_granted'),1,'mutual Complete access has one explicit audit event');
 select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='response_submitted'),2,'an idempotent retry does not duplicate response events');
 select is((select count(*)::integer from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and event_type='complete_access_confirmed'),1,'a migrated acceptance records one distinct consent-confirmation event');
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_mutual_interest'),2,'mutual interest enqueues one Complete-access notification for each customer');
+select ok((select pg_catalog.bool_and(not (payload ?| array['name','email','phone','response','contact','portfolio'])) from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_mutual_interest'),'mutual-interest jobs contain only opaque routing context');
 set local role authenticated;
 select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
 select ok(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel'='complete' and public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)#>>'{data,contact,phone}'='+91 9000000002','Customer A receives Customer B pinned Complete Portfolio with Protected Contact');
@@ -180,12 +202,101 @@ select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','
 select is(public.resolve_broker_introduction((select data->>'introductionRef' from nak78_created),null)->>'disclosureLevel','complete','30-day Complete access continues after the separate response deadline');
 reset role;
 
+update app_private.broker_introductions
+set mutual_interest_confirmed_at=pg_catalog.now()-interval '31 days',
+  complete_access_expires_at=pg_catalog.now()-interval '1 day'
+where introduction_ref=(select data->>'introductionRef' from nak78_created);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is((public.run_broker_introduction_maintenance()->>'notificationsQueued')::integer,2,'maintenance queues Complete-access expiry for both customers');
+reset role;
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_complete_access_expired'),2,'Complete-access expiry has exactly two customer jobs');
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is((public.run_broker_introduction_maintenance()->>'notificationsQueued')::integer,0,'repeated maintenance does not duplicate Complete-access expiry jobs');
+reset role;
+
 update public.broker_clients set relationship_status='paused' where id='78800000-0000-4000-8000-000000000002';
 select ok((select revoked_at is not null from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)),'pausing either participant relationship revokes the disclosure');
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak78_created)) and notification_type='broker_introduction_revoked'),2,'revocation enqueues one terminal notification for each customer');
 set local role authenticated;
 select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
 select is(public.resolve_broker_introductions((select workspace_ref from nak78_refs),(select source_ref from nak78_refs))#>>'{introductions,0,status}','revoked','a broker reload projects a revoked responded Introduction as revoked');
 select is(public.resolve_broker_introductions((select workspace_ref from nak78_refs),(select source_ref from nak78_refs))#>>'{introductions,0,completeAccessExpiresAt}',null,'a broker reload does not present revoked Complete access as active');
+reset role;
+
+update public.broker_clients set relationship_status='active' where id='78800000-0000-4000-8000-000000000002';
+create temporary table nak80_expiring(data jsonb);
+grant select,insert on nak80_expiring to authenticated;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
+insert into nak80_expiring(data) select public.create_identity_bound_broker_introduction((select workspace_ref from nak78_refs),(select source_ref from nak78_refs),(select recipient_ref from nak78_refs),'nak80-expiring-pair-0001');
+select is((select data->>'status' from nak80_expiring),'created','a new round may start after the earlier pair was revoked');
+select is(public.mark_broker_introduction_shared((select workspace_ref from nak78_refs),(select data->>'introductionRef' from nak80_expiring),1)->>'status','shared','the replacement Introduction can be shared');
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.respond_to_broker_introduction((select data->>'introductionRef' from nak80_expiring),'','declined','',false)->>'response','declined','one participant can decline before the response window expires');
+reset role;
+update app_private.broker_introductions
+set created_at=pg_catalog.now()-interval '16 days',expires_at=pg_catalog.now()-interval '1 second'
+where introduction_ref=(select data->>'introductionRef' from nak80_expiring);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is((public.run_broker_introduction_maintenance()->>'processed')::integer,1,'maintenance closes a partially answered response window exactly once');
+reset role;
+select is((select count(*)::integer from app_private.notification_outbox where broker_introduction_id=(select id from app_private.broker_introductions where introduction_ref=(select data->>'introductionRef' from nak80_expiring)) and notification_type='broker_introduction_expired'),2,'response-window expiry notifies both customers without becoming a rejection');
+
+update app_private.notification_outbox
+set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+create temporary table nak80_notification_job as
+select notification_ref from app_private.notification_outbox
+where notification_type='broker_introduction_response' order by created_at limit 1;
+grant select on nak80_notification_job to service_role;
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_NOT_CONFIGURED',false),'failed','a non-retryable provider configuration failure becomes terminal immediately');
+reset role;
+select is((select status from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'failed','the terminal failure remains durable for operator recovery');
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.requeue_failed_relationship_notifications(1),1,'the service-role recovery command requeues one corrected terminal failure');
+reset role;
+update app_private.notification_outbox
+set status='processing',attempt_count=2,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_RATE_LIMITED',true),'unavailable','a stale worker cannot complete a reclaimed attempt');
+reset role;
+select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'a stale attempt leaves the current claim unchanged');
+update app_private.notification_outbox
+set lease_expires_at=pg_catalog.now()-interval '1 second'
+where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),2,false,'EMAIL_RATE_LIMITED',true),'unavailable','a worker cannot complete after its lease expires');
+reset role;
+select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'an expired completion leaves the job available for a fresh claim');
+update app_private.notification_outbox
+set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.complete_relationship_notification_outbox((select notification_ref from nak80_notification_job),1,false,'EMAIL_RATE_LIMITED',true),'queued','a retryable provider failure is returned to the bounded queue');
+reset role;
+select ok((select status='queued' and attempt_count=1 and available_at>pg_catalog.now() from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'retry scheduling preserves the attempt count and applies a future backoff');
+
+update app_private.notification_outbox
+set status='failed',attempt_count=5,last_error_code='EMAIL_TIMEOUT',lease_expires_at=null
+where id=(select id from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.requeue_failed_relationship_notification((select notification_ref from nak80_notification_job),false),'manual_review_required','an uncertain transport outcome cannot be replayed without explicit duplicate-risk acknowledgement');
+reset role;
+select is((select status from app_private.notification_outbox where notification_type='broker_introduction_response' order by created_at limit 1),'failed','an unacknowledged uncertain outcome stays terminal for operator review');
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.requeue_failed_relationship_notification((select notification_ref from nak80_notification_job),true),'queued','an operator can requeue one reviewed outage failure explicitly');
 reset role;
 
 select * from finish();

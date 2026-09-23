@@ -124,7 +124,7 @@ npm run test:e2e
 
 ## Relationship notification worker
 
-Complete Portfolio approvals, renewals, revocations, and expiry reminders are queued transactionally in the database. Configure a scheduler to send an authenticated `POST` request to `/api/internal/relationship-notifications` with `Authorization: Bearer $NOTIFICATION_WORKER_SECRET`. The worker uses `SUPABASE_SERVICE_ROLE_KEY` only on the server, delivers through Resend, and records success or a retryable failure through the durable outbox.
+Complete Portfolio approvals, renewals, revocations, expiry reminders, and Broker Introduction lifecycle messages are queued transactionally in the database. Configure a scheduler to send an authenticated `POST` request to `/api/internal/relationship-notifications` with `Authorization: Bearer $NOTIFICATION_WORKER_SECRET`. The worker uses `SUPABASE_SERVICE_ROLE_KEY` only on the server, revalidates a Broker Introduction recipient before resolving their email, delivers through Resend, and records accepted, retryable, or terminal outcomes through the durable outbox. Keep the scheduler disabled until the Resend sender/domain and credentials are configured and a real-inbox rehearsal succeeds.
 
 For hosted Supabase Auth, keep both **Confirm signup** and **Magic Link or OTP** templates synchronized with `supabase/templates/confirmation.html` and `supabase/templates/magic_link.html`. Both templates must use `{{ .Token }}` so a new viewer and a returning viewer receive the same six-digit-code experience.
 
