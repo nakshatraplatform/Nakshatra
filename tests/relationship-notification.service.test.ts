@@ -49,7 +49,11 @@ describe("relationship notification delivery", () => {
       subject: "You can now view the Complete Portfolio",
       text: expect.stringContaining(`https://vivintro.test/access/${grantId}`),
     }));
-    expect(rpc).toHaveBeenLastCalledWith("complete_notification_outbox", expect.objectContaining({ p_succeeded: true }));
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 1,
+      p_succeeded: true,
+      p_retryable: false,
+    }));
   });
 
   it("does nothing when no relationship notifications are due", async () => {
@@ -89,6 +93,73 @@ describe("relationship notification delivery", () => {
       subject,
       text: expect.stringContaining(copy),
     }));
+  });
+
+  it.each([
+    ["broker_introduction_ready", "A broker introduction is ready", "/introductions/bir_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+    ["broker_mutual_interest", "Mutual interest is confirmed", "30 days"],
+    ["broker_introduction_revoked", "A broker introduction has ended", "no longer available"],
+    ["broker_introduction_expired", "A broker introduction has closed", "response window has ended"],
+    ["broker_complete_access_expired", "Complete Portfolio access has ended", "Protected Contact is no longer available"],
+  ])("renders safe customer %s mail from an opaque Introduction reference", async (notificationType, subject, copy) => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{
+        notification_ref: "ntf_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        recipient_user_id: "44444444-4444-4444-8444-444444444444",
+        notification_type: notificationType,
+        attempt_count: 1,
+        interest_request_id: null,
+        grant_id: null,
+        broker_introduction_id: "77777777-7777-4777-8777-777777777777",
+        payload: {
+          introductionRef: "bir_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          audience: "source",
+        },
+      }], error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: "sent", error: null });
+    const client = {
+      rpc,
+      from: vi.fn(),
+      auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "customer@example.com" } }, error: null }) } },
+    };
+
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
+    const message = sendResendEmail.mock.calls[0][0];
+    expect(message).toEqual(expect.objectContaining({ to: "customer@example.com", subject }));
+    expect(message.text).toContain(copy);
+    expect(message.text).not.toMatch(/phone|email address|accepted|declined|biometric|identity document/i);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("notifies only the creating broker that a customer responded without putting the decision in email", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{
+        notification_ref: "ntf_ffffffffffffffffffffffffffffffff",
+        recipient_user_id: "44444444-4444-4444-8444-444444444444",
+        notification_type: "broker_introduction_response",
+        attempt_count: 1,
+        interest_request_id: null,
+        grant_id: null,
+        broker_introduction_id: "77777777-7777-4777-8777-777777777777",
+        payload: {
+          introductionRef: "bir_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          workspaceRef: "wrk_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          audience: "broker",
+        },
+      }], error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: "sent", error: null });
+    const client = {
+      rpc,
+      auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "broker@example.com" } }, error: null }) } },
+    };
+
+    await processRelationshipNotifications(client as never);
+    const message = sendResendEmail.mock.calls[0][0];
+    expect(message.subject).toBe("A customer responded to an introduction");
+    expect(message.text).toContain("/brokerdesk/w/wrk_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/dashboard");
+    expect(message.text).not.toMatch(/accepted|declined|comment/i);
   });
 
   it.each([
@@ -135,7 +206,7 @@ describe("relationship notification delivery", () => {
         grant_id: null,
         payload: {},
       }], error: null })
-      .mockResolvedValueOnce({ data: "retry", error: null });
+      .mockResolvedValueOnce({ data: "failed", error: null });
     const client = {
       rpc,
       from: vi.fn(),
@@ -143,14 +214,16 @@ describe("relationship notification delivery", () => {
     };
 
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
-    expect(rpc).toHaveBeenLastCalledWith("complete_notification_outbox", expect.objectContaining({
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 1,
       p_succeeded: false,
       p_error_code: "GRANT_UNAVAILABLE",
+      p_retryable: false,
     }));
   });
 
   it("preserves provider failure codes and rejects claim/completion database errors", async () => {
-    sendResendEmail.mockResolvedValue({ status: "failed", code: "RATE_LIMITED" });
+    sendResendEmail.mockResolvedValue({ status: "failed", code: "EMAIL_RATE_LIMITED", retryable: true });
     const job = {
       notification_ref: "ntf_dddddddddddddddddddddddddddddddd",
       recipient_user_id: "44444444-4444-4444-8444-444444444444",
@@ -168,10 +241,95 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "viewer@example.com" } }, error: null }) } },
     };
     await expect(processRelationshipNotifications(client as never)).rejects.toThrow("completion failed");
-    expect(rpc).toHaveBeenLastCalledWith("complete_notification_outbox", expect.objectContaining({ p_error_code: "RATE_LIMITED" }));
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 1,
+      p_error_code: "EMAIL_RATE_LIMITED",
+      p_retryable: true,
+    }));
 
     const claimError = new Error("claim failed");
     await expect(processRelationshipNotifications({ rpc: vi.fn().mockResolvedValue({ data: null, error: claimError }) } as never))
       .rejects.toThrow("claim failed");
+  });
+
+  it("marks an unconfigured provider failure as non-retryable so it can be recovered after setup", async () => {
+    sendResendEmail.mockResolvedValue({ status: "failed", code: "EMAIL_NOT_CONFIGURED", retryable: false });
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{
+        notification_ref: "ntf_99999999999949998999999999999999",
+        recipient_user_id: "44444444-4444-4444-8444-444444444444",
+        notification_type: "broker_introduction_ready",
+        attempt_count: 1,
+        interest_request_id: null,
+        grant_id: null,
+        broker_introduction_id: "77777777-7777-4777-8777-777777777777",
+        payload: { introductionRef: "bir_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", audience: "recipient" },
+      }], error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: "failed", error: null });
+    const client = {
+      rpc,
+      auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "customer@example.com" } }, error: null }) } },
+    };
+
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 1,
+      p_error_code: "EMAIL_NOT_CONFIGURED",
+      p_retryable: false,
+    }));
+  });
+
+  it("does not resolve an email or send when the stored recipient is no longer current", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{
+        notification_ref: "ntf_88888888888848888888888888888888",
+        recipient_user_id: "44444444-4444-4444-8444-444444444444",
+        notification_type: "broker_introduction_ready",
+        attempt_count: 1,
+        interest_request_id: null,
+        grant_id: null,
+        broker_introduction_id: "77777777-7777-4777-8777-777777777777",
+        payload: { introductionRef: "bir_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", audience: "source" },
+      }], error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: "failed", error: null });
+    const getUserById = vi.fn();
+    const client = { rpc, auth: { admin: { getUserById } } };
+
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
+    expect(getUserById).not.toHaveBeenCalled();
+    expect(sendResendEmail).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 1,
+      p_error_code: "BROKER_RECIPIENT_STALE",
+      p_retryable: false,
+    }));
+  });
+
+  it("surfaces a fenced completion instead of reporting an uncommitted provider result", async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: [{
+        notification_ref: "ntf_77777777777747778777777777777777",
+        recipient_user_id: "44444444-4444-4444-8444-444444444444",
+        notification_type: "introduction_declined",
+        attempt_count: 2,
+        interest_request_id: null,
+        grant_id: null,
+        payload: {},
+      }], error: null })
+      .mockResolvedValueOnce({ data: "unavailable", error: null });
+    const client = {
+      rpc,
+      auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "viewer@example.com" } }, error: null }) } },
+    };
+
+    await expect(processRelationshipNotifications(client as never)).rejects.toThrow(
+      "notification completion was unavailable; expected sent",
+    );
+    expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
+      p_attempt_count: 2,
+      p_succeeded: true,
+    }));
   });
 });

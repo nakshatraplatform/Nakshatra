@@ -1,5 +1,11 @@
 # Didit provider readiness runbook
 
+> **Superseded workflow warning (22 September 2026):** do not use the
+> document-verification configuration below to activate production. The approved
+> direction is facial liveness/profile comparison without an ID-document module.
+> Follow [the liveness-only decision](./liveness-only-decision.md); this runbook
+> remains historical input until the provider contract is reconciled end to end.
+
 This runbook is the Phase 0 control plane for a future Didit integration. It
 does not authorize application code to collect, transmit, or store identity
 documents until every required production gate below has an owner and evidence.
@@ -33,13 +39,15 @@ documents until every required production gate below has an owner and evidence.
 
 ## Approved workflow baseline
 
-Create one Sandbox workflow before creating Production. It must be a hosted KYC
-workflow with exactly these required checks:
+Create one Sandbox workflow before creating Production. The replacement
+workflow must exclude ID-document verification and must validate:
 
-- ID document verification;
-- passive liveness;
-- face match; and
-- Device and IP analysis.
+- passive liveness; and
+- face comparison to the customer-controlled portfolio reference photo, only
+  after Didit capability and consent behavior are confirmed.
+
+Device/IP analysis and every other optional module remain disabled unless a
+separate privacy and security review approves them.
 
 Keep the following disabled unless a separate reviewed issue changes the
 privacy assessment: Aadhaar verification, PAN or other database validation,
