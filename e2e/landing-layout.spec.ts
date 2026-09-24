@@ -14,13 +14,35 @@ test("tour anchors clear the sticky header on desktop and mobile", async ({ page
   }
 });
 
-test("short desktop viewports can reach the full guided tour", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 600 });
-  await page.goto("/");
-  const card = page.locator("#tour-step-04");
-  await expect(card).toHaveCSS("position", "relative");
-  await card.getByText("Access can end early").scrollIntoViewIfNeeded();
-  await expect(card.getByText("Access can end early")).toBeInViewport();
+test("short desktop viewports can reach every part of the guided tour", async ({ page }) => {
+  for (const width of [861, 1440]) {
+    for (const height of [600, 800, 850, 860]) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/");
+
+      for (const [step, detail] of [["01", "Changes saved"], ["04", "Access can end early"]] as const) {
+        const card = page.locator(`#tour-step-${step}`);
+        await expect(card).toHaveCSS("position", "relative");
+        await card.getByText(detail).scrollIntoViewIfNeeded();
+        await expect(card.getByText(detail)).toBeInViewport();
+      }
+    }
+  }
+});
+
+test("tall desktop viewports keep fully visible sticky tour cards", async ({ page }) => {
+  for (const width of [861, 1440]) {
+    for (const height of [861, 900]) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/");
+      await page.locator('a[href="#tour-step-01"]').click();
+
+      const card = page.locator("#tour-step-01");
+      await expect(card).toHaveCSS("position", "sticky");
+      const cardBottom = await card.evaluate((element) => element.getBoundingClientRect().bottom);
+      expect(cardBottom).toBeLessThan(height);
+    }
+  }
 });
 
 test("hero callout does not cover the preview label", async ({ page }) => {
