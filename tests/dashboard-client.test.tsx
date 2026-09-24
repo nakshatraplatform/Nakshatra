@@ -40,6 +40,9 @@ vi.mock("@/features/portfolio/client/portfolio-dashboard.api", () => ({
 vi.mock("@/features/access/client/access-dashboard.api", () => ({
   manageAccessGrantRequest: mocks.manageAccess,
 }));
+vi.mock("thinking-orbs", () => ({
+  ThinkingOrb: () => <canvas aria-hidden="true" />,
+}));
 
 import DashboardClient from "../src/app/dashboard/dashboard-client";
 
@@ -452,6 +455,58 @@ describe("dashboard client", () => {
       personal: expect.objectContaining({ first_name: "Aditi" }),
     })));
     expect(mocks.refresh).toHaveBeenCalled();
+  });
+
+  it("shows truthful publish progress until the request succeeds", async () => {
+    let finishPublish!: (value: unknown) => void;
+    mocks.publish.mockImplementationOnce(() => new Promise((resolve) => { finishPublish = resolve; }));
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
+    const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
+    fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
+
+    const status = within(review).getByRole("status");
+    expect(status).toHaveTextContent("Publishing your changes");
+    expect(status).toHaveTextContent("Keep this page open until the result appears.");
+    expect(within(review).getByRole("button", { name: "Publishing..." })).toBeDisabled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.publish).toHaveBeenCalledOnce());
+
+    await act(async () => { finishPublish({ ok: true, data: {} }); });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument());
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("clears publish progress after an unexpected failure and permits a retry", async () => {
+    let failPublish!: (reason?: unknown) => void;
+    mocks.publish.mockImplementationOnce(() => new Promise((_resolve, reject) => { failPublish = reject; }));
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: readyPublicationReadiness,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
+    const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
+    fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
+    expect(within(review).getByRole("status")).toHaveTextContent("Publishing your changes");
+    await waitFor(() => expect(mocks.publish).toHaveBeenCalledOnce());
+
+    await act(async () => { failPublish(new Error("Temporary service failure")); });
+    expect(within(review).queryByRole("status")).not.toBeInTheDocument();
+    expect(within(review).getByRole("alert")).toHaveTextContent("We could not publish your portfolio. Please try again.");
+    expect(within(review).getByRole("button", { name: /publish reviewed changes/i })).toBeEnabled();
+
+    fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
+    await waitFor(() => expect(mocks.publish).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument());
   });
 
   it("distinguishes direct and broker introductions and only links authenticated portfolios", () => {

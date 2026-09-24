@@ -17,7 +17,7 @@ The design uses the existing light/dark ink and restrained teal/gold palette. It
 | Waiting route and publish states explain what is happening | Source review of dashboard, preview, approved preview, shared link, and publish modal; component status-text test passed. |
 | Orb matches VivIntro theme without hydration mismatch | Theme-provider integration test passed; production build passed with nonproduction Supabase placeholders. |
 | Narrow and reduced-motion presentation stays legible | Chrome visual check at 320×700 Dark and 1440×900 Light with reduced motion; no horizontal overflow. |
-| Error or completion ends the publish wait | Publish `finally` clears the state; unexpected failure shows retry copy; request failure retains existing handler. Source review completed. |
+| Error or completion ends the publish wait | Dashboard integration tests hold a publish request pending, verify truthful status and disabled repeat submission, then confirm the status clears on success. A rejected request restores an enabled retry action with an error message. Existing API-failure and disclosure-confirmation tests remain in place. |
 
 Validation: `npm run lint` (pass with two unrelated existing warnings), `npm run typecheck` (pass), `npm run test:unit` (806 pass), and `npm run build` (pass with placeholder Supabase URL and publishable key). The first build attempt without those required variables failed during route configuration, before the placeholder build passed.
 
@@ -30,3 +30,5 @@ Validation: `npm run lint` (pass with two unrelated existing warnings), `npm run
 - `package.json` and `package-lock.json`: locked `thinking-orbs` dependency.
 
 The visual check used a temporary local page removed before handoff. Browser evidence covers component presentation, not an authenticated end-to-end publish transaction; that requires test-account access and a ready-to-publish portfolio in a preview environment.
+
+Follow-up verification rebased the branch onto `origin/main` after NAK-70 merged and added focused dashboard tests for pending, successful, and unexpected-failure publish states. On this revision, lint and typecheck passed, 808 unit tests and the feature coverage gate passed, and a production build passed with nonproduction Supabase placeholders. These tests use mocked portfolio API responses and do not replace the authenticated preview transaction. The Vercel preview currently stops at a team-access gate for the available browser account; no live publish request was made.
