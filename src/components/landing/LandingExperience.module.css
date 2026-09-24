@@ -517,7 +517,7 @@
 .page a:focus-visible,
 .page summary:focus-visible { outline: 3px solid light-dark(rgb(35 118 125 / 0.32), var(--app-dark-accent)); outline-offset: 4px; border-radius: 0.3rem; }
 
-@media (min-width: 861px) and (max-height: 760px) {
+@media (min-width: 861px) and (max-height: 860px) {
   .guidedTourInner { max-width: 740px; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
   .guidedTourIntro { position: static; }
   .tourStack { display: grid; gap: 1rem; padding-bottom: 0; }
