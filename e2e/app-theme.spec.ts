@@ -153,7 +153,8 @@ test("owner appearance and portaled interest forms ignore the app theme", async 
     await page.goto("/");
     await page.evaluate(({ key, appTheme }) => localStorage.setItem(key, appTheme), { key, appTheme });
     await page.goto(`/p/${token}`);
-    const portfolio = page.locator('[data-template="celestial-union"]');
+    const portfolio = page.locator('[data-template="celestial-union"]:visible');
+    await expect(portfolio).toHaveCount(1);
     await expect(portfolio).toHaveAttribute("data-appearance", appearance);
     await expect(portfolio).toHaveCSS("color-scheme", appearance);
     await expect(page.getByRole("button", { name: /Switch to .* theme/ })).toHaveCount(0);
