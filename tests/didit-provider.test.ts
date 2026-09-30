@@ -181,6 +181,7 @@ describe("Didit provider gateway", () => {
     const request = fetchMock.mock.calls[0][1];
     expect(fetchMock.mock.calls[0][0]).toBe("https://verification.didit.me/v3/session/");
     expect(request.headers).toEqual(expect.objectContaining({ "x-api-key": "secret-api-key" }));
+    expect(request).not.toHaveProperty("signal");
     expect(JSON.parse(request.body)).toEqual(expect.objectContaining({
       workflow_id: process.env.DIDIT_WORKFLOW_ID,
       vendor_data: `iv:${input.providerSubjectRef}:${input.attemptId}`,
