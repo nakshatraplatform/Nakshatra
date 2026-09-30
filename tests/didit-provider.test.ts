@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createDiditPhotoMatchSession, createDiditVerificationSession, DiditProviderError } from "@/features/identity-verification/server/didit.provider";
+import { createDiditPhotoMatchSession, createDiditVerificationSession, DiditProviderCleanupError, DiditProviderError } from "@/features/identity-verification/server/didit.provider";
 
 const input = {
   attemptId: "11111111-1111-4111-8111-111111111111",
@@ -131,6 +131,38 @@ describe("Didit provider gateway", () => {
       portraitImageBase64: Buffer.from("photo").toString("base64"),
     })).rejects.toBeInstanceOf(DiditProviderError);
     expect(fetchMock.mock.calls[1][1].method).toBe("DELETE");
+  });
+
+  it("preserves a protected recovery handle when a rejected session cannot be deleted", async () => {
+    process.env.DIDIT_API_KEY = "secret-api-key";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION = "3";
+    const sessionId = "44444444-4444-4444-8444-444444444444";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: sessionId,
+        url: "https://verify.didit.me/session/opaque-provider-token",
+        workflow_id: process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
+        workflow_version: 4,
+      }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    let caught: unknown;
+    try {
+      await createDiditPhotoMatchSession({
+        attemptId: input.attemptId,
+        providerSubjectRef: input.providerSubjectRef,
+        callbackUrl: input.callbackUrl,
+        portraitImageBase64: Buffer.from("photo").toString("base64"),
+      });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(DiditProviderCleanupError);
+    expect((caught as DiditProviderCleanupError).sessionId).toBe(sessionId);
+    expect(JSON.stringify(caught)).not.toContain(sessionId);
+    expect(fetchMock.mock.calls[1][1].body).toBe(JSON.stringify({ retain_face_embeddings: false }));
   });
 
   it("sends required details server-to-server and returns only the hosted URL", async () => {

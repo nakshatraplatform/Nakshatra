@@ -29,6 +29,20 @@ export class DiditProviderError extends Error {
   }
 }
 
+/** A created provider session still needs deletion. Keep its recovery handle out of serialized errors. */
+export class DiditProviderCleanupError extends DiditProviderError {
+  #sessionId: string;
+
+  constructor(sessionId: string) {
+    super("IDENTITY_VERIFICATION_PROVIDER_CLEANUP_FAILED");
+    this.#sessionId = sessionId;
+  }
+
+  get sessionId() {
+    return this.#sessionId;
+  }
+}
+
 function getDiditConfig() {
   const parsed = diditConfigSchema.safeParse({
     DIDIT_API_KEY: process.env.DIDIT_API_KEY,
@@ -95,7 +109,7 @@ async function purgeUnattachedPhotoMatchSession(sessionId: string) {
       || !["deleted", "none"].includes(outcome?.face_retention_outcome)
       || outcome?.biometric_template_uuid != null) throw new DiditProviderError();
   } catch {
-    throw new DiditProviderError("IDENTITY_VERIFICATION_PROVIDER_CLEANUP_FAILED");
+    throw new DiditProviderCleanupError(sessionId);
   } finally {
     clearTimeout(timeout);
   }
