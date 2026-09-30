@@ -19,8 +19,9 @@ async function request(fetchImpl, url, options) {
 }
 
 /** Proves a sandbox workflow accepts a supplied reference; always purges an issued session. */
-export async function verifyPhotoMatchSandbox({ apiKey, workflowId, portrait, fetchImpl = fetch }) {
-  if (!apiKey || !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(workflowId ?? "")) {
+export async function verifyPhotoMatchSandbox({ apiKey, workflowId, workflowVersion, portrait, fetchImpl = fetch }) {
+  if (!apiKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(workflowId ?? "")
+    || !Number.isSafeInteger(workflowVersion) || workflowVersion < 1) {
     throw failure("DIDIT_SANDBOX_CONFIG_INVALID");
   }
   if (!Buffer.isBuffer(portrait) || portrait.length === 0 || portrait.length > MAX_IMAGE_BYTES) {
@@ -42,11 +43,12 @@ export async function verifyPhotoMatchSandbox({ apiKey, workflowId, portrait, fe
     });
     if (response.status !== 201) throw failure("DIDIT_SANDBOX_CREATE_FAILED");
     const body = await response.json().catch(() => null);
-    if (typeof body?.session_id === "string" && /^[a-zA-Z0-9-]{8,128}$/.test(body.session_id)) {
+    if (typeof body?.session_id === "string"
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.session_id)) {
       sessionId = body.session_id;
     }
     if (!sessionId || body.workflow_id !== workflowId
-      || !Number.isSafeInteger(body.workflow_version) || body.workflow_version < 1
+      || body.workflow_version !== workflowVersion
       || typeof body.url !== "string" || new URL(body.url).origin !== "https://verify.didit.me") {
       throw failure("DIDIT_SANDBOX_RESPONSE_INVALID");
     }
@@ -57,12 +59,19 @@ export async function verifyPhotoMatchSandbox({ apiKey, workflowId, portrait, fe
       try {
         deleted = await request(fetchImpl, `${BASE}/${encodeURIComponent(sessionId)}/delete/`, {
           method: "DELETE",
-          headers: { "x-api-key": apiKey },
+          headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+          body: JSON.stringify({ retain_face_embeddings: false }),
         });
       } catch {
         throw failure("DIDIT_SANDBOX_PURGE_FAILED");
       }
-      if (![204, 404].includes(deleted.status)) {
+      if (deleted.status !== 200) {
+        throw failure("DIDIT_SANDBOX_PURGE_FAILED");
+      }
+      const deletion = await deleted.json().catch(() => null);
+      if (deletion?.session_id !== sessionId
+        || !["deleted", "none"].includes(deletion?.face_retention_outcome)
+        || deletion?.biometric_template_uuid != null) {
         throw failure("DIDIT_SANDBOX_PURGE_FAILED");
       }
     }
@@ -77,6 +86,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     await verifyPhotoMatchSandbox({
       apiKey: process.env.DIDIT_SANDBOX_API_KEY,
       workflowId: process.env.DIDIT_SANDBOX_PHOTO_MATCH_WORKFLOW_ID,
+      workflowVersion: Number(process.env.DIDIT_SANDBOX_PHOTO_MATCH_WORKFLOW_VERSION),
       portrait,
     });
     process.stdout.write("Document-free Didit Sandbox create-and-delete contract passed.\n");

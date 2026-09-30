@@ -34,7 +34,11 @@ Run focused tests while iterating, then lint, typecheck, unit, pgTAP, build and 
 
 ## First increment evidence (2026-09-30)
 
-- Added `createDiditPhotoMatchSession` in `didit.provider.ts` using separate `DIDIT_PHOTO_MATCH_WORKFLOW_ID`; it rejects missing/foreign workflow metadata and sends no document expectations. This adapter is not connected to the live candidate route yet.
+- Added `createDiditPhotoMatchSession` in `didit.provider.ts` using separate `DIDIT_PHOTO_MATCH_WORKFLOW_ID` and pinned `DIDIT_PHOTO_MATCH_WORKFLOW_VERSION`; it rejects missing/foreign workflow metadata and sends no document expectations. This adapter is not connected to the live candidate route yet.
 - Added `photo-reference.ts` to validate an existing WebP primary photo, derive a digest of the stored bytes and produce a bounded transient base64 reference. No extra photo or biometric template is persisted.
-- Added `scripts/verify-didit-photo-match-sandbox.mjs`, run only with sandbox credentials and a consenting test portrait. It uses `sandbox_scenario` so a live Didit application rejects it and always attempts provider deletion. No provider IDs or images are logged.
+- Added `scripts/verify-didit-photo-match-sandbox.mjs`, run only with sandbox credentials, pinned workflow ID/version and a consenting test portrait. It uses `sandbox_scenario` so a live Didit application rejects it and always attempts provider deletion. No provider IDs or images are logged.
 - `vitest run tests/photo-reference.test.ts tests/didit-photo-match-sandbox.test.ts tests/didit-provider.test.ts`: passed, 10 tests. Focused ESLint: passed. `tsc --noEmit`: passed using the NAK-71 worktree's current `node_modules` via an ignored symlink. Docker unavailable, so pgTAP not run. Sandbox variables absent, so the real provider contract remains blocked.
+
+## Independent review and correction
+
+Fresh-context reviewer of `c92c0a5` found three material issues: the probe expected Didit's old `204` deletion result, the candidate adapter accepted any workflow version, and a rejected created session could escape cleanup. The correction pins workflow versions, validates current `200` deletion outcomes and explicitly requests no face-template retention in the probe, adapter cleanup and shared worker. A fresh-session `404` now defers worker redaction rather than claiming deletion. The current corrected snapshot still requires reviewer confirmation and live Sandbox evidence.

@@ -67,8 +67,10 @@ system.
 - [ ] The shortest available retention period is configured independently in
       both Sandbox and Production.
 - [ ] A Sandbox terminal session was deleted through the server-only
-      `DELETE /v3/session/{session_id}/delete/` operation; `204` and an
-      already-deleted `404` were recorded without retaining the identifier.
+      `DELETE /v3/session/{session_id}/delete/` operation with explicit
+      `retain_face_embeddings: false`; the current `200` response named the
+      same session and reported no retained biometric template. A fresh-session
+      `404` is an unconfirmed purge and needs investigation.
 - [ ] Process-and-purge recovery was exercised: a terminal decision queues
       provider redaction, the worker deletes it, and only normalized local
       status and deletion time remain.

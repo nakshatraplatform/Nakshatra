@@ -105,45 +105,46 @@ export function createIdentityVerificationWorker(supabase, {
   }
 
   async function fetchDecision(providerSessionRef) {
-    let response;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
-      response = await fetchImpl(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/decision/`, {
+      const response = await fetchImpl(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/decision/`, {
         headers: { Accept: "application/json", "x-api-key": apiKey },
         cache: "no-store",
         signal: controller.signal,
       });
+      if (!response.ok) throw workerError("DIDIT_DECISION_FETCH_FAILED");
+      return await response.json();
     } catch {
       throw workerError("DIDIT_DECISION_FETCH_FAILED");
     } finally {
       clearTimeout(timeout);
     }
-    if (!response.ok) throw workerError("DIDIT_DECISION_FETCH_FAILED");
-    try {
-      return await response.json();
-    } catch {
-      throw workerError("DIDIT_DECISION_FETCH_FAILED");
-    }
   }
 
   async function deleteSession(providerSessionRef) {
-    let response;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
-      response = await fetchImpl(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/delete/`, {
+      const response = await fetchImpl(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/delete/`, {
         method: "DELETE",
-        headers: { "x-api-key": apiKey },
+        headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ retain_face_embeddings: false }),
         cache: "no-store",
         signal: controller.signal,
       });
+      if (response.status !== 200) throw workerError("DIDIT_SESSION_PURGE_FAILED");
+      const deletion = await response.json();
+      if (deletion?.session_id !== providerSessionRef
+        || !["deleted", "none"].includes(deletion?.face_retention_outcome)
+        || deletion?.biometric_template_uuid != null) {
+        throw workerError("DIDIT_SESSION_PURGE_FAILED");
+      }
     } catch {
       throw workerError("DIDIT_SESSION_PURGE_FAILED");
     } finally {
       clearTimeout(timeout);
     }
-    if (!response.ok && response.status !== 404) throw workerError("DIDIT_SESSION_PURGE_FAILED");
   }
 
   async function defer(claim, errorCode) {
