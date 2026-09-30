@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { verifyPhotoMatchSandbox } from "../scripts/verify-didit-photo-match-sandbox.mjs";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createSandboxRecoveryJournal, recoverPhotoMatchSandbox, verifyPhotoMatchSandbox } from "../scripts/verify-didit-photo-match-sandbox.mjs";
 
 const workflowId = "55555555-5555-4555-8555-555555555555";
 const sessionId = "44444444-4444-4444-8444-444444444444";
+function journal() {
+  let entry: { vendorData: string; workflowId: string; createdAt: string } | null = null;
+  return {
+    record: vi.fn(async (value) => { entry = value; }),
+    read: vi.fn(async () => entry),
+    complete: vi.fn(async () => { entry = null; }),
+  };
+}
 
 describe("document-free Didit Sandbox contract", () => {
   it("uses a sandbox-only scenario, validates workflow metadata and purges the session", async () => {
+    const recovery = journal();
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
@@ -20,7 +32,7 @@ describe("document-free Didit Sandbox contract", () => {
       }), { status: 200 }));
 
     await expect(verifyPhotoMatchSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.from("test reference"), fetchImpl,
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.from("test reference"), journal: recovery, fetchImpl,
     })).resolves.toEqual({ workflowVersion: 2 });
     const request = JSON.parse(fetchImpl.mock.calls[0][1].body);
     expect(request).toEqual(expect.objectContaining({
@@ -32,9 +44,12 @@ describe("document-free Didit Sandbox contract", () => {
     expect(fetchImpl.mock.calls[1][0]).toBe(`https://verification.didit.me/v3/session/${sessionId}/delete/`);
     expect(fetchImpl.mock.calls[1][1].method).toBe("DELETE");
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ retain_face_embeddings: false });
+    expect(recovery.record).toHaveBeenCalledTimes(1);
+    expect(recovery.complete).toHaveBeenCalledTimes(1);
   });
 
   it("still deletes when the provider returns an unexpected workflow", async () => {
+    const recovery = journal();
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
@@ -48,12 +63,14 @@ describe("document-free Didit Sandbox contract", () => {
         biometric_template_uuid: null,
       }), { status: 200 }));
     await expect(verifyPhotoMatchSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 1, portrait: Buffer.from("test reference"), fetchImpl,
+      apiKey: "sandbox-key", workflowId, workflowVersion: 1, portrait: Buffer.from("test reference"), journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_RESPONSE_INVALID");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(recovery.complete).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a provider deletion that retains a biometric template", async () => {
+    const recovery = journal();
     const fetchImpl = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
@@ -67,15 +84,88 @@ describe("document-free Didit Sandbox contract", () => {
         biometric_template_uuid: "77777777-7777-4777-8777-777777777777",
       }), { status: 200 }));
     await expect(verifyPhotoMatchSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.from("test reference"), fetchImpl,
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.from("test reference"), journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_PURGE_FAILED");
+    expect(recovery.complete).not.toHaveBeenCalled();
+  });
+
+  it("retains a pre-create lookup handle and retries a failed purge", async () => {
+    const recovery = journal();
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: sessionId, workflow_id: workflowId, workflow_version: 2,
+        url: "https://verify.didit.me/session/private-token",
+      }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockImplementationOnce(async (url) => {
+        expect(new URL(url).searchParams.get("vendor_data")).toBe((await recovery.read())?.vendorData);
+        return new Response(JSON.stringify({ next: null, results: [{
+          session_id: sessionId, vendor_data: (await recovery.read())?.vendorData,
+        }] }), { status: 200 });
+      })
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: sessionId, face_retention_outcome: "deleted", biometric_template_uuid: null,
+      }), { status: 200 }));
+    await expect(verifyPhotoMatchSandbox({
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      portrait: Buffer.from("test reference"), journal: recovery, fetchImpl,
+    })).rejects.toThrow("DIDIT_SANDBOX_PURGE_FAILED");
+    expect(recovery.record).toHaveBeenCalledBefore(fetchImpl);
+    expect(recovery.complete).not.toHaveBeenCalled();
+    await expect(recoverPhotoMatchSandbox({ apiKey: "sandbox-key", journal: recovery, fetchImpl }))
+      .resolves.toEqual({ deleted: 1 });
+    expect(recovery.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the lookup handle when create response is unreadable and zero sessions are found", async () => {
+    const recovery = journal();
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response("not-json", { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ next: null, results: [] }), { status: 200 }));
+    await expect(verifyPhotoMatchSandbox({
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      portrait: Buffer.from("test reference"), journal: recovery, fetchImpl,
+    })).rejects.toThrow("DIDIT_SANDBOX_RESPONSE_INVALID");
+    await expect(recoverPhotoMatchSandbox({ apiKey: "sandbox-key", journal: recovery, fetchImpl }))
+      .rejects.toThrow("DIDIT_SANDBOX_RECOVERY_UNCONFIRMED");
+    expect(recovery.complete).not.toHaveBeenCalled();
   });
 
   it("never creates a session without a bounded reference", async () => {
     const fetchImpl = vi.fn();
     await expect(verifyPhotoMatchSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.alloc(2 * 1024 * 1024 + 1), fetchImpl,
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2, portrait: Buffer.alloc(2 * 1024 * 1024 + 1), journal: null, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_REFERENCE_INVALID");
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("requires a durable journal before any provider request", async () => {
+    const fetchImpl = vi.fn();
+    await expect(verifyPhotoMatchSandbox({
+      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      portrait: Buffer.from("test reference"), journal: null, fetchImpl,
+    })).rejects.toThrow("DIDIT_SANDBOX_JOURNAL_REQUIRED");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("writes the recovery correlation outside the repository with owner-only permissions", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "nak60-recovery-"));
+    const file = join(directory, "session.json");
+    try {
+      const recovery = createSandboxRecoveryJournal(file);
+      await recovery.record({ vendorData: "nak60-sandbox:test", workflowId, createdAt: "2026-09-30T00:00:00Z" });
+      expect((await stat(file)).mode & 0o777).toBe(0o600);
+      expect(JSON.parse(await readFile(file, "utf8"))).toMatchObject({ workflowId });
+      await expect(recovery.record({ vendorData: "overwrite" })).rejects.toThrow();
+      await recovery.complete();
+      await expect(readFile(file)).rejects.toThrow();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a recovery journal inside the repository", () => {
+    expect(() => createSandboxRecoveryJournal(join(process.cwd(), "didit-recovery.json")))
+      .toThrow("DIDIT_SANDBOX_JOURNAL_INVALID");
   });
 });

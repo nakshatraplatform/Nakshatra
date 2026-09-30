@@ -72,23 +72,26 @@ function getDiditConfigForKey() {
   return { apiKey };
 }
 
-async function postSession(body: Record<string, unknown>) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DIDIT_TIMEOUT_MS);
+async function postSession(body: Record<string, unknown>, timeoutMs?: number) {
+  // The existing ID route has no durable uncertain-create reconciliation yet.
+  // Keep its pre-existing request behavior; only the disconnected photo adapter
+  // uses a bounded create request until its recovery queue is implemented.
+  const controller = timeoutMs === undefined ? null : new AbortController();
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
     const response = await fetch("https://verification.didit.me/v3/session/", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": getDiditConfigForKey().apiKey },
       body: JSON.stringify(body),
       cache: "no-store",
-      signal: controller.signal,
+      ...(controller ? { signal: controller.signal } : {}),
     });
     if (!response.ok) throw new DiditProviderError();
     return await response.json();
   } catch {
     throw new DiditProviderError();
   } finally {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
   }
 }
 
@@ -136,7 +139,7 @@ export async function createDiditPhotoMatchSession(input: {
     callback_method: "both",
     language: "en",
     portrait_image: image,
-  });
+  }, DIDIT_TIMEOUT_MS);
   const parsed = photoMatchSessionSchema.safeParse(raw);
   const hostedOrigin = parsed.success ? new URL(parsed.data.url).origin : null;
   if (!parsed.success || parsed.data.workflow_id !== config.workflowId

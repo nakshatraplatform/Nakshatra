@@ -80,16 +80,31 @@ in Sandbox before live enablement.
 
 ## Sandbox deletion check
 
-1. Complete a Sandbox-only verification with approved test material.
-2. Retrieve the current session decision through an authenticated, server-only
+1. Create an owner-only directory outside the repository on an encrypted,
+   access-controlled volume. Run
+   `node scripts/verify-didit-photo-match-sandbox.mjs <test-portrait-path> <absolute-recovery-journal-path>`.
+   The script creates the journal with mode `0600` before calling Didit and
+   removes it only after a confirmed deletion. It records a random lookup
+   correlation and workflow ID, not the portrait or API key.
+2. If the probe fails and the journal remains, run
+   `node scripts/verify-didit-photo-match-sandbox.mjs --recover <absolute-recovery-journal-path>`
+   with the same Sandbox API key. Recovery lists exact `vendor_data` and
+   workflow matches, requests deletion without face-template retention, and
+   removes the journal only after every returned deletion is confirmed.
+   A zero-result lookup, `404`, malformed response, or provider outage is
+   unconfirmed; keep the journal and investigate through Didit's protected
+   console/support channel. Do not put the journal in the repository, CI
+   artifacts, or routine logs.
+3. Separately, complete a Sandbox-only verification with approved test material.
+4. Retrieve the current session decision through an authenticated, server-only
    request; do not print the response.
-3. Call the current documented deletion operation from a temporary untracked
+5. Call the current documented deletion operation from a temporary untracked
    environment.
-4. Confirm the provider reports `200` and a deleted biometric outcome without
+6. Confirm the provider reports `200` and a deleted biometric outcome without
    logging identifiers or payloads. Treat `404` as unconfirmed.
-5. Re-query only as allowed by the provider documentation to confirm the
+7. Re-query only as allowed by the provider documentation to confirm the
    deletion outcome, then delete all temporary local material.
-6. Record the date, application environment, workflow version, outcome, and
+8. Record the date, application environment, workflow version, outcome, and
    documentation version in the private evidence store.
 
 ## References

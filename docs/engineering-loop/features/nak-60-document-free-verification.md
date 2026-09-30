@@ -46,3 +46,23 @@ Fresh-context reviewer of `c92c0a5` found three material issues: the probe expec
 The second review found that a failed cleanup could lose the only session ID. `DiditProviderCleanupError` now carries a non-serializing session reference for a future trusted orchestrator to register and retry deletion. The photo-match adapter remains disconnected from the live route: before connection, add a durable orphan-redaction queue and test provider/DB failure handoff. A `404` after a lost successful DELETE response remains ambiguous and requires the documented operator investigation. These are open release gates, not evidence of completed provider deletion.
 
 Final independent review of `25abf26` found no new material regression in this isolated increment and confirmed that the protected cleanup handle resolves the reachable adapter finding. It did not certify the future route/queue integration or the live provider contract.
+
+Follow-up review of `3442e1e` found two additional P1 cleanup gaps. The shared
+10-second create timeout affected the existing ID path without uncertain-create
+reconciliation. The Sandbox probe discarded its correlation when deletion or
+response parsing failed. The correction restores the original timeout behavior
+for the existing ID path while keeping the disconnected photo adapter bounded;
+its durable recovery queue remains a gate before route wiring. The Sandbox
+probe now requires a protected local journal written before POST and supports
+exact-correlation cleanup retries. Neither correction proves that a real
+provider session was deleted; the live Sandbox check remains open.
+
+Independent fresh-context review of the correction found no material issue in
+this isolated increment. Full ESLint and TypeScript passed; the unit suite
+passed after the code correction. The normal production build remains blocked
+by this worktree's ignored `node_modules` symlink outside Turbopack's root,
+and local pgTAP remains blocked by unavailable Docker. The journal recovery
+path is protected and tested with mocked provider responses; it is not live
+provider certification. The legacy ID flow's original transport uncertainty
+remains a separate operational concern, and the disconnected photo adapter
+must not be wired until its durable orphan-redaction queue exists.
