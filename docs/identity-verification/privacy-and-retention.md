@@ -20,17 +20,20 @@ Provider retention is a fallback, not the deletion strategy:
    and Production applications.
 2. When a future webhook has verified and the application has recorded the
    approved minimum decision fields, request provider session deletion.
-3. Record only the local deletion outcome and timestamp. A `404` may mean the
-   session is already deleted and must be handled as an idempotent outcome after
-   verifying the provider contract.
+3. Explicitly request `retain_face_embeddings: false`; confirm the current
+   `200` response names the same session and reports `face_retention_outcome`
+   as `deleted` or `none`. Record only the normalized local outcome and time.
+   A `404` is ambiguous for a newly created session and requires investigation
+   rather than automatic redaction completion.
 4. Reconcile failed deletion requests through a trusted, access-controlled
    maintenance process. Do not include session IDs or subject data in alerts.
 
 Didit's public retention documentation currently describes a console range of
-one month to ten years. The implemented worker uses the current V3 operation
-`DELETE /v3/session/{session_id}/delete/`, accepts `204` as success, and treats
-`404` as an idempotent already-deleted outcome. Revalidate this contract in
-Sandbox and against the current provider documentation before live enablement.
+one month to ten years. The worker uses the current V3 operation
+`DELETE /v3/session/{session_id}/delete/` and now validates the `200` deletion
+body before marking local redaction complete. A separate provider-side audit
+record or blocklist entry may survive session deletion. Revalidate all outcomes
+in Sandbox before live enablement.
 
 ## Required evidence before production
 
@@ -65,8 +68,8 @@ Sandbox and against the current provider documentation before live enablement.
    request; do not print the response.
 3. Call the current documented deletion operation from a temporary untracked
    environment.
-4. Confirm the provider reports the expected successful or already-deleted
-   result without logging identifiers or payloads.
+4. Confirm the provider reports `200` and a deleted biometric outcome without
+   logging identifiers or payloads. Treat `404` as unconfirmed.
 5. Re-query only as allowed by the provider documentation to confirm the
    deletion outcome, then delete all temporary local material.
 6. Record the date, application environment, workflow version, outcome, and
@@ -76,4 +79,5 @@ Sandbox and against the current provider documentation before live enablement.
 
 - [Didit data retention](https://docs.didit.me/console/data-retention)
 - [Didit sessions API](https://docs.didit.me/sessions-api/overview)
+- [Didit Delete Session response](https://docs.didit.me/sessions-api/delete-session)
 - [Didit business terms](https://updates.didit.me/terms/business/)

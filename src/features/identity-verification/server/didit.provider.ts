@@ -13,6 +13,7 @@ const diditSessionSchema = z.object({
 }).passthrough();
 
 const photoMatchSessionSchema = diditSessionSchema.extend({
+  session_id: z.uuid(),
   workflow_id: z.uuid(),
   workflow_version: z.number().int().positive(),
 });
@@ -46,8 +47,9 @@ function expectedName(legalName: string) {
 
 function photoMatchConfig() {
   const parsed = z.uuid().safeParse(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID?.trim());
-  if (!parsed.success) throw new DiditProviderError();
-  return { ...getDiditConfigForKey(), workflowId: parsed.data };
+  const version = z.coerce.number().int().positive().safeParse(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION?.trim());
+  if (!parsed.success || !version.success) throw new DiditProviderError();
+  return { ...getDiditConfigForKey(), workflowId: parsed.data, workflowVersion: version.data };
 }
 
 function getDiditConfigForKey() {
@@ -76,6 +78,29 @@ async function postSession(body: Record<string, unknown>) {
   }
 }
 
+async function purgeUnattachedPhotoMatchSession(sessionId: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DIDIT_TIMEOUT_MS);
+  try {
+    const response = await fetch(`https://verification.didit.me/v3/session/${encodeURIComponent(sessionId)}/delete/`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "x-api-key": getDiditConfigForKey().apiKey },
+      body: JSON.stringify({ retain_face_embeddings: false }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (response.status !== 200) throw new DiditProviderError();
+    const outcome = await response.json();
+    if (outcome?.session_id !== sessionId
+      || !["deleted", "none"].includes(outcome?.face_retention_outcome)
+      || outcome?.biometric_template_uuid != null) throw new DiditProviderError();
+  } catch {
+    throw new DiditProviderError("IDENTITY_VERIFICATION_PROVIDER_CLEANUP_FAILED");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /** Starts an ID-free hosted workflow using only a server-supplied photo reference. */
 export async function createDiditPhotoMatchSession(input: {
   attemptId: string;
@@ -99,8 +124,12 @@ export async function createDiditPhotoMatchSession(input: {
     portrait_image: image,
   });
   const parsed = photoMatchSessionSchema.safeParse(raw);
+  const hostedOrigin = parsed.success ? new URL(parsed.data.url).origin : null;
   if (!parsed.success || parsed.data.workflow_id !== config.workflowId
-    || new URL(parsed.data.url).origin !== diditHostedOrigin) {
+    || parsed.data.workflow_version !== config.workflowVersion
+    || hostedOrigin !== diditHostedOrigin) {
+    const sessionId = z.uuid().safeParse((raw as { session_id?: unknown } | null)?.session_id);
+    if (sessionId.success) await purgeUnattachedPhotoMatchSession(sessionId.data);
     throw new DiditProviderError();
   }
   return {

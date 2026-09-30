@@ -78,7 +78,7 @@ describe("identity-verification worker", () => {
     expect(JSON.stringify(rpc.mock.calls)).not.toContain("id_verifications");
   });
 
-  it("defers transient decision failures and treats an already-deleted terminal session as purged", async () => {
+  it("defers transient decision failures and confirms biometric deletion before redaction", async () => {
     const { client, rpc } = workerClient();
     const fetchImpl = vi.fn().mockRejectedValueOnce(new Error("network"));
     const worker = createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl });
@@ -89,10 +89,35 @@ describe("identity-verification worker", () => {
 
     const redaction = { ...claim, task_type: "provider_redaction" };
     const redactionClient = workerClient([redaction]);
-    const deleteFetch = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
+    const deleteFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      session_id: claim.provider_session_ref,
+      face_retention_outcome: "deleted",
+      biometric_template_uuid: null,
+    }), { status: 200 }));
     await expect(createIdentityVerificationWorker(redactionClient.client, { apiKey: "test-api-key", fetchImpl: deleteFetch }).run(1))
       .resolves.toMatchObject({ completed: 1, pending: 0, deferred: 0 });
     expect(redactionClient.rpc).toHaveBeenCalledWith("complete_identity_verification_provider_redaction", expect.any(Object));
+    expect(JSON.parse(deleteFetch.mock.calls[0][1].body)).toEqual({ retain_face_embeddings: false });
+
+    const retained = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      session_id: claim.provider_session_ref,
+      face_retention_outcome: "retained_with_user",
+      biometric_template_uuid: "77777777-7777-4777-8777-777777777777",
+    }), { status: 200 }));
+    const failed = workerClient([redaction]);
+    await expect(createIdentityVerificationWorker(failed.client, { apiKey: "test-api-key", fetchImpl: retained }).run(1))
+      .resolves.toMatchObject({ completed: 0, deferred: 1 });
+    expect(failed.rpc).not.toHaveBeenCalledWith("complete_identity_verification_provider_redaction", expect.anything());
+    expect(failed.rpc).toHaveBeenCalledWith("defer_identity_verification_work", expect.objectContaining({
+      p_error_code: "DIDIT_SESSION_PURGE_FAILED",
+    }));
+
+    const unknown = workerClient([redaction]);
+    await expect(createIdentityVerificationWorker(unknown.client, {
+      apiKey: "test-api-key",
+      fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 404 })),
+    }).run(1)).resolves.toMatchObject({ completed: 0, deferred: 1 });
+    expect(unknown.rpc).not.toHaveBeenCalledWith("complete_identity_verification_provider_redaction", expect.anything());
   });
 
   it("bounds an unavailable Didit request and defers it through the database policy", async () => {

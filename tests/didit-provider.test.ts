@@ -15,11 +15,13 @@ describe("Didit provider gateway", () => {
     delete process.env.DIDIT_API_KEY;
     delete process.env.DIDIT_WORKFLOW_ID;
     delete process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID;
+    delete process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION;
   });
 
   it("creates a candidate photo-match session without document expectations", async () => {
     process.env.DIDIT_API_KEY = "secret-api-key";
     process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION = "3";
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       session_id: "44444444-4444-4444-8444-444444444444",
       url: "https://verify.didit.me/session/opaque-provider-token",
@@ -50,25 +52,36 @@ describe("Didit provider gateway", () => {
   it("fails closed for an absent or mismatched photo-match workflow version", async () => {
     process.env.DIDIT_API_KEY = "secret-api-key";
     process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION = "3";
     const create = () => createDiditPhotoMatchSession({
       attemptId: input.attemptId,
       providerSubjectRef: input.providerSubjectRef,
       callbackUrl: input.callbackUrl,
       portraitImageBase64: Buffer.from("photo").toString("base64"),
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       session_id: "44444444-4444-4444-8444-444444444444",
       url: "https://verify.didit.me/session/opaque-provider-token",
       workflow_id: process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
-    }), { status: 201 })));
-    await expect(create()).rejects.toBeInstanceOf(DiditProviderError);
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    }), { status: 201 })).mockResolvedValueOnce(new Response(JSON.stringify({
+      session_id: "44444444-4444-4444-8444-444444444444",
+      face_retention_outcome: "deleted",
+      biometric_template_uuid: null,
+    }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({
       session_id: "44444444-4444-4444-8444-444444444444",
       url: "https://verify.didit.me/session/opaque-provider-token",
       workflow_id: "66666666-6666-4666-8666-666666666666",
       workflow_version: 1,
-    }), { status: 201 })));
+    }), { status: 201 })).mockResolvedValueOnce(new Response(JSON.stringify({
+      session_id: "44444444-4444-4444-8444-444444444444",
+      face_retention_outcome: "deleted",
+      biometric_template_uuid: null,
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
     await expect(create()).rejects.toBeInstanceOf(DiditProviderError);
+    await expect(create()).rejects.toBeInstanceOf(DiditProviderError);
+    expect(fetchMock.mock.calls[1][1].method).toBe("DELETE");
+    expect(fetchMock.mock.calls[3][1].method).toBe("DELETE");
   });
 
   it("does not contact Didit without a separate candidate workflow or a bounded reference", async () => {
@@ -84,6 +97,7 @@ describe("Didit provider gateway", () => {
     };
     await expect(createDiditPhotoMatchSession(photoInput)).rejects.toBeInstanceOf(DiditProviderError);
     process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION = "3";
     await expect(createDiditPhotoMatchSession({ ...photoInput, portraitImageBase64: "%%%" }))
       .rejects.toBeInstanceOf(DiditProviderError);
     await expect(createDiditPhotoMatchSession({
@@ -91,6 +105,32 @@ describe("Didit provider gateway", () => {
       portraitImageBase64: Buffer.alloc(2 * 1024 * 1024 + 1).toString("base64"),
     })).rejects.toBeInstanceOf(DiditProviderError);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("purges an issued session when the published workflow version drifts", async () => {
+    process.env.DIDIT_API_KEY = "secret-api-key";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
+    process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION = "3";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: "44444444-4444-4444-8444-444444444444",
+        url: "https://verify.didit.me/session/opaque-provider-token",
+        workflow_id: process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
+        workflow_version: 4,
+      }), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: "44444444-4444-4444-8444-444444444444",
+        face_retention_outcome: "deleted",
+        biometric_template_uuid: null,
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(createDiditPhotoMatchSession({
+      attemptId: input.attemptId,
+      providerSubjectRef: input.providerSubjectRef,
+      callbackUrl: input.callbackUrl,
+      portraitImageBase64: Buffer.from("photo").toString("base64"),
+    })).rejects.toBeInstanceOf(DiditProviderError);
+    expect(fetchMock.mock.calls[1][1].method).toBe("DELETE");
   });
 
   it("sends required details server-to-server and returns only the hosted URL", async () => {
