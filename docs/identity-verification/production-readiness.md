@@ -74,6 +74,9 @@ system.
 - [ ] Process-and-purge recovery was exercised: a terminal decision queues
       provider redaction, the worker deletes it, and only normalized local
       status and deletion time remain.
+- [ ] A failed delete of a newly created but rejected session durably queues
+      the protected session reference for retry, and an audited maintenance
+      tool resolves ambiguous `404` responses only after provider confirmation.
 - [ ] Production webhook signing, five-minute freshness, workflow, subject,
       and session binding were validated. The API key, workflow ID and webhook
       secret all belong to the intended Production setup; no separate

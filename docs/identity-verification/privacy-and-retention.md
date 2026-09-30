@@ -27,6 +27,23 @@ Provider retention is a fallback, not the deletion strategy:
    rather than automatic redaction completion.
 4. Reconcile failed deletion requests through a trusted, access-controlled
    maintenance process. Do not include session IDs or subject data in alerts.
+   If a newly issued session cannot be purged, the candidate adapter exposes a
+   protected, non-serializing session reference on `DiditProviderCleanupError`.
+   The live route must not call that adapter until an access-controlled durable
+   orphan-redaction queue consumes this handle and retries deletion. The current
+   adapter is not connected to the route.
+
+When redaction returns `404` after an earlier DELETE may have succeeded, keep
+the work deferred and page the authorized operator through the existing
+aggregate-only worker alert. The operator must use the protected provider
+console/support channel to establish whether the exact session was deleted or
+still exists. If it exists, delete it and retain the provider's deletion
+confirmation in the private evidence store. If it was deleted, retain the
+provider's written confirmation there. Only then claim the pending redaction
+work and complete it through the existing service-role completion RPC; never
+mark a `404` as deletion proof or close the alert merely because a later worker
+run was empty. This recovery procedure requires a dedicated, audited
+maintenance tool before production enablement.
 
 Didit's public retention documentation currently describes a console range of
 one month to ten years. The worker uses the current V3 operation
