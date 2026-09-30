@@ -1,6 +1,6 @@
 # Didit document-free profile-photo match spike
 
-- Status: **Open — provider feasibility is a release blocker**
+- Status: **In progress — documented API contract and local adapter tested; real Sandbox feasibility still open**
 - Owner: Identity verification implementation
 - Timebox: two engineering days plus provider response time
 - Related: NAK-60, PR #59, [approved product direction](../identity-verification/liveness-only-decision.md)
@@ -23,6 +23,8 @@ Didit's [workflow documentation](https://docs.didit.me/reference/workflows) desc
 
 ## Repository feasibility check
 
+The [current V3 Create Session reference](https://docs.didit.me/sessions-api/create-session) explicitly lists `portrait_image` as base64 JPEG, PNG, WebP or TIFF, up to 2 MB, for Biometric Authentication with Face Match. It says an explicit image takes precedence over any stored face; the response includes `workflow_id` and `workflow_version`. This supports a bounded adapter, but does not prove that VivIntro's configured Didit workflow runs both checks on a first-time portfolio photo.
+
 - The candidate photo is a `portfolio_media` row with `media_type='hero'` and a private Storage object. `src/features/media/server/media.service.ts` permits promotion, deletion and replacement; `set_portfolio_hero` changes the hero row. A proof must bind to a specific media ID **and content version**, and a photo mutation must invalidate it atomically.
 - The current verification result is candidate-scoped, lasts 365 days, and drives publication/public badges; it is not bound to any photo. `scripts/identity-verification-worker.mjs` currently requires an ID check, name and birth-date matching. The reconciliation RPC in `supabase/migrations/20260910120000_brokerdesk_representative_verification.sql` shares this rule with BrokerDesk representatives.
 - The current media service downloads via an authenticated Supabase client. The candidate-owned, server-side source image should be sent to Didit only after consent; never expose a long-lived signed photo URL or write a biometric reference to application logs.
@@ -38,3 +40,4 @@ Feed the evidence and provider-specific contract into the [transition plan](../p
 ## History
 
 - 2026-09-30: Opened after reviewing the latest main branch and current Didit documentation. No provider capability or legal jurisdiction is assumed verified.
+- 2026-09-30: Added a separate candidate provider adapter and a local-only sandbox create/delete probe. Mocked contract tests pass; Sandbox credentials and workflow ID are unavailable locally, so no real provider session was created.
