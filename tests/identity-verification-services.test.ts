@@ -1,13 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createDiditVerificationSession = vi.hoisted(() => vi.fn());
+const createDiditPhotoMatchSession = vi.hoisted(() => vi.fn());
+const preparePhotoReference = vi.hoisted(() => vi.fn());
+const privilegedPhotoDownload = vi.hoisted(() => vi.fn());
 vi.mock("@/features/identity-verification/server/didit.provider", () => ({
+  createDiditPhotoMatchSession,
   createDiditVerificationSession,
   DiditProviderError: class DiditProviderError extends Error {
     constructor(readonly code: string) {
       super(code);
     }
   },
+}));
+vi.mock("@/features/identity-verification/server/photo-reference", () => ({
+  preparePhotoReference,
+  PhotoReferenceError: class PhotoReferenceError extends Error {},
+}));
+vi.mock("@/lib/supabase/admin", () => ({
+  createServiceRoleClient: () => ({
+    storage: { from: () => ({ download: privilegedPhotoDownload }) },
+  }),
 }));
 
 import { createIdentityVerificationInvitation, IdentityVerificationInvitationError } from "@/features/identity-verification/server/invitation.service";
@@ -23,8 +36,9 @@ import {
 const prepared = {
   attempt_id: "11111111-1111-4111-8111-111111111111",
   provider_subject_ref: "22222222-2222-4222-8222-222222222222",
-  legal_name: "Private Candidate",
-  birth_date: "1994-02-20",
+  portfolio_id: "33333333-3333-4333-8333-333333333333",
+  reference_media_id: "44444444-4444-4444-8444-444444444444",
+  reference_storage_path: "candidate/primary.webp",
 };
 const preparedRepresentative = {
   attempt_id: prepared.attempt_id,
@@ -34,13 +48,24 @@ const preparedRepresentative = {
 
 function supabaseWith(results: Array<{ data?: unknown; error?: unknown }>) {
   const rpc = vi.fn(() => Promise.resolve(results.shift() ?? { data: null, error: null }));
-  return { rpc } as never;
+  const download = vi.fn(() => Promise.resolve({ data: new Blob(["photo"]), error: null }));
+  return { rpc, storage: { from: vi.fn(() => ({ download })) } } as never;
 }
 
 describe("identity-verification services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createDiditVerificationSession.mockResolvedValue({ sessionId: "provider-session", url: "https://verify.didit.test/session" });
+    createDiditPhotoMatchSession.mockResolvedValue({
+      sessionId: "55555555-5555-4555-8555-555555555555",
+      url: "https://verify.didit.test/photo-session",
+      workflowId: "66666666-6666-4666-8666-666666666666",
+      workflowVersion: 3,
+    });
+    preparePhotoReference.mockResolvedValue({ portraitImageBase64: "cGhvdG8=", sourceSha256: "d".repeat(64) });
+    privilegedPhotoDownload.mockResolvedValue({ data: new Blob(["photo"]), error: null });
+    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_ID", "66666666-6666-4666-8666-666666666666");
+    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_VERSION", "3");
   });
 
   it("creates a candidate invitation and maps authorization/database failures safely", async () => {
@@ -55,8 +80,12 @@ describe("identity-verification services", () => {
     })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationInvitationError>>({ code: "IDENTITY_VERIFICATION_INVITATION_FAILED", status: 503 }));
   });
 
-  it("prepares consent-backed verification, sends PII only to Didit, and attaches the returned reference", async () => {
-    const supabase = supabaseWith([{ data: [prepared], error: null }, { data: null, error: null }]);
+  it("pins the primary photo, registers provider creation, and attaches its digest", async () => {
+    const supabase = supabaseWith([
+      { data: [prepared], error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+    ]);
     await expect(startIdentityVerification({
       supabase,
       candidateId: null,
@@ -64,11 +93,20 @@ describe("identity-verification services", () => {
       managementToken: "management-token",
       managementTokenHash: "b".repeat(64),
       callbackUrl: "https://nakshatra.test/verification/result",
-    })).resolves.toEqual({ url: "https://verify.didit.test/session" });
-    expect(createDiditVerificationSession).toHaveBeenCalledWith(expect.objectContaining({ legalName: "Private Candidate", birthDate: "1994-02-20" }));
-    expect((supabase as { rpc: ReturnType<typeof vi.fn> }).rpc).toHaveBeenLastCalledWith("attach_identity_verification_provider_session", expect.objectContaining({
+    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session" });
+    expect(createDiditVerificationSession).not.toHaveBeenCalled();
+    expect(privilegedPhotoDownload).toHaveBeenCalledWith(prepared.reference_storage_path);
+    expect(createDiditPhotoMatchSession).toHaveBeenCalledWith(expect.objectContaining({
+      attemptId: prepared.attempt_id,
+      portraitImageBase64: "cGhvdG8=",
+    }));
+    expect((supabase as { rpc: ReturnType<typeof vi.fn> }).rpc).toHaveBeenNthCalledWith(2, "register_candidate_photo_provider_create", expect.objectContaining({
+      p_workflow_version: 3,
+    }));
+    expect((supabase as { rpc: ReturnType<typeof vi.fn> }).rpc).toHaveBeenLastCalledWith("attach_candidate_photo_provider_session", expect.objectContaining({
       p_attempt_id: prepared.attempt_id,
-      p_provider_session_ref: "provider-session",
+      p_provider_session_ref: "55555555-5555-4555-8555-555555555555",
+      p_reference_sha256: "d".repeat(64),
       p_management_token_hash: "b".repeat(64),
     }));
   });
@@ -94,9 +132,9 @@ describe("identity-verification services", () => {
   });
 
   it("returns the management credential only after consent preparation when Didit is unavailable", async () => {
-    createDiditVerificationSession.mockRejectedValueOnce(new Error("provider"));
+    createDiditPhotoMatchSession.mockRejectedValueOnce(new Error("provider"));
     await expect(startIdentityVerification({
-      supabase: supabaseWith([{ data: prepared, error: null }]), candidateId: "candidate", invitationTokenHash: null,
+      supabase: supabaseWith([{ data: prepared, error: null }, { data: null, error: null }]), candidateId: "candidate", invitationTokenHash: null,
       managementToken: "management-token", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
     })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
       code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE", managementToken: "management-token", status: 503,
@@ -110,10 +148,10 @@ describe("identity-verification services", () => {
       .rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({ code: "IDENTITY_VERIFICATION_LINK_INVALID", status: 400 }));
     await expect(withdrawIdentityVerificationConsent(supabaseWith([{ data: null, error: null }]), "a".repeat(64))).resolves.toBeUndefined();
 
-    const supabase = supabaseWith([{ data: [prepared], error: null }, { data: null, error: null }]);
+    const supabase = supabaseWith([{ data: [prepared], error: null }, { data: null, error: null }, { data: null, error: null }]);
     await expect(retryIdentityVerification({
       supabase, tokenHash: "a".repeat(64), managementToken: "next-management", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
-    })).resolves.toEqual({ url: "https://verify.didit.test/session" });
+    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session" });
   });
 
   it("fails closed for malformed prepared records and persistence failures", async () => {

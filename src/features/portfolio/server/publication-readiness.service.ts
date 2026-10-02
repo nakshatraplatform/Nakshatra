@@ -42,9 +42,6 @@ export async function updatePublicationProgress(
   if (result?.status === "verification_required") {
     throw new PublicationProgressError("Complete identity verification before confirming disclosure.", "IDENTITY_VERIFICATION_REQUIRED", 409);
   }
-  if (result?.status === "payment_required") {
-    throw new PublicationProgressError("An active paid plan is required before confirming disclosure.", "PAYMENT_REQUIRED", 409);
-  }
   if (result?.status === "content_required") {
     throw new PublicationProgressError("Complete all required portfolio details before confirming disclosure.", "PORTFOLIO_NOT_READY", 409);
   }

@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(20);
+select plan(25);
 
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000001', '91100000-0000-4000-8000-000000000001', 'identity-owner@test.local');
 select pg_temp.create_auth_actor('91000000-0000-4000-8000-000000000002', '91100000-0000-4000-8000-000000000002', 'verified-owner@test.local');
@@ -62,6 +62,27 @@ values
   ('94000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000001', 'hero', '91000000-0000-4000-8000-000000000001/94000000-0000-4000-8000-000000000001/hero.webp', 'public', 0),
   ('94000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000002', 'hero', '91000000-0000-4000-8000-000000000002/94000000-0000-4000-8000-000000000002/hero.webp', 'public', 0);
 
+update app_private.identity_verification_attempts attempt set
+  verification_method='portfolio_photo_liveness',portfolio_id=portfolio.id,
+  reference_media_id=media.id,reference_storage_path=media.storage_path,
+  reference_sha256=repeat('d',64),provider_workflow_id='93500000-0000-4000-8000-000000000001',
+  provider_workflow_version=1
+from public.portfolios portfolio
+join public.portfolio_media media on media.portfolio_id=portfolio.id and media.media_type='hero'
+where attempt.id='93000000-0000-4000-8000-000000000001'
+  and portfolio.candidate_id=attempt.candidate_id;
+update app_private.identity_verification_subjects subject set
+  current_proof_method='portfolio_photo_liveness',
+  current_proof_attempt_id='93000000-0000-4000-8000-000000000001',
+  current_proof_portfolio_id=portfolio.id,current_proof_media_id=media.id,
+  current_proof_sha256=repeat('d',64),
+  current_proof_workflow_id='93500000-0000-4000-8000-000000000001',
+  current_proof_workflow_version=1
+from public.portfolios portfolio
+join public.portfolio_media media on media.portfolio_id=portfolio.id and media.media_type='hero'
+where subject.candidate_id='92000000-0000-4000-8000-000000000002'
+  and portfolio.candidate_id=subject.candidate_id;
+
 select pg_temp.prime_paid_publication(
   '94000000-0000-4000-8000-000000000002',
   pg_temp.complete_portfolio_draft()
@@ -91,6 +112,40 @@ select ok(
   has_function_privilege('anon', 'public.resolve_public_portfolio_identity_verified(text)', 'EXECUTE'),
   'anonymous portfolio readers can resolve only the boolean verification signal'
 );
+select ok(
+  has_function_privilege('authenticated', 'public.is_current_identity_reference_storage_object(text,text)', 'EXECUTE'),
+  'authenticated Storage policy evaluation can inspect only the callers own bound object'
+);
+select ok(
+  not has_function_privilege('anon', 'public.is_current_identity_reference_storage_object(text,text)', 'EXECUTE'),
+  'anonymous callers cannot probe private verification photo bindings'
+);
+
+update public.portfolio_media set storage_path=storage_path||'.replacement'
+where portfolio_id='94000000-0000-4000-8000-000000000002' and media_type='hero';
+select is(
+  (select status::text from app_private.identity_verification_subjects
+   where candidate_id='92000000-0000-4000-8000-000000000002'),
+  'expired','changing the verified primary photo makes the proof stale rather than permanently revoked'
+);
+set local role authenticated;
+select pg_temp.set_authenticated_claims(
+  '91000000-0000-4000-8000-000000000002','91100000-0000-4000-8000-000000000002'
+);
+select lives_ok(
+  $$select * from public.begin_candidate_photo_verification(
+    '92000000-0000-4000-8000-000000000002',null,repeat('e',64)
+  )$$,
+  'a creator can begin fresh verification after replacing the primary photo'
+);
+select ok(
+  public.is_current_identity_reference_storage_object(
+    'photos',
+    '91000000-0000-4000-8000-000000000002/94000000-0000-4000-8000-000000000002/hero.webp.replacement'
+  ),
+  'the newly active photo reference is protected from direct Storage deletion before completion'
+);
+reset role;
 
 insert into app_private.identity_verification_worker_state(subject_id, candidate_id, attempt_id, task_type)
 select subject_record.id, subject_record.candidate_id,

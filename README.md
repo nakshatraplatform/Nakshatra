@@ -16,7 +16,7 @@ current requirements from an older BrokerDesk phase plan in isolation.
 ## B2C pilot contract
 
 - Free, invite-only private beta for portfolio creators.
-- Every pilot creator must complete Didit identity verification before first publication.
+- Every pilot creator must complete Didit's primary-photo face match and passive-liveness check before first publication. This is not a legal-identity or profile-accuracy guarantee.
 - Anyone with an active shared link may read its Brief or Detailed Introduction without creator access.
 - A viewer may verify their email and express interest.
 - The owner approves or rejects each request.
@@ -32,8 +32,8 @@ Creator entitlement must remain separate from viewer authentication. Receiving o
 ```text
 Private draft
   → preview the public Introduction and Complete Portfolio
-  → complete Didit identity verification
-  → publish one 30-day link
+  → complete the Didit primary-photo face match and passive-liveness check
+  → publish one durable link
   → share through the existing family network
   → viewer reads the selected public Introduction
   → viewer verifies email and expresses interest
@@ -103,7 +103,7 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Configure only the variables documented in `.env.local.example`. Keep service-role, database, Didit, and webhook secrets out of browser-visible `NEXT_PUBLIC_` variables.
+Configure only the variables documented in `.env.example`. Keep service-role, database, Didit, and webhook secrets out of browser-visible `NEXT_PUBLIC_` variables.
 
 Before changing Next.js application code, read the relevant installed documentation under `node_modules/next/dist/docs/`; this repository uses a version with breaking changes from older Next.js conventions.
 
@@ -130,7 +130,7 @@ For hosted Supabase Auth, keep both **Confirm signup** and **Magic Link or OTP**
 
 ## Pilot launch status
 
-Pilot-facing landing and signup copy now describe the free invite-only beta, mandatory Didit verification, 30-day public links, 15-day Complete Portfolio access, and open viewer-interest workflow.
+Pilot-facing copy describes the free invite-only beta, mandatory primary-photo/liveness check, durable public links, 15-day Complete Portfolio access, and open viewer-interest workflow. Billing and plan selection are deliberately deferred during the pilot; an active creator entitlement satisfies that readiness step without creating payment records.
 
 This messaging update does **not** by itself make the pilot launch-ready. Remaining gates include creator-entitlement enforcement, viewer/creator privilege separation, BrokerDesk/payment gating, real-provider Didit rehearsal, disclosure confirmations, notifications, privacy-worker scheduling, exact production-environment verification, backup/restore testing, legal/contact accuracy, and real-device WhatsApp/email testing. Track the complete evidence and priorities in [docs/b2c-pilot-product-assessment.md](docs/b2c-pilot-product-assessment.md).
 

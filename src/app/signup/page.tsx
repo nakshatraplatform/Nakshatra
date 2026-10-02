@@ -11,10 +11,10 @@ export const metadata = {
 };
 
 export default async function SignupPage({
-  searchParams = Promise.resolve({}),
+  searchParams,
 }: {
-  searchParams?: Promise<{ redirect?: string | string[] }>;
-} = {}) {
+  searchParams: Promise<{ redirect?: string | string[] | undefined }>;
+}) {
   const auth = await getApiUser();
   const requested = (await searchParams).redirect;
   const destination = sanitizeInternalRedirect(typeof requested === "string" ? requested : undefined);

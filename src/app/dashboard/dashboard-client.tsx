@@ -918,8 +918,8 @@ export default function DashboardClient({
                     <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
-                      <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Identity verification complete" pendingLabel="Verification integration coming soon" />
-                      <ReviewRequirement complete={readinessState.paymentActive} label="Active plan confirmed" pendingLabel="Plan payment integration coming soon" />
+                      <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Primary-photo liveness check complete" pendingLabel="Complete the primary-photo liveness check" />
+                      <ReviewRequirement complete={readinessState.paymentActive} label="Private pilot access active" pendingLabel="Private pilot access required" />
                       <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                     </div>
                   </section>
@@ -943,7 +943,6 @@ export default function DashboardClient({
                     publishing
                     || !completion.readyToPublish
                     || readinessState.verificationStatus !== "verified"
-                    || !readinessState.paymentActive
                   }
                   onClick={publishPortfolio}
                 >
@@ -954,8 +953,6 @@ export default function DashboardClient({
                       ? "Complete required details"
                       : readinessState.verificationStatus !== "verified"
                         ? "Verification required"
-                        : !readinessState.paymentActive
-                          ? "Payment coming soon"
                         : portfolio?.is_published
                           ? readinessState.disclosureConfirmed
                             ? "Publish reviewed changes"
@@ -1142,8 +1139,8 @@ function CreatorReadinessTracker({
     { label: "Portfolio details", complete: completion.detailsComplete },
     { label: "Preview", complete: Boolean(readiness.previewedAt) },
     { label: "Ready to publish", complete: completion.readyToPublish },
-    { label: "Verification", complete: readiness.verificationStatus === "verified", comingSoon: readiness.verificationStatus !== "verified" },
-    { label: "Payment", complete: readiness.paymentActive, comingSoon: !readiness.paymentActive },
+    { label: "Photo & liveness check", complete: readiness.verificationStatus === "verified" },
+    { label: "Pilot access", complete: readiness.paymentActive },
     { label: "Disclosure", complete: readiness.disclosureConfirmed },
     { label: "Published", complete: readiness.published },
   ];
@@ -1183,7 +1180,6 @@ function CreatorReadinessTracker({
               : <Circle className="h-4 w-4 shrink-0" aria-hidden="true" />}
             <span>
               {step.label}
-              {step.comingSoon ? <span className="block text-[10px] text-[light-dark(#94a3b8,var(--app-dark-muted))]">Coming soon</span> : null}
             </span>
           </li>
         ))}

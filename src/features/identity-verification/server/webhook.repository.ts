@@ -14,6 +14,7 @@ export class IdentityVerificationWebhookRepository {
       p_provider_event_hash: event.eventHash,
       p_provider_session_ref: event.providerSessionRef,
       p_provider_subject_ref: event.providerSubjectRef,
+      p_workflow_id: event.workflowId,
     });
   }
 }

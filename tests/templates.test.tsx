@@ -244,7 +244,7 @@ describe("celestial union portfolio", () => {
     expect(within(context).getByText("Protected access")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Identity checked\. The check confirms/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Live photo match checked\. Didit matched/)).toBeInTheDocument();
   });
 
   it("always renders the public interest action, even without protected labels", () => {

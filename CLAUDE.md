@@ -1,6 +1,6 @@
 # Nakshatra — Current Repository and Product Reference
 
-**Updated:** 2026-09-22
+**Updated:** 2026-10-02
 
 **Repository:** `nakshatra`
 
@@ -14,8 +14,12 @@
 **Authoritative VivIntroDesk contract:**
 [`docs/vivintrodesk-mvp-contract.md`](docs/vivintrodesk-mvp-contract.md)
 
-**Didit configuration (2026-09-19):** Only `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`,
-and `DIDIT_WEBHOOK_SECRET` are provider-specific settings. See the
+**Didit configuration (2026-10-02):** Candidate verification uses a separate,
+version-pinned biometric-authentication workflow (`DIDIT_PHOTO_MATCH_WORKFLOW_ID`
+and `DIDIT_PHOTO_MATCH_WORKFLOW_VERSION`) that compares a live capture with the
+current primary portfolio photo and requests no ID document. `DIDIT_WORKFLOW_ID`
+remains the BrokerDesk representative document workflow. Both use
+`DIDIT_API_KEY` and `DIDIT_WEBHOOK_SECRET`. See the
 [configuration contract](docs/identity-verification/didit-configuration-contract.md)
 for webhook compatibility, security invariants, and verification evidence.
 

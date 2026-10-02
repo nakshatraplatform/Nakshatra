@@ -560,11 +560,11 @@ export default function CelestialUnion({
               {identityVerified && (
                 <span
                   className="portfolio-verified-badge"
-                  aria-label="Identity checked. The check confirms that the creator completed VivIntro’s identity process; it does not verify every statement or endorse a match."
-                  title="Identity verified"
+                  aria-label="Live photo match checked. Didit matched a live capture to this portfolio’s current primary photo and performed passive liveness. It does not verify legal identity, profile statements, or endorse a match."
+                  title="Live photo match checked"
                 >
                   <ShieldCheck aria-hidden="true" />
-                  <span>Verified</span>
+                  <span>Live photo checked</span>
                 </span>
               )}
             </div>

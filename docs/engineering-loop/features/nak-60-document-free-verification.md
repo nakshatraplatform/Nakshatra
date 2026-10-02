@@ -1,14 +1,14 @@
 # NAK-60 document-free verification
 
-Mode: full (critical biometric, authorization, database and provider boundaries). Status: implementation in progress; not releasable.
+Mode: full (critical biometric, authorization, database and provider boundaries). Status: integrated on `feat/nak-60-liveness-integration`; provider and deployment evidence still required before release.
 
 ## Execution context
 
-- Baseline: `origin/main` at `33f9091`; implementation branch `feat/nak-60-document-free-verification` began from that commit plus the plan commit `ae58289`.
+- Baseline: `origin/main` at `30ee187`; the current integration work is on `feat/nak-60-liveness-integration`. Earlier isolated adapter work and its reviews are retained below as historical evidence.
 - Durable issue: [NAK-60](https://linear.app/phoenix-works/issue/NAK-60/validate-didit-sandbox-and-deployed-end-to-end-verification-flow). Current issue body retains the earlier ID-based plan as history and appends the approved reset.
 - Approved direction: [document-free decision](../../identity-verification/liveness-only-decision.md); detailed [transition plan](../../plans/nak-60-document-free-verification-plan.md); [provider spike](../../spikes/api-didit-profile-photo-match-spike.md).
-- Current code: `didit.provider.ts` sends ID expectations; `session.service.ts` shares candidate and representative attachment; `scripts/identity-verification-worker.mjs` requires ID, legal name and DOB; `20260910120000_brokerdesk_representative_verification.sql` supplies the current RPCs; `portfolio_media` hero may be changed by service and direct authorized DB writes; public badge uses `identity_verified`.
-- Next step: run the controlled Didit Sandbox create/delete probe with a consenting test portrait and a published ID-free workflow. Then design and test photo-bound persistence and worker policy. Preserve the representative ID policy pending a separate product decision. A real provider session and privacy review remain release gates.
+- Current code: the candidate route sends the authenticated server-resolved hero photo to the version-pinned biometric workflow; the database binds the attempt and current proof to that media record and digest; photo replacement revokes the proof; the worker requires the exact workflow plus passive liveness and face match and rejects any document result. BrokerDesk representatives retain the separate document/name/date-of-birth policy.
+- Next step: apply the forward migration through protected CD, configure the two photo-workflow variables in Sandbox/Vercel/worker, and run the controlled real-device Sandbox create/webhook/reconcile/delete test. A real provider session, deletion evidence and privacy review remain release gates.
 
 ## Contract and boundaries
 
@@ -20,13 +20,13 @@ The application cannot claim legal identity, age, marital status or account uniq
 
 | ID | Expected behavior and rejecting check | Status |
 | --- | --- | --- |
-| N60-1 | Candidate session request includes the exact server-resolved primary photo and a new ID-free workflow ID; it contains no `expected_details` or document fields. A request-body test rejects accidental reintroduction. | Adapter passed; app integration pending |
-| N60-2 | Missing photo, provider config or required workflow-version metadata fails closed before a session is attached. Provider adapter tests reject missing/foreign workflow and oversized image. | Adapter passed; persistence binding pending |
-| N60-3 | Only the candidate or valid candidate invitation can start a check; a broker cannot replace the bound photo during verification without invalidating the attempt. DB tests use authorized direct mutation to reject service-only enforcement. | Planned |
-| N60-4 | Only an approved expected liveness and face-match decision on the bound, unchanged photo can become current proof. Missing module, ID module, altered workflow, old photo, replay and withdrawal cannot pass. Worker + pgTAP checks reject an overall `Approved` shortcut. | Planned |
-| N60-5 | Public portfolio exposes the precise photo-match claim only while it is current; legacy ID proof is not relabelled. Component/browser checks reject a stale badge after photo mutation. | Planned |
-| N60-6 | BrokerDesk representative flow retains its independent rules and does not inherit candidate photo-match approval. Existing representative tests plus negative cross-policy cases. | Planned |
-| N60-7 | Provider session and biometric evidence are deleted after terminal decisions; timeout, retry, duplicate callback and outage remain privacy-safe. Local worker/route tests plus controlled Sandbox manual evidence. | Planned; Sandbox blocked pending provider setup |
+| N60-1 | Candidate session request includes the exact server-resolved primary photo and a new ID-free workflow ID; it contains no `expected_details` or document fields. A request-body test rejects accidental reintroduction. | Implemented; live Sandbox evidence pending |
+| N60-2 | Missing photo, provider config or required workflow-version metadata fails closed before a session is attached. Provider adapter tests reject missing/foreign workflow and oversized image. | Implemented |
+| N60-3 | Only the candidate or valid candidate invitation can start a check; a broker cannot replace the bound photo during verification without invalidating the attempt. DB tests use authorized direct mutation to reject service-only enforcement. | Implemented; pgTAP pending locally because Docker is unavailable |
+| N60-4 | Only an approved expected liveness and face-match decision on the bound, unchanged photo can become current proof. Missing module, ID module, altered workflow, old photo, replay and withdrawal cannot pass. Worker + pgTAP checks reject an overall `Approved` shortcut. | Worker implemented and unit-tested; pgTAP pending |
+| N60-5 | Public portfolio exposes the precise photo-match claim only while it is current; legacy ID proof is not relabelled. Component/browser checks reject a stale badge after photo mutation. | Implemented; browser regression pending |
+| N60-6 | BrokerDesk representative flow retains its independent rules and does not inherit candidate photo-match approval. Existing representative tests plus negative cross-policy cases. | Implemented and unit-tested |
+| N60-7 | Provider session and biometric evidence are deleted after terminal decisions; timeout, retry, duplicate callback and outage remain privacy-safe. Local worker/route tests plus controlled Sandbox manual evidence. | Durable recovery implemented; live Sandbox deletion evidence pending |
 
 ## Review and release gates
 
@@ -66,3 +66,38 @@ path is protected and tested with mocked provider responses; it is not live
 provider certification. The legacy ID flow's original transport uncertainty
 remains a separate operational concern, and the disconnected photo adapter
 must not be wired until its durable orphan-redaction queue exists.
+
+## Integrated pilot increment (2026-10-02)
+
+The candidate route is now connected to the photo-match adapter through a
+forward database migration. The provider create is registered durably before
+the network call, ambiguous creates are found by exact `vendor_data`, any
+orphan sessions are deleted, and the local attempt is then closed as failed so
+the private management flow can create a fresh retry. Successful attachment
+cancels recovery and starts the normal reconciliation/redaction lifecycle.
+
+The pilot publication gate requires creator entitlement, current photo-bound
+verification, required content, and current disclosure confirmation. Billing,
+plan selection, and payment records are intentionally not part of this pilot
+increment. The future trial/payment design must replace this temporary
+entitlement condition rather than silently reusing it.
+
+Fresh independent review found and the implementation corrected four integration
+gaps: photo replacement now expires rather than irrevocably revokes the proof;
+current reference Storage objects cannot be overwritten or deleted directly;
+provider-recovery jobs use the leased deferral policy and strict paginated
+response validation; and token-authorized flows read only the RPC-returned
+private photo path through a server-only client.
+
+The final re-review then found and closed two race/rotation gaps: original
+Storage objects are immutable and active attempt references cannot be deleted,
+while provider cleanup remains independent of the currently deployed workflow
+version. A fresh final pass reported no remaining P0/P1 findings.
+
+Validation on the corrected integrated snapshot: ESLint, TypeScript, static database
+fixture checks, dependency security audit, and the Webpack production build
+pass. The unit suite passes 824 of 825 tests on Windows; the remaining test is
+the pre-existing POSIX owner-only file-mode assertion for the opt-in Sandbox
+journal, which cannot be represented by Windows `stat` mode bits. Local pgTAP
+and real Didit Sandbox evidence remain unavailable without Docker and provider
+credentials respectively.

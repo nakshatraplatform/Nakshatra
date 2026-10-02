@@ -166,5 +166,20 @@ as $$
     disclosure_version = excluded.disclosure_version,
     disclosure_fingerprint = excluded.disclosure_fingerprint,
     disclosure_confirmed_at = excluded.disclosure_confirmed_at,
-    updated_at = pg_catalog.now()
+    updated_at = pg_catalog.now();
+
+  update app_private.identity_verification_subjects subject_record
+  set current_proof_method = 'portfolio_photo_liveness',
+      current_proof_portfolio_id = portfolio.id,
+      current_proof_media_id = media.id,
+      current_proof_sha256 = repeat('d', 64),
+      current_proof_workflow_id = 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+      current_proof_workflow_version = 1,
+      updated_at = pg_catalog.now()
+  from public.portfolios portfolio
+  join public.portfolio_media media
+    on media.portfolio_id = portfolio.id and media.media_type = 'hero'
+  where portfolio.id = p_portfolio_id
+    and subject_record.candidate_id = portfolio.candidate_id
+    and subject_record.status = 'verified'
 $$;

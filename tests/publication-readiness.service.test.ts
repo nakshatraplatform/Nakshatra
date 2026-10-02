@@ -52,7 +52,6 @@ describe("publication readiness service", () => {
   it.each([
     ["not_found", "PORTFOLIO_DRAFT_MISSING"],
     ["verification_required", "IDENTITY_VERIFICATION_REQUIRED"],
-    ["payment_required", "PAYMENT_REQUIRED"],
     ["content_required", "PORTFOLIO_NOT_READY"],
   ])("maps %s without exposing database details", async (status, code) => {
     const rpc = vi.fn().mockResolvedValue({ data: { status }, error: null });

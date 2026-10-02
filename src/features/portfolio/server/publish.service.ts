@@ -93,13 +93,6 @@ export async function publishPortfolio({
       409
     );
   }
-  if (!publicationReadiness.paymentActive) {
-    throw new PortfolioPublishError(
-      "Choose a plan and complete payment before publishing your portfolio.",
-      "PAYMENT_REQUIRED",
-      409
-    );
-  }
   if (!publicationReadiness.disclosureConfirmed) {
     throw new PortfolioPublishError(
       "Confirm the final disclosure review before publishing your portfolio.",
@@ -147,9 +140,6 @@ export async function publishPortfolio({
     const databaseMessage = transactionError.message || "";
     if (databaseMessage.includes("publication_verification_required")) {
       throw new PortfolioPublishError("Complete identity verification before publishing your portfolio.", "IDENTITY_VERIFICATION_REQUIRED", 409);
-    }
-    if (databaseMessage.includes("publication_payment_required")) {
-      throw new PortfolioPublishError("An active paid plan is required before publishing your portfolio.", "PAYMENT_REQUIRED", 409);
     }
     if (databaseMessage.includes("publication_disclosure_required")) {
       throw new PortfolioPublishError("Confirm the final disclosure review before publishing your portfolio.", "DISCLOSURE_REQUIRED", 409);

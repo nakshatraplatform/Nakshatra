@@ -11,6 +11,7 @@ const claim = {
   provider_session_ref: "44444444-4444-4444-8444-444444444444",
   subject_type: "candidate",
   task_type: "reconcile",
+  verification_method: "document_identity",
 };
 
 const approvedDecision = {
@@ -21,7 +22,7 @@ const approvedDecision = {
   face_matches: [{ status: "Approved" }],
 };
 
-function workerClient(claims = [claim]) {
+function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
   const rpc = vi.fn((name: string) => Promise.resolve(
     name === "claim_identity_verification_work" ? { data: claims, error: null } : { data: true, error: null }
   ));
@@ -29,6 +30,34 @@ function workerClient(claims = [claim]) {
 }
 
 describe("identity-verification worker", () => {
+  it("accepts the candidate photo workflow only with the pinned workflow and no document checks", () => {
+    const photoClaim = {
+      ...claim,
+      verification_method: "portfolio_photo_liveness",
+      provider_workflow_id: "55555555-5555-4555-8555-555555555555",
+      provider_workflow_version: 4,
+    };
+    const photoDecision = {
+      session_id: claim.provider_session_ref,
+      status: "Approved",
+      workflow_id: photoClaim.provider_workflow_id,
+      workflow_version: 4,
+      id_verifications: [],
+      liveness_checks: [{ status: "Approved", method: "PASSIVE_3D" }],
+      face_matches: [{ status: "Approved" }],
+    };
+    expect(evaluateDiditDecision(photoDecision, photoClaim)).toEqual({
+      outcome: "verified",
+      idVerified: false,
+      passiveLivenessVerified: true,
+      faceMatchVerified: true,
+      nameMatches: false,
+      birthDateMatches: false,
+    });
+    expect(evaluateDiditDecision({ ...photoDecision, workflow_version: 5 }, photoClaim).outcome).toBe("declined");
+    expect(evaluateDiditDecision({ ...photoDecision, id_verifications: [{ status: "Approved" }] }, photoClaim).outcome).toBe("declined");
+  });
+
   it("accepts a provider approval only when every required check and expected detail matches", () => {
     expect(evaluateDiditDecision(approvedDecision, claim)).toEqual({
       outcome: "verified",
@@ -118,6 +147,84 @@ describe("identity-verification worker", () => {
       fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 404 })),
     }).run(1)).resolves.toMatchObject({ completed: 0, deferred: 1 });
     expect(unknown.rpc).not.toHaveBeenCalledWith("complete_identity_verification_provider_redaction", expect.anything());
+
+    const oldPhotoRedaction = {
+      ...redaction,
+      verification_method: "portfolio_photo_liveness",
+      provider_workflow_id: "66666666-6666-4666-8666-666666666666",
+      provider_workflow_version: 3,
+    };
+    const rotated = workerClient([oldPhotoRedaction]);
+    const rotatedDelete = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      session_id: claim.provider_session_ref,
+      face_retention_outcome: "deleted",
+      biometric_template_uuid: null,
+    }), { status: 200 }));
+    await expect(createIdentityVerificationWorker(rotated.client, {
+      apiKey: "test-api-key",
+      fetchImpl: rotatedDelete,
+      photoWorkflowId: "88888888-8888-4888-8888-888888888888",
+      photoWorkflowVersion: 9,
+    }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
+    expect(rotatedDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers and deletes an unattached photo session by exact vendor correlation", async () => {
+    const recoveryClaim = {
+      ...claim,
+      task_type: "provider_recovery",
+      provider_session_ref: null,
+      verification_method: "portfolio_photo_liveness",
+      provider_vendor_data: `iv:55555555-5555-4555-8555-555555555555:${claim.attempt_id}`,
+      provider_workflow_id: "66666666-6666-4666-8666-666666666666",
+      provider_workflow_version: 3,
+      work_attempts: 1,
+    };
+    const { client, rpc } = workerClient([recoveryClaim]);
+    const orphanSessionId = "77777777-7777-4777-8777-777777777777";
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ results: [{
+        session_id: orphanSessionId,
+        vendor_data: recoveryClaim.provider_vendor_data,
+        workflow_id: recoveryClaim.provider_workflow_id,
+        workflow_version: 3,
+      }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        session_id: orphanSessionId,
+        face_retention_outcome: "deleted",
+        biometric_template_uuid: null,
+      }), { status: 200 }));
+
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl }).run(1))
+      .resolves.toMatchObject({ completed: 1, deferred: 0 });
+    expect(String(fetchImpl.mock.calls[0][0])).toContain(encodeURIComponent(recoveryClaim.provider_vendor_data));
+    expect(rpc).toHaveBeenCalledWith("complete_identity_verification_provider_recovery", expect.objectContaining({
+      p_attempt_id: claim.attempt_id,
+    }));
+  });
+
+  it("defers empty or structurally unknown recovery lookups without closing the attempt", async () => {
+    const recoveryClaim = {
+      ...claim,
+      task_type: "provider_recovery",
+      provider_session_ref: null,
+      verification_method: "portfolio_photo_liveness",
+      provider_vendor_data: `iv:55555555-5555-4555-8555-555555555555:${claim.attempt_id}`,
+      provider_workflow_id: "66666666-6666-4666-8666-666666666666",
+      provider_workflow_version: 3,
+      work_attempts: 1,
+    };
+    for (const body of [{ results: [] }, { unexpected: [] }]) {
+      const { client, rpc } = workerClient([recoveryClaim]);
+      const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+      await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl }).run(1))
+        .resolves.toMatchObject({ completed: 0, deferred: 1 });
+      expect(rpc).toHaveBeenCalledWith("defer_identity_verification_work", expect.objectContaining({
+        p_attempt_id: claim.attempt_id,
+        p_task_type: "provider_recovery",
+      }));
+      expect(rpc).not.toHaveBeenCalledWith("complete_identity_verification_provider_recovery", expect.anything());
+    }
   });
 
   it("bounds an unavailable Didit request and defers it through the database policy", async () => {

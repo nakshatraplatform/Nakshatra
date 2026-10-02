@@ -379,9 +379,9 @@ describe("static app surfaces", () => {
   it("renders auth pages, layout, and loading states", async () => {
     const layout = RootLayout({ children: <main>child</main> });
     expect(layout.props.lang).toBe("en");
-    const { rerender } = render(await LoginPage());
+    const { rerender } = render(await LoginPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText("auth:login")).toBeInTheDocument();
-    await expect(SignupPage()).rejects.toThrow("REDIRECT:/waitlist");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/waitlist");
     rerender(<DashboardLoading />);
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
     rerender(<EditLoading />);
@@ -392,8 +392,8 @@ describe("static app surfaces", () => {
 
   it("redirects a live authenticated session away from login and signup", async () => {
     mocks.apiAuthStatus = "authenticated";
-    await expect(LoginPage()).rejects.toThrow("REDIRECT:/dashboard");
-    await expect(SignupPage()).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(LoginPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
   });
 
   it("never renders raw server error details", () => {
