@@ -112,6 +112,63 @@ describe("interest request flow", () => {
     expect(input).toHaveFocus();
   });
 
+  it("does not discard an in-progress verification when the backdrop is clicked", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
+    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
+
+    const codeInput = await screen.findByLabelText("Six-digit code");
+    fireEvent.change(codeInput, { target: { value: "123456" } });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.mouseDown(dialog.parentElement!);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("Six-digit code")).toHaveValue("123456");
+  });
+
+  it("warns that a resent code replaces every earlier code", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+      fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+      fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+      fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+      fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
+      fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+      fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+      fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
+      await vi.runAllTimersAsync();
+
+      expect(screen.getByText(/requesting another code makes the earlier code stop working/i)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("restores submitted details when the viewer returns from verification", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "relative" } });
+    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Change details" }));
+
+    expect(screen.getByLabelText("Your full name")).toHaveValue("Rohan Mehta");
+    expect(screen.getByLabelText("Contacting for")).toHaveValue("relative");
+    expect(screen.getByLabelText("Phone number")).toHaveValue("+1 555 010 2200");
+    expect(screen.getByLabelText("Email address")).toHaveValue("rohan@example.com");
+  });
+
   it("keeps location and introductions optional in the form", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));

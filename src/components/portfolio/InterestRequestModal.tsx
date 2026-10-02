@@ -40,6 +40,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   const [email, setEmail] = useState(verifiedEmail || "");
   const [otp, setOtp] = useState("");
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [verificationNotice, setVerificationNotice] = useState("");
   const [verificationAction, setVerificationAction] = useState<"idle" | "verifying" | "sending">("idle");
   const [requestPayload, setRequestPayload] = useState<InterestPayload | null>(null);
   const titleId = useId();
@@ -139,6 +140,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       return;
     }
     setOtp("");
+    setVerificationNotice("");
     setResendSeconds(60);
     setStep("verify");
     setPending(false);
@@ -181,7 +183,12 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     setError("");
     const { ok, body } = await startAuthentication({ method: "email_otp", email, redirect: portfolioPath });
     if (!ok || !body?.sent) setError(body?.error || "We could not send another code.");
-    else setResendSeconds(60);
+    else {
+      setOtp("");
+      setVerificationNotice("A new code was sent. Only the newest code will work; earlier codes are now invalid.");
+      setResendSeconds(60);
+      window.requestAnimationFrame(() => codeInputRef.current?.focus());
+    }
     setPending(false);
   }
 
@@ -212,10 +219,13 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   function openModal() {
     if (isOwner) return;
     setError("");
-    setStep(authenticated ? "details" : "choice");
-    setOtp("");
+    if (!requestPayload) {
+      setStep(authenticated ? "details" : "choice");
+      setOtp("");
+      setVerificationNotice("");
+    }
     setVerificationAction("idle");
-    setEmail(sessionEmail || "");
+    setEmail(requestPayload?.email || sessionEmail || "");
     setOpen(true);
   }
 
@@ -233,9 +243,9 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       )}
 
       {open && createPortal(
-        <div className="interest-modal-backdrop" style={{ colorScheme: appearance }} onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
-          <div ref={dialogRef} className="interest-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <div className="interest-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={128} /></div>
+        <div className="interest-modal-backdrop" style={{ colorScheme: appearance }}>
+          <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" decorative displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
@@ -254,17 +264,19 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
               </div>
             )}
 
-            {step === "details" && <DetailsForm sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} onSubmit={beginRequest} />}
+            {step === "details" && <DetailsForm draft={requestPayload} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
                 <div className="interest-verification-icon"><ShieldCheck aria-hidden="true" /></div>
                 <p>Code sent to</p><strong>{email}</strong>
+                <p className="interest-verification-help">Delivery can take a few minutes. Keep this window open. Requesting another code makes the earlier code stop working.</p>
                 <label className="interest-code-field" htmlFor="interest-code">
                   <span>Six-digit code</span>
                   <input ref={codeInputRef} id="interest-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "").slice(0, 6)); if (error) setError(""); }} required autoFocus aria-invalid={Boolean(error)} aria-describedby={error ? verificationErrorId : undefined} />
                 </label>
                 {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
+                {verificationNotice && !error && <p className="interest-verification-notice" role="status">{verificationNotice}</p>}
                 <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending || otp.length !== 6}>{verificationAction === "sending" ? "Sending interest…" : verificationAction === "verifying" ? "Verifying…" : "Verify email"}</button>
                 <button type="button" className="interest-secondary-action" onClick={() => void resendCode()} disabled={pending || resendSeconds > 0}>{resendSeconds > 0 ? `Send another code in ${resendSeconds}s` : "Send another code"}</button>
                 <button type="button" className="interest-secondary-action" onClick={() => { setError(""); setStep("details"); }} disabled={pending}><ArrowLeft aria-hidden="true" /> Change details</button>
@@ -286,7 +298,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   );
 }
 
-function DetailsForm({ sessionEmail, existingViewerProfile, pending, error, onSubmit }: {
+function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, error, onSubmit }: {
+  draft: InterestPayload | null;
   sessionEmail: string | null;
   existingViewerProfile?: ExistingViewerProfile | null;
   pending: boolean;
@@ -318,18 +331,18 @@ function DetailsForm({ sessionEmail, existingViewerProfile, pending, error, onSu
           <>
         <div className="interest-form-intro"><strong>Contact details</strong><span>Required fields are marked *</span></div>
         <div className="interest-field-grid">
-          <Field label="Your full name" name="name" autoComplete="name" required />
+          <Field label="Your full name" name="name" autoComplete="name" defaultValue={fieldValue(draft?.name)} required />
           <label className="interest-field">
             <span>Contacting for <b aria-hidden="true">*</b></span>
-            <select name="profileFor" required defaultValue="" aria-label="Contacting for">
+            <select name="profileFor" required defaultValue={fieldValue(draft?.profileFor)} aria-label="Contacting for">
               <option value="" disabled>Choose one</option><option value="self">Myself</option><option value="son">My son</option><option value="daughter">My daughter</option><option value="sibling">My sibling</option><option value="relative">A relative</option>
             </select>
           </label>
-          <Field label="Phone number" name="phone" type="tel" autoComplete="tel" inputMode="tel" required />
+          <Field label="Phone number" name="phone" type="tel" autoComplete="tel" inputMode="tel" defaultValue={fieldValue(draft?.phone)} required />
           <label className="interest-field">
             <span>Email address <b aria-hidden="true">*</b></span>
             <div className={sessionEmail ? "interest-verified-input" : undefined}>
-              <input aria-label="Email address" name="email" type="email" autoComplete="email" inputMode="email" required defaultValue={sessionEmail || ""} readOnly={Boolean(sessionEmail)} maxLength={180} />
+              <input aria-label="Email address" name="email" type="email" autoComplete="email" inputMode="email" required defaultValue={sessionEmail || draft?.email || ""} readOnly={Boolean(sessionEmail)} maxLength={180} />
               {sessionEmail && <MailCheck aria-label="Email verified" />}
             </div>
             {sessionEmail && <small className="interest-verified-copy">Verified email</small>}
@@ -339,10 +352,10 @@ function DetailsForm({ sessionEmail, existingViewerProfile, pending, error, onSu
           <summary><span><strong>Add more details</strong><small>Location, family introduction, or message (optional)</small></span><ChevronDown aria-hidden="true" /></summary>
           <div className="interest-optional-content">
             <div className="interest-form-intro"><strong>Location</strong><span>Optional</span></div>
-            <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" /><Field label="State or province" name="state" autoComplete="address-level1" /><Field label="City" name="city" autoComplete="address-level2" /></div>
+            <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" defaultValue={fieldValue(draft?.country)} /><Field label="State or province" name="state" autoComplete="address-level1" defaultValue={fieldValue(draft?.state)} /><Field label="City" name="city" autoComplete="address-level2" defaultValue={fieldValue(draft?.city)} /></div>
             <div className="interest-optional-copy-grid">
-              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={2} maxLength={600} placeholder="A few helpful details about your family" /></label>
-              <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} placeholder="Anything you would like the family to know" /></label>
+              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={2} maxLength={600} defaultValue={fieldValue(draft?.familyContext)} placeholder="A few helpful details about your family" /></label>
+              <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} defaultValue={fieldValue(draft?.message)} placeholder="Anything you would like the family to know" /></label>
             </div>
           </div>
         </details>
@@ -358,12 +371,16 @@ function DetailsForm({ sessionEmail, existingViewerProfile, pending, error, onSu
   );
 }
 
-function Field({ label, name, type = "text", required = false, autoComplete, inputMode, placeholder, pattern, title }: {
+function Field({ label, name, type = "text", required = false, autoComplete, inputMode, placeholder, pattern, title, defaultValue }: {
   label: string; name: string; type?: string; required?: boolean; autoComplete?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]; placeholder?: string;
-  pattern?: string; title?: string;
+  pattern?: string; title?: string; defaultValue?: string;
 }) {
-  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} maxLength={180} /></label>;
+  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} defaultValue={defaultValue} maxLength={180} /></label>;
+}
+
+function fieldValue(value: FormDataEntryValue | null | undefined) {
+  return typeof value === "string" ? value : "";
 }
 
 function firstName(name: string) {
