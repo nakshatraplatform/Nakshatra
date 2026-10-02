@@ -169,17 +169,19 @@ describe("celestial union portfolio", () => {
     const quickActions = screen.getByRole("navigation", { name: "Introduction quick actions" });
     expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
+    expect(within(quickActions).getByRole("link", { name: "Astrology" })).toHaveAttribute("href", "#astrology");
     expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
     expect(screen.queryByText("Fair")).not.toBeInTheDocument();
     expect(screen.getByText("Kashyap")).toBeInTheDocument();
     expect(screen.queryByText(/Ramesh Rao/)).not.toBeInTheDocument();
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show photo 2" }));
     expect(screen.getByAltText("Landscape")).toBeInTheDocument();
     const pairedRows = document.querySelectorAll(".portfolio-chapter-pair");
     expect(pairedRows).toHaveLength(2);
     expect(pairedRows[0].children).toHaveLength(2);
-    expect(pairedRows[1].children).toHaveLength(2);
+    expect(pairedRows[1].children).toHaveLength(1);
     const trailingChapters = document.querySelectorAll(".portfolio-chapters-trailing > .portfolio-chapter");
     expect(Array.from(trailingChapters, (chapter) => chapter.id)).toEqual(["preferences", "shared-life"]);
     expect(trailingChapters[0].children).toHaveLength(3);
@@ -187,12 +189,16 @@ describe("celestial union portfolio", () => {
     expect(document.querySelector("#preferences .portfolio-long-copy")).toBeTruthy();
     expect(document.querySelector("#shared-life .portfolio-long-copy")).toBeTruthy();
     const gallery = document.querySelector(".portfolio-gallery");
+    const astrology = document.getElementById("astrology");
     const journey = document.getElementById("journey");
     const preferences = document.getElementById("preferences");
     expect(gallery).toBeTruthy();
+    expect(astrology).toBeTruthy();
     expect(journey).toBeTruthy();
     expect(preferences).toBeTruthy();
     expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(astrology!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(astrology!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gallery!.compareDocumentPosition(preferences!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -244,7 +250,7 @@ describe("celestial union portfolio", () => {
     expect(within(context).getByText("Protected access")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Identity checked\. The check confirms/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Live photo match checked\. Didit matched/)).toBeInTheDocument();
   });
 
   it("always renders the public interest action, even without protected labels", () => {
@@ -318,11 +324,16 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const protectedPhoto = screen.getByRole("button", { name: "Photo 2, shared after approval" });
+    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared after approval" });
     expect(protectedPhoto).toBeInTheDocument();
     fireEvent.click(protectedPhoto);
     expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
-    expect(screen.getByText("2 photos")).toBeInTheDocument();
+    expect(screen.getByText("3 photos")).toBeInTheDocument();
+    const gallery = document.querySelector(".portfolio-gallery");
+    const astrology = document.getElementById("astrology");
+    expect(gallery).toBeTruthy();
+    expect(astrology).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(astrology!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders family and contact values for the full owner preview", () => {
@@ -344,11 +355,15 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("family@example.com")).toBeInTheDocument();
     const personalStory = document.getElementById("personal-story");
     const gallery = document.querySelector(".portfolio-gallery");
+    const astrology = document.getElementById("astrology");
     const journey = document.getElementById("journey");
     expect(personalStory).toBeTruthy();
     expect(gallery).toBeTruthy();
+    expect(astrology).toBeTruthy();
     expect(journey).toBeTruthy();
     expect(personalStory!.compareDocumentPosition(gallery!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery!.compareDocumentPosition(astrology!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(astrology!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(gallery!.compareDocumentPosition(journey!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -376,7 +391,8 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    expect(screen.getByAltText("Aditi Rao portrait")).toHaveAttribute(
+    expect(screen.getAllByAltText("Aditi Rao portrait")).toHaveLength(2);
+    expect(screen.getAllByAltText("Aditi Rao portrait")[0]).toHaveAttribute(
       "src",
       "https://example.test/legacy-owner.webp"
     );
@@ -488,6 +504,7 @@ describe("adaptive portfolio media", () => {
       <CelestialUnion data={complete} sunSign="kanya" photos={photos} />
     );
     expect(container.querySelector('.portfolio-hero-media[data-orientation="portrait"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show photo 2" }));
     expect(container.querySelector('.portfolio-gallery-feature img[data-orientation="landscape"]')).toBeTruthy();
   });
 

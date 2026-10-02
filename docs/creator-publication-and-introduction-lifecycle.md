@@ -11,7 +11,7 @@
 
 The dashboard presents one resumable journey:
 
-`Basics → Portfolio details → Preview → Ready to publish → Verification → Payment → Disclosure → Published`
+`Basics → Portfolio details → Preview → Ready to publish → Photo & liveness check → Pilot access → Disclosure → Published`
 
 - Draft answers are saved automatically after a short idle period and can still be saved manually.
 - `last_editor_section` is persisted independently from portfolio content so a returning creator resumes where they stopped.
@@ -19,7 +19,16 @@ The dashboard presents one resumable journey:
 - The canonical completion calculation is shared by the dashboard and the server readiness validator. PostgreSQL independently enforces the same seven-item minimum: first and last name, an adult date of birth, current location, profession or role, a brief personal introduction, and one shareable primary photo. Cultural background, family, lifestyle, match preferences, and astrology are optional enrichment.
 - Editing draft content, shareable media, or the horoscope invalidates a prior disclosure confirmation.
 
-Didit and payment UI remain unavailable until those integrations are configured. Their states are nevertheless server-authoritative; the client cannot mark either step complete.
+The B2C candidate check uses Didit's version-pinned biometric workflow: a live
+camera capture must pass passive liveness and match the portfolio's current
+primary photo. It does not request an identity document and must not be
+described as proof of legal identity or profile accuracy. Changing or deleting
+the matched primary photo invalidates the proof and requires a new check.
+
+Billing is deliberately deferred during the invite-only pilot. An active
+creator entitlement satisfies the temporary `Pilot access` readiness step;
+the system does not create a payment event or paid entitlement. Plan selection,
+payment-method collection, and the proposed one-month trial remain future work.
 
 ## Publication invariants
 
@@ -27,14 +36,21 @@ A publication transition succeeds only when all of the following are current for
 
 1. Required portfolio content and a shareable primary photo are present.
 2. The candidate has a current successful identity verification.
-3. A selected plan has an active paid entitlement whose expiry is in the future.
+3. During the pilot, the authenticated owner has an active creator entitlement.
+   After billing launches, this temporary condition must be replaced by the
+   approved trial/payment entitlement rule.
 4. The owner confirmed `publication-disclosure-v1` for the exact current draft fingerprint.
 
 The application service checks these rules for clear user feedback. A database trigger repeats them so direct client calls and future integration mistakes fail closed.
 
-### Payment integration contract
+### Deferred payment integration contract
 
-The future payment webhook must call `record_portfolio_payment_event` with the service role only after its provider signature has been verified. It must supply:
+This contract is intentionally dormant for the pilot and must not obstruct
+portfolio testing or publication. Before billing is enabled, its product rules
+must be revised for the planned one-month free trial and explicit plan/payment
+method selection. The future payment webhook must call
+`record_portfolio_payment_event` with the service role only after its provider
+signature has been verified. It must supply:
 
 - the authenticated portfolio ID and selected plan code;
 - the provider and unique event ID;
@@ -58,9 +74,11 @@ Run `enqueue_due_full_view_expiry_reminders()` from a service-role scheduler. De
 ## Operational rollout
 
 1. Apply migration `20260913120000_creator_publication_readiness.sql`.
-2. Configure and validate Didit callbacks.
-3. Connect pricing UI to `select_plan` without charging.
-4. Start payment only after readiness reports `verificationStatus: verified`.
-5. Connect the verified payment webhook to the idempotent payment command.
-6. Configure a notification delivery worker and a recurring expiry-reminder scheduler.
-7. Exercise the full pgTAP suite and end-to-end happy/failure paths before enabling production publishing.
+2. Configure the dedicated candidate photo-match workflow and validate signed
+   Didit callbacks plus the recovery worker.
+3. Confirm that pilot creator entitlement, current photo-bound verification,
+   disclosure, and required content are all enforced server-side.
+4. Keep plan selection and payment routes deferred until the trial and billing
+   design is approved.
+5. Configure a notification delivery worker and a recurring expiry-reminder scheduler.
+6. Exercise the full pgTAP suite and end-to-end happy/failure paths before enabling production publishing.

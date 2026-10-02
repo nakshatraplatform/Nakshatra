@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(17);
+select plan(20);
 
 select pg_temp.create_auth_actor(
   '97000000-0000-4000-8000-000000000001',
@@ -38,8 +38,16 @@ where id = '97300000-0000-4000-8000-000000000001'
 \gset
 
 select ok(
-  not has_function_privilege('anon', 'public.record_identity_verification_webhook(text,text,uuid,text,uuid)', 'execute'),
+  not has_function_privilege('anon', 'public.record_identity_verification_webhook(text,text,uuid,text,uuid,uuid)', 'execute'),
   'anonymous callers cannot record identity-verification webhooks'
+);
+select ok(
+  not has_function_privilege('anon', 'public.record_identity_verification_webhook(text,text,uuid,text,uuid)', 'execute'),
+  'anonymous callers cannot use the rolling-deploy webhook overload'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.record_identity_verification_webhook(text,text,uuid,text,uuid)', 'execute'),
+  'authenticated callers cannot use the rolling-deploy webhook overload'
 );
 select ok(
   not has_function_privilege('authenticated', 'public.claim_identity_verification_work(integer)', 'execute'),
@@ -56,7 +64,8 @@ select ok(
     repeat('a', 64), repeat('b', 64),
     '97300000-0000-4000-8000-000000000001',
     '97400000-0000-4000-8000-000000000001',
-    :'webhook_provider_subject_ref'
+    :'webhook_provider_subject_ref',
+    '97500000-0000-4000-8000-000000000001'
   ),
   'a matching signed-webhook receipt is persisted and queued'
 );
@@ -65,16 +74,27 @@ select ok(
     repeat('a', 64), repeat('c', 64),
     '97300000-0000-4000-8000-000000000001',
     '97400000-0000-4000-8000-000000000001',
-    :'webhook_provider_subject_ref'
+    :'webhook_provider_subject_ref',
+    '97500000-0000-4000-8000-000000000001'
   ),
   'a duplicate provider event is acknowledged without replaying work'
+);
+select ok(
+  public.record_identity_verification_webhook(
+    repeat('a', 64), repeat('b', 64),
+    '97300000-0000-4000-8000-000000000001',
+    '97400000-0000-4000-8000-000000000001',
+    :'webhook_provider_subject_ref'
+  ),
+  'the service-role-only rolling-deploy overload safely acknowledges the legacy adapter'
 );
 select ok(
   not public.record_identity_verification_webhook(
     repeat('d', 64), repeat('e', 64),
     '97300000-0000-4000-8000-000000000001',
     '97400000-0000-4000-8000-000000000099',
-    :'webhook_provider_subject_ref'
+    :'webhook_provider_subject_ref',
+    '97500000-0000-4000-8000-000000000001'
   ),
   'an event with a mismatched provider session does not enter the private inbox'
 );

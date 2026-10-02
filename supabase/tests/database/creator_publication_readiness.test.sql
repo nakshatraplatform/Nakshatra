@@ -65,9 +65,20 @@ select pg_temp.set_authenticated_claims(
 );
 select is(jsonb_array_length(public.get_portfolio_publication_readiness() -> 'missingRequired'), 0, 'the inclusive minimum is complete without optional cultural or astrology details');
 select is(public.get_portfolio_publication_readiness() ->> 'verificationStatus', 'required', 'verification is initially required');
-select is(public.update_portfolio_onboarding_progress('select_plan', 'launch_30') ->> 'status', 'ok', 'an owner can select a plan without being charged');
+select throws_ok(
+  $$select public.update_portfolio_onboarding_progress('select_plan', 'launch_30')$$,
+  '22023', null, 'plan selection stays deferred during the free private pilot'
+);
 
 reset role;
+insert into app_private.portfolio_publication_progress(
+  portfolio_id,selected_plan_code,plan_selected_at
+) values (
+  'a4000000-0000-4000-8000-000000000001','launch_30',now()
+) on conflict(portfolio_id) do update set
+  selected_plan_code=excluded.selected_plan_code,
+  plan_selected_at=excluded.plan_selected_at,
+  updated_at=now();
 set local role service_role;
 do $$ begin perform pg_temp.set_service_role_claims(); end $$;
 select is(
@@ -82,23 +93,37 @@ select is(
 reset role;
 select is((select count(*)::integer from app_private.portfolio_payment_events), 0, 'a rejected callback does not consume its idempotency key');
 
-insert into app_private.identity_verification_attempts(id, subject_id, candidate_id, provider_subject_ref)
-select 'a5000000-0000-4000-8000-000000000001', id, candidate_id, provider_subject_ref
-from app_private.identity_verification_subjects
-where candidate_id = 'a3000000-0000-4000-8000-000000000001';
-do $$ begin
-  perform app_private.transition_identity_verification_attempt('a5000000-0000-4000-8000-000000000001', 'created', 'invited');
-  perform app_private.transition_identity_verification_attempt('a5000000-0000-4000-8000-000000000001', 'invited', 'in_progress');
-  perform app_private.transition_identity_verification_attempt('a5000000-0000-4000-8000-000000000001', 'in_progress', 'verified');
-  perform app_private.project_identity_verification('a5000000-0000-4000-8000-000000000001', 'v1', now(), now() + interval '365 days');
-end $$;
+insert into app_private.identity_verification_attempts(
+  id,subject_id,candidate_id,provider_subject_ref,status,verification_method,
+  portfolio_id,reference_media_id,reference_storage_path,reference_sha256,
+  provider_workflow_id,provider_workflow_version,completed_at
+)
+select 'a5000000-0000-4000-8000-000000000001',subject.id,subject.candidate_id,
+  subject.provider_subject_ref,'verified','portfolio_photo_liveness',portfolio.id,
+  media.id,media.storage_path,repeat('d',64),'a8000000-0000-4000-8000-000000000001',1,now()
+from app_private.identity_verification_subjects subject
+join public.portfolios portfolio on portfolio.candidate_id=subject.candidate_id
+join public.portfolio_media media on media.portfolio_id=portfolio.id and media.media_type='hero'
+where subject.candidate_id='a3000000-0000-4000-8000-000000000001';
+update app_private.identity_verification_subjects subject set
+  status='verified',verified_at=now(),expires_at=now()+interval '365 days',
+  current_proof_method='portfolio_photo_liveness',
+  current_proof_attempt_id='a5000000-0000-4000-8000-000000000001',
+  current_proof_portfolio_id=portfolio.id,current_proof_media_id=media.id,
+  current_proof_sha256=repeat('d',64),
+  current_proof_workflow_id='a8000000-0000-4000-8000-000000000001',
+  current_proof_workflow_version=1
+from public.portfolios portfolio
+join public.portfolio_media media on media.portfolio_id=portfolio.id and media.media_type='hero'
+where subject.candidate_id='a3000000-0000-4000-8000-000000000001'
+  and portfolio.candidate_id=subject.candidate_id;
 
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   'a1000000-0000-4000-8000-000000000001',
   'a2000000-0000-4000-8000-000000000001'
 );
-select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1') ->> 'status', 'payment_required', 'disclosure cannot be finalized before payment');
+select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1') ->> 'status', 'ok', 'an entitled pilot creator can finalize disclosure without payment');
 
 reset role;
 set local role service_role;

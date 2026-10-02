@@ -44,20 +44,20 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
     <section className="dashboard-glass p-5" aria-labelledby="identity-verification-heading">
       <div className="dashboard-section-heading">
         <div>
-          <h2 id="identity-verification-heading">Identity verification</h2>
+          <h2 id="identity-verification-heading">Photo &amp; liveness check</h2>
           <p>Verification is required before this profile can be publicly published.</p>
         </div>
       </div>
       <p className="text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
-        Didit uses the candidate&apos;s legal name, date of birth, India document country, and approved document types for its hosted check. VivIntro stores consent and verification state, not identity evidence.
+        Didit compares a live selfie with your current primary portfolio photo and performs a passive-liveness check. This candidate flow does not request an identity document. VivIntro stores the consent, result, and a one-way photo binding—not the selfie evidence.
       </p>
       <label className="mt-4 flex gap-3 text-sm text-[light-dark(#334155,var(--app-dark-ink))]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-        <span>I understand and consent to this identity-verification processing.</span>
+        <span>I understand and consent to this primary-photo face match and passive-liveness processing.</span>
       </label>
       <div className="mt-4 flex flex-wrap gap-3">
         <button type="button" className="dashboard-primary-action" disabled={!consent || pending !== null} onClick={() => void startSelfVerification()}>
-          {pending === "self" ? "Starting verification…" : "Verify myself"}
+          {pending === "self" ? "Starting photo check…" : "Start photo & liveness check"}
         </button>
         <button type="button" className="dashboard-secondary-action" disabled={pending !== null} onClick={() => void createInvitation()}>
           {pending === "invitation" ? "Creating invitation…" : "Create candidate invitation"}

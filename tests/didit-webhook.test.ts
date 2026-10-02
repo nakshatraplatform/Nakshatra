@@ -21,6 +21,7 @@ const timestamp = String(Math.floor(now.getTime() / 1000));
 const config = {
   applicationId: "11111111-1111-4111-8111-111111111111",
   workflowId: "22222222-2222-4222-8222-222222222222",
+  photoWorkflowId: "77777777-7777-4777-8777-777777777777",
   webhookSecret: "test-webhook-secret",
 };
 const envelope = {
@@ -67,6 +68,7 @@ describe("Didit webhook verification", () => {
     vi.stubEnv("DIDIT_ENVIRONMENT", undefined);
     vi.stubEnv("DIDIT_WEBHOOK_SECRET", config.webhookSecret);
     vi.stubEnv("DIDIT_WORKFLOW_ID", config.workflowId);
+    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_ID", config.photoWorkflowId);
   }
 
   it("accepts only a current canonical V2 signature and returns safe persistence inputs", () => {
@@ -83,6 +85,7 @@ describe("Didit webhook verification", () => {
       attemptId: "66666666-6666-4666-8666-666666666666",
       providerSubjectRef: "55555555-5555-4555-8555-555555555555",
       providerSessionRef: envelope.session_id,
+      workflowId: config.workflowId,
     }));
     expect(result.eventHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.payloadDigest).toMatch(/^[a-f0-9]{64}$/);
@@ -98,7 +101,7 @@ describe("Didit webhook verification", () => {
     expect(() => verifyDiditWebhook({ rawBody: "{", signature: "a".repeat(64), timestamp, now }))
       .toThrow("DIDIT_WEBHOOK_INVALID");
 
-    const wrongWorkflow = { ...envelope, workflow_id: "77777777-7777-4777-8777-777777777777" };
+    const wrongWorkflow = { ...envelope, workflow_id: "88888888-8888-4888-8888-888888888888" };
     const wrongRequest = signedRequest(wrongWorkflow);
     expect(() => verifyDiditWebhook({ rawBody: JSON.stringify({ z: "Å", ...wrongWorkflow }), signature: wrongRequest.headers.get("X-Signature-V2"), timestamp, now }))
       .toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
@@ -191,7 +194,7 @@ describe("Didit webhook verification", () => {
     expect(() => verify({ ...consoleEnvelope(), ...change })).toThrow();
   });
 
-  it.each(["DIDIT_WEBHOOK_SECRET", "DIDIT_WORKFLOW_ID"])("requires %s", (key) => {
+  it.each(["DIDIT_WEBHOOK_SECRET", "DIDIT_WORKFLOW_ID", "DIDIT_PHOTO_MATCH_WORKFLOW_ID"])("requires %s", (key) => {
     configure();
     vi.stubEnv(key, undefined);
     expect(() => verify(consoleEnvelope())).toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");
@@ -205,7 +208,7 @@ describe("Didit webhook verification", () => {
     const response = await POST(signedRequest(body, true, currentTimestamp));
     expect(response.status).toBe(202);
     expect(Object.keys(repositoryRecord.mock.calls[0][0]).sort()).toEqual([
-      "attemptId", "eventHash", "payloadDigest", "providerSessionRef", "providerSubjectRef",
+      "attemptId", "eventHash", "payloadDigest", "providerSessionRef", "providerSubjectRef", "workflowId",
     ]);
     expect(JSON.stringify(repositoryRecord.mock.calls)).not.toContain("not-for-storage");
   });

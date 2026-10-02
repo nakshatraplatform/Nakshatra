@@ -90,11 +90,11 @@ export function VerificationLinkClient({ token }: { token: string }) {
 
       {link.kind === "invitation" ? (
         <section>
-          <p>Didit will run the hosted identity check. VivIntro will use your legal name, date of birth, India document country, and approved document types only to verify identity before public portfolio publication.</p>
-          <p>VivIntro keeps your consent record and verification state. It does not store document images, document numbers, or other identity evidence. You can withdraw consent through the private management link provided after you continue.</p>
+          <p>Didit compares a live camera capture with your current primary portfolio photo and performs a passive-liveness check before your portfolio can be published.</p>
+          <p>This candidate check does not request an identity document and does not verify your legal identity, age, marital status, or profile statements. VivIntro keeps your consent, the result, and a one-way binding to the checked photo—not the live capture or biometric evidence. You can withdraw consent through the private management link provided after you continue.</p>
           <label className="mt-6 flex gap-3">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>I understand and consent to this identity-verification processing.</span>
+            <span>I consent to Didit processing my current primary portfolio photo and live camera capture for this photo-match and passive-liveness check.</span>
           </label>
           <button className="dashboard-primary-action mt-6" disabled={!consent || action !== null} onClick={start}>
             {action === "start" ? "Starting secure verification…" : "Continue to Didit"}

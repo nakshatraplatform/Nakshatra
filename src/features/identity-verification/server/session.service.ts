@@ -2,19 +2,30 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
-import { createDiditVerificationSession, DiditProviderError } from "./didit.provider";
+import {
+  createDiditPhotoMatchSession,
+  createDiditVerificationSession,
+  DiditProviderError,
+} from "./didit.provider";
 import { hashIdentityBirthDate } from "./identity-match.mjs";
+import { PhotoReferenceError, preparePhotoReference } from "./photo-reference";
 import { IdentityVerificationSessionRepository } from "./session.repository";
 import { getIdentityVerificationMatchKey } from "@/lib/env";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
-const preparedSessionSchema = z.object({
+const preparedCandidateSessionSchema = z.object({
+  attempt_id: z.uuid(),
+  provider_subject_ref: z.uuid(),
+  portfolio_id: z.uuid(),
+  reference_media_id: z.uuid(),
+  reference_storage_path: z.string().min(3).max(1024),
+}).strict();
+
+const preparedRepresentativeSessionSchema = z.object({
   attempt_id: z.uuid(),
   provider_subject_ref: z.uuid(),
   legal_name: z.string().min(1),
-  birth_date: z.iso.date(),
 }).strict();
-
-const preparedRepresentativeSessionSchema = preparedSessionSchema.omit({ birth_date: true });
 
 const linkStatusSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("invitation"), status: z.literal("ready") }).strict(),
@@ -34,8 +45,8 @@ export class IdentityVerificationSessionError extends Error {
   }
 }
 
-function preparedSession(data: unknown) {
-  const parsed = preparedSessionSchema.safeParse(Array.isArray(data) ? data[0] : data);
+function preparedCandidateSession(data: unknown) {
+  const parsed = preparedCandidateSessionSchema.safeParse(Array.isArray(data) ? data[0] : data);
   if (!parsed.success) {
     throw new IdentityVerificationSessionError("We could not prepare identity verification. Please try again.", "IDENTITY_VERIFICATION_START_FAILED", 503);
   }
@@ -52,9 +63,85 @@ function unavailableFromDatabase(error: { code?: string } | null, fallback: stri
   throw new IdentityVerificationSessionError("We could not complete identity verification. Please try again.", fallback, 503, managementToken);
 }
 
-async function attachProviderSession(input: {
+async function attachCandidatePhotoSession(input: {
   repository: IdentityVerificationSessionRepository;
-  prepared: z.infer<typeof preparedSessionSchema>;
+  prepared: z.infer<typeof preparedCandidateSessionSchema>;
+  managementTokenHash: string;
+  callbackUrl: string;
+  managementToken: string;
+  referenceSupabase?: SupabaseClient;
+}) {
+  const { data: source, error: downloadError } = await input.repository.downloadPhotoReference(
+    input.prepared.reference_storage_path,
+    input.referenceSupabase ?? createServiceRoleClient()
+  );
+  if (downloadError || !source) {
+    throw new IdentityVerificationSessionError(
+      "Add a current primary portfolio photo before starting verification.",
+      "IDENTITY_VERIFICATION_REFERENCE_UNAVAILABLE",
+      409,
+      input.managementToken
+    );
+  }
+
+  let reference;
+  try {
+    reference = await preparePhotoReference(Buffer.from(await source.arrayBuffer()));
+  } catch (error) {
+    const code = error instanceof PhotoReferenceError
+      ? error.message
+      : "IDENTITY_VERIFICATION_REFERENCE_UNAVAILABLE";
+    throw new IdentityVerificationSessionError(
+      "We could not prepare your primary photo for verification. Upload it again and retry.",
+      code,
+      409,
+      input.managementToken
+    );
+  }
+
+  let didit;
+  try {
+    const workflowId = process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID?.trim() || "";
+    const workflowVersion = Number(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION);
+    const registration = await input.repository.registerPhotoProviderCreate(
+      input.prepared.attempt_id,
+      workflowId,
+      workflowVersion,
+      input.managementTokenHash
+    );
+    if (registration.error) {
+      unavailableFromDatabase(
+        registration.error,
+        "IDENTITY_VERIFICATION_START_FAILED",
+        input.managementToken
+      );
+    }
+    didit = await createDiditPhotoMatchSession({
+      attemptId: input.prepared.attempt_id,
+      providerSubjectRef: input.prepared.provider_subject_ref,
+      callbackUrl: input.callbackUrl,
+      portraitImageBase64: reference.portraitImageBase64,
+    });
+  } catch (error) {
+    if (error instanceof IdentityVerificationSessionError) throw error;
+    const code = error instanceof DiditProviderError ? error.code : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE";
+    throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again.", code, 503, input.managementToken);
+  }
+  const { error } = await input.repository.attachCandidatePhotoSession({
+    attemptId: input.prepared.attempt_id,
+    providerSessionRef: didit.sessionId,
+    referenceSha256: reference.sourceSha256,
+    workflowId: didit.workflowId,
+    workflowVersion: didit.workflowVersion,
+    managementTokenHash: input.managementTokenHash,
+  });
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken);
+  return { url: didit.url };
+}
+
+async function attachRepresentativeProviderSession(input: {
+  repository: IdentityVerificationSessionRepository;
+  prepared: z.infer<typeof preparedRepresentativeSessionSchema> & { birth_date: string };
   managementTokenHash: string;
   callbackUrl: string;
   managementToken: string;
@@ -84,6 +171,7 @@ async function attachProviderSession(input: {
 /** Atomically authorizes, records consent, and starts one hosted Didit verification. */
 export async function startIdentityVerification(input: {
   supabase: SupabaseClient;
+  referenceSupabase?: SupabaseClient;
   candidateId: string | null;
   invitationTokenHash: string | null;
   managementToken: string;
@@ -93,12 +181,13 @@ export async function startIdentityVerification(input: {
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.begin(input.candidateId, input.invitationTokenHash, input.managementTokenHash);
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED");
-  return attachProviderSession({
+  return attachCandidatePhotoSession({
     repository,
-    prepared: preparedSession(data),
+    prepared: preparedCandidateSession(data),
     managementTokenHash: input.managementTokenHash,
     callbackUrl: input.callbackUrl,
     managementToken: input.managementToken,
+    referenceSupabase: input.referenceSupabase,
   });
 }
 
@@ -142,7 +231,7 @@ export async function startBrokerdeskRepresentativeVerification(input: {
     input.proofHash
   );
   if (error) unavailableFromDatabase(error, "BROKERDESK_REPRESENTATIVE_VERIFICATION_START_FAILED");
-  return attachProviderSession({
+  return attachRepresentativeProviderSession({
     repository,
     prepared: preparedRepresentativeSession(data, input.birthDate),
     managementTokenHash: input.managementTokenHash,
@@ -174,6 +263,7 @@ export async function withdrawIdentityVerificationConsent(supabase: SupabaseClie
 /** Creates a fresh attempt from an unwithdrawn consent record and starts the hosted flow again. */
 export async function retryIdentityVerification(input: {
   supabase: SupabaseClient;
+  referenceSupabase?: SupabaseClient;
   tokenHash: string;
   managementToken: string;
   managementTokenHash: string;
@@ -182,11 +272,12 @@ export async function retryIdentityVerification(input: {
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.retry(input.tokenHash, input.managementTokenHash);
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_RETRY_FAILED");
-  return attachProviderSession({
+  return attachCandidatePhotoSession({
     repository,
-    prepared: preparedSession(data),
+    prepared: preparedCandidateSession(data),
     managementTokenHash: input.managementTokenHash,
     callbackUrl: input.callbackUrl,
     managementToken: input.managementToken,
+    referenceSupabase: input.referenceSupabase,
   });
 }

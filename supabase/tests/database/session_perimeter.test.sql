@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(39);
+select plan(40);
 
 select has_function('public', 'is_current_session_active', array[]::text[], 'live Auth session predicate exists');
 select has_function('app_private', 'require_current_session', array[]::text[], 'internal live-session guard exists');
@@ -102,6 +102,7 @@ select ok(
         'public.record_public_portfolio_view(text)'::regprocedure,
         'public.consume_api_rate_limit(text,text)'::regprocedure,
         'public.is_public_portfolio_media_path(text,text)'::regprocedure,
+        'public.is_current_identity_reference_storage_object(text,text)'::regprocedure,
         'public.claim_broker_introduction_pass(text,text,text)'::regprocedure,
         'public.resolve_broker_introduction(text,text)'::regprocedure,
         'public.respond_to_broker_introduction(text,text,text,text,boolean)'::regprocedure
@@ -119,6 +120,10 @@ select ok(has_function_privilege('anon', 'public.record_public_portfolio_view(te
 select ok(
   pg_catalog.obj_description('public.is_public_portfolio_media_path(text,text)'::regprocedure, 'pg_proc') is not null,
   'the unguarded public-media helper is explicitly documented as a safe allowlist entry'
+);
+select ok(
+  pg_catalog.obj_description('public.is_current_identity_reference_storage_object(text,text)'::regprocedure, 'pg_proc') is not null,
+  'the owner-scoped verification-reference helper is explicitly documented as a safe allowlist entry'
 );
 
 select pg_temp.create_auth_actor('51000000-0000-4000-8000-000000000001', '52000000-0000-4000-8000-000000000001', 'owner@session.test');

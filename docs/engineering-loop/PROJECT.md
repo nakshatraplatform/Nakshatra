@@ -13,6 +13,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 ## Relevant feature status
 
 - [NAK-60 document-free verification](features/nak-60-document-free-verification.md): in development; provider Sandbox and biometric privacy gates open.
+- [NAK-60 portfolio viewer refinement](features/nak-60-portfolio-view-refinement.md): implemented locally; responsive navigation, complete authorized gallery and post-gallery astrology placement validated in component tests.
 - [Document-free product decision](../identity-verification/liveness-only-decision.md): approved direction, implementation pending.
 - [Production readiness](../identity-verification/production-readiness.md): live workflow disabled pending gates; older ID-document portions need reconciliation.
 

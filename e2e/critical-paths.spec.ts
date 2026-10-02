@@ -80,11 +80,11 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
-  const verifiedBadge = page.getByLabel(/Identity checked\. The check confirms/);
+  const verifiedBadge = page.getByLabel(/Live photo match checked\. Didit matched/);
   await expect(verifiedBadge).toBeVisible();
   await expect(verifiedBadge).toHaveAttribute(
     "aria-label",
-    /does not verify every statement or endorse a match/
+    /does not verify legal identity, profile statements, or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
@@ -125,12 +125,20 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
     })
     .toBe(0.75);
   const gallery = page.locator(".portfolio-gallery");
+  await expect(gallery.locator('.portfolio-gallery-feature img[data-orientation="portrait"]')).toBeVisible();
+  await expect(
+    gallery.locator(".portfolio-gallery-feature").getByAltText("Public portrait", { exact: true })
+  ).toBeVisible();
+  await gallery.getByRole("button", { name: "Show photo 2" }).click();
   await expect(gallery.locator('.portfolio-gallery-feature img[data-orientation="landscape"]')).toBeVisible();
-  await expect(gallery.getByAltText("Public landscape", { exact: true })).toBeVisible();
-  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(7);
-  await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(6);
+  await expect(
+    gallery.locator(".portfolio-gallery-feature").getByAltText("Public landscape", { exact: true })
+  ).toBeVisible();
+  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(8);
+  await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(1);
-  await expect(gallery.getByRole("button", { name: "Photo 7, shared after approval" })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Show photo 1" })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Photo 8, shared after approval" })).toBeVisible();
   await expect(gallery.getByAltText("Protected portrait")).toHaveCount(0);
   const galleryColumns = await gallery.locator(".portfolio-gallery-viewer").evaluate(
     (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length
@@ -264,9 +272,10 @@ test("Private portfolio keeps one gallery photo clear and shows protected placeh
   await expect(page.getByRole("heading", { name: "A little more about Aditi" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Education and career" })).toHaveCount(0);
   const gallery = page.locator(".portfolio-gallery");
-  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(7);
-  await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(1);
+  await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(8);
+  await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(2);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(6);
+  await expect(gallery.getByAltText("Public portrait", { exact: true })).toBeVisible();
   await expect(gallery.locator('.portfolio-gallery-feature[data-presentation="clear"]')).toBeVisible();
 });
 

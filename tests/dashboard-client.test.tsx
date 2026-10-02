@@ -144,8 +144,8 @@ afterEach(() => {
 describe("dashboard client", () => {
   it("shows identity-verification actions only after a saved candidate is linked", () => {
     renderDashboard({ portfolio: { ...portfolio, candidate_id: "candidate-1" } });
-    expect(screen.getByRole("heading", { name: "Identity verification" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Verify myself" })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Photo & liveness check" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start photo & liveness check" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Create candidate invitation" })).toBeInTheDocument();
   });
 

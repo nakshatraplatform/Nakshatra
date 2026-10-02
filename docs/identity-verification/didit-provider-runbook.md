@@ -1,10 +1,10 @@
 # Didit provider readiness runbook
 
-> **Superseded workflow warning (22 September 2026):** do not use the
-> document-verification configuration below to activate production. The approved
-> direction is facial liveness/profile comparison without an ID-document module.
-> Follow [the liveness-only decision](./liveness-only-decision.md); this runbook
-> remains historical input until the provider contract is reconciled end to end.
+> **Current split policy (2 October 2026):** B2C candidates use an ID-free,
+> version-pinned biometric-authentication workflow that compares a live capture
+> with the current primary portfolio photo. BrokerDesk representatives retain
+> the separate document/name/date-of-birth workflow. Production remains disabled
+> until the migration, Sandbox session, webhook, worker and deletion evidence pass.
 
 This runbook is the Phase 0 control plane for a future Didit integration. It
 does not authorize application code to collect, transmit, or store identity
@@ -12,8 +12,9 @@ documents until every required production gate below has an owner and evidence.
 
 ## Scope and data boundary
 
-- Use a Didit-hosted verification session; do not upload identity documents or
-  selfies through Nakshatra application routes.
+- Use a Didit-hosted verification session. The server transiently sends the
+  candidate-authorized primary portfolio photo directly from private Storage;
+  no browser route exposes it and no additional reference copy is persisted.
 - Nakshatra remains the data controller and Didit is a processor. Do not send
   candidate profile fields, family data, or other unnecessary data in
   `vendor_data`, metadata, callback URLs, logs, or support tickets.
@@ -62,19 +63,21 @@ secrets, or raw identity data to Linear.
 
 ## Credential and webhook handling
 
-The only Didit-specific deployment variables are `DIDIT_API_KEY`,
-`DIDIT_WORKFLOW_ID`, and `DIDIT_WEBHOOK_SECRET`, as listed in the
+The Didit deployment variables are `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`,
+`DIDIT_PHOTO_MATCH_WORKFLOW_ID`, `DIDIT_PHOTO_MATCH_WORKFLOW_VERSION`, and
+`DIDIT_WEBHOOK_SECRET`, following the
 [official integration guide](https://docs.didit.me/integration/api-full-flow).
 Application ID, Organization ID, and a separate Didit environment variable are
 not required. Choose Sandbox or Production by configuring its matching scoped
-API key, workflow ID, and destination signing secret together. Existing
+API key, both workflow IDs, the pinned photo-workflow version, and destination
+signing secret together. Existing
 Nakshatra configuration (app URL, Supabase credentials, and the shared
 `IDENTITY_VERIFICATION_MATCH_HMAC_KEY`) is still required.
 
 In App Settings, copy the API key from **API keys** and create a **Webhooks**
 destination with the final public HTTPS URL `/api/webhooks/didit`, version `v3`,
 and events `status.updated` and `data.updated`. Use its signing secret, avoid
-redirects or browser challenges, set the three variables in Vercel, and redeploy.
+redirects or browser challenges, set all five Didit variables in Vercel, and redeploy.
 Set the same API key on the existing worker. Complete a real sandbox session
 from Nakshatra and verify a 202 receipt, worker processing, and session purge.
 Console sample vendor references are placeholders, not local verification attempts.
@@ -105,11 +108,11 @@ Console sample vendor references are placeholders, not local verification attemp
   caller. Provider calls time out after ten seconds; transient failures retry
   with database-controlled exponential backoff from five minutes up to one
   hour. Alert when the scheduler fails or a work item reaches repeated retries.
-- The approved workflow must contain exactly one identity-document result. A
-  changed or ambiguous workflow fails closed rather than allowing the worker to
-  select an arbitrary name or date-of-birth result. Validate the configured
-  workflow and a signed test delivery in Didit sandbox before enabling live
-  webhooks.
+- The candidate workflow must return no identity-document result and must pass
+  passive liveness plus face match on the exact pinned workflow ID/version. The
+  representative workflow must contain exactly one approved document result and
+  pass its existing name/date-of-birth policy. Cross-policy or ambiguous results
+  fail closed. Validate both workflows and signed deliveries in Sandbox.
 - The repository secret scan detects high-entropy values assigned to
   `DIDIT_API_KEY` or `DIDIT_WEBHOOK_SECRET`. Didit does not publish a stable
   credential prefix in its public documentation, so this detector is purposely
@@ -120,9 +123,11 @@ Console sample vendor references are placeholders, not local verification attemp
 1. Use only consented test material and synthetic test identities where Didit
    supports them. Never place real identity documents in source control,
    fixtures, screenshots, Linear, or shared developer folders.
-2. Create a hosted session using the Sandbox workflow and confirm each approved
-   check runs and returns a testable result.
-3. Validate the document matrix in
+2. Create a candidate hosted session from VivIntro with a consented test primary
+   photo. Confirm the request uses `portrait_image`, the hosted flow asks for no
+   ID, and the decision contains the pinned workflow version, passive liveness,
+   and face match.
+3. Separately validate the BrokerDesk representative document matrix in
    [india-document-matrix.md](india-document-matrix.md). Record the provider
    application, workflow version, date, test-material source category, outcome,
    and error class in the approved private evidence store.
@@ -139,8 +144,8 @@ Console sample vendor references are placeholders, not local verification attemp
 All of the following must be complete before enabling a Production workflow or
 processing an identity document:
 
-- Sandbox evidence shows all four approved checks and each approved Indian
-  document variant behaves as recorded.
+- Sandbox evidence shows the candidate photo/liveness checks and the separate
+  BrokerDesk representative document checks behave as recorded.
 - The DPA, subprocessors, security evidence, biometric/liveness evidence,
   processing region, retention, deletion, incident-notification, and
   termination/deletion commitments are reviewed by the appropriate owner.

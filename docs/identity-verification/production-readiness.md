@@ -1,10 +1,10 @@
 # Identity verification production readiness
 
-> **Important:** the current approved direction is liveness/biometric facial
-> verification without an ID-document module. The application and the remainder
-> of this older runbook are not fully reconciled yet. Follow
-> [the liveness-only decision](./liveness-only-decision.md) and keep live Didit
-> disabled until the provider request, UI, tests and operational evidence agree.
+> **Important:** the application now implements the approved B2C primary-photo
+> face match plus passive-liveness policy without an ID-document module. The
+> separate BrokerDesk representative workflow remains document based. Keep live
+> Didit disabled until the forward migration and the provider, deletion, legal,
+> mobile and deployment evidence below agree.
 
 Live identity verification remains disabled until every gate below has an
 owner and dated evidence in the approved private compliance store. Do not put
@@ -33,6 +33,8 @@ Create an isolated GitHub environment named
 `identity-verification-worker-production` with these environment secrets:
 
 - `DIDIT_API_KEY`
+- `DIDIT_PHOTO_MATCH_WORKFLOW_ID`
+- `DIDIT_PHOTO_MATCH_WORKFLOW_VERSION`
 - `IDENTITY_VERIFICATION_MATCH_HMAC_KEY` (independent app/worker key for representative birth-date comparison)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`

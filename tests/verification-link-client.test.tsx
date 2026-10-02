@@ -31,7 +31,9 @@ describe("verification bearer-link page", () => {
     const user = userEvent.setup();
     render(<VerificationLinkClient token="opaque-token" />);
     await screen.findByText("Confirm your identity");
-    expect(screen.getByText(/Didit will run the hosted identity check/)).toBeInTheDocument();
+    expect(screen.getByText(/compares a live camera capture with your current primary portfolio photo/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not request an identity document/i)).toBeInTheDocument();
+    expect(screen.queryByText(/legal name, date of birth/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Private Candidate/)).not.toBeInTheDocument();
     const button = screen.getByRole("button", { name: "Continue to Didit" });
     expect(button).toBeDisabled();
