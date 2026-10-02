@@ -1970,11 +1970,26 @@ body {
 
 @media (max-width: 980px) {
   [data-template="celestial-union"] .portfolio-header-inner {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 16px;
   }
 
   [data-template="celestial-union"] .portfolio-header nav {
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  [data-template="celestial-union"] .portfolio-header nav::-webkit-scrollbar {
     display: none;
+  }
+
+  [data-template="celestial-union"] .portfolio-header nav a {
+    flex: none;
+    padding: 0 8px;
   }
 
   [data-template="celestial-union"] .portfolio-hero {
@@ -3017,6 +3032,8 @@ body {
   }
 
   [data-template="celestial-union"] .portfolio-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0;
     padding: 0 16px;
   }
 
@@ -3031,7 +3048,34 @@ body {
   }
 
   [data-template="celestial-union"] .portfolio-header nav {
+    grid-column: 1 / -1;
+    width: calc(100% + 32px);
+    min-width: 0;
+    display: flex;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 8px;
+    border-top: 1px solid color-mix(in srgb, var(--portfolio-border) 58%, transparent);
+    scrollbar-width: none;
+  }
+
+  [data-template="celestial-union"] .portfolio-header nav::-webkit-scrollbar {
     display: none;
+  }
+
+  [data-template="celestial-union"] .portfolio-header nav a {
+    min-height: 44px;
+    flex: none;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  [data-template="celestial-union"] .portfolio-main,
+  [data-template="celestial-union"] .portfolio-gallery,
+  [data-template="celestial-union"] .portfolio-chapter {
+    scroll-margin-top: 122px;
   }
 
   [data-template="celestial-union"] .portfolio-main {

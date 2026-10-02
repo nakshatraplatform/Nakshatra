@@ -81,7 +81,14 @@ export default function CelestialUnion({
         }
       : null;
   const heroPhotos = heroPhoto ? [heroPhoto] : legacyOwnerPhoto ? [legacyOwnerPhoto] : [];
-  const galleryPhotos = photos.filter((photo) => photo.mediaType === "gallery");
+  // The primary portrait is part of the portfolio's photo collection as well as
+  // its hero. Keep it in the gallery so "all photos" means every authorized
+  // portfolio photo, while preserving the hero-first order returned by the API.
+  const galleryPhotos = heroPhoto
+    ? photos
+    : legacyOwnerPhoto
+      ? [legacyOwnerPhoto, ...photos]
+      : photos;
   const briefGalleryPhotos = galleryPhotos;
   const blurredPhotos = photos.filter((photo) => photo.presentation === "blurred");
   const shortBio = clean(data.personal.short_bio);
@@ -466,37 +473,61 @@ export default function CelestialUnion({
     });
   }
 
-  const numberedChapters = chapters.map((chapter, index) => ({
-    ...chapter,
-    number: index + 1,
-  }));
-  const pairedChapterIds = new Set(["journey", "lifestyle", "family", "astrology"]);
-  const firstStandardChapter = numberedChapters[0];
-  const pairedChapterRows = [
-    ["journey", "lifestyle"],
-    ["family", "astrology"],
-  ].map((row) => row
-    .map((id) => numberedChapters.find((chapter) => chapter.id === id))
-    .filter((chapter): chapter is typeof numberedChapters[number] => chapter !== undefined && chapter.id !== firstStandardChapter?.id)
-  ).filter((row) => row.length > 0);
-  const trailingChapters = numberedChapters.filter(
-    (chapter) => chapter.id !== firstStandardChapter?.id && !pairedChapterIds.has(chapter.id)
-  );
-  const fullChapterOrder = [
+  const chapterOrder = [
     "personal-story",
+    "astrology",
     "journey",
     "lifestyle",
     "family",
     "preferences",
     "future-plans",
     "shared-life",
-    "astrology",
   ];
-  const fullChapters = fullChapterOrder
+  const numberedChapters = chapterOrder
+    .map((id) => chapters.find((chapter) => chapter.id === id))
+    .filter((chapter): chapter is ChapterDefinition => Boolean(chapter))
+    .map((chapter, index) => ({
+      ...chapter,
+      number: index + 1,
+    }));
+  const astrologyChapter = numberedChapters.find((chapter) => chapter.id === "astrology");
+  const pairedChapterIds = new Set(["journey", "lifestyle", "family"]);
+  const firstStandardChapter = numberedChapters.find((chapter) => chapter.id !== "astrology");
+  const pairedChapterRows = [
+    ["journey", "lifestyle"],
+    ["family"],
+  ].map((row) => row
     .map((id) => numberedChapters.find((chapter) => chapter.id === id))
-    .filter((chapter): chapter is typeof numberedChapters[number] => Boolean(chapter));
-  const firstFullChapter = fullChapters[0];
-  const remainingFullChapters = fullChapters.slice(1);
+    .filter((chapter): chapter is typeof numberedChapters[number] => chapter !== undefined && chapter.id !== firstStandardChapter?.id)
+  ).filter((row) => row.length > 0);
+  const trailingChapters = numberedChapters.filter(
+    (chapter) => chapter.id !== firstStandardChapter?.id
+      && chapter.id !== "astrology"
+      && !pairedChapterIds.has(chapter.id)
+  );
+  const firstFullChapter = numberedChapters.find((chapter) => chapter.id !== "astrology");
+  const remainingFullChapters = numberedChapters.filter(
+    (chapter) => chapter.id !== firstFullChapter?.id && chapter.id !== "astrology"
+  );
+  const astrologySection = astrologyChapter ? (
+    <div className="portfolio-chapters portfolio-astrology-chapter">
+      <Chapter {...astrologyChapter} />
+    </div>
+  ) : null;
+  const briefAstrologySection = briefPublicView && astrologyChapter ? (
+    <div className="portfolio-chapters portfolio-astrology-chapter">
+      <Chapter
+        {...protectedChapter(
+          "astrology",
+          "Astrology",
+          "Cultural alignment",
+          "Astrology information exists and can be shared after approval.",
+          showInterestSection
+        )}
+        number={astrologyChapter.number}
+      />
+    </div>
+  ) : null;
 
   const variables = {
     "--portfolio-background": theme.background,
@@ -525,7 +556,8 @@ export default function CelestialUnion({
           <nav aria-label="Introduction quick actions">
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
-            {!briefPublicView && <a href="#portfolio-profile">Details</a>}
+            {astrologyChapter && <a href="#astrology">Astrology</a>}
+            {!briefPublicView && firstStandardChapter && <a href="#portfolio-profile">Details</a>}
           </nav>
           {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
         </div>
@@ -593,6 +625,7 @@ export default function CelestialUnion({
               partnershipIntroduction={clean(data.preferences?.narrative)}
             />
             <AdaptivePortfolioGallery photos={briefGalleryPhotos} />
+            {briefAstrologySection}
           </>
         ) : hasApprovedAccess ? (
           <>
@@ -602,6 +635,7 @@ export default function CelestialUnion({
               </div>
             )}
             <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {astrologySection}
             {remainingFullChapters.length > 0 && (
               <div className="portfolio-chapters portfolio-full-chapters">
                 {remainingFullChapters.map((chapter) => <Chapter key={chapter.id} {...chapter} />)}
@@ -616,6 +650,7 @@ export default function CelestialUnion({
               </div>
             )}
             <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {astrologySection}
             {pairedChapterRows.length > 0 && (
               <div className="portfolio-chapters">
                 <div className="portfolio-chapter-pairs">
