@@ -121,3 +121,11 @@ all feature service/mapper/contract files clear the 80% per-metric gate. ESLint,
 TypeScript, `db:smoke`, and `git diff --check` pass. A local pgTAP replay remains
 unavailable on this Windows host because Docker is not installed; GitHub CI is
 the authoritative migration and pgTAP rerun for this correction.
+
+The hosted pgTAP replay subsequently passed. The remaining CI failure was stale
+end-to-end copy and gallery-count expectations: the UI now names the bounded
+claim “Live photo match checked,” and the requested all-photo Gallery includes
+the primary portrait. Playwright assertions now verify eight thumbnails, the
+expected public/private clear-versus-blurred counts, the primary portrait, and
+the precise non-identity disclosure instead of looking for the retired generic
+identity wording.
