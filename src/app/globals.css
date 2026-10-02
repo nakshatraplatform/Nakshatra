@@ -140,6 +140,7 @@
 .dashboard-welcome h2 { margin-top: 0.75rem; color: light-dark(#18272e, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; line-height: 1.05; }
 .dashboard-welcome p { margin-top: 0.7rem; color: light-dark(#59686d, var(--app-dark-muted)); }
 .dashboard-overview { display: grid; gap: 1rem; }
+.dashboard-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .dashboard-status { display: inline-flex; border-radius: 999px; padding: 0.4rem 0.65rem; background: light-dark(#dcebe5, var(--app-dark-surface-soft)); color: light-dark(#315f57, var(--app-dark-accent)); font-size: 0.82rem; font-weight: 650; }
 .dashboard-status.is-expired { background: light-dark(#f2dedb, var(--app-dark-danger-surface)); color: light-dark(#8c4141, var(--app-dark-danger)); }
 .dashboard-interest-inbox { padding: 1rem; }
@@ -293,8 +294,18 @@
   .dashboard-interest-actions > * { width: 100%; }
   .dashboard-access-row { align-items: flex-start; flex-direction: column; }
   .dashboard-access-row .dashboard-interest-actions { width: 100%; }
-  .dashboard-share-link-row { align-items: stretch; flex-direction: column; }
-  .dashboard-share-link-row code { width: 100%; }
+  .dashboard-overview { gap: 0.75rem; }
+  .dashboard-stats-grid { gap: 0.45rem; }
+  .dashboard-stat-card { min-width: 0; padding: 0.7rem 0.65rem !important; box-shadow: 0 6px 18px rgb(29 52 58 / 0.06); }
+  .dashboard-stat-card > div { align-items: flex-start; gap: 0.35rem; }
+  .dashboard-stat-card > div svg { width: 0.85rem; height: 0.85rem; flex: 0 0 auto; margin-top: 0.12rem; }
+  .dashboard-stat-card > div span { font-size: 0.7rem; line-height: 1.2; }
+  .dashboard-stat-card > p { margin-top: 0.45rem; font-size: 1rem; line-height: 1.2; }
+  .dashboard-stat-detail,
+  .dashboard-stat-caption { margin-top: 0.2rem; font-size: 0.66rem; line-height: 1.25; }
+  .dashboard-share-link-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+  .dashboard-share-url { width: 100%; min-width: 0; overflow: hidden !important; text-overflow: ellipsis; white-space: nowrap; }
+  .dashboard-share-link-row .dashboard-secondary-action { min-height: 40px; padding-inline: 0.75rem; }
   .dashboard-access-history li { flex-direction: column; gap: 0.15rem; }
   .dashboard-relationship-lifecycle { padding: 0.9rem; }
   .dashboard-relationship-lifecycle > .dashboard-section-heading { padding-bottom: 0.65rem; }
