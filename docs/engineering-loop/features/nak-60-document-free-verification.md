@@ -129,3 +129,10 @@ the primary portrait. Playwright assertions now verify eight thumbnails, the
 expected public/private clear-versus-blurred counts, the primary portrait, and
 the precise non-identity disclosure instead of looking for the retired generic
 identity wording.
+
+The subsequent hosted browser run confirmed all gallery totals and privacy
+states, and exposed one final ordering assumption: once the primary portrait is
+included, it is intentionally the first featured Gallery image. The end-to-end
+test now verifies that initial portrait state, selects the second thumbnail,
+and then verifies the adaptive landscape state rather than assuming the Gallery
+opens on the first non-hero image.

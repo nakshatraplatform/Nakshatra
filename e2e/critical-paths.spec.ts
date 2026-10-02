@@ -125,12 +125,19 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
     })
     .toBe(0.75);
   const gallery = page.locator(".portfolio-gallery");
+  await expect(gallery.locator('.portfolio-gallery-feature img[data-orientation="portrait"]')).toBeVisible();
+  await expect(
+    gallery.locator(".portfolio-gallery-feature").getByAltText("Public portrait", { exact: true })
+  ).toBeVisible();
+  await gallery.getByRole("button", { name: "Show photo 2" }).click();
   await expect(gallery.locator('.portfolio-gallery-feature img[data-orientation="landscape"]')).toBeVisible();
-  await expect(gallery.getByAltText("Public landscape", { exact: true })).toBeVisible();
+  await expect(
+    gallery.locator(".portfolio-gallery-feature").getByAltText("Public landscape", { exact: true })
+  ).toBeVisible();
   await expect(gallery.locator(".portfolio-gallery-thumbnail")).toHaveCount(8);
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(1);
-  await expect(gallery.getByAltText("Public portrait", { exact: true })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Show photo 1" })).toBeVisible();
   await expect(gallery.getByRole("button", { name: "Photo 8, shared after approval" })).toBeVisible();
   await expect(gallery.getByAltText("Protected portrait")).toHaveCount(0);
   const galleryColumns = await gallery.locator(".portfolio-gallery-viewer").evaluate(
