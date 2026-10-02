@@ -34,6 +34,17 @@ describe("publication readiness service", () => {
     expect(rpc).toHaveBeenCalledWith("get_portfolio_publication_readiness");
   });
 
+  it.each([
+    [{ data: null, error: { code: "XX000" } }],
+    [{ data: { portfolioExists: "yes" }, error: null }],
+  ])("fails closed to an empty readiness projection", async (result) => {
+    const rpc = vi.fn().mockResolvedValue(result);
+    await expect(getPublicationReadiness({ rpc } as never)).resolves.toMatchObject({
+      portfolioExists: false,
+      published: false,
+    });
+  });
+
   it("persists a typed transition and returns the resulting projection", async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: { status: "ok", readiness },
@@ -47,6 +58,29 @@ describe("publication readiness service", () => {
       p_action: "editor_section",
       p_value: "astrology",
     });
+  });
+
+  it("sends null for an omitted value and rejects persistence failures", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "XX000" } });
+    await expect(updatePublicationProgress(
+      { rpc } as never,
+      { action: "previewed" }
+    )).rejects.toMatchObject({ code: "PUBLICATION_PROGRESS_FAILED", status: 500 });
+    expect(rpc).toHaveBeenCalledWith("update_portfolio_onboarding_progress", {
+      p_action: "previewed",
+      p_value: null,
+    });
+  });
+
+  it.each([
+    { status: "unknown", readiness },
+    { status: "ok", readiness: { portfolioExists: "yes" } },
+  ])("rejects malformed success projections", async (data) => {
+    const rpc = vi.fn().mockResolvedValue({ data, error: null });
+    await expect(updatePublicationProgress(
+      { rpc } as never,
+      { action: "previewed" }
+    )).rejects.toMatchObject({ code: "PUBLICATION_PROGRESS_FAILED", status: 500 });
   });
 
   it.each([

@@ -656,6 +656,9 @@ revoke all on function public.is_current_identity_reference_storage_object(text,
 grant execute on function public.is_current_identity_reference_storage_object(text,text)
   to authenticated;
 
+comment on function public.is_current_identity_reference_storage_object(text,text) is
+  'Non-enumerating Storage policy predicate scoped to the authenticated owner path and an active exact photo-verification binding.';
+
 drop policy if exists "Users can update own photos" on storage.objects;
 -- No replacement update policy: originals are uploaded once to unique paths.
 -- Metadata changes happen in public.portfolio_media, never by overwriting bytes.

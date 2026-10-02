@@ -71,9 +71,14 @@ select throws_ok(
 );
 
 reset role;
-update app_private.portfolio_publication_progress
-set selected_plan_code='launch_30',plan_selected_at=now()
-where portfolio_id='a4000000-0000-4000-8000-000000000001';
+insert into app_private.portfolio_publication_progress(
+  portfolio_id,selected_plan_code,plan_selected_at
+) values (
+  'a4000000-0000-4000-8000-000000000001','launch_30',now()
+) on conflict(portfolio_id) do update set
+  selected_plan_code=excluded.selected_plan_code,
+  plan_selected_at=excluded.plan_selected_at,
+  updated_at=now();
 set local role service_role;
 do $$ begin perform pg_temp.set_service_role_claims(); end $$;
 select is(

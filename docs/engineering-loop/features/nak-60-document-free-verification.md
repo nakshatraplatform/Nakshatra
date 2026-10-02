@@ -101,3 +101,23 @@ the pre-existing POSIX owner-only file-mode assertion for the opt-in Sandbox
 journal, which cannot be represented by Windows `stat` mode bits. Local pgTAP
 and real Didit Sandbox evidence remain unavailable without Docker and provider
 credentials respectively.
+
+## Pull-request CI correction (2026-10-02)
+
+PR #70 exposed two integration-test gaps rather than a reason to relax the
+production gates. The shared pgTAP publication fixture now provisions the
+pilot entitlement and exact candidate/portfolio/hero-photo binding expected by
+the current rules, including backfilling the candidate ID in older hero-media
+fixtures. The owner-only-photo test receives verification independently so it
+continues to isolate the media-visibility rule. The authenticated Storage
+predicate for an active verification reference is explicitly documented and
+allowlisted as a non-enumerating, owner-path-scoped perimeter helper.
+
+Focused service tests now cover malformed readiness data, persistence failure,
+omitted transition values, missing representative matching configuration,
+malformed representative preparation, and provider unavailability. Full unit
+coverage (excluding the known Windows-only POSIX mode assertion) passes, and
+all feature service/mapper/contract files clear the 80% per-metric gate. ESLint,
+TypeScript, `db:smoke`, and `git diff --check` pass. A local pgTAP replay remains
+unavailable on this Windows host because Docker is not installed; GitHub CI is
+the authoritative migration and pgTAP rerun for this correction.

@@ -64,6 +64,7 @@ describe("identity-verification services", () => {
     });
     preparePhotoReference.mockResolvedValue({ portraitImageBase64: "cGhvdG8=", sourceSha256: "d".repeat(64) });
     privilegedPhotoDownload.mockResolvedValue({ data: new Blob(["photo"]), error: null });
+    vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "test-identity-match-key-with-at-least-32-characters");
     vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_ID", "66666666-6666-4666-8666-666666666666");
     vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_VERSION", "3");
   });
@@ -129,6 +130,52 @@ describe("identity-verification services", () => {
     }));
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_birth_date");
     expect(createDiditVerificationSession).toHaveBeenCalledWith(expect.objectContaining({ birthDate: "1994-02-20" }));
+  });
+
+  it("fails closed when representative matching configuration is unavailable", async () => {
+    vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "too-short");
+    await expect(startBrokerdeskRepresentativeVerification({
+      supabase: supabaseWith([]),
+      workspaceRef: `wrk_${"a".repeat(32)}`,
+      birthDate: "1994-02-20",
+      proofHash: "c".repeat(64),
+      managementToken: "management-token",
+      managementTokenHash: "b".repeat(64),
+      callbackUrl: "https://nakshatra.test/verification/result",
+    })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
+      code: "IDENTITY_VERIFICATION_MATCHING_UNAVAILABLE",
+      status: 503,
+    }));
+  });
+
+  it("rejects malformed representative preparation and provider failures", async () => {
+    await expect(startBrokerdeskRepresentativeVerification({
+      supabase: supabaseWith([{ data: { attempt_id: "not-a-uuid" }, error: null }]),
+      workspaceRef: `wrk_${"a".repeat(32)}`,
+      birthDate: "1994-02-20",
+      proofHash: "c".repeat(64),
+      managementToken: "management-token",
+      managementTokenHash: "b".repeat(64),
+      callbackUrl: "https://nakshatra.test/verification/result",
+    })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
+      code: "IDENTITY_VERIFICATION_START_FAILED",
+      status: 503,
+    }));
+
+    createDiditVerificationSession.mockRejectedValueOnce(new Error("provider"));
+    await expect(startBrokerdeskRepresentativeVerification({
+      supabase: supabaseWith([{ data: [preparedRepresentative], error: null }]),
+      workspaceRef: `wrk_${"a".repeat(32)}`,
+      birthDate: "1994-02-20",
+      proofHash: "c".repeat(64),
+      managementToken: "management-token",
+      managementTokenHash: "b".repeat(64),
+      callbackUrl: "https://nakshatra.test/verification/result",
+    })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationSessionError>>({
+      code: "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE",
+      managementToken: "management-token",
+      status: 503,
+    }));
   });
 
   it("returns the management credential only after consent preparation when Didit is unavailable", async () => {

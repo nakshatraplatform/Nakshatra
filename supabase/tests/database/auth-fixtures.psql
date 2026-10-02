@@ -127,6 +127,41 @@ as $$
     )
 $$;
 
+-- Produces the minimum exact photo-bound proof required by the current
+-- publication gate. This is intentionally test-only and should be used only
+-- after a fixture has marked its normalized subject verified.
+create or replace function pg_temp.prime_photo_identity_verification(
+  p_portfolio_id uuid
+)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.portfolio_media media
+  set candidate_id = portfolio.candidate_id
+  from public.portfolios portfolio
+  where portfolio.id = p_portfolio_id
+    and media.portfolio_id = portfolio.id
+    and media.media_type = 'hero'
+    and media.candidate_id is null;
+
+  update app_private.identity_verification_subjects subject_record
+  set current_proof_method = 'portfolio_photo_liveness',
+      current_proof_portfolio_id = portfolio.id,
+      current_proof_media_id = media.id,
+      current_proof_sha256 = repeat('d', 64),
+      current_proof_workflow_id = 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+      current_proof_workflow_version = 1,
+      updated_at = pg_catalog.now()
+  from public.portfolios portfolio
+  join public.portfolio_media media
+    on media.portfolio_id = portfolio.id and media.media_type = 'hero'
+  where portfolio.id = p_portfolio_id
+    and subject_record.candidate_id = portfolio.candidate_id
+    and subject_record.status = 'verified'
+$$;
+
 create or replace function pg_temp.prime_paid_publication(
   p_portfolio_id uuid,
   p_draft jsonb
@@ -136,6 +171,16 @@ language sql
 security definer
 set search_path = ''
 as $$
+  insert into app_private.b2c_creator_entitlements (email_hash)
+  select app_private.normalized_email_hash(account.email)
+  from public.portfolios portfolio
+  join auth.users account on account.id = portfolio.user_id
+  where portfolio.id = p_portfolio_id
+  on conflict (email_hash) do update set
+    revoked_at = null,
+    revoked_by = null,
+    updated_at = pg_catalog.now();
+
   insert into app_private.portfolio_publication_progress (
     portfolio_id,
     selected_plan_code,
@@ -168,18 +213,5 @@ as $$
     disclosure_confirmed_at = excluded.disclosure_confirmed_at,
     updated_at = pg_catalog.now();
 
-  update app_private.identity_verification_subjects subject_record
-  set current_proof_method = 'portfolio_photo_liveness',
-      current_proof_portfolio_id = portfolio.id,
-      current_proof_media_id = media.id,
-      current_proof_sha256 = repeat('d', 64),
-      current_proof_workflow_id = 'ffffffff-ffff-4fff-8fff-ffffffffffff',
-      current_proof_workflow_version = 1,
-      updated_at = pg_catalog.now()
-  from public.portfolios portfolio
-  join public.portfolio_media media
-    on media.portfolio_id = portfolio.id and media.media_type = 'hero'
-  where portfolio.id = p_portfolio_id
-    and subject_record.candidate_id = portfolio.candidate_id
-    and subject_record.status = 'verified'
+  select pg_temp.prime_photo_identity_verification(p_portfolio_id)
 $$;

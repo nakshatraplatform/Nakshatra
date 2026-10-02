@@ -85,6 +85,12 @@ insert into public.portfolio_media (
     '{}'::jsonb
   );
 
+-- Keep this fixture verified so the assertion below isolates the visibility
+-- rule: owner-only media, rather than identity status, must block publication.
+select pg_temp.prime_photo_identity_verification(
+  '63000000-0000-4000-8000-000000000002'
+);
+
 select pg_temp.prime_paid_publication(
   '63000000-0000-4000-8000-000000000001',
   pg_temp.complete_portfolio_draft('{"personal":{"name":"Protected Primary"}}'::jsonb)
