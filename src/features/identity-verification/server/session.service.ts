@@ -101,8 +101,8 @@ async function attachCandidatePhotoSession(input: {
 
   let didit;
   try {
-    const workflowId = process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID?.trim() || "";
-    const workflowVersion = Number(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION);
+    const workflowId = process.env.DIDIT_WORKFLOW_ID?.trim() || "";
+    const workflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION);
     const registration = await input.repository.registerPhotoProviderCreate(
       input.prepared.attempt_id,
       workflowId,

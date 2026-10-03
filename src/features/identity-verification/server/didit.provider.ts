@@ -60,8 +60,8 @@ function expectedName(legalName: string) {
 }
 
 function photoMatchConfig() {
-  const parsed = z.uuid().safeParse(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID?.trim());
-  const version = z.coerce.number().int().positive().safeParse(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION?.trim());
+  const parsed = z.uuid().safeParse(process.env.DIDIT_WORKFLOW_ID?.trim());
+  const version = z.coerce.number().int().positive().safeParse(process.env.DIDIT_WORKFLOW_VERSION?.trim());
   if (!parsed.success || !version.success) throw new DiditProviderError();
   return { ...getDiditConfigForKey(), workflowId: parsed.data, workflowVersion: version.data };
 }

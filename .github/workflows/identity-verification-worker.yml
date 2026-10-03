@@ -38,15 +38,15 @@ jobs:
       - name: Validate isolated worker secrets
         env:
           DIDIT_API_KEY: ${{ secrets.DIDIT_API_KEY }}
-          DIDIT_PHOTO_MATCH_WORKFLOW_ID: ${{ secrets.DIDIT_PHOTO_MATCH_WORKFLOW_ID }}
-          DIDIT_PHOTO_MATCH_WORKFLOW_VERSION: ${{ secrets.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION }}
+          DIDIT_WORKFLOW_ID: ${{ secrets.DIDIT_WORKFLOW_ID }}
+          DIDIT_WORKFLOW_VERSION: ${{ secrets.DIDIT_WORKFLOW_VERSION }}
           IDENTITY_VERIFICATION_MATCH_HMAC_KEY: ${{ secrets.IDENTITY_VERIFICATION_MATCH_HMAC_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           test -n "$DIDIT_API_KEY" || { echo "DIDIT_API_KEY is not configured"; exit 1; }
-          [[ "$DIDIT_PHOTO_MATCH_WORKFLOW_ID" =~ ^[0-9a-fA-F-]{36}$ ]] || { echo "DIDIT_PHOTO_MATCH_WORKFLOW_ID is not configured"; exit 1; }
-          [[ "$DIDIT_PHOTO_MATCH_WORKFLOW_VERSION" =~ ^[1-9][0-9]*$ ]] || { echo "DIDIT_PHOTO_MATCH_WORKFLOW_VERSION is not configured"; exit 1; }
+          [[ "$DIDIT_WORKFLOW_ID" =~ ^[0-9a-fA-F-]{36}$ ]] || { echo "DIDIT_WORKFLOW_ID is not configured"; exit 1; }
+          [[ "$DIDIT_WORKFLOW_VERSION" =~ ^[1-9][0-9]*$ ]] || { echo "DIDIT_WORKFLOW_VERSION is not configured"; exit 1; }
           test "${#IDENTITY_VERIFICATION_MATCH_HMAC_KEY}" -ge 32 || { echo "IDENTITY_VERIFICATION_MATCH_HMAC_KEY is not configured"; exit 1; }
           test -n "$SUPABASE_URL" || { echo "SUPABASE_URL is not configured"; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY is not configured"; exit 1; }
@@ -69,8 +69,8 @@ jobs:
       - name: Process bounded verification batch
         env:
           DIDIT_API_KEY: ${{ secrets.DIDIT_API_KEY }}
-          DIDIT_PHOTO_MATCH_WORKFLOW_ID: ${{ secrets.DIDIT_PHOTO_MATCH_WORKFLOW_ID }}
-          DIDIT_PHOTO_MATCH_WORKFLOW_VERSION: ${{ secrets.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION }}
+          DIDIT_WORKFLOW_ID: ${{ secrets.DIDIT_WORKFLOW_ID }}
+          DIDIT_WORKFLOW_VERSION: ${{ secrets.DIDIT_WORKFLOW_VERSION }}
           IDENTITY_VERIFICATION_MATCH_HMAC_KEY: ${{ secrets.IDENTITY_VERIFICATION_MATCH_HMAC_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

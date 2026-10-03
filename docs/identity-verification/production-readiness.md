@@ -33,8 +33,8 @@ Create an isolated GitHub environment named
 `identity-verification-worker-production` with these environment secrets:
 
 - `DIDIT_API_KEY`
-- `DIDIT_PHOTO_MATCH_WORKFLOW_ID`
-- `DIDIT_PHOTO_MATCH_WORKFLOW_VERSION`
+- `DIDIT_WORKFLOW_ID`
+- `DIDIT_WORKFLOW_VERSION`
 - `IDENTITY_VERIFICATION_MATCH_HMAC_KEY` (independent app/worker key for representative birth-date comparison)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
