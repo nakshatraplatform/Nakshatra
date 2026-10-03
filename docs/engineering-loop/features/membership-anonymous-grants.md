@@ -30,7 +30,8 @@ production during verification.
   real migration, verify denial, authenticated/service access preservation,
   unchanged rows/policies and idempotency. This does not replace full pgTAP.
 - Full local Supabase replay/pgTAP is blocked: Docker daemon does not respond.
-  Hosted CI must replay migrations and run the full suite before merge.
+  Hosted CI run 37087110248 at code commit 283e78b completed migration replay
+  and all 924 pgTAP assertions across 32 files successfully.
 - Native PostgreSQL 14 execution passed: reproduced the original failed grant
   assertion using default anon/PUBLIC privileges, applied the real migration
   twice, confirmed SQLSTATE 42501 for anonymous reads and four write operations,
@@ -42,6 +43,10 @@ production during verification.
 - Database fixture smoke check and 11 migration-history/reference tests passed.
   Native fixture is deliberately smaller than the Supabase schema and does not
   establish a full integration-suite pass. Graphify executable unavailable.
+
+Pre-push database fixture checks, typecheck and all 846 unit tests passed. The
+hosted validation job still fails at the independent npm audit advisory; later
+application build and end-to-end steps in that job have not run.
 
 The migration changes only privileges and requires normal protected CD after
 merge to affect a hosted database. Re-granting anonymous access would restore
