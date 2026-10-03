@@ -122,6 +122,15 @@ npm run test:e2e
 
 `db:verify` requires Docker or Podman because it starts local Supabase, resets all migrations, and runs the pgTAP security suite.
 
+`security:audit` checks both production and all dependencies at the high/critical
+threshold. A temporary, user-approved exception for the exact Next ESLint
+development chain affected by `GHSA-vfj7-8cjw-p6xm` expires **October 9, 2026 at
+00:00 America/New_York**. It remains visible as an accepted-risk warning; it is
+not a vulnerability fix. Other high/critical findings, changed dependency scope,
+audit failures and expiry block CI. See
+[the exception record](docs/engineering-loop/features/eslint-glob-audit-remediation.md)
+for verification and removal instructions.
+
 ## Production releases
 
 Vercel's GitHub integration owns application builds and deployments. The GitHub
