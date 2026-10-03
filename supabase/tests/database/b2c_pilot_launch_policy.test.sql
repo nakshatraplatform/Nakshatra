@@ -74,6 +74,12 @@ select is(
 );
 
 reset role;
+insert into public.candidate_personal_details(candidate_id, profile_for)
+values ('73000000-0000-4000-8000-000000000001', 'self');
+update public.portfolios set draft_data = pg_temp.complete_portfolio_draft(
+  '{"personal":{"name":"Pilot Owner"}}'::jsonb
+)
+where id = '74000000-0000-4000-8000-000000000001';
 insert into app_private.b2c_creator_entitlements (email_hash)
 values (app_private.normalized_email_hash('invited@pilot.test'));
 
@@ -86,7 +92,7 @@ select ok(public.current_user_can_create_portfolio(), 'a confirmed allowlisted a
 select is(
   public.publish_portfolio_transaction(
     '74000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Pilot Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Pilot Owner"}}'::jsonb),
     '{"personal":{"name":"Pilot Owner"}}',
     '{"personal":{"name":"Pilot Owner"}}',
     'pilot_policy_token_01', now() + interval '90 days', 1, '#17151c', null

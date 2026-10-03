@@ -172,7 +172,9 @@ begin
 end;
 $$;
 
-create trigger enforce_pilot_self_publication
+-- Check the pilot ownership rule before the older publication gates so a
+-- representative payload always fails with the self-only policy violation.
+create trigger a_enforce_pilot_self_publication
   before insert or update of is_published, published_data on public.portfolios
   for each row execute function app_private.enforce_pilot_self_publication();
 revoke all on function app_private.enforce_pilot_self_publication() from public, anon, authenticated;

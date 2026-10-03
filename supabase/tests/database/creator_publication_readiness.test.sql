@@ -28,6 +28,9 @@ values (
   'a1000000-0000-4000-8000-000000000001'
 );
 
+insert into public.candidate_personal_details(candidate_id, profile_for)
+values ('a3000000-0000-4000-8000-000000000001', 'self');
+
 insert into public.portfolios(
   id, user_id, candidate_id, share_token, draft_data, published_data, is_published
 ) values (
@@ -36,7 +39,7 @@ insert into public.portfolios(
   'a3000000-0000-4000-8000-000000000001',
   'readiness_test_token_01',
   '{
-    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","current_location":"Boston","short_bio":"A thoughtful introduction."},
+    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","current_location":"Boston","short_bio":"A thoughtful introduction.","profile_for":"self"},
     "career":{"title":"Engineer"}
   }'::jsonb,
   null,

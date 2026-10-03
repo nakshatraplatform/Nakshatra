@@ -114,7 +114,7 @@ select ok(public.is_published_portfolio('a3000000-0000-4000-8000-000000000001'),
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     'a3000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Rollback Draft"}}'::jsonb,
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Rollback Draft"}}'::jsonb),
     '{"personal":{"name":"Unsafe"},"contact":{"phone":"leak"}}'::jsonb,
     '{"personal":{"name":"Rollback Full"}}'::jsonb,
     'unused_secure_token01', now() + interval '90 days', 3, '#17151c', 'kanya'
@@ -128,7 +128,7 @@ select is((select data #>> '{personal,name}' from public.approved_portfolio_snap
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     'a3000000-0000-4000-8000-000000000001',
-    '{"personal":{"name":"Approved Rollback Draft"}}'::jsonb,
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Rollback Draft"}}'::jsonb),
     '{"personal":{"name":"Still Safe"}}'::jsonb,
     '{"personal":{"name":"Unsafe Full"},"private_notes":"must remain owner-only"}'::jsonb,
     'unused_secure_token01', now() + interval '90 days', 3, '#17151c', 'kanya'
