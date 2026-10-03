@@ -10,8 +10,10 @@ begin
   if new.is_published = true
     and (tg_op = 'INSERT' or old.is_published is distinct from true
       or old.published_data is distinct from new.published_data)
-    and (new.draft_data ->> 'privacy_mode' is distinct from 'balanced'
-      or new.published_data ->> 'privacy_mode' is distinct from 'balanced') then
+    -- Legacy drafts without a mode already normalize to balanced in the app.
+    -- Only an explicit retired private mode needs a new review/update.
+    and (coalesce(new.draft_data ->> 'privacy_mode', 'balanced') <> 'balanced'
+      or coalesce(new.published_data ->> 'privacy_mode', 'balanced') <> 'balanced') then
     raise exception 'publication_current_introduction_required' using errcode = '23514';
   end if;
   return new;
