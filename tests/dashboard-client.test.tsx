@@ -234,7 +234,7 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
     await waitFor(() => expect(mocks.unpublish).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /sign out/i })[0]);
     await waitFor(() => expect(mocks.clearLocalSession).toHaveBeenCalled());
     expect(mocks.push).toHaveBeenCalledWith("/");
   });

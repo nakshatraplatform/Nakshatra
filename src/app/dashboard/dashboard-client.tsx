@@ -1,6 +1,6 @@
 "use client";
 
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -35,7 +35,6 @@ import {
   Clock,
   Edit3,
   Share2,
-  LogOut,
   RefreshCw,
   RotateCcw,
   Save,
@@ -52,8 +51,6 @@ import {
   ShieldCheck,
   Inbox,
   History,
-  Settings,
-  UserRoundCog,
   CheckCircle2,
   Circle,
   ArrowLeft,
@@ -356,12 +353,6 @@ export default function DashboardClient({
     }
   }
 
-  async function handleSignOut() {
-    const { clearLocalAccountSession } = await import("@/features/account/client/account.api");
-    await clearLocalAccountSession();
-    router.push("/");
-  }
-
   function updateSection<K extends keyof PortfolioData>(
     key: K,
     value: PortfolioData[K]
@@ -578,40 +569,7 @@ export default function DashboardClient({
 
   return (
     <div className="dashboard-shell flex flex-1 flex-col">
-      <header className="dashboard-header px-4 py-3">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <VivIntroBrand href="/dashboard" variant="horizontal" priority />
-          <div className="flex items-center gap-3">
-            <ThemeSwitch />
-            <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
-              {userEmail}
-            </span>
-            <Link
-              href="/brokers"
-              aria-label="My brokers"
-              title="My brokers"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <UserRoundCog className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/account"
-              aria-label="Account and privacy"
-              title="Account and privacy"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <CustomerAppHeader currentPage="dashboard" userEmail={userEmail} />
 
       <main className="relative z-10 flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">

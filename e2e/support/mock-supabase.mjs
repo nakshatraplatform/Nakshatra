@@ -237,6 +237,7 @@ const server = createServer((request, response) => {
   // read-only projections. Production authorization code is never replaced.
   if (request.headers.authorization === `Bearer ${themeTestToken}`) {
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/rpc/resolve_customer_broker_relationships") return sendJson(response, 200, { available: true, relationships: [] });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_team") return sendJson(response, 200, {
       available: true,
