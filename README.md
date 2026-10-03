@@ -122,6 +122,33 @@ npm run test:e2e
 
 `db:verify` requires Docker or Podman because it starts local Supabase, resets all migrations, and runs the pgTAP security suite.
 
+## Production releases
+
+Vercel's GitHub integration owns application builds and deployments. The GitHub
+`CD` workflow only applies Supabase migrations; it does not need `VERCEL_TOKEN`,
+`VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID`.
+
+- CI runs on pull requests targeting `main` and pushes to `main`. Its database
+  job replays migrations in a disposable local Supabase database and runs pgTAP.
+- After the selected main revision passes CI, manually dispatch `CD` on `main`
+  with `confirm_production` enabled. Configure `SUPABASE_ACCESS_TOKEN`,
+  `SUPABASE_PROJECT_REF`, and `SUPABASE_DB_PASSWORD` as GitHub Actions secrets
+  available to the `production` environment. The workflow pins checkout to the
+  dispatch revision, previews and applies pending migrations, then verifies
+  every checked-out migration is recorded remotely. It skips Vault updates.
+- CD does not run test fixtures or reset production. Its final history check
+  verifies recorded versions, not schema drift or application behavior. The
+  current manual workflow does not automatically enforce a successful CI run;
+  check CI for the selected revision before confirming the release.
+- Vercel does not wait for this separate workflow. Release backward-compatible
+  schema additions first, apply them through CD, then merge dependent application
+  changes. Remove obsolete database structures in a later compatible release.
+
+Clean replay and final-schema tests do not prove all populated upgrades work.
+The reference-prefix ordering regression covers the known disclosure-backfill
+failure; changes to data backfills also need representative existing-data
+upgrade tests before production.
+
 ## Relationship notification worker
 
 Complete Portfolio approvals, renewals, revocations, expiry reminders, and Broker Introduction lifecycle messages are queued transactionally in the database. Configure a scheduler to send an authenticated `POST` request to `/api/internal/relationship-notifications` with `Authorization: Bearer $NOTIFICATION_WORKER_SECRET`. The worker uses `SUPABASE_SERVICE_ROLE_KEY` only on the server, revalidates a Broker Introduction recipient before resolving their email, delivers through Resend, and records accepted, retryable, or terminal outcomes through the durable outbox. Keep the scheduler disabled until the Resend sender/domain and credentials are configured and a real-inbox rehearsal succeeds.

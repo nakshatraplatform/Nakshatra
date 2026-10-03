@@ -4,6 +4,27 @@
 -- optional email hash; no target broker, organization, candidate or customer
 -- relationship is looked up or disclosed.
 
+-- Admit the new reference types before creating their consumers or backfilling
+-- existing publications. The later Broker Standard migration repeats this
+-- definition for databases that already applied the lifecycle on empty data.
+create or replace function app_private.generate_public_reference(p_prefix text)
+returns text
+language plpgsql
+volatile
+set search_path = ''
+as $$
+begin
+  if p_prefix is null or p_prefix <> all(
+    array['wrk', 'bcr', 'bir', 'bpn', 'pvr', 'inc', 'tsk', 'imp', 'inv', 'mbr']::text[]
+  ) then
+    raise exception 'unsupported public reference type' using errcode = '22023';
+  end if;
+  return p_prefix || '_' || pg_catalog.encode(extensions.gen_random_bytes(16), 'hex');
+end;
+$$;
+
+revoke all on function app_private.generate_public_reference(text) from public, anon, authenticated;
+
 create table app_private.portfolio_disclosure_versions (
   id uuid primary key default extensions.gen_random_uuid(),
   version_ref text not null unique default app_private.generate_public_reference('pvr'),
