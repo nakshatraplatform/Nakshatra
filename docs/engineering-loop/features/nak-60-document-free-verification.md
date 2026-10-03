@@ -8,7 +8,53 @@ Mode: full (critical biometric, authorization, database and provider boundaries)
 - Durable issue: [NAK-60](https://linear.app/phoenix-works/issue/NAK-60/validate-didit-sandbox-and-deployed-end-to-end-verification-flow). Current issue body retains the earlier ID-based plan as history and appends the approved reset.
 - Approved direction: [document-free decision](../../identity-verification/liveness-only-decision.md); detailed [transition plan](../../plans/nak-60-document-free-verification-plan.md); [provider spike](../../spikes/api-didit-profile-photo-match-spike.md).
 - Current code: the candidate route sends the authenticated server-resolved hero photo to the version-pinned biometric workflow; the database binds the attempt and current proof to that media record and digest; photo replacement revokes the proof; the worker requires the exact workflow plus passive liveness and face match and rejects any document result. BrokerDesk representatives retain the separate document/name/date-of-birth policy.
-- Next step: apply the forward migration through protected CD, configure the two photo-workflow variables in Sandbox/Vercel/worker, and run the controlled real-device Sandbox create/webhook/reconcile/delete test. A real provider session, deletion evidence and privacy review remain release gates.
+- Next step: apply the forward migration through protected CD, configure `DIDIT_WORKFLOW_ID` and `DIDIT_WORKFLOW_VERSION` consistently in Vercel/worker, and run the controlled real-device Sandbox create/webhook/reconcile/delete test. A real provider session, deletion evidence and privacy review remain release gates.
+
+## Pre-production configuration rename (2026-10-02)
+
+User-approved change: use `DIDIT_WORKFLOW_ID` and `DIDIT_WORKFLOW_VERSION`
+instead of the `DIDIT_PHOTO_MATCH_WORKFLOW_*` names. Branch
+`fix/nak-60-didit-workflow-env`, base `b5cfea5`. This extends the full feature
+record because the setting crosses application, signed webhook and worker boundaries.
+
+The pre-production environment now selects one workflow. Configure the ID-free
+candidate workflow for candidate tests. Representative document verification
+still has independent decision requirements and must not be assumed functional
+with that workflow; concurrent independent workflows need separate configuration
+again before enabling both. No verification rule, signature check, database
+binding, timeout or deletion policy is relaxed. No remote settings or migrations
+are changed. The opt-in sandbox probe retains its explicit `DIDIT_SANDBOX_*`
+inputs to avoid accidentally consuming live credentials.
+
+Acceptance: provider and service consume the shared ID/version; the webhook
+requires only that workflow plus its secret and rejects other workflows; the
+worker consumes the renamed environment inputs while rejecting version drift;
+both protected worker steps forward the new names. Focused provider/service,
+webhook, worker and operations tests reject incomplete renames.
+
+Validation on this uncommitted increment (2026-10-02): the renamed contract
+first failed 17 tests against unchanged implementation, then all 49 focused
+tests passed after implementation. `npm run test:unit:coverage` passed all 835
+tests / 137 files and all 52 per-feature gates. `npm run lint` passed with two
+unused-disable warnings in unchanged Open Graph image files; `npm run typecheck`,
+`node --check scripts/identity-verification-worker.mjs` and `git diff --check`
+passed. Shared installed dependencies were used through an ignored symlink.
+Build/browser checks were not repeated (low disk space and the known Turbopack
+external-symlink limitation). No SQL changed, so pgTAP was not rerun. No real
+provider calls, deployment, credential edits, commit or push were performed.
+`graphify update .` could not run because the executable is unavailable.
+Fresh-context review (`didit_env_review`, model identifier unavailable) found no
+material finding in the runtime/test/configuration diff. Its independent worker
+exercise confirmed the shared settings and rejection of missing/wrong versions
+and wrong IDs before provider access. Runtime hashes stayed unchanged; this
+verification record and the project-map update were added after review began.
+
+Deployment: rename settings in Vercel and the protected GitHub worker environment
+together, then redeploy/restart. Keep ID/version equal to the published candidate
+workflow; a rename alone does not establish the original 503's cause. Rollback
+requires restoring the old names and the previous code together. Drain old test
+sessions before changing the selected workflow ID. Linear lookup for NAK-60 was
+unavailable in this session; no issue write was attempted.
 
 ## Contract and boundaries
 

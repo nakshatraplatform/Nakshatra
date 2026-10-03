@@ -125,8 +125,8 @@ export function createIdentityVerificationWorker(supabase, {
   apiKey = process.env.DIDIT_API_KEY,
   fetchImpl = fetch,
   identityMatchKey = process.env.IDENTITY_VERIFICATION_MATCH_HMAC_KEY,
-  photoWorkflowId = process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
-  photoWorkflowVersion = Number(process.env.DIDIT_PHOTO_MATCH_WORKFLOW_VERSION),
+  photoWorkflowId = process.env.DIDIT_WORKFLOW_ID,
+  photoWorkflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION),
   now = () => new Date(),
   requestTimeoutMs = PROVIDER_REQUEST_TIMEOUT_MS,
 } = {}) {

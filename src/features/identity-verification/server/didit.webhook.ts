@@ -6,7 +6,6 @@ import { z } from "zod/v4";
 const webhookConfigSchema = z.object({
   DIDIT_WEBHOOK_SECRET: z.string().min(16, "DIDIT_WEBHOOK_SECRET is required"),
   DIDIT_WORKFLOW_ID: z.uuid("DIDIT_WORKFLOW_ID must be a UUID"),
-  DIDIT_PHOTO_MATCH_WORKFLOW_ID: z.uuid("DIDIT_PHOTO_MATCH_WORKFLOW_ID must be a UUID"),
 });
 
 const diditWebhookEnvelopeSchema = z.object({
@@ -43,7 +42,6 @@ function getWebhookConfig() {
   const parsed = webhookConfigSchema.safeParse({
     DIDIT_WEBHOOK_SECRET: process.env.DIDIT_WEBHOOK_SECRET,
     DIDIT_WORKFLOW_ID: process.env.DIDIT_WORKFLOW_ID,
-    DIDIT_PHOTO_MATCH_WORKFLOW_ID: process.env.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
   });
   if (!parsed.success) throw new DiditWebhookError("DIDIT_WEBHOOK_UNAUTHORIZED");
   return parsed.data;
@@ -102,12 +100,8 @@ export function verifyDiditWebhook(input: {
 
   const envelope = diditWebhookEnvelopeSchema.safeParse(decoded);
   if (!envelope.success) throw new DiditWebhookError("DIDIT_WEBHOOK_INVALID");
-  const acceptedWorkflows = new Set([
-    config.DIDIT_WORKFLOW_ID,
-    config.DIDIT_PHOTO_MATCH_WORKFLOW_ID,
-  ]);
   if (!isCurrentTimestamp(String(envelope.data.timestamp), now)
-    || !acceptedWorkflows.has(envelope.data.workflow_id)) {
+    || envelope.data.workflow_id !== config.DIDIT_WORKFLOW_ID) {
     throw new DiditWebhookError("DIDIT_WEBHOOK_UNAUTHORIZED");
   }
 

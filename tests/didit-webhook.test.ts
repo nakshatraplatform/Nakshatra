@@ -21,7 +21,6 @@ const timestamp = String(Math.floor(now.getTime() / 1000));
 const config = {
   applicationId: "11111111-1111-4111-8111-111111111111",
   workflowId: "22222222-2222-4222-8222-222222222222",
-  photoWorkflowId: "77777777-7777-4777-8777-777777777777",
   webhookSecret: "test-webhook-secret",
 };
 const envelope = {
@@ -68,7 +67,6 @@ describe("Didit webhook verification", () => {
     vi.stubEnv("DIDIT_ENVIRONMENT", undefined);
     vi.stubEnv("DIDIT_WEBHOOK_SECRET", config.webhookSecret);
     vi.stubEnv("DIDIT_WORKFLOW_ID", config.workflowId);
-    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_ID", config.photoWorkflowId);
   }
 
   it("accepts only a current canonical V2 signature and returns safe persistence inputs", () => {
@@ -194,7 +192,7 @@ describe("Didit webhook verification", () => {
     expect(() => verify({ ...consoleEnvelope(), ...change })).toThrow();
   });
 
-  it.each(["DIDIT_WEBHOOK_SECRET", "DIDIT_WORKFLOW_ID", "DIDIT_PHOTO_MATCH_WORKFLOW_ID"])("requires %s", (key) => {
+  it.each(["DIDIT_WEBHOOK_SECRET", "DIDIT_WORKFLOW_ID"])("requires %s", (key) => {
     configure();
     vi.stubEnv(key, undefined);
     expect(() => verify(consoleEnvelope())).toThrow("DIDIT_WEBHOOK_UNAUTHORIZED");

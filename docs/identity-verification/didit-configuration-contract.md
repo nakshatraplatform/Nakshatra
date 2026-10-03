@@ -1,5 +1,12 @@
 # NAK-47 — Didit configuration and webhook compatibility
 
+> Current pre-production naming (2026-10-02): candidate sessions and worker
+> reconciliation use `DIDIT_WORKFLOW_ID` + `DIDIT_WORKFLOW_VERSION`; webhook
+> admission uses that same ID and `DIDIT_WEBHOOK_SECRET`. The original
+> three-setting contract below is historical. See the
+> [provider runbook](didit-provider-runbook.md#credential-and-webhook-handling)
+> for the current four-setting configuration and representative-flow limitation.
+
 ## Execution context and problem
 
 User requirement (2026-09-19): configure Didit using only `DIDIT_API_KEY`,

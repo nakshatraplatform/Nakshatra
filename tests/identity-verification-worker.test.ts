@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIdentityVerificationWorker, evaluateDiditDecision } from "../scripts/identity-verification-worker.mjs";
 import { hashIdentityBirthDate } from "../src/features/identity-verification/server/identity-match.mjs";
 
@@ -30,6 +30,35 @@ function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
 }
 
 describe("identity-verification worker", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("reconciles a photo claim using the shared workflow environment settings", async () => {
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);
+    vi.stubEnv("DIDIT_WORKFLOW_VERSION", "7");
+    const photoClaim = {
+      ...claim, verification_method: "portfolio_photo_liveness",
+      provider_workflow_id: workflowId, provider_workflow_version: 7,
+    };
+    const { client, rpc } = workerClient([photoClaim]);
+    const fetchImpl = vi.fn().mockImplementation(async () => Response.json({
+      session_id: claim.provider_session_ref, status: "Approved",
+      workflow_id: workflowId, workflow_version: 7,
+      liveness_checks: [{ status: "Approved", method: "PASSIVE_3D" }],
+      face_matches: [{ status: "Approved" }],
+    }));
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl }).run(1))
+      .resolves.toMatchObject({ completed: 1, deferred: 0 });
+    expect(rpc).toHaveBeenCalledWith("complete_identity_verification_reconciliation", expect.objectContaining({
+      p_outcome: "verified", p_id_verified: false,
+    }));
+    vi.stubEnv("DIDIT_WORKFLOW_VERSION", "8");
+    const mismatched = workerClient([photoClaim]);
+    await expect(createIdentityVerificationWorker(mismatched.client, { apiKey: "test-api-key", fetchImpl }).run(1))
+      .resolves.toMatchObject({ completed: 0, deferred: 1 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it("accepts the candidate photo workflow only with the pinned workflow and no document checks", () => {
     const photoClaim = {
       ...claim,

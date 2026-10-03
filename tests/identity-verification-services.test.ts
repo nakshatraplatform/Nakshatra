@@ -65,8 +65,8 @@ describe("identity-verification services", () => {
     preparePhotoReference.mockResolvedValue({ portraitImageBase64: "cGhvdG8=", sourceSha256: "d".repeat(64) });
     privilegedPhotoDownload.mockResolvedValue({ data: new Blob(["photo"]), error: null });
     vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "test-identity-match-key-with-at-least-32-characters");
-    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_ID", "66666666-6666-4666-8666-666666666666");
-    vi.stubEnv("DIDIT_PHOTO_MATCH_WORKFLOW_VERSION", "3");
+    vi.stubEnv("DIDIT_WORKFLOW_ID", "66666666-6666-4666-8666-666666666666");
+    vi.stubEnv("DIDIT_WORKFLOW_VERSION", "3");
   });
 
   it("creates a candidate invitation and maps authorization/database failures safely", async () => {
