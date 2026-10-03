@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
   try {
     await saveDashboardDraft({ supabase: auth.supabase, userId: auth.user.id, data: parsed.data });
-    const result = await publishPortfolio({ supabase: auth.supabase, userId: auth.user.id, data: parsed.data });
+    const result = await publishPortfolio({ supabase: auth.supabase, userId: auth.user.id, sessionId: auth.user.sessionId, data: parsed.data });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const portfolioError = error instanceof PortfolioPublishError ? error : null;

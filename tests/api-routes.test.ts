@@ -71,7 +71,7 @@ import { PortfolioRenewalError } from "../src/features/portfolio/server/renew.se
 import { PortfolioShareLifecycleError } from "../src/features/portfolio/server/share-lifecycle.service";
 import { AccessLifecycleError } from "../src/features/access/server/access.service";
 
-const actor = { status: "authenticated", user: { id: "owner" }, supabase: {} };
+const actor = { status: "authenticated", user: { id: "owner", sessionId: "session-id" }, supabase: {} };
 const accessGrantId = "11111111-1111-4111-8111-111111111111";
 const data = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", marital_status: "Single", country: "United States", city: "Boston", current_location: "Boston, United States", short_bio: "A thoughtful introduction." },

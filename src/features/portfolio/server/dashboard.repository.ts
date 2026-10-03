@@ -28,6 +28,8 @@ export interface PublicPortfolioSnapshotPayload {
 }
 
 export interface PublishPortfolioTransactionPayload {
+  actorUserId: string;
+  actorSessionId: string;
   portfolioId: string;
   draftData: Record<string, unknown>;
   publicData: Record<string, unknown>;
@@ -105,7 +107,9 @@ export class DashboardRepository {
 
   /** Atomically persists owner, public, approved, and horoscope publication state. */
   async publishPortfolioTransaction(payload: PublishPortfolioTransactionPayload) {
-    return this.supabase.rpc("publish_portfolio_transaction", {
+    return this.supabase.rpc("service_publish_portfolio_transaction", {
+      p_actor_user_id: payload.actorUserId,
+      p_actor_session_id: payload.actorSessionId,
       p_portfolio_id: payload.portfolioId,
       p_draft_data: payload.draftData,
       p_public_data: payload.publicData,

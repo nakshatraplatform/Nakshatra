@@ -23,6 +23,7 @@ import { createShareUrl } from "./share-url.service";
 import { ensurePortfolioPhotoPreviews } from "@/features/media/server/media.service";
 import { resolvePublicationExpiry } from "./lifecycle-policy";
 import { getPublicationReadiness } from "./publication-readiness.service";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 const publishTransactionResultSchema = z.object({
   status: z.enum([
@@ -56,10 +57,12 @@ export class PortfolioPublishError extends Error {
 export async function publishPortfolio({
   supabase,
   userId,
+  sessionId,
   data,
 }: {
   supabase: SupabaseClient;
   userId: string;
+  sessionId: string;
   data: PortfolioData;
 }) {
   if (data.privacy_mode === "private") {
@@ -139,8 +142,12 @@ export async function publishPortfolio({
 
   const themeColor = getCelestialBackground(data.style);
   const publicData = createPublicPortfolioSnapshot(canonicalData);
+  // Only the server-derived projections may cross the privileged write boundary.
+  const publicationRepository = new DashboardRepository(createServiceRoleClient());
   const { data: transactionData, error: transactionError } =
-    await repository.publishPortfolioTransaction({
+    await publicationRepository.publishPortfolioTransaction({
+      actorUserId: userId,
+      actorSessionId: sessionId,
       portfolioId: portfolio.id,
       draftData: canonicalData,
       publicData,

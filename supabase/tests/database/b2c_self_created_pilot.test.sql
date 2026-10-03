@@ -58,9 +58,9 @@ select ok(not has_function_privilege('authenticated', 'public.create_identity_ve
 
 set local role authenticated;
 select pg_temp.set_authenticated_claims('a1000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000001');
-select is(public.publish_portfolio_transaction('a4000000-0000-4000-8000-000000000001',
-  '{"personal":{"profile_for":"son"}}', '{}', '{}', 'self_pilot_token_01', null, 1, '#17151c', null)->>'status',
-  'self_portfolio_required', 'representative cannot publish via RPC');
+select throws_ok($$select public.publish_portfolio_transaction('a4000000-0000-4000-8000-000000000001',
+  '{"personal":{"profile_for":"son"}}', '{}', '{}', 'self_pilot_token_01', null, 1, '#17151c', null)$$,
+  '42501', null, 'browser credentials cannot publish through the retired RPC');
 select throws_ok($$select * from public.begin_candidate_photo_verification(
   null::uuid, repeat('a',64), repeat('b',64))$$, '42501', 'pilot self verification only', 'old invitation cannot start verification');
 select ok(public.resolve_public_portfolio('self_pilot_token_01') is null, 'unpublished link resolves no portfolio');
