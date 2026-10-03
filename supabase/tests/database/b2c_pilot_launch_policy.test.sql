@@ -74,14 +74,14 @@ select is(
 );
 
 reset role;
+insert into app_private.b2c_creator_entitlements (email_hash)
+values (app_private.normalized_email_hash('invited@pilot.test'));
 insert into public.candidate_personal_details(candidate_id, profile_for)
 values ('73000000-0000-4000-8000-000000000001', 'self');
 update public.portfolios set draft_data = pg_temp.complete_portfolio_draft(
   '{"personal":{"name":"Pilot Owner"}}'::jsonb
 )
 where id = '74000000-0000-4000-8000-000000000001';
-insert into app_private.b2c_creator_entitlements (email_hash)
-values (app_private.normalized_email_hash('invited@pilot.test'));
 
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
