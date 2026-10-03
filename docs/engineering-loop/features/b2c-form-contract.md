@@ -19,7 +19,9 @@ The canonical TypeScript public and approved snapshot mappers already run in the
 
 Implemented in `20261003145000_server_owned_portfolio_publication.sql`, the publish route, and the publication repository. The SQL wrapper checks the supplied actor/session against Supabase Auth's live session table and rebinds the existing atomic transaction to that session. Regression tests assert the old browser RPC and direct snapshot writes are unavailable. The route continues to derive both projections from the same canonical draft after authenticated readiness checks.
 
-Acceptance evidence still required: hosted pgTAP and app CI pass at the final revision; an actual server-route publication returns the durable opaque link; historical snapshots remain readable. Until the database migration is applied, new publication may temporarily be unavailable; do not silently fall back to the exposed old RPC. Existing readers and already published links must remain available.
+Acceptance evidence still required: hosted pgTAP and app CI pass at the final revision; an actual server-route publication returns the durable opaque link; historical snapshots remain readable. Do not silently fall back to the exposed old RPC. Existing readers and already published links must remain available.
+
+Production rollout is a separate release gate. The current CD workflow applies migrations only after a manual dispatch on `main`, whereas the app may deploy when `main` changes. An app-first rollout leaves the old authenticated publication RPC available until CD finishes. For a zero-exposure pilot transition, coordinate a database-first migration with deployment held or publication traffic closed; this deliberately causes a short fail-closed publish interval until the app is deployed. Do not open pilot publication traffic until the migration is verified in Production and a server-route publish smoke test passes. The manual CD workflow and migration history must stay consistent; do not run ad hoc SQL without a verified migration-history plan.
 
 ## Implementation and verification
 
