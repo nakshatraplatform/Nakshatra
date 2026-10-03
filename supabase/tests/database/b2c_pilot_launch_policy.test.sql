@@ -65,7 +65,7 @@ select is(
   'an uninvited viewer receives a safe draft-save status'
 );
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '74000000-0000-4000-8000-000000000001', '{}', '{}', '{}',
     'pilot_policy_token_01', now() + interval '90 days', 1, '#17151c', null
   ) ->> 'status',
@@ -90,7 +90,7 @@ select pg_temp.set_authenticated_claims(
 );
 select ok(public.current_user_can_create_portfolio(), 'a confirmed allowlisted account receives creator access');
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '74000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Pilot Owner"}}'::jsonb),
     '{"personal":{"name":"Pilot Owner"}}',
@@ -117,7 +117,7 @@ select pg_temp.set_authenticated_claims(
   '72000000-0000-4000-8000-000000000001'
 );
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '74000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Pilot Owner"}}'::jsonb),
     '{"personal":{"name":"Pilot Owner"}}',

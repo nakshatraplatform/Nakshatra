@@ -85,11 +85,13 @@ select pg_temp.prime_paid_publication(
   pg_temp.complete_portfolio_draft('{"personal":{"name":"Aditi Draft"},"contact":{"phone":"private"}}'::jsonb)
 );
 
-set local role authenticated;
-set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
+set local role service_role;
+select pg_temp.set_service_role_claims();
 
 select is(
-  public.publish_portfolio_transaction(
+  public.service_publish_portfolio_transaction(
+    'a1000000-0000-4000-8000-000000000001',
+    'a1100000-0000-4000-8000-000000000001',
     'a3000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Aditi Draft"},"contact":{"phone":"private"}}'::jsonb),
     '{"personal":{"name":"Aditi Public"}}'::jsonb,
@@ -99,9 +101,13 @@ select is(
   'ok',
   'owner publication commits the public and approved projections together'
 );
+reset role;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
 select is((select is_active from public.public_portfolio_snapshots where portfolio_id = 'a3000000-0000-4000-8000-000000000001'), true, 'publication activates the public snapshot');
 select is((select data #>> '{personal,name}' from public.approved_portfolio_snapshots where portfolio_id = 'a3000000-0000-4000-8000-000000000001'), 'Aditi Full', 'publication stores the approved projection');
 select ok(public.is_published_portfolio('a3000000-0000-4000-8000-000000000001'), 'the shared publication predicate accepts an active token-aligned snapshot');
+reset role;
 update public.public_portfolio_snapshots
 set share_token = 'mismatch_secure_tok01'
 where portfolio_id = 'a3000000-0000-4000-8000-000000000001';
@@ -110,9 +116,10 @@ update public.public_portfolio_snapshots
 set share_token = 'phase2_secure_token_1'
 where portfolio_id = 'a3000000-0000-4000-8000-000000000001';
 select ok(public.is_published_portfolio('a3000000-0000-4000-8000-000000000001'), 'restoring token alignment restores the publication predicate');
+set local role authenticated;
 
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     'a3000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Rollback Draft"}}'::jsonb),
     '{"personal":{"name":"Unsafe"},"contact":{"phone":"leak"}}'::jsonb,
@@ -126,7 +133,7 @@ select is((select draft_data #>> '{personal,name}' from public.portfolios where 
 select is((select data #>> '{personal,name}' from public.approved_portfolio_snapshots where portfolio_id = 'a3000000-0000-4000-8000-000000000001'), 'Aditi Full', 'failed publication rolls the approved projection back');
 
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     'a3000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Rollback Draft"}}'::jsonb),
     '{"personal":{"name":"Still Safe"}}'::jsonb,
@@ -298,7 +305,7 @@ select pg_temp.prime_paid_publication(
   pg_temp.complete_portfolio_draft('{"personal":{"name":"Republished Draft"}}'::jsonb)
 );
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     'a3000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Republished Draft"}}'::jsonb),
     '{"personal":{"name":"Republished Public"}}'::jsonb,

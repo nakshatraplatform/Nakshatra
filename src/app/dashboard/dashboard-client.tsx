@@ -1,6 +1,6 @@
 "use client";
 
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -35,7 +35,6 @@ import {
   Clock,
   Edit3,
   Share2,
-  LogOut,
   RefreshCw,
   RotateCcw,
   Save,
@@ -52,8 +51,6 @@ import {
   ShieldCheck,
   Inbox,
   History,
-  Settings,
-  UserRoundCog,
   CheckCircle2,
   Circle,
   ArrowLeft,
@@ -70,7 +67,6 @@ import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
-  publicIntroductionLabel,
 } from "@/features/portfolio/template";
 import {
   EMPTY_PUBLICATION_READINESS,
@@ -107,7 +103,6 @@ export default function DashboardClient({
   userEmail,
   shareUrl,
   isExpired,
-  daysLeft,
   media,
   mediaUrls: initialMediaUrls = {},
   horoscope = null,
@@ -128,6 +123,7 @@ export default function DashboardClient({
   const [draftSaveState, setDraftSaveState] = useState<"saved" | "unsaved" | "saving">("saved");
   const [publishing, setPublishing] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [sensitiveDisclosureAccepted, setSensitiveDisclosureAccepted] = useState(false);
   const [rotatingLink, setRotatingLink] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -160,13 +156,6 @@ export default function DashboardClient({
   const initialEditorSection = (
     readinessState.lastEditorSection || completion.nextEditorSection
   ) as PortfolioEditorSection;
-  const linkStatisticState = !portfolio?.is_published
-    ? undefined
-    : isExpired || (daysLeft !== null && daysLeft <= 0)
-      ? "expired"
-      : daysLeft !== null && daysLeft <= 7
-        ? "warning"
-        : "active";
   const selfCreatedPortfolio = draftData.personal.profile_for === "self"
     && portfolio?.published_data?.personal?.profile_for === "self";
   const publicShareReady = selfCreatedPortfolio
@@ -174,6 +163,7 @@ export default function DashboardClient({
   const pendingInterestCount = interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
+  const activeAccessCount = accessGrants.filter((grant) => grant.status === "active").length;
 
   useEffect(() => {
     if (draftSaveState === "saved") return;
@@ -292,6 +282,7 @@ export default function DashboardClient({
 
   /** Confirms the reviewed disclosure when needed, then atomically refreshes the public snapshot from the draft. */
   async function publishPortfolio() {
+    if (!sensitiveDisclosureAccepted) return;
     setPublishing(true);
     setDraftError(null);
     try {
@@ -301,7 +292,7 @@ export default function DashboardClient({
         );
         const disclosureResult = await updatePublicationProgressRequest({
           action: "confirm_disclosure",
-          value: "publication-disclosure-v1",
+          value: "publication-disclosure-v2",
         });
         if (!disclosureResult.ok) return void handlePortfolioApiFailure(disclosureResult);
         setReadinessState(disclosureResult.data.readiness);
@@ -356,12 +347,6 @@ export default function DashboardClient({
     }
   }
 
-  async function handleSignOut() {
-    const { clearLocalAccountSession } = await import("@/features/account/client/account.api");
-    await clearLocalAccountSession();
-    router.push("/");
-  }
-
   function updateSection<K extends keyof PortfolioData>(
     key: K,
     value: PortfolioData[K]
@@ -410,10 +395,15 @@ export default function DashboardClient({
   }
 
   async function reviewPortfolio() {
+    if (draftData.privacy_mode === "private") {
+      setDraftError("Update the saved sharing setup in Privacy & contact, then review the public Introduction before publishing.");
+      return;
+    }
     const saved = await persistDashboardDraft({ refresh: false });
     if (!saved) return;
     await markPreviewed();
     setFormOpen(false);
+    setSensitiveDisclosureAccepted(false);
     setReviewOpen(true);
   }
 
@@ -578,40 +568,7 @@ export default function DashboardClient({
 
   return (
     <div className="dashboard-shell flex flex-1 flex-col">
-      <header className="dashboard-header px-4 py-3">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <VivIntroBrand href="/dashboard" variant="horizontal" priority />
-          <div className="flex items-center gap-3">
-            <ThemeSwitch />
-            <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
-              {userEmail}
-            </span>
-            <Link
-              href="/brokers"
-              aria-label="My brokers"
-              title="My brokers"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <UserRoundCog className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/account"
-              aria-label="Account and privacy"
-              title="Account and privacy"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <CustomerAppHeader currentPage="dashboard" userEmail={userEmail} />
 
       <main className="relative z-10 flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
@@ -676,11 +633,16 @@ export default function DashboardClient({
               {canCreatePortfolio ? (
                 <button
                   type="button"
-                  onClick={() => completion.readyToPublish ? setReviewOpen(true) : setFormOpen(true)}
+                  onClick={() => {
+                    if (completion.readyToPublish && draftData.privacy_mode !== "private") {
+                      setSensitiveDisclosureAccepted(false);
+                      setReviewOpen(true);
+                    } else setFormOpen(true);
+                  }}
                   className="dashboard-primary-action"
                 >
                   <PanelRightOpen className="h-4 w-4" />
-                  {completion.readyToPublish
+                  {completion.readyToPublish && draftData.privacy_mode !== "private"
                     ? "Review and publish"
                     : portfolio
                       ? "Continue portfolio"
@@ -720,42 +682,30 @@ export default function DashboardClient({
 
           {(canCreatePortfolio || portfolio) && <>
           <div className="dashboard-overview" aria-label="Portfolio overview">
-            <div className="dashboard-stats-grid">
-              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
-                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                  <Inbox className="h-4 w-4" />
-                  <span className="text-sm font-medium">Interests received</span>
-                </div>
-                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
-                <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
+            <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Recent interests</span></div>
+                <p className="dashboard-stat-value">{interestItems.length}</p>
+                <span className="dashboard-stat-caption">Latest requests</span>
               </div>
-              <div
-                className="dashboard-glass dashboard-stat-card p-4"
-                data-link-state={linkStatisticState}
-              >
-                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm font-medium">Public link</span>
-                </div>
-                <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-                  {!publicShareReady
-                    ? "Unavailable until eligible"
-                    : isExpired
-                    ? "Expired"
-                    : portfolio?.is_published && daysLeft === null
-                    ? "Active until unpublished"
-                    : portfolio?.is_published && daysLeft !== null
-                    ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
-                    : "Not published"}
-                </p>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
+                <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
+                <p className="dashboard-stat-value">{pendingInterestCount}</p>
+                {pendingInterestCount > 0
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access">Review requests</a>
+                  : <span className="dashboard-stat-caption">All caught up</span>}
               </div>
-              <div className="dashboard-glass dashboard-stat-card p-4" data-stat-state="neutral">
-                <div className="flex items-center gap-2 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                  <Eye className="h-4 w-4" />
-                  <span className="text-sm font-medium">Portfolio views</span>
-                </div>
-                <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{viewCount}</p>
-                <span className="dashboard-stat-caption">All-time opens</span>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Active access</span></div>
+                <p className="dashboard-stat-value">{activeAccessCount}</p>
+                {activeAccessCount > 0
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access">Manage access</a>
+                  : <span className="dashboard-stat-caption">No current grants</span>}
+              </div>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Portfolio views</span></div>
+                <p className="dashboard-stat-value">{viewCount}</p>
+                <span className="dashboard-stat-caption">Recorded opens</span>
               </div>
             </div>
 
@@ -902,7 +852,7 @@ export default function DashboardClient({
                   <div className="grid gap-4 lg:grid-cols-2">
                     <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                       <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
-                        <h3 className="font-semibold">{publicIntroductionLabel(normalizePortfolioPrivacyMode(draftData.privacy_mode))}</h3>
+                        <h3 className="font-semibold">Public Introduction</h3>
                         <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">What anyone with the share link can see.</p>
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
@@ -932,12 +882,16 @@ export default function DashboardClient({
                     <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
                     <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <ReviewRequirement complete={completion.readyToPublish} label="Required portfolio details complete" pendingLabel={`${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing`} />
+                      <ReviewRequirement complete={completion.readyToPublish} label="Portfolio answers ready" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
                       <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Primary-photo liveness check complete" pendingLabel="Complete the primary-photo liveness check" />
                       <ReviewRequirement complete={readinessState.paymentActive} label="Private pilot access active" pendingLabel="Private pilot access required" />
                       <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                     </div>
                   </section>
+                  <label className="mt-4 flex items-start gap-3 rounded-xl border border-[light-dark(#b7cbc6,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4 text-sm leading-6">
+                    <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
+                    <span>I reviewed the public Introduction and Complete Portfolio previews. My full name and Marital Status will be visible to anyone with my active link. Complete Portfolio details, protected contact information, and exact birth details require my approval. I consent to publish the information shown in these previews. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
+                  </label>
                 </>
               )}
             </div>
@@ -956,7 +910,9 @@ export default function DashboardClient({
                   className="dashboard-primary-action"
                   disabled={
                     publishing
+                    || !sensitiveDisclosureAccepted
                     || !completion.readyToPublish
+                    || draftData.privacy_mode === "private"
                     || readinessState.verificationStatus !== "verified"
                   }
                   onClick={publishPortfolio}
@@ -965,7 +921,7 @@ export default function DashboardClient({
                   {publishing
                     ? "Publishing..."
                     : !completion.readyToPublish
-                      ? "Complete required details"
+                      ? completion.missing.length ? "Complete required details" : "Review entered answers"
                       : readinessState.verificationStatus !== "verified"
                         ? "Verification required"
                         : portfolio?.is_published
@@ -1067,6 +1023,7 @@ export default function DashboardClient({
                       ? "Changes autosave as a draft. Review and publish to update what people see."
                       : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
                   </p>
+                  <p className="text-xs leading-5 text-[light-dark(#64748b,var(--app-dark-muted))]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
                   <div className="dashboard-editor-actions flex gap-2">
                     <button
                       type="button"
@@ -1204,6 +1161,11 @@ function CreatorReadinessTracker({
         <p className="mt-4 text-xs leading-5 text-[light-dark(#64748b,var(--app-dark-muted))]">
           Still needed: {completion.missing.slice(0, 4).map((item) => item.label).join(", ")}
           {completion.missing.length > 4 ? ` and ${completion.missing.length - 4} more` : ""}.
+        </p>
+      ) : null}
+      {completion.invalidAnswers.length > 0 ? (
+        <p className="mt-2 text-xs leading-5 text-[light-dark(#9f2f2f,var(--app-dark-danger))]">
+          Review entered answer: {completion.invalidAnswers[0].label}
         </p>
       ) : null}
     </section>
@@ -2036,7 +1998,7 @@ function containsDisclosure(value: unknown): boolean {
 
 const EMPTY_DATA: PortfolioData = {
   privacy_mode: "balanced",
-  personal: { name: "", first_name: "", middle_name: "", last_name: "", dob: "", gender: undefined },
+  personal: { name: "", first_name: "", middle_name: "", last_name: "", dob: "", gender: undefined, profile_for: "self" },
   vitals: {},
   astrology: {},
   education: {},

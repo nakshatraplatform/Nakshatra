@@ -16,7 +16,7 @@ import CustomerBrokersPage from "../src/app/brokers/page";
 
 describe("customer broker relationships page", () => {
   it("shows the customer's cross-agency view without exposing it to a broker", async () => {
-    getAuthenticatedUser.mockResolvedValue({ supabase: {} });
+    getAuthenticatedUser.mockResolvedValue({ supabase: {}, user: { email: "owner@example.test" } });
     resolveRelationships.mockResolvedValue({
       available: true,
       relationships: [{
@@ -37,7 +37,7 @@ describe("customer broker relationships page", () => {
   });
 
   it("keeps the empty state simple", async () => {
-    getAuthenticatedUser.mockResolvedValue({ supabase: {} });
+    getAuthenticatedUser.mockResolvedValue({ supabase: {}, user: { email: "owner@example.test" } });
     resolveRelationships.mockResolvedValue({ available: true, relationships: [] });
     render(await CustomerBrokersPage());
     expect(screen.getByRole("heading", { name: "No broker relationships yet" })).toBeInTheDocument();

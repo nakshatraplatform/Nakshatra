@@ -59,7 +59,7 @@ describe("publication onboarding route", () => {
     ));
     const response = await PUT(request({
       action: "confirm_disclosure",
-      value: "publication-disclosure-v1",
+      value: "publication-disclosure-v2",
     }));
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({ code: "PAYMENT_REQUIRED" });

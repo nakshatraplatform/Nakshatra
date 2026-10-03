@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
-import { portfolioDraftSchema, type PortfolioData } from "@/types/portfolio";
+import { type PortfolioData } from "@/types/portfolio";
+import { portfolioEditorDraftSchema, portfolioFieldErrors } from "@/features/portfolio/form-contract";
 import {
   DashboardSaveError,
   saveDashboardDraft,
@@ -30,10 +31,10 @@ export async function PUT(request: Request) {
   } catch (error) {
     return requestSecurityErrorResponse(error);
   }
-  const parsed = portfolioDraftSchema.safeParse(payload?.data);
+  const parsed = portfolioEditorDraftSchema.safeParse(payload?.data);
   if (!parsed.success) {
     return NextResponse.json(
-      { code: "DASHBOARD_DATA_INVALID", error: "Some dashboard details are invalid.", details: parsed.error.flatten() },
+      { code: "DASHBOARD_DATA_INVALID", error: "Some dashboard details are invalid.", details: parsed.error.flatten(), fieldErrors: portfolioFieldErrors(parsed.error) },
       { status: 400 }
     );
   }

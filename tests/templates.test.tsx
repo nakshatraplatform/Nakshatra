@@ -122,12 +122,12 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Aditi Rao" })).toBeInTheDocument();
+    expect(screen.getByText("A Marriage Introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
     const heroLine = document.querySelector(".portfolio-hero-line");
-    expect(heroLine).toHaveTextContent("Engineer");
-    expect(heroLine).not.toHaveTextContent("Boston");
+    expect(heroLine).toHaveTextContent("Engineer, Boston");
     expect(heroLine).not.toHaveTextContent(/\d+ years/);
     expect(within(screen.getByLabelText("At a glance")).getByText(/Kanya \(Virgo\)/)).toBeInTheDocument();
     expect(screen.getByText("Warm, grounded, and curious about the world.")).toBeInTheDocument();
@@ -170,7 +170,10 @@ describe("celestial union portfolio", () => {
     expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Astrology" })).toHaveAttribute("href", "#astrology");
-    expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
+    expect(within(quickActions).getByRole("link", { name: "Family / Journey" })).toHaveAttribute("href", "#journey");
+    const quickFacts = screen.getByLabelText("At a glance");
+    expect(within(quickFacts).getByText("Marital Status")).toBeInTheDocument();
+    expect(within(quickFacts).queryByText("Lives in")).not.toBeInTheDocument();
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
     expect(screen.queryByText("Fair")).not.toBeInTheDocument();
     expect(screen.getByText("Kashyap")).toBeInTheDocument();
@@ -218,7 +221,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
     expect(approvedPersonalStory).toBeTruthy();
-    expect(within(approvedPersonalStory!).getByText("Never Married")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("At a glance")).getByText("Never Married")).toBeInTheDocument();
     expect(within(approvedPersonalStory!).getByText("Languages spoken")).toBeInTheDocument();
     expect(within(approvedPersonalStory!).getByText("Values")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /original horoscope/i })).toHaveAttribute("href", "/p/token/horoscope");
@@ -459,7 +462,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("Uttara Phalguni")).not.toBeInTheDocument();
     expect(screen.queryByText("Kashyap")).not.toBeInTheDocument();
     expect(screen.queryByText("Bharadwaj")).not.toBeInTheDocument();
-    expect(screen.queryByText("Never Married")).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("At a glance")).getByText("Never Married")).toBeInTheDocument();
     expect(screen.queryByText("India")).not.toBeInTheDocument();
     expect(screen.queryByText("Hindu")).not.toBeInTheDocument();
     expect(screen.queryByText("Smartha")).not.toBeInTheDocument();

@@ -76,6 +76,8 @@ describe("DashboardRepository", () => {
       career: null,
     });
     await repository.publishPortfolioTransaction({
+      actorUserId: "owner",
+      actorSessionId: "session",
       portfolioId: "portfolio",
       draftData: {},
       publicData: {},
@@ -94,7 +96,9 @@ describe("DashboardRepository", () => {
     expect(rpc).toHaveBeenCalledWith("save_dashboard_draft_transaction", {
       p_payload: expect.objectContaining({ portfolio: { draft_data: {} } }),
     });
-    expect(rpc).toHaveBeenCalledWith("publish_portfolio_transaction", expect.objectContaining({ p_portfolio_id: "portfolio" }));
+    expect(rpc).toHaveBeenCalledWith("service_publish_portfolio_transaction", expect.objectContaining({
+      p_actor_user_id: "owner", p_actor_session_id: "session", p_portfolio_id: "portfolio",
+    }));
     expect(rpc).toHaveBeenCalledWith("renew_portfolio_transaction", { p_expires_at: "2099-01-01" });
     expect(q.in).toHaveBeenCalledWith("visibility", ["public", "interest_required"]);
   });

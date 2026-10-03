@@ -1,12 +1,10 @@
 "use client";
 
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
-import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
+import { Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
 import {
   cancelAccountDeletionRequest,
@@ -130,15 +128,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
 
   return (
     <div className="account-privacy-shell">
-      <header className="dashboard-header px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <Link href="/dashboard" className="account-back-link">
-            <ArrowLeft aria-hidden="true" />
-            Dashboard
-          </Link>
-          <div className="app-header-actions"><VivIntroBrand href="/" variant="horizontal" /><ThemeSwitch /></div>
-        </div>
-      </header>
+      <CustomerAppHeader currentPage="account" userEmail={userEmail} />
 
       <main className="account-privacy-main">
         <div className="account-privacy-heading">

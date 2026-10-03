@@ -9,6 +9,7 @@ const repository = vi.hoisted(() => ({
 }));
 const ensurePortfolioPhotoPreviews = vi.hoisted(() => vi.fn());
 const getPublicationReadiness = vi.hoisted(() => vi.fn());
+const createServiceRoleClient = vi.hoisted(() => vi.fn());
 
 vi.mock("../src/features/portfolio/server/dashboard.repository", () => ({
   DashboardRepository: class {
@@ -24,15 +25,20 @@ vi.mock("../src/features/media/server/media.service", () => ({
 vi.mock("../src/features/portfolio/server/publication-readiness.service", () => ({
   getPublicationReadiness,
 }));
+vi.mock("../src/lib/supabase/admin", () => ({ createServiceRoleClient }));
 
 import {
   PortfolioPublishError,
-  publishPortfolio,
+  publishPortfolio as publishPortfolioWithSession,
 } from "../src/features/portfolio/server/publish.service";
 import {
   PortfolioRenewalError,
   renewPortfolioLink,
 } from "../src/features/portfolio/server/renew.service";
+
+function publishPortfolio(input: Omit<Parameters<typeof publishPortfolioWithSession>[0], "sessionId">) {
+  return publishPortfolioWithSession({ ...input, sessionId: "session-id" });
+}
 
 const draft: PortfolioData = {
   personal: {
@@ -41,9 +47,13 @@ const draft: PortfolioData = {
     dob: "1996-08-12",
     gender: "female",
     place_of_birth: "Bengaluru",
-    current_location: "Boston",
+    current_location: "Boston, United States",
+    country: "United States",
+    city: "Boston",
+    short_bio: "A thoughtful introduction.",
+    marital_status: "Never Married",
     immigration_status: "H1B",
-    profile_summary: "A thoughtful introduction.",
+    profile_summary: "I value steady relationships, close family ties, and honest communication. I enjoy building a calm home together.",
   },
   vitals: { height: `5'5"`, gotra: "Kashyap" },
   education: { degree: "MS", institution: "Northeastern" },
@@ -73,6 +83,7 @@ const draft: PortfolioData = {
 describe("portfolio lifecycle services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    createServiceRoleClient.mockReturnValue({});
     ensurePortfolioPhotoPreviews.mockResolvedValue(undefined);
     getPublicationReadiness.mockResolvedValue({
       portfolioExists: true,
@@ -120,6 +131,8 @@ describe("portfolio lifecycle services", () => {
     const result = await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
     expect(repository.publishPortfolioTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
+        actorUserId: "user-id",
+        actorSessionId: "session-id",
         portfolioId: "portfolio-id",
         shareToken: expect.stringMatching(/^.{21}$/),
         templateId: 1,
@@ -136,6 +149,7 @@ describe("portfolio lifecycle services", () => {
         }),
       })
     );
+    expect(createServiceRoleClient).toHaveBeenCalledOnce();
     expect(repository.publishPortfolioTransaction.mock.calls[0][0].expiresAt).toBeNull();
     expect(result).toMatchObject({ action: "created", shareUrl: expect.stringContaining("/p/") });
   });

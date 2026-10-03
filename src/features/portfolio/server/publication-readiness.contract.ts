@@ -23,7 +23,7 @@ export const publicationProgressActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("editor_section"), value: editorSectionSchema }).strict(),
   z.object({ action: z.literal("previewed"), value: z.null().optional() }).strict(),
   z.object({ action: z.literal("select_plan"), value: z.string().regex(/^[a-z0-9][a-z0-9_-]{2,79}$/) }).strict(),
-  z.object({ action: z.literal("confirm_disclosure"), value: z.literal("publication-disclosure-v1") }).strict(),
+  z.object({ action: z.literal("confirm_disclosure"), value: z.literal("publication-disclosure-v2") }).strict(),
 ]);
 
 export type PublicationReadiness = z.infer<typeof publicationReadinessSchema>;

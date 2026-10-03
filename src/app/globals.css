@@ -140,7 +140,7 @@
 .dashboard-welcome h2 { margin-top: 0.75rem; color: light-dark(#18272e, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; line-height: 1.05; }
 .dashboard-welcome p { margin-top: 0.7rem; color: light-dark(#59686d, var(--app-dark-muted)); }
 .dashboard-overview { display: grid; gap: 1rem; }
-.dashboard-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.dashboard-stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .dashboard-status { display: inline-flex; border-radius: 999px; padding: 0.4rem 0.65rem; background: light-dark(#dcebe5, var(--app-dark-surface-soft)); color: light-dark(#315f57, var(--app-dark-accent)); font-size: 0.82rem; font-weight: 650; }
 .dashboard-status.is-expired { background: light-dark(#f2dedb, var(--app-dark-danger-surface)); color: light-dark(#8c4141, var(--app-dark-danger)); }
 .dashboard-interest-inbox { padding: 1rem; }
@@ -281,6 +281,10 @@
 .dashboard-editor option { background: light-dark(#fff, var(--app-dark-surface)); color: light-dark(#1d3038, var(--app-dark-ink)); }
 .dashboard-editor [aria-invalid="true"] { border-color: light-dark(#b95c5c, var(--app-dark-border)) !important; box-shadow: 0 0 0 3px rgb(185 92 92 / 0.12); }
 
+@media (max-width: 900px) {
+  .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 640px) {
   .dashboard-welcome { flex-direction: column; }
   .dashboard-welcome-actions { width: 100%; }
@@ -295,14 +299,7 @@
   .dashboard-access-row { align-items: flex-start; flex-direction: column; }
   .dashboard-access-row .dashboard-interest-actions { width: 100%; }
   .dashboard-overview { gap: 0.75rem; }
-  .dashboard-stats-grid { gap: 0.45rem; }
-  .dashboard-stat-card { min-width: 0; padding: 0.7rem 0.65rem !important; box-shadow: 0 6px 18px rgb(29 52 58 / 0.06); }
-  .dashboard-stat-card > div { align-items: flex-start; gap: 0.35rem; }
-  .dashboard-stat-card > div svg { width: 0.85rem; height: 0.85rem; flex: 0 0 auto; margin-top: 0.12rem; }
-  .dashboard-stat-card > div span { font-size: 0.7rem; line-height: 1.2; }
-  .dashboard-stat-card > p { margin-top: 0.45rem; font-size: 1rem; line-height: 1.2; }
-  .dashboard-stat-detail,
-  .dashboard-stat-caption { margin-top: 0.2rem; font-size: 0.66rem; line-height: 1.25; }
+  .dashboard-stats-grid { gap: 0.65rem; }
   .dashboard-share-link-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
   .dashboard-share-url { width: 100%; min-width: 0; overflow: hidden !important; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-share-link-row .dashboard-secondary-action { min-height: 40px; padding-inline: 0.75rem; }
@@ -1204,6 +1201,7 @@ body {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   padding: 0 14px;
   border: 1px solid color-mix(in srgb, var(--portfolio-gold) 70%, var(--portfolio-border));
   border-radius: 6px;
@@ -1211,6 +1209,11 @@ body {
   font-size: 14px;
   font-weight: 750;
   text-decoration: none;
+}
+
+[data-template="celestial-union"] .portfolio-header-action svg {
+  width: 16px;
+  height: 16px;
 }
 
 [data-template="celestial-union"] .portfolio-header-action:hover,
@@ -1945,6 +1948,7 @@ body {
   margin: 0 auto;
   padding: 30px 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
@@ -3736,35 +3740,21 @@ body {
   backdrop-filter: none;
 }
 
-.dashboard-stat-card[data-link-state="warning"] {
-  border-color: var(--product-attention);
-  background: var(--product-attention-surface);
-}
-
-.dashboard-stat-card[data-link-state="warning"] .lucide-clock,
-.dashboard-stat-card[data-link-state="warning"] p {
-  color: var(--product-attention);
-}
-
-.dashboard-stat-card[data-link-state="expired"] {
-  border-color: var(--product-danger);
-  background: var(--product-danger-surface);
-}
-
-.dashboard-stat-card[data-link-state="expired"] .lucide-clock,
-.dashboard-stat-card[data-link-state="expired"] p {
-  color: var(--product-danger);
-}
-
-.dashboard-stat-card { position: relative; overflow: hidden; }
+.dashboard-stat-card { position: relative; display: flex; min-width: 0; min-height: 152px; flex-direction: column; gap: 0.4rem; overflow: hidden; padding: 1rem; }
 .dashboard-stat-card::before { position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--product-border); content: ""; }
 .dashboard-stat-card[data-stat-state="action"] { border-color: color-mix(in srgb, var(--product-primary) 45%, var(--product-border)); background: color-mix(in srgb, var(--product-primary) 7%, var(--product-surface)); }
 .dashboard-stat-card[data-stat-state="action"]::before { background: var(--product-primary); }
-.dashboard-stat-card[data-link-state="warning"]::before { background: var(--product-attention); }
-.dashboard-stat-card[data-link-state="expired"]::before { background: var(--product-danger); }
-.dashboard-stat-detail { display: inline-flex; margin-top: 0.25rem; color: var(--product-primary); font-size: 0.82rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.dashboard-stat-label { display: flex; align-items: flex-start; gap: 0.45rem; color: var(--product-muted); font-size: 0.875rem; font-weight: 600; line-height: 1.3; }
+.dashboard-stat-label svg { width: 1rem; height: 1rem; flex: 0 0 auto; margin-top: 0.08rem; }
+.dashboard-stat-value { margin: 0; color: var(--product-ink); font-size: 1.8rem; font-weight: 750; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dashboard-stat-detail { display: inline-flex; min-height: 44px; align-items: center; margin-top: auto; color: var(--product-primary); font-size: 0.875rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .dashboard-stat-detail:focus-visible { border-radius: 3px; outline: 3px solid color-mix(in srgb, var(--product-primary) 24%, transparent); outline-offset: 3px; }
-.dashboard-stat-caption { display: block; margin-top: 0.25rem; color: var(--product-muted); font-size: 0.82rem; }
+.dashboard-stat-caption { display: block; margin-top: auto; color: var(--product-muted); font-size: 0.82rem; line-height: 1.35; }
+
+@media (max-width: 640px) {
+  .dashboard-stat-card { padding: 0.85rem; }
+  .dashboard-stat-value { font-size: 1.7rem; }
+}
 
 .site-button-primary,
 .account-shell .auth-primary-btn,

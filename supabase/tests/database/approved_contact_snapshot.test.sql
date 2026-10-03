@@ -65,7 +65,7 @@ select pg_temp.set_authenticated_claims(
 );
 
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '65000000-0000-4000-8000-000000000004',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"},"visibility":{"contact":"restricted"}}',
@@ -111,7 +111,7 @@ select pg_temp.set_authenticated_claims(
   '65000000-0000-4000-8000-000000000002'
 );
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     '65000000-0000-4000-8000-000000000004',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
@@ -122,7 +122,7 @@ select throws_ok(
   'approved contact rejects owner-only secure notes'
 );
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     '65000000-0000-4000-8000-000000000004',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
@@ -133,7 +133,7 @@ select throws_ok(
   'approved snapshots reject contact fields outside the contact block'
 );
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     '65000000-0000-4000-8000-000000000004',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
@@ -144,7 +144,7 @@ select throws_ok(
   'approved contact entries reject unexpected nested fields'
 );
 select throws_ok(
-  $$select public.publish_portfolio_transaction(
+  $$select pg_temp.publish_portfolio_as_owner(
     '65000000-0000-4000-8000-000000000004',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',

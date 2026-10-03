@@ -26,4 +26,7 @@ export function requirePortfolioPublishReadiness({
       `Complete these required details before generating: ${firstItems}${remainder}`
     );
   }
+  if (completion.invalidAnswers.length) {
+    throw new PortfolioPublishReadinessError(`Review this answer before publishing: ${completion.invalidAnswers[0].label}`);
+  }
 }

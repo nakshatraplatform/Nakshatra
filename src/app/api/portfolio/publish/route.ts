@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
-import { portfolioDataSchema } from "@/types/portfolio";
+import { portfolioEditorPublishSchema, portfolioFieldErrors } from "@/features/portfolio/form-contract";
 import {
   PortfolioPublishError,
   publishPortfolio,
@@ -27,14 +27,14 @@ export async function POST(request: Request) {
   } catch (error) {
     return requestSecurityErrorResponse(error);
   }
-  const parsed = portfolioDataSchema.safeParse(payload?.data);
+  const parsed = portfolioEditorPublishSchema.safeParse(payload?.data);
   if (!parsed.success) {
-    return NextResponse.json({ code: "PORTFOLIO_DATA_INVALID", error: "Some portfolio details are invalid." }, { status: 400 });
+    return NextResponse.json({ code: "PORTFOLIO_DATA_INVALID", error: "Some portfolio details are invalid.", fieldErrors: portfolioFieldErrors(parsed.error) }, { status: 400 });
   }
 
   try {
     await saveDashboardDraft({ supabase: auth.supabase, userId: auth.user.id, data: parsed.data });
-    const result = await publishPortfolio({ supabase: auth.supabase, userId: auth.user.id, data: parsed.data });
+    const result = await publishPortfolio({ supabase: auth.supabase, userId: auth.user.id, sessionId: auth.user.sessionId, data: parsed.data });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const portfolioError = error instanceof PortfolioPublishError ? error : null;

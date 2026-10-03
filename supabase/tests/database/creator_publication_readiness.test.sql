@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(27);
+select plan(41);
 
 select pg_temp.create_auth_actor(
   'a1000000-0000-4000-8000-000000000001',
@@ -39,8 +39,9 @@ insert into public.portfolios(
   'a3000000-0000-4000-8000-000000000001',
   'readiness_test_token_01',
   '{
-    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","current_location":"Boston","short_bio":"A thoughtful introduction.","profile_for":"self"},
-    "career":{"title":"Engineer"}
+    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","gender":"female","country":"United States","city":"Boston","current_location":"Boston, United States","marital_status":"Never Married","short_bio":"A thoughtful introduction.","profile_for":"self"},
+    "career":{"title":"Engineer"},
+    "vitals":{"height":"5''5\""}
   }'::jsonb,
   null,
   false
@@ -55,6 +56,17 @@ insert into public.portfolio_media(
   'public', 0
 );
 
+select is(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft())::text, '{}'::text, 'complete pilot details satisfy the database publication contract');
+select ok('gender' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"gender":""}}'::jsonb))), 'missing gender is rejected');
+select ok('height' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"vitals":{"height":"8''2\""}}'::jsonb))), 'height outside offered range is rejected');
+select ok('current_city' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"city":""}}'::jsonb))), 'city is required independently of display location');
+select ok('current_location' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"current_location":"Old City"}}'::jsonb))), 'stale headline location is rejected');
+select ok('date_of_birth' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"dob":"1919-12-31"}}'::jsonb))), 'birth year before 1920 is rejected');
+select ok('first_name' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"first_name":"Ana2"}}'::jsonb))), 'non-alphabetic first name is rejected');
+select ok('personal_story' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"profile_summary":"short"}}'::jsonb))), 'answered personal story shorter than 80 is rejected');
+select ok('personal_story' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft(pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('profile_summary', repeat('x', 1601)))))), 'personal story over the editor maximum is rejected');
+select ok('interests' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"lifestyle":{"hobbies":"one,two,three,four,five,six,seven"}}'::jsonb))), 'more than six interests are rejected');
+
 select has_table('app_private', 'portfolio_publication_progress', 'publication journey is durable');
 select has_table('app_private', 'portfolio_payment_events', 'payment callback idempotency is durable');
 select ok(not has_function_privilege('anon', 'public.get_portfolio_publication_readiness()', 'EXECUTE'), 'anonymous callers cannot read owner readiness');
@@ -67,6 +79,9 @@ select pg_temp.set_authenticated_claims(
   'a2000000-0000-4000-8000-000000000001'
 );
 select is(jsonb_array_length(public.get_portfolio_publication_readiness() -> 'missingRequired'), 0, 'the inclusive minimum is complete without optional cultural or astrology details');
+select lives_ok($$update public.portfolios set draft_data = draft_data #- '{personal,marital_status}' where id = 'a4000000-0000-4000-8000-000000000001'$$, 'the owner can temporarily omit marital status in a draft');
+select is(public.get_portfolio_publication_readiness() -> 'missingRequired' ? 'marital_status', true, 'publication reports missing Marital Status');
+select lives_ok($$update public.portfolios set draft_data = jsonb_set(draft_data, '{personal,marital_status}', '"Never Married"') where id = 'a4000000-0000-4000-8000-000000000001'$$, 'the owner can complete Marital Status');
 select is(public.get_portfolio_publication_readiness() ->> 'verificationStatus', 'required', 'verification is initially required');
 select throws_ok(
   $$select public.update_portfolio_onboarding_progress('select_plan', 'launch_30')$$,
@@ -126,7 +141,8 @@ select pg_temp.set_authenticated_claims(
   'a1000000-0000-4000-8000-000000000001',
   'a2000000-0000-4000-8000-000000000001'
 );
-select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1') ->> 'status', 'ok', 'an entitled pilot creator can finalize disclosure without payment');
+select throws_ok($$select public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1')$$, '22023', 'invalid disclosure version', 'old disclosure consent cannot authorize a new public identity exposure');
+select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v2') ->> 'status', 'ok', 'an entitled pilot creator can finalize disclosure without payment');
 
 reset role;
 set local role service_role;
@@ -156,12 +172,12 @@ select pg_temp.set_authenticated_claims(
   'a1000000-0000-4000-8000-000000000001',
   'a2000000-0000-4000-8000-000000000001'
 );
-select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1') ->> 'status', 'ok', 'the final disclosure can be confirmed after verification and payment');
+select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v2') ->> 'status', 'ok', 'the final disclosure can be confirmed after verification and payment');
 select is(public.get_portfolio_publication_readiness() ->> 'disclosureConfirmed', 'true', 'the disclosure fingerprint is current');
 select lives_ok($$update public.portfolios set draft_data = jsonb_set(draft_data, '{personal,short_bio}', '"Updated introduction"') where id = 'a4000000-0000-4000-8000-000000000001'$$, 'draft edits remain available before publication');
 select is(public.get_portfolio_publication_readiness() ->> 'disclosureConfirmed', 'false', 'editing disclosure-relevant content invalidates consent');
 select throws_ok($$update public.portfolios set is_published = true, published_data = draft_data where id = 'a4000000-0000-4000-8000-000000000001'$$, '23514', 'publication_disclosure_required', 'publication is blocked until changed content is reviewed again');
-select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v1') ->> 'status', 'ok', 'the owner can reconfirm the changed disclosure');
+select is(public.update_portfolio_onboarding_progress('confirm_disclosure', 'publication-disclosure-v2') ->> 'status', 'ok', 'the owner can reconfirm the changed disclosure');
 select lives_ok($$update public.portfolios set is_published = true, published_data = draft_data where id = 'a4000000-0000-4000-8000-000000000001'$$, 'all publication gates permit the final transition');
 select is(public.get_portfolio_publication_readiness() ->> 'published', 'true', 'the journey reports publication completion');
 

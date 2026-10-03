@@ -12,7 +12,7 @@ export type PortfolioApiFailure = {
 export type PortfolioApiSuccess<T> = { ok: true; data: T };
 export type PortfolioApiResult<T> = PortfolioApiSuccess<T> | PortfolioApiFailure;
 
-type ApiErrorBody = { code?: string; error?: string };
+type ApiErrorBody = { code?: string; error?: string; fieldErrors?: Record<string, string[]> };
 
 /**
  * Calls a portfolio dashboard endpoint and normalizes transport and API errors for the UI.
@@ -27,7 +27,9 @@ async function requestPortfolioApi<T>(url: string, init: RequestInit): Promise<P
         ok: false,
         error: {
           code: body?.code || "PORTFOLIO_REQUEST_FAILED",
-          message: body?.error || "We could not complete that portfolio action. Please try again.",
+          message: body?.fieldErrors
+            ? Object.entries(body.fieldErrors)[0]?.[1]?.[0] || body?.error || "Review your portfolio details."
+            : body?.error || "We could not complete that portfolio action. Please try again.",
           status: response.status,
         },
       };

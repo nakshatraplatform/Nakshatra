@@ -71,10 +71,12 @@ import { PortfolioRenewalError } from "../src/features/portfolio/server/renew.se
 import { PortfolioShareLifecycleError } from "../src/features/portfolio/server/share-lifecycle.service";
 import { AccessLifecycleError } from "../src/features/access/server/access.service";
 
-const actor = { status: "authenticated", user: { id: "owner" }, supabase: {} };
+const actor = { status: "authenticated", user: { id: "owner", sessionId: "session-id" }, supabase: {} };
 const accessGrantId = "11111111-1111-4111-8111-111111111111";
 const data = {
-  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
+  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", marital_status: "Single", country: "United States", city: "Boston", current_location: "Boston, United States", short_bio: "A thoughtful introduction." },
+  vitals: { height: `5'5"` },
+  career: { title: "Engineer" },
   astrology: { rashi: "kanya" },
   style: { rashi_palette: "kanya-midnight" },
 };
@@ -140,7 +142,7 @@ describe("dashboard and portfolio lifecycle routes", () => {
 
   it("validates and saves dashboard drafts", async () => {
     expect((await dashboardPut(mutationRequest("http://local/api/dashboard", "PUT", "{"))).status).toBe(400);
-    expect((await dashboardPut(jsonRequest("http://local/api/dashboard", "PUT", { data: { personal: { gender: "other" } } }))).status).toBe(400);
+    expect((await dashboardPut(jsonRequest("http://local/api/dashboard", "PUT", { data: { personal: { gender: "unknown" } } }))).status).toBe(400);
     const response = await dashboardPut(jsonRequest("http://local/api/dashboard", "PUT", { data }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ portfolioId: "portfolio" });

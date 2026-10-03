@@ -148,6 +148,55 @@ test("deep BrokerDesk headers fit compact mobile widths", async ({ page, context
   }
 });
 
+test("customer navigation fits phone, tablet and desktop widths across protected pages", async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "The width matrix runs once in Chromium.");
+  await context.addCookies([themeTestCookie]);
+
+  for (const width of [320, 375, 414, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const [route, label] of [["/dashboard", "Dashboard"], ["/brokers", "My brokers"], ["/account", "Account"]] as const) {
+      await page.goto(route);
+      await expect(page).toHaveURL(new RegExp(`${route}$`));
+      await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
+      await noOverflow(page);
+      if (route === "/dashboard") {
+        const cards = page.locator(".dashboard-stats-grid .dashboard-stat-card");
+        await expect(cards).toHaveCount(4);
+        const positions = await cards.evaluateAll((elements) => elements.map((element) => {
+          const { x, y, width: cardWidth } = element.getBoundingClientRect();
+          return { x, y, cardWidth };
+        }));
+        if (width <= 900) {
+          expect(positions[0].y).toBe(positions[1].y);
+          expect(positions[2].y).toBe(positions[3].y);
+          expect(positions[2].y).toBeGreaterThan(positions[0].y);
+          expect(positions[0].x).toBe(positions[2].x);
+          expect(positions[0].cardWidth).toBeGreaterThanOrEqual(130);
+        } else {
+          expect(new Set(positions.map((position) => position.y)).size).toBe(1);
+        }
+      }
+      if ((width === 375 && (route === "/brokers" || route === "/dashboard")) || (width === 1024 && route === "/dashboard")) {
+        await page.screenshot({ path: testInfo.outputPath(`customer-${width}-${label.replaceAll(" ", "-")}.png`), fullPage: true, animations: "disabled" });
+      }
+      if (width <= 700) {
+        const menu = page.locator("summary[aria-label='Menu']");
+        await expect(menu).toBeVisible();
+        const box = await menu.boundingBox();
+        expect(box!.width).toBeGreaterThanOrEqual(44);
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+        await menu.click();
+        await expect(page.getByRole("navigation", { name: "Customer pages mobile" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+        await page.keyboard.press("Escape");
+        await expect(page.locator("details")).not.toHaveAttribute("open", "");
+      } else {
+        await expect(page.getByRole("navigation", { name: "Customer pages" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+      }
+    }
+  }
+});
+
 test("owner appearance and portaled interest forms ignore the app theme", async ({ page }) => {
   for (const [token, appearance, appTheme] of [["e2e-portfolio-token", "light", "dark"], ["e2e-dark-portfolio-token", "dark", "light"]]) {
     await page.goto("/");

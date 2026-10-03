@@ -137,9 +137,9 @@ describe("public portfolio snapshot", () => {
       privacy_mode: "private",
     });
     expect(privateSnapshot.career).toMatchObject({ title: "Engineer" });
-    expect(privateSnapshot.personal.name).toBe("Aditi");
+    expect(privateSnapshot.personal.name).toBe("Aditi Rao");
     expect(privateSnapshot.personal.first_name).toBe("Aditi");
-    expect(privateSnapshot.personal).not.toHaveProperty("last_name");
+    expect(privateSnapshot.personal.last_name).toBe("Rao");
     expect(privateSnapshot.personal).not.toHaveProperty("gender");
     expect(privateSnapshot.vitals?.height).toBe("5 ft 5 in");
     expect(privateSnapshot.astrology).toEqual({
@@ -151,7 +151,7 @@ describe("public portfolio snapshot", () => {
     expect(privateSnapshot.personal).not.toHaveProperty("long_term_goals");
     expect(privateSnapshot.personal).not.toHaveProperty("immigration_status");
     expect(privateSnapshot.personal).not.toHaveProperty("profile_summary");
-    expect(privateSnapshot.personal).not.toHaveProperty("marital_status");
+    expect(privateSnapshot.personal.marital_status).toBe("Never Married");
     expect(privateSnapshot.personal).not.toHaveProperty("citizenship");
     expect(privateSnapshot.personal).not.toHaveProperty("religion");
     expect(privateSnapshot.personal).not.toHaveProperty("community");
@@ -273,7 +273,7 @@ describe("public portfolio snapshot", () => {
       preferences: { narrative: longPartnerIntroduction },
     });
 
-    expect(snapshot.personal.name).toBe("Aditi");
+    expect(snapshot.personal.name).toBe("Aditi Rao");
     expect(snapshot.family?.public_summary?.length).toBeLessThanOrEqual(321);
     expect(snapshot.family?.public_summary).toMatch(/…$/);
     expect(snapshot.preferences?.narrative?.length).toBeLessThanOrEqual(241);

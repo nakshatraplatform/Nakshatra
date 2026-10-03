@@ -91,7 +91,7 @@ describe("publication readiness service", () => {
     const rpc = vi.fn().mockResolvedValue({ data: { status }, error: null });
     await expect(updatePublicationProgress(
       { rpc } as never,
-      { action: "confirm_disclosure", value: "publication-disclosure-v1" }
+      { action: "confirm_disclosure", value: "publication-disclosure-v2" }
     )).rejects.toMatchObject({ code });
   });
 });

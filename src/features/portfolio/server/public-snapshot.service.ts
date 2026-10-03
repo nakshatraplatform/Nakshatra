@@ -140,9 +140,8 @@ export function createPublicPortfolioSnapshot(data: PortfolioData): PortfolioDat
       )
   );
 
-  const displayName = privateMode
-    ? clean(personalName.first_name) || firstName(personalName.name)
-    : clean(personalName.name);
+  // The publication review explicitly discloses the full name in both modes.
+  const displayName = clean(personalName.name);
   const visibility = compactVisibility({
     ...(privateMode && hasJourney && !hasPrivateJourney ? { journey: "restricted" as const } : {}),
     ...(privateMode && hasLifestyle && !hasPrivateLifestyle ? { lifestyle: "restricted" as const } : {}),
@@ -178,20 +177,16 @@ export function createPublicPortfolioSnapshot(data: PortfolioData): PortfolioDat
     personal: {
       name: displayName || "Personal portfolio",
       first_name: personalName.first_name,
-      ...(!privateMode
-        ? {
-            middle_name: personalName.middle_name,
-            last_name: personalName.last_name,
-          }
-        : {}),
+      middle_name: personalName.middle_name,
+      last_name: personalName.last_name,
       age: ageFromDate(data.personal.dob),
       current_location: data.personal.current_location,
       ...(!privateMode ? { gender: data.personal.gender } : {}),
       short_bio: clean(data.personal.short_bio),
+      marital_status: data.personal.marital_status,
       ...(!privateMode ? { profile_summary: publicStory } : {}),
       ...(!privateMode
         ? {
-            marital_status: data.personal.marital_status,
             citizenship: data.personal.citizenship,
             religion: data.personal.religion,
             community: data.personal.community,
@@ -289,10 +284,6 @@ function compactVisibility(values: NonNullable<PortfolioData["visibility"]>) {
 function clean(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed || undefined;
-}
-
-function firstName(value?: string) {
-  return clean(value)?.split(/\s+/)[0];
 }
 
 function hasAny(values: Array<string | null | undefined>) {

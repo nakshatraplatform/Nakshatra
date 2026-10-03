@@ -63,6 +63,16 @@ describe("owner preview service", () => {
     expect(dependencies.photoUrls).toHaveBeenCalledWith(expect.objectContaining({ viewer: "public" }));
   });
 
+  it("previews the current public disclosure even for a historical reduced-disclosure draft", async () => {
+    dependencies.dashboard.findOwnerPreviewPortfolioForUser.mockResolvedValue({
+      data: { ...portfolio, draft_data: { ...portfolio.draft_data, privacy_mode: "private", personal: { ...portfolio.draft_data.personal, profile_summary: "A personal story." } } },
+      error: null,
+    });
+    const preview = await loadOwnerPublicPreview({} as never, "owner-1");
+    expect(preview?.data).toMatchObject({ privacy_mode: "balanced", personal: { profile_summary: "A personal story." } });
+    expect(dependencies.photoUrls).toHaveBeenCalledWith(expect.objectContaining({ privacyMode: "balanced" }));
+  });
+
   it("loads approved photos and an optional horoscope attachment", async () => {
     dependencies.horoscope.findByPortfolio.mockResolvedValue({
       data: {

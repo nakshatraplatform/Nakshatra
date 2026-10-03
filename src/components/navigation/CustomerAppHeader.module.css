@@ -1,0 +1,182 @@
+.header {
+  position: relative;
+  z-index: 20;
+}
+
+.inner {
+  width: min(100% - 2rem, 1100px);
+  min-height: 68px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+.desktopNav,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.desktopNav {
+  margin-left: auto;
+}
+
+.actions {
+  flex: none;
+  gap: 0.5rem;
+}
+
+.navLink,
+.desktopSignOut,
+.menuLink,
+.menuSignOut {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9px;
+  padding: 0.6rem 0.8rem;
+  color: light-dark(#344e59, var(--app-dark-ink));
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navLink:hover,
+.desktopSignOut:hover,
+.menuLink:hover,
+.menuSignOut:hover {
+  background: light-dark(#e9eeeb, var(--app-dark-surface-soft));
+}
+
+.navLink[aria-current="page"],
+.menuLink[aria-current="page"] {
+  background: light-dark(#e4eee9, var(--app-dark-surface-soft));
+  color: light-dark(#174c54, var(--app-dark-accent));
+}
+
+.desktopSignOut,
+.menuSignOut {
+  gap: 0.5rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.desktopSignOut:disabled,
+.menuSignOut:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.navLink:focus-visible,
+.desktopSignOut:focus-visible,
+.menuLink:focus-visible,
+.menuSignOut:focus-visible,
+.mobileMenu summary:focus-visible {
+  outline: 3px solid light-dark(#27716f, var(--app-dark-accent));
+  outline-offset: 2px;
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.error {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 0.5rem;
+  color: light-dark(#963e3e, var(--app-dark-danger));
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .inner {
+    width: calc(100% - 1.25rem);
+    min-height: 62px;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .desktopNav,
+  .desktopSignOut {
+    display: none;
+  }
+
+  .mobileMenu {
+    display: block;
+    position: relative;
+  }
+
+  .mobileMenu summary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid light-dark(#cbd4d0, var(--app-dark-border));
+    border-radius: 9px;
+    color: light-dark(#234750, var(--app-dark-ink));
+    background: light-dark(#fffdfa, var(--app-dark-surface));
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mobileMenu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .menuPanel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: min(19rem, calc(100vw - 1.25rem));
+    padding: 0.5rem;
+    border: 1px solid light-dark(#d8d8d2, var(--app-dark-border));
+    border-radius: 12px;
+    background: light-dark(#fffdfa, var(--app-dark-surface));
+    box-shadow: 0 16px 32px rgb(20 43 50 / 0.16);
+  }
+
+  .accountEmail {
+    overflow-wrap: anywhere;
+    margin: 0 0 0.35rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid light-dark(#e4e6e1, var(--app-dark-border));
+    color: light-dark(#5c6970, var(--app-dark-muted));
+    font-size: 0.75rem;
+  }
+
+  .menuPanel nav {
+    display: grid;
+  }
+
+  .menuLink,
+  .menuSignOut {
+    width: 100%;
+  }
+
+  .menuSignOut {
+    border-top: 1px solid light-dark(#e4e6e1, var(--app-dark-border));
+    border-radius: 0 0 8px 8px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 350px) {
+  .mobileMenu summary span {
+    display: none;
+  }
+
+  .mobileMenu summary {
+    min-width: 44px;
+    justify-content: center;
+  }
+}

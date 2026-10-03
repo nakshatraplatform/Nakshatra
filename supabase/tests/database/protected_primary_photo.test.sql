@@ -110,7 +110,7 @@ select pg_temp.set_authenticated_claims(
   '62000000-0000-4000-8000-000000000001'
 );
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '63000000-0000-4000-8000-000000000001',
     pg_temp.complete_portfolio_draft('{"personal":{"name":"Protected Primary"}}'::jsonb),
     '{"personal":{"name":"Protected Primary"}}',
@@ -134,7 +134,7 @@ select pg_temp.set_authenticated_claims(
   '62000000-0000-4000-8000-000000000002'
 );
 select is(
-  public.publish_portfolio_transaction(
+  pg_temp.publish_portfolio_as_owner(
     '63000000-0000-4000-8000-000000000002',
     '{"personal":{"name":"Owner Only Primary","profile_for":"self"}}',
     '{"personal":{"name":"Owner Only Primary"}}',

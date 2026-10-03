@@ -35,9 +35,9 @@ export function PolicyLayout({
   );
 }
 
-export function PolicySection({ title, children }: { title: string; children: ReactNode }) {
+export function PolicySection({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-5 sm:p-7">
+    <section id={id} className="scroll-mt-6 rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-5 sm:p-7">
       <h2 className="text-xl font-semibold text-[color:var(--workspace-ink)]">{title}</h2>
       <div className="mt-3 space-y-3 text-base leading-7 text-[color:var(--workspace-ink-muted)]">{children}</div>
     </section>

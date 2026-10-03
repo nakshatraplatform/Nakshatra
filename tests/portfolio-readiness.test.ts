@@ -8,12 +8,16 @@ const completeDraft: PortfolioDraftData = {
     first_name: "Aditi",
     last_name: "Rao",
     dob: "1996-08-12",
-    current_location: "Boston, Massachusetts, United States",
+    gender: "female",
+    current_location: "Boston, United States",
+    country: "United States",
+    city: "Boston",
     place_of_birth: "Bengaluru",
     short_bio: "A thoughtful introduction.",
+    marital_status: "Never Married",
   },
   career: { title: "Engineer" },
-  vitals: { gotra: "Kashyap" },
+  vitals: { gotra: "Kashyap", height: "5'5\"" },
   astrology: {
     time_of_birth: "09:15",
     rashi: "kanya",
@@ -27,8 +31,8 @@ describe("portfolio completion", () => {
   it("uses one deterministic checklist for completion and publication readiness", () => {
     expect(calculatePortfolioCompletion(completeDraft, true)).toMatchObject({
       percentage: 100,
-      completedCount: 7,
-      totalCount: 7,
+      completedCount: 11,
+      totalCount: 11,
       basicsComplete: true,
       detailsComplete: true,
       readyToPublish: true,
@@ -48,7 +52,7 @@ describe("portfolio completion", () => {
       "First name",
       "Shareable primary photo",
     ]);
-    expect(result.percentage).toBe(71);
+    expect(result.percentage).toBe(82);
   });
 
   it("rejects an invalid or under-18 date of birth", () => {
@@ -60,5 +64,17 @@ describe("portfolio completion", () => {
 
     expect(result.readyToPublish).toBe(false);
     expect(result.missing.map((item) => item.key)).toContain("date_of_birth");
+  });
+
+  it("guides a fully complete draft back to an invalid optional answer", () => {
+    const result = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, profile_summary: "Too short" },
+    }, true);
+    expect(result.completedCount).toBe(11);
+    expect(result.missing).toEqual([]);
+    expect(result.readyToPublish).toBe(false);
+    expect(result.nextEditorSection).toBe("story");
+    expect(result.invalidAnswers[0].label).toContain("at least 80 characters");
   });
 });
