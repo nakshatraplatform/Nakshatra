@@ -23,7 +23,7 @@
     "test:e2e": "playwright test",
     "test:all": "npm run lint && npm run typecheck && npm run test:unit:coverage && npm run test:db:local && npm run build && npm run test:e2e",
     "test:watch": "vitest",
-    "security:audit": "npm audit --audit-level=high",
+    "security:audit": "node scripts/security-audit.mjs",
     "privacy:process-deletions": "node scripts/process-account-deletions.mjs",
     "identity-verification:process": "node scripts/process-identity-verifications.mjs",
     "broker-introductions:process": "node scripts/process-broker-introductions.mjs",

@@ -12,6 +12,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Temporary ESLint audit risk acceptance](features/eslint-glob-audit-remediation.md): user-approved exception for one exact development advisory/graph until October 9, 2026 at 00:00 New York; all other high/critical findings remain blocking.
 - [Membership anonymous grants](features/membership-anonymous-grants.md): forward revoke migration verified by hosted clean replay and all 924 pgTAP assertions at 283e78b; production application remains pending CD.
 - [Database-only CD](features/database-only-cd.md): removes duplicate Vercel deployment, retains CI database tests before/after merge, and adds production migration-history verification; workflow changes are local pending release.
 - [Disclosure migration recovery](features/disclosure-migration-recovery.md): fixes the populated-upgrade reference-prefix prerequisite; all 70 migrations confirmed applied with zero pending; additional object/advisor queries are limited by intermittent CLI authentication. Supabase CLI is upgraded locally to 2.119.0.
