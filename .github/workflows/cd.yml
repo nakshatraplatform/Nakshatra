@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_production:
-        description: Confirm deployment to the production environment
+        description: Confirm applying database migrations to production
         required: true
         default: false
         type: boolean
@@ -15,24 +15,21 @@ concurrency:
 
 permissions:
   contents: read
-  deployments: write
 
 jobs:
   deploy-production:
-    name: Deploy Production
+    name: Apply Production Database Migrations
     if: github.ref == 'refs/heads/main' && inputs.confirm_production
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: main
+          # Keep this run on the revision selected when it was dispatched.
+          ref: ${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -42,14 +39,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Validate Vercel secrets
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          test -n "$VERCEL_TOKEN"
-          test -n "$VERCEL_ORG_ID"
-          test -n "$VERCEL_PROJECT_ID"
 
       - name: Validate Supabase migration deployment secrets
         env:
@@ -68,25 +57,25 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: npx supabase link --project-ref="$SUPABASE_PROJECT_REF" --password="$SUPABASE_DB_PASSWORD"
 
-      - name: Pull Vercel environment
-        run: npx vercel@latest pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
-
-      - name: Build production artifact
-        run: npx vercel@latest build --prod --token="${{ secrets.VERCEL_TOKEN }}"
-
       - name: Preview pending Supabase migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD" --dry-run
+        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD" --dry-run --skip-vault
 
       - name: Apply pending Supabase migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD"
+        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD" --skip-vault --yes
 
-      - name: Deploy production artifact
-        run: npx vercel@latest deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Verify production migration history
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          npx supabase migration list --linked --password="$SUPABASE_DB_PASSWORD" --output-format json > "$RUNNER_TEMP/migration-history.json"
+          node scripts/verify-migration-history.mjs "$RUNNER_TEMP/migration-history.json"
