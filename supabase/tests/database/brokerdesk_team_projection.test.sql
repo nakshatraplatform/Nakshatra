@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(20);
+select plan(24);
 
 select has_column('public', 'organization_members', 'member_ref', 'organization members have opaque references');
 select has_function('public', 'resolve_brokerdesk_team', array['text'], 'minimal team projection exists');
@@ -16,6 +16,28 @@ select ok(
   not has_table_privilege('anon', 'public.organization_members', 'select'),
   'anonymous callers cannot inspect membership rows'
 );
+select ok(
+  not has_table_privilege('anon', 'public.organization_members', 'insert,update,delete,truncate,references,trigger'),
+  'anonymous callers have no membership mutation or structural privileges'
+);
+select ok(
+  (select relrowsecurity from pg_class where oid = 'public.organization_members'::regclass),
+  'membership row-level security remains enabled'
+);
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+select throws_ok(
+  $$select * from public.organization_members$$,
+  '42501', null,
+  'anonymous membership reads are rejected at the table boundary'
+);
+select throws_ok(
+  $$insert into public.organization_members default values$$,
+  '42501', null,
+  'anonymous membership writes are rejected at the table boundary'
+);
+reset role;
 
 select pg_temp.create_auth_actor(
   'c1000000-0000-4000-8000-000000000001',
