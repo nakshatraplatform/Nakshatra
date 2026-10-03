@@ -122,7 +122,10 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Aditi Rao" })).toBeInTheDocument();
+    expect(screen.getByText("A Marriage Introduction")).toBeInTheDocument();
+    expect(document.querySelector(".portfolio-hero-facts")).toHaveTextContent(/years.*Brahmin/);
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Astrology" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
     const heroLine = document.querySelector(".portfolio-hero-line");
@@ -171,6 +174,7 @@ describe("celestial union portfolio", () => {
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Astrology" })).toHaveAttribute("href", "#astrology");
     expect(within(quickActions).getByRole("link", { name: "Details" })).toHaveAttribute("href", "#portfolio-profile");
+    expect(within(screen.getByLabelText("At a glance")).queryByText("Age")).not.toBeInTheDocument();
     expect(screen.queryByText("1996-08-12")).not.toBeInTheDocument();
     expect(screen.queryByText("Fair")).not.toBeInTheDocument();
     expect(screen.getByText("Kashyap")).toBeInTheDocument();
@@ -264,7 +268,8 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getAllByRole("link", { name: "Show interest" })).toHaveLength(2);
+    expect(document.querySelector(".portfolio-mobile-interest-action")).toHaveAttribute("href", "#portfolio-interest");
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
@@ -526,12 +531,14 @@ describe("adaptive portfolio media", () => {
 
   it("opens and closes a clear gallery photo in the full-screen viewer", () => {
     render(<AdaptivePortfolioGallery photos={[photos[1]]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Open Landscape full screen" }));
+    const opener = screen.getByRole("button", { name: "Open Landscape full screen" });
+    fireEvent.click(opener);
     const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText("Close")).toBeVisible();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close full-screen photo" }));
     expect(screen.queryByRole("dialog", { name: "Gallery photo viewer" })).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
   });
 
   it("supports buttons, thumbnails, keyboard controls, and mobile swipes", () => {
@@ -553,6 +560,14 @@ describe("adaptive portfolio media", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open Portrait full screen" }));
     const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
+    const close = within(dialog).getByRole("button", { name: "Close full-screen photo" });
+    const next = within(dialog).getByRole("button", { name: "Show next available photo" });
+    next.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(close).toHaveFocus();
+    close.focus();
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(next).toHaveFocus();
     expect(dialog).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(within(dialog).getByText("2 of 2")).toBeInTheDocument();

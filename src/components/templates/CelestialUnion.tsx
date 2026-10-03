@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
+import { MobileInterestAction } from "./MobileInterestAction";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   CELESTIAL_THEME_COLORS,
@@ -184,10 +185,12 @@ export default function CelestialUnion({
     : undefined;
   const visibleCareerTitle = journeyVisible ? careerTitle : undefined;
   const heroLine = visibleCareerTitle;
+  const heroFacts = [age ? `${age} years` : null, clean(data.personal.community)]
+    .filter((value): value is string => Boolean(value));
   const contactEntries = normalizedContacts(data.contact);
   const quickFacts = compactPairs([
     ["Moon sign (Rashi)", visibleRashi && rashiOption ? `${ZODIAC_SYMBOLS[visibleRashi]} ${rashiOption.label}` : undefined],
-    ["Age", age ? `${age} years` : undefined],
+    ["Age", heroFacts.length ? undefined : age ? `${age} years` : undefined],
     ["Height", clean(data.vitals?.height)],
     ["Lives in", currentLocation],
   ]);
@@ -361,8 +364,8 @@ export default function CelestialUnion({
   if (hasVisibleAstrology) {
     chapters.push({
       id: "astrology",
-      eyebrow: "Astrology",
-      title: "Cultural alignment",
+      eyebrow: "Cultural details",
+      title: "Astrology",
       content: (
         <>
           <div className="portfolio-astrology-grid">
@@ -407,8 +410,8 @@ export default function CelestialUnion({
   } else if (astrologyProtected) {
     chapters.push(protectedChapter(
       "astrology",
+      "Cultural details",
       "Astrology",
-      "Cultural alignment",
       "Astrology information exists and can be shared after approval.",
       showInterestSection
     ));
@@ -519,8 +522,8 @@ export default function CelestialUnion({
       <Chapter
         {...protectedChapter(
           "astrology",
+          "Cultural details",
           "Astrology",
-          "Cultural alignment",
           "Astrology information exists and can be shared after approval.",
           showInterestSection
         )}
@@ -547,6 +550,7 @@ export default function CelestialUnion({
       data-appearance={appearance}
       data-privacy-mode={privacyMode}
       data-access-mode={accessMode}
+      data-has-interest={showInterestSection}
       className="portfolio-root"
       style={variables}
     >
@@ -562,6 +566,7 @@ export default function CelestialUnion({
           {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
         </div>
       </header>
+      {showInterestSection && <MobileInterestAction />}
 
       {approvedViewer && (
         <aside className="portfolio-access-context" aria-label="Protected access details">
@@ -586,7 +591,7 @@ export default function CelestialUnion({
             </div>
           </div>
           <div className="portfolio-hero-copy">
-            <p className="portfolio-eyebrow">A private introduction</p>
+            <p className="portfolio-eyebrow">A Marriage Introduction</p>
             <div className="portfolio-name-row">
               <h1 id="portfolio-name">{clean(data.personal.name) || "Private introduction"}</h1>
               {identityVerified && (
@@ -600,6 +605,7 @@ export default function CelestialUnion({
                 </span>
               )}
             </div>
+            {heroFacts.length > 0 && <p className="portfolio-hero-facts">{heroFacts.join(" · ")}</p>}
             {heroLine && <p className="portfolio-hero-line">{heroLine}</p>}
             {shortBio && <p className="portfolio-hero-summary">{shortBio}</p>}
           </div>

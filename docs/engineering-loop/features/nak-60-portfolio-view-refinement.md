@@ -14,6 +14,22 @@ The full portfolio viewer excluded the primary portrait from the Gallery count, 
 - The private public introduction continues to hide Astrology values. It shows only a protected-section explanation and the existing interest action.
 - Mobile navigation remains visible, horizontally scrollable and uses 44-pixel tap targets.
 
+### 2 October 2026 pilot-readability override
+
+The preceding mobile-navigation decision is superseded by pilot feedback: on phone widths, a three-row header obscures the portfolio and the gallery lightbox's Close control. The phone header is now one row with VivIntro branding and Show interest; section links remain on wider screens. This is a presentation change only and does not change server disclosure rules, gallery authorization, or the Gallery → Astrology content order.
+
+Acceptance checks for this increment:
+
+- At 320, 375, and 414 px, the phone header is one row, the lightbox Close control is visible and tappable, and the page has no horizontal overflow.
+- The hero says “A Marriage Introduction”; age/community appear as concise facts only when present in the authorized projection, and profession is secondary copy.
+- The section heading is “Astrology” (rather than the less direct “Cultural alignment”) wherever that chapter appears.
+- Lightbox Escape, backdrop click, focus containment, and focus return work; protected photos remain unavailable.
+- Mobile Show interest remains reachable after the header scrolls away without duplicating the CTA on the first screen or covering the final page content. Desktop section links remain available.
+
+Implementation on `fix/nak-60-b2c-profile-readability` from merged `main` `b5cfea5` changes `CelestialUnion.tsx`, `AdaptivePortfolioMedia.tsx`, `MobileInterestAction.tsx`, `globals.css`, `tests/templates.test.tsx`, and `e2e/critical-paths.spec.ts`. Focused component/service tests pass 30/30. The Chromium critical-path suite passes 23 tests across desktop and mobile (one desktop-only skip), including the 320/375/414 px header, overflow, sticky action, lightbox, and browser-Back checks. This increment remains local and is not deployed.
+
+Final local checks for this increment: `npm run lint`, `npm run typecheck`, and `npm run build` pass. The production build used placeholder build-time Supabase public configuration; it does not establish that production credentials or live integrations are healthy.
+
 ## Implementation
 
 - `src/components/templates/CelestialUnion.tsx`

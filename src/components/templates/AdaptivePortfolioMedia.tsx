@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, LockKeyhole, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   classifyPhotoOrientation,
   type PortfolioPhoto,
@@ -134,6 +135,13 @@ export function AdaptivePortfolioGallery({
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [portalRoot, setPortalRoot] = useState<Element | null>(null);
+  const setGalleryElement = useCallback((element: HTMLElement | null) => {
+    if (element) setPortalRoot(element.closest('[data-template="celestial-union"]') || document.body);
+  }, []);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLButtonElement>(null);
+  const lightboxHistoryRef = useRef(false);
   const orderedPhotos = useMemo(
     () => photos
       .map((photo, index) => ({ photo, index }))
@@ -153,16 +161,54 @@ export function AdaptivePortfolioGallery({
   );
   const lightboxIndex = clearPhotos.findIndex((photo) => photo.id === lightboxPhotoId);
   const lightboxPhoto = lightboxIndex >= 0 ? clearPhotos[lightboxIndex] : null;
+  const lightboxOpen = Boolean(lightboxPhoto);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxPhotoId(null);
+    if (lightboxHistoryRef.current && window.history.state?.vivintroPhotoViewer) {
+      lightboxHistoryRef.current = false;
+      window.history.back();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      openerRef.current?.focus();
+    };
+  }, [lightboxOpen]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    function handleBack() {
+      lightboxHistoryRef.current = false;
+      setLightboxPhotoId(null);
+    }
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, [lightboxOpen]);
 
   useEffect(() => {
     if (!lightboxPhoto) return;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setLightboxPhotoId(null);
+        closeLightbox();
+      } else if (event.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") || []);
+        if (!controls.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
       } else if (event.key === "ArrowLeft" && clearPhotos.length > 1) {
         const previous = (lightboxIndex - 1 + clearPhotos.length) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[previous].id);
@@ -175,9 +221,8 @@ export function AdaptivePortfolioGallery({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
     };
-  }, [clearPhotos, lightboxIndex, lightboxPhoto]);
+  }, [clearPhotos, closeLightbox, lightboxIndex, lightboxPhoto]);
 
   if (!photos.length) return null;
 
@@ -218,7 +263,7 @@ export function AdaptivePortfolioGallery({
   }
 
   return (
-    <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
+    <section ref={setGalleryElement} className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
       <div className="portfolio-section-heading">
         <p>Captured moments</p>
         <h2 id="portfolio-gallery-title">Gallery</h2>
@@ -241,7 +286,14 @@ export function AdaptivePortfolioGallery({
               <button
                 type="button"
                 className="portfolio-gallery-open"
-                onClick={() => setLightboxPhotoId(activePhoto.id)}
+                onClick={(event) => {
+                  openerRef.current = event.currentTarget;
+                  if (!lightboxHistoryRef.current) {
+                    window.history.pushState({ ...window.history.state, vivintroPhotoViewer: true }, "");
+                    lightboxHistoryRef.current = true;
+                  }
+                  setLightboxPhotoId(activePhoto.id);
+                }}
                 aria-label={`Open ${activePhoto.alt || "gallery photo"} full screen`}
               >
                 <GalleryImage
@@ -297,11 +349,11 @@ export function AdaptivePortfolioGallery({
         </div>
       </div>
 
-      {lightboxPhoto && (
-        <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onMouseDown={(event) => {
-          if (event.currentTarget === event.target) setLightboxPhotoId(null);
+      {lightboxPhoto && portalRoot && createPortal(
+        <div ref={dialogRef} className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
+          if (event.currentTarget === event.target) closeLightbox();
         }}>
-          <button type="button" autoFocus className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close full-screen photo">
+          <button type="button" autoFocus className="portfolio-lightbox-close" onClick={closeLightbox} aria-label="Close full-screen photo">
             <X aria-hidden="true" />
             <span>Close</span>
           </button>
@@ -322,7 +374,8 @@ export function AdaptivePortfolioGallery({
               <ChevronRight aria-hidden="true" />
             </button>
           )}
-        </div>
+        </div>,
+        portalRoot
       )}
     </section>
   );

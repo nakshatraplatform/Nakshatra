@@ -300,3 +300,44 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });
+
+test("compact phone profile keeps the photo viewer closable", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "Phone breakpoints are checked in the mobile browser project.");
+
+  for (const width of [320, 375, 414]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto("/p/e2e-portfolio-token");
+    await expect(page.getByText("A Marriage Introduction")).toBeVisible();
+    const mobileAction = page.locator(".portfolio-mobile-interest-action");
+    await expect(mobileAction).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Introduction quick actions" })).toBeHidden();
+    const layout = await page.evaluate(() => ({
+      headerHeight: document.querySelector(".portfolio-header")?.getBoundingClientRect().height,
+      pageWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }));
+    expect(layout.headerHeight).toBeLessThanOrEqual(72);
+    expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewportWidth);
+    const nameBounds = await page.getByRole("heading", { name: "Aditi Rao" }).boundingBox();
+    expect(nameBounds).not.toBeNull();
+    expect(nameBounds!.y).toBeLessThan(760);
+
+    await page.evaluate(() => window.scrollTo(0, 500));
+    await expect(mobileAction).toBeVisible();
+
+    await page.getByRole("button", { name: "Open Public portrait full screen" }).click();
+    const dialog = page.getByRole("dialog", { name: "Gallery photo viewer" });
+    const close = dialog.getByRole("button", { name: "Close full-screen photo" });
+    await expect(close).toBeVisible();
+    const closeBounds = await close.boundingBox();
+    expect(closeBounds).not.toBeNull();
+    expect(closeBounds!.y).toBeLessThan(72);
+    await close.click();
+    await expect(dialog).toHaveCount(0);
+  }
+
+  await page.getByRole("button", { name: "Open Public portrait full screen" }).click();
+  await page.goBack();
+  await expect(page.getByRole("dialog", { name: "Gallery photo viewer" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/p\/e2e-portfolio-token$/);
+});
