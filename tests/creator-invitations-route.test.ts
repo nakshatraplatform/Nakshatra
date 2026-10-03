@@ -42,6 +42,15 @@ describe("admin creator invitations", () => {
     expect(listCreatorInvitations).toHaveBeenCalledWith({});
   });
 
+  it("protects invitation listing when the session or admin check fails", async () => {
+    getApiUser.mockResolvedValueOnce({ status: "missing_session" });
+    expect((await GET(new Request("http://local/api/admin/creator-invitations"))).status).toBe(401);
+    listCreatorInvitations.mockRejectedValueOnce({ code: "42501" });
+    expect((await GET(new Request("http://local/api/admin/creator-invitations"))).status).toBe(403);
+    listCreatorInvitations.mockRejectedValueOnce(new Error("database offline"));
+    expect((await GET(new Request("http://local/api/admin/creator-invitations"))).status).toBe(503);
+  });
+
   it("rejects unauthenticated and cross-origin invitation requests", async () => {
     getApiUser.mockResolvedValueOnce({ status: "missing_session" });
     expect((await POST(request({ email: "person@gmail.com", action: "grant" }))).status).toBe(401);
@@ -73,6 +82,30 @@ describe("admin creator invitations", () => {
     manageCreatorInvitation.mockResolvedValueOnce({ status: "revoked" });
     const response = await POST(request({ email: "person@gmail.com", action: "revoke" }));
     expect(response.status).toBe(200);
+    expect(sendResendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed commands and rate-limited administrators", async () => {
+    expect((await POST(request({ email: "bad", action: "grant" }))).status).toBe(400);
+    expect(manageCreatorInvitation).not.toHaveBeenCalled();
+    consumeRateLimit.mockResolvedValueOnce({ allowed: false, retryAfter: 45 });
+    expect((await POST(request({ email: "person@gmail.com", action: "grant" }))).status).toBe(429);
+    expect(manageCreatorInvitation).not.toHaveBeenCalled();
+  });
+
+  it("returns a private recovery link if email delivery fails", async () => {
+    sendResendEmail.mockResolvedValueOnce({ status: "failed" });
+    const response = await POST(request({ email: "person@gmail.com", action: "grant" }));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.delivery).toBe("failed");
+    expect(body.invitationUrl).toMatch(/^http:\/\/local\/invite\/[A-Za-z0-9_-]{43}$/);
+    expect(body.invitationUrl).not.toContain("person@gmail.com");
+  });
+
+  it("reports temporary administrator database failures without sending", async () => {
+    manageCreatorInvitation.mockRejectedValueOnce(new Error("database offline"));
+    expect((await POST(request({ email: "person@gmail.com", action: "grant" }))).status).toBe(503);
     expect(sendResendEmail).not.toHaveBeenCalled();
   });
 });

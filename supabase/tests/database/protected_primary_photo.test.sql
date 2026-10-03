@@ -96,6 +96,14 @@ select pg_temp.prime_paid_publication(
   pg_temp.complete_portfolio_draft('{"personal":{"name":"Protected Primary"}}'::jsonb)
 );
 
+-- This second actor is deliberately not publication-ready; make only the
+-- self-portfolio declaration valid so the media readiness rule is exercised.
+insert into public.candidate_personal_details(candidate_id, profile_for)
+values ('64000000-0000-4000-8000-000000000002', 'self')
+on conflict (candidate_id) do update set profile_for = 'self';
+update public.portfolios set draft_data = draft_data || '{"personal":{"profile_for":"self"}}'::jsonb
+where id = '63000000-0000-4000-8000-000000000002';
+
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '61000000-0000-4000-8000-000000000001',
@@ -128,7 +136,7 @@ select pg_temp.set_authenticated_claims(
 select is(
   public.publish_portfolio_transaction(
     '63000000-0000-4000-8000-000000000002',
-    '{"personal":{"name":"Owner Only Primary"}}',
+    '{"personal":{"name":"Owner Only Primary","profile_for":"self"}}',
     '{"personal":{"name":"Owner Only Primary"}}',
     '{"personal":{"name":"Owner Only Primary"}}',
     'owner_only_primary_01',

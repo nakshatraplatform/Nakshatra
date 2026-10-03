@@ -72,6 +72,10 @@ where candidate_id = 'a3000000-0000-4000-8000-000000000001';
 update public.portfolios set draft_data = '{"personal":{"profile_for":"self"}}'
 where id = 'a4000000-0000-4000-8000-000000000001';
 select ok(app_private.pilot_self_portfolio_eligible('a4000000-0000-4000-8000-000000000001'), 'self-owned draft is eligible');
+select pg_temp.prime_paid_publication(
+  'a4000000-0000-4000-8000-000000000001',
+  pg_temp.complete_portfolio_draft()
+);
 select throws_ok($$update public.portfolios set is_published = true,
   published_data = '{"personal":{"profile_for":"son"}}'
   where id = 'a4000000-0000-4000-8000-000000000001'$$,

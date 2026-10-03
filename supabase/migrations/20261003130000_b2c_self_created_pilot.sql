@@ -157,7 +157,14 @@ begin
   if new.is_published = true and (
     new.draft_data #>> '{personal,profile_for}' is distinct from 'self'
     or new.published_data #>> '{personal,profile_for}' is distinct from 'self'
-    or not app_private.pilot_self_portfolio_eligible(new.id)
+    or not exists (
+      select 1 from public.candidates candidate
+      join public.candidate_personal_details details on details.candidate_id = candidate.id
+      where candidate.id = new.candidate_id
+        and candidate.primary_owner_user_id = new.user_id
+        and candidate.created_by = new.user_id
+        and details.profile_for = 'self'
+    )
   ) then
     raise exception 'publication_self_portfolio_required' using errcode = '23514';
   end if;

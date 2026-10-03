@@ -176,6 +176,11 @@ as $$
   from public.portfolios portfolio where portfolio.id = p_portfolio_id
   on conflict (candidate_id) do update set profile_for = 'self';
 
+  -- Keep the persisted draft aligned with the draft whose publication
+  -- fingerprint is primed below. Pilot eligibility reads the stored draft.
+  update public.portfolios set draft_data = p_draft
+  where id = p_portfolio_id;
+
   insert into app_private.b2c_creator_entitlements (email_hash)
   select app_private.normalized_email_hash(account.email)
   from public.portfolios portfolio
