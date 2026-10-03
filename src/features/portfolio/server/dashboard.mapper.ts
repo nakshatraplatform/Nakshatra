@@ -199,7 +199,7 @@ export function mapCandidateDetails(data: PortfolioData) {
 }
 
 /**
- * Produces the two-mode public visibility rules for one portfolio.
+ * Produces public visibility rules for a portfolio, retaining legacy draft rules until its owner updates them.
  * Input: portfolio ID and validated visibility choices. Output: visibility_rules upsert rows.
  */
 export function mapDashboardVisibilityRules(data: PortfolioData) {

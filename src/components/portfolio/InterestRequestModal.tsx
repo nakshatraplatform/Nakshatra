@@ -365,6 +365,7 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
       </div>
       <div className="interest-form-footer">
         <p className="interest-form-note">{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p>
+        <p className="interest-form-note">Sending interest shares the details above with the introduction owner. Protected portfolio details are available only if they approve your request. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
         <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending}>{pending ? "Please wait..." : sessionEmail ? "Send interest" : "Verify email and continue"}</button>
       </div>
     </form>

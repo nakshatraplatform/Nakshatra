@@ -34,6 +34,12 @@ Dashboard, My brokers, and Account use one predictable header. On wide screens t
 
 The requested account-specific exemption is a separate security change. Exact account, environment, expiry, and allowed downstream effects must be recorded before implementation; this navigation change does not alter verification or sharing eligibility.
 
+## Dashboard overview refinement — 3 October 2026
+
+The owner dashboard's Public link tile duplicates sharing status instead of answering an owner question. Keep link availability and controls in the sharing panel. Use four existing, non-fabricated overview values: recent interests loaded for the owner, requests awaiting review, currently active Complete Portfolio grants, and recorded portfolio opens. The first three come from existing owner projections (which return at most 50 records), so avoid "all-time" or unique-person claims. The view counter is rate-limited and is labeled recorded opens, not unique visitors. A 2-by-2 grid at phone and tablet widths becomes one row of four at desktop widths. No new telemetry or authorization query is part of this presentation change.
+
+Acceptance: (1) no Public link metric remains; (2) counts update from the same owner-safe data used by the relationship queues; (3) link status and lifecycle controls remain available below the grid; (4) labels and numbers remain readable at 320, 375, and 414 CSS px without horizontal overflow; (5) existing grant and publication rules are untouched. Unit checks cover metric values and empty states; a responsive browser pass covers layout.
+
 ## Progress and evidence — 3 October 2026
 
 - The three customer routes now render the same `CustomerAppHeader`; the obsolete brokers-only header rules are removed.
@@ -44,3 +50,6 @@ The requested account-specific exemption is a separate security change. Exact ac
 - Fresh-context review found one stale dashboard test query caused by both responsive sign-out controls being present in jsdom; the test now selects the desktop control, and its 29-test suite passes. No other concrete regression was found in that review.
 - `graphify update .` completed; SQL graph extraction remains limited by an existing missing `tree_sitter_sql` dependency, unrelated to this UI change.
 - The local Windows pre-push suite reported 918 passing and two failing tests in untouched Didit sandbox and security-audit files. Their source is identical to `origin/main`; the failures appear platform-specific and are not attributed to NAK-101. This branch was pushed with Husky disabled for that one push; full CI remains the authority before merge.
+- Dashboard overview now uses four owner-safe metrics instead of a link-status metric: Recent interests, Needs review, Active access, and Portfolio views. Publication state and Copy/Rotate/Unpublish controls remain in the sharing panel. No verification or grant authorization logic changed.
+- Focused dashboard tests: 29 passed, including nonzero review and active-access counts. Playwright confirmed a 2-by-2 grid at 320, 375, 414, and 768 CSS px; a single row of four at 1024 and 1440 px; and no horizontal overflow on the protected-page width matrix. Screenshots reviewed at 375 and 1024 px with a loopback-only synthetic account.
+- Full lint with zero warnings, TypeScript typecheck, production build, and `git diff --check` passed. `graphify update .` completed; its SQL extractor still reports the pre-existing missing `tree_sitter_sql` optional dependency.

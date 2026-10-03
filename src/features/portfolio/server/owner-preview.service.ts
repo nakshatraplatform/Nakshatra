@@ -17,7 +17,9 @@ export async function loadOwnerPublicPreview(supabase: SupabaseClient, userId: s
     .findOwnerPreviewPortfolioForUser(userId);
   if (!portfolio) return null;
 
-  const data = createPublicPortfolioSnapshot(portfolio.draft_data as PortfolioData);
+  // Preview the disclosure that a new publication would create. Historical
+  // reduced-disclosure public snapshots stay pinned until explicit republication.
+  const data = createPublicPortfolioSnapshot({ ...(portfolio.draft_data as PortfolioData), privacy_mode: "balanced" });
   await ensurePortfolioPhotoPreviews({ supabase, portfolioId: portfolio.id });
   const { data: mediaRows } = await new PortfolioMediaRepository(supabase)
     .findPortfolioPhotos(portfolio.id);

@@ -13,12 +13,13 @@ export default function TermsPage() {
       title="Clear expectations for using VivIntro."
       summary="VivIntro is a tool for controlled marriage introductions. It is not a matchmaking service, background-check service, or source of legal or astrological advice."
     >
-      <PolicySection title="Your account and content">
+      <PolicySection id="data-accuracy" title="Your account and content">
         <p>You are responsible for keeping account access private and for the accuracy, permission, and legality of the information and files you add. Do not share sign-in links or upload information you are not authorized to use.</p>
+        <p>VivIntro displays selected information from your saved answers in a public Introduction and, after your approval, a Complete Portfolio. Review the public and Complete Portfolio previews before publishing, and correct inaccurate information in Portfolio details.</p>
       </PolicySection>
 
       <PolicySection title="Publishing and sharing">
-        <p>You decide when to publish. Anyone who receives an active public link may open or forward it, so review the public preview and privacy mode before sharing. You can unpublish or replace the link from the dashboard.</p>
+        <p>You decide when to publish. Anyone who receives an active public link may open or forward it, so review the public preview before sharing. You can unpublish or replace the link from the dashboard.</p>
       </PolicySection>
 
       <PolicySection title="Acceptable use">
@@ -37,7 +38,7 @@ export default function TermsPage() {
         <p>For questions about these terms, contact <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: September 21, 2026.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 3, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }

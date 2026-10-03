@@ -5,6 +5,7 @@ import {
   GraduationCap,
   FileText,
   ExternalLink,
+  Heart,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
@@ -66,8 +67,8 @@ export default function CelestialUnion({
   const approvedViewer = accessMode === "approved";
   const hasApprovedAccess = ownerPreview || approvedViewer;
   const privacyMode = data.privacy_mode || "balanced";
-  const briefPublicView = accessMode === "public" && privacyMode === "private";
-  const rashi = normalizeRashi(data.astrology?.rashi || sunSign);
+  const briefPublicView = !hasApprovedAccess && privacyMode === "private";
+  const rashi = normalizeRashi(data.astrology?.rashi || (ownerPreview ? sunSign : null));
   const rashiOption = RASHI_OPTIONS.find((option) => option.key === rashi);
   const heroPhoto = photos.find((photo) => photo.mediaType === "hero");
   const legacyOwnerPhoto: PortfolioPhoto | null =
@@ -183,13 +184,13 @@ export default function CelestialUnion({
       || clean(data.personal.long_term_goals)
     : undefined;
   const visibleCareerTitle = journeyVisible ? careerTitle : undefined;
-  const heroLine = visibleCareerTitle;
+  const heroLine = [visibleCareerTitle, currentLocation].filter(Boolean).join(", ");
   const contactEntries = normalizedContacts(data.contact);
   const quickFacts = compactPairs([
-    ["Moon sign (Rashi)", visibleRashi && rashiOption ? `${ZODIAC_SYMBOLS[visibleRashi]} ${rashiOption.label}` : undefined],
+    ["Moon Sign (Rashi)", visibleRashi && rashiOption ? `${ZODIAC_SYMBOLS[visibleRashi]} ${rashiOption.label}` : undefined],
     ["Age", age ? `${age} years` : undefined],
     ["Height", clean(data.vitals?.height)],
-    ["Lives in", currentLocation],
+    ["Marital Status", clean(data.personal.marital_status)],
   ]);
   const protectedItems = protectedSectionLabels({
     data,
@@ -211,7 +212,6 @@ export default function CelestialUnion({
           {hasPersonalDetails && (
             <div className="portfolio-detail-grid portfolio-personal-details">
               <DataPair label="Gender" value={genderLabel(data.personal.gender)} />
-              <DataPair label="Marital status" value={clean(data.personal.marital_status)} />
               <DataPair label="Citizenship" value={clean(data.personal.citizenship)} />
               <DataPair label="Religion or outlook" value={clean(data.personal.religion)} />
               <DataPair label="Sub-community" value={clean(data.personal.sub_community)} />
@@ -506,6 +506,16 @@ export default function CelestialUnion({
       && !pairedChapterIds.has(chapter.id)
   );
   const firstFullChapter = numberedChapters.find((chapter) => chapter.id !== "astrology");
+  const briefOverviewAvailable = Boolean(
+    educationTitle || careerTitle || languages.length || clean(data.lifestyle?.diet)
+    || hobbies.length || values.length || clean(data.family?.public_summary)
+    || clean(data.preferences?.narrative)
+  );
+  const familyJourneyTarget = briefPublicView
+    ? briefOverviewAvailable ? "#portfolio-profile" : null
+    : numberedChapters.some((chapter) => chapter.id === "journey")
+      ? "#journey"
+      : numberedChapters.some((chapter) => chapter.id === "family") ? "#family" : null;
   const remainingFullChapters = numberedChapters.filter(
     (chapter) => chapter.id !== firstFullChapter?.id && chapter.id !== "astrology"
   );
@@ -557,9 +567,9 @@ export default function CelestialUnion({
             <a href="#main-content">Overview</a>
             {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
             {astrologyChapter && <a href="#astrology">Astrology</a>}
-            {!briefPublicView && firstStandardChapter && <a href="#portfolio-profile">Details</a>}
+            {familyJourneyTarget && <a href={familyJourneyTarget}>Family / Journey</a>}
           </nav>
-          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest">Show interest</a>}
+          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest"><Heart aria-hidden="true" />Show interest</a>}
         </div>
       </header>
 
@@ -575,7 +585,6 @@ export default function CelestialUnion({
           </div>
         </aside>
       )}
-
       <main id="main-content" className="portfolio-main">
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
           <div className="portfolio-photo-stage">
@@ -586,7 +595,7 @@ export default function CelestialUnion({
             </div>
           </div>
           <div className="portfolio-hero-copy">
-            <p className="portfolio-eyebrow">A private introduction</p>
+            <p className="portfolio-eyebrow">A Marriage Introduction</p>
             <div className="portfolio-name-row">
               <h1 id="portfolio-name">{clean(data.personal.name) || "Private introduction"}</h1>
               {identityVerified && (
@@ -729,6 +738,9 @@ export default function CelestialUnion({
         <div><VivIntroBrand variant="full-symbol" decorative /></div>
         <p>Private marriage introductions, shared with care.</p>
         <a href="/received-a-link">Received this link? Read the viewer guide</a>
+        <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/privacy#corrections">Report or correct information</a>
       </footer>
     </div>
   );
@@ -892,6 +904,7 @@ function firstName(value?: string) {
 function genderLabel(value?: PortfolioData["personal"]["gender"]) {
   if (!value || value === "prefer_not_to_say") return undefined;
   if (value === "non_binary") return "Non-binary";
+  if (value === "other") return "Other";
   return value === "male" ? "Male" : "Female";
 }
 

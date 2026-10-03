@@ -62,6 +62,13 @@ export async function publishPortfolio({
   userId: string;
   data: PortfolioData;
 }) {
+  if (data.privacy_mode === "private") {
+    throw new PortfolioPublishError(
+      "Update this draft to the current public Introduction and review its preview before publishing.",
+      "PUBLIC_INTRODUCTION_UPDATE_REQUIRED",
+      409
+    );
+  }
   if (data.personal.profile_for !== "self") {
     throw new PortfolioPublishError(
       "The initial pilot supports only portfolios created by the person featured.",
@@ -131,17 +138,20 @@ export async function publishPortfolio({
   );
 
   const themeColor = getCelestialBackground(data.style);
+  const publicData = createPublicPortfolioSnapshot(canonicalData);
   const { data: transactionData, error: transactionError } =
     await repository.publishPortfolioTransaction({
       portfolioId: portfolio.id,
       draftData: canonicalData,
-      publicData: createPublicPortfolioSnapshot(canonicalData),
+      publicData,
       approvedData: createApprovedPortfolioSnapshot(canonicalData),
       shareToken,
       expiresAt,
       templateId: CELESTIAL_UNION_TEMPLATE_ID,
       themeColor,
-      sunSign: data.astrology?.rashi || null,
+      // This metadata is returned by the anonymous resolver, so it must follow
+      // the same visibility decision as the serialized public projection.
+      sunSign: publicData.astrology?.rashi || null,
     });
   const transaction = publishTransactionResultSchema.safeParse(transactionData);
   if (transactionError) {

@@ -117,13 +117,15 @@ language sql
 immutable
 as $$
   select
-    (coalesce(p_draft, '{}'::jsonb) - 'personal' - 'career')
+    (coalesce(p_draft, '{}'::jsonb) - 'personal' - 'career' - 'vitals')
     || pg_catalog.jsonb_build_object(
       'personal',
-      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","current_location":"Test City","short_bio":"A complete test introduction.","profile_for":"self"}'::jsonb
+      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","gender":"female","country":"United States","city":"Test City","current_location":"Test City, United States","marital_status":"Never Married","short_bio":"A complete test introduction.","profile_for":"self"}'::jsonb
         || coalesce(p_draft -> 'personal', '{}'::jsonb),
       'career',
-      '{"title":"Test role"}'::jsonb || coalesce(p_draft -> 'career', '{}'::jsonb)
+      '{"title":"Test role"}'::jsonb || coalesce(p_draft -> 'career', '{}'::jsonb),
+      'vitals',
+      '{"height":"5''5\""}'::jsonb || coalesce(p_draft -> 'vitals', '{}'::jsonb)
     )
 $$;
 
@@ -212,7 +214,7 @@ as $$
     'paid',
     pg_catalog.now(),
     pg_catalog.now() + interval '365 days',
-    'publication-disclosure-v1',
+    'publication-disclosure-v2',
     app_private.portfolio_draft_fingerprint(p_draft),
     pg_catalog.now()
   )

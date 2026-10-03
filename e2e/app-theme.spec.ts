@@ -160,7 +160,24 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
       await noOverflow(page);
-      if ((width === 375 && route === "/brokers") || (width === 1024 && route === "/dashboard")) {
+      if (route === "/dashboard") {
+        const cards = page.locator(".dashboard-stats-grid .dashboard-stat-card");
+        await expect(cards).toHaveCount(4);
+        const positions = await cards.evaluateAll((elements) => elements.map((element) => {
+          const { x, y, width: cardWidth } = element.getBoundingClientRect();
+          return { x, y, cardWidth };
+        }));
+        if (width <= 900) {
+          expect(positions[0].y).toBe(positions[1].y);
+          expect(positions[2].y).toBe(positions[3].y);
+          expect(positions[2].y).toBeGreaterThan(positions[0].y);
+          expect(positions[0].x).toBe(positions[2].x);
+          expect(positions[0].cardWidth).toBeGreaterThanOrEqual(130);
+        } else {
+          expect(new Set(positions.map((position) => position.y)).size).toBe(1);
+        }
+      }
+      if ((width === 375 && (route === "/brokers" || route === "/dashboard")) || (width === 1024 && route === "/dashboard")) {
         await page.screenshot({ path: testInfo.outputPath(`customer-${width}-${label.replaceAll(" ", "-")}.png`), fullPage: true, animations: "disabled" });
       }
       if (width <= 700) {

@@ -58,12 +58,15 @@ const readyData: PortfolioData = {
     ...data.personal,
     first_name: "Aditi",
     last_name: "Rao",
-    current_location: "Boston",
+    current_location: "Boston, United States",
+    country: "United States",
+    city: "Boston",
     place_of_birth: "Bengaluru",
     short_bio: "A thoughtful introduction.",
+    marital_status: "Never Married",
   },
   career: { title: "Engineer" },
-  vitals: { gotra: "Kashyap" },
+  vitals: { height: `5'5"`, gotra: "Kashyap" },
   astrology: {
     rashi: "kanya",
     nakshatra: "Uttara Phalguni",
@@ -111,6 +114,10 @@ function renderDashboard(overrides: Partial<React.ComponentProps<typeof Dashboar
 function goToFoundation() {
   if (screen.queryByRole("heading", { name: "The essentials" })) return;
   fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
+}
+
+function acceptPublicationDisclosure() {
+  fireEvent.click(screen.getByRole("checkbox", { name: /I reviewed the public/i }));
 }
 
 beforeEach(() => {
@@ -184,7 +191,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "New" } });
     fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Name" } });
     fireEvent.change(
-      screen.getByLabelText("Brief personal introduction"),
+      screen.getByLabelText("Short description"),
       { target: { value: "A story" } }
     );
     fireEvent.change(screen.getByLabelText("Date of birth"), {
@@ -196,9 +203,11 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("Height"), {
       target: { value: `5'5"` },
     });
-    fireEvent.change(screen.getByLabelText("Marital status"), {
+    fireEvent.click(screen.getAllByRole("button", { name: /Personal story & lifestyle/ })[0]);
+    fireEvent.change(screen.getByLabelText("Marital Status"), {
       target: { value: "Never Married" },
     });
+    goToFoundation();
     expect(screen.queryByText("Portfolio template")).not.toBeInTheDocument();
     const palette = screen.queryAllByRole("button").find((button) => button.textContent?.includes("#"));
     if (palette) fireEvent.click(palette);
@@ -219,7 +228,13 @@ describe("dashboard client", () => {
 
   it("operates published-link controls and signs out", async () => {
     renderDashboard({ isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
-    expect(document.querySelector(".dashboard-stats-grid")?.children).toHaveLength(3);
+    const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
+    expect(metrics.children).toHaveLength(4);
+    expect(within(metrics).getByText("Recent interests")).toBeInTheDocument();
+    expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
+    expect(within(metrics).getByText("Active access")).toBeInTheDocument();
+    expect(within(metrics).getByText("Portfolio views")).toBeInTheDocument();
+    expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
@@ -239,13 +254,10 @@ describe("dashboard client", () => {
     expect(mocks.push).toHaveBeenCalledWith("/");
   });
 
-  it("uses lifecycle-aware primary actions and expiry statistics", async () => {
+  it("uses lifecycle-aware primary actions without treating link status as an insight", async () => {
     const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
     expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
-    expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
-      "data-link-state",
-      "warning"
-    );
+    expect(screen.queryByText("Public link")).not.toBeInTheDocument();
 
     rerender(
       <DashboardClient
@@ -262,10 +274,7 @@ describe("dashboard client", () => {
       />
     );
 
-    expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
-      "data-link-state",
-      "expired"
-    );
+    expect(screen.queryByText("Public link")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reactivate public link" }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
   });
@@ -327,6 +336,11 @@ describe("dashboard client", () => {
       }],
     });
 
+    const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
+    expect(within(metrics).getByText("Recent interests").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Needs review").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByRole("link", { name: "Review requests" })).toHaveAttribute("href", "#introductions-and-access");
+
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Grant Complete Portfolio access" }));
@@ -372,6 +386,10 @@ describe("dashboard client", () => {
         }],
       },
     });
+
+    const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
+    expect(within(metrics).getByText("Active access").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByRole("link", { name: "Manage access" })).toHaveAttribute("href", "#introductions-and-access");
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
@@ -438,6 +456,7 @@ describe("dashboard client", () => {
     expect(screen.getByRole("link", { name: /open public introduction/i })).toHaveAttribute("href", "/preview");
     expect(screen.getByRole("link", { name: /open complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
+    acceptPublicationDisclosure();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
@@ -464,11 +483,12 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+    acceptPublicationDisclosure();
     fireEvent.click(screen.getByRole("button", { name: /confirm & publish changes/i }));
 
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({
       action: "confirm_disclosure",
-      value: "publication-disclosure-v1",
+      value: "publication-disclosure-v2",
     }));
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(expect.objectContaining({
       personal: expect.objectContaining({ first_name: "Aditi" }),
@@ -488,6 +508,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
+    acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
 
     const status = within(review).getByRole("status");
@@ -514,6 +535,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
+    acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
     expect(within(review).getByRole("status")).toHaveTextContent("Publishing your changes");
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledOnce());
@@ -739,10 +761,21 @@ describe("dashboard client", () => {
   it("shows disclosure details only for fields hidden until approval", () => {
     renderDashboard({ initialEditorOpen: true });
     fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
-    fireEvent.click(screen.getByRole("button", { name: /Brief Introduction/i }));
-    goToFoundation();
+    fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "work" } });
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
+  });
+
+  it("requires explicit sharing-setup update for a historical draft before review", () => {
+    renderDashboard({
+      initialEditorOpen: true,
+      portfolio: { ...portfolio, draft_data: { ...readyData, privacy_mode: "private" } },
+    });
+    fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
+    expect(screen.getByRole("button", { name: "Update sharing setup" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Brief Introduction/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Update sharing setup" }));
+    expect(screen.queryByRole("button", { name: "Update sharing setup" })).not.toBeInTheDocument();
   });
 
   it("preserves unsaved answers, offers retry, and warns before closing", async () => {

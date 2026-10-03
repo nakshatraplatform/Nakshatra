@@ -1,0 +1,24 @@
+# B2C pilot portfolio form contract
+
+Mode: full. Risk: critical at publication. Status: implementation in progress on the existing authenticated draft and publish routes. No deploy or merge yet.
+
+## Product decisions and conflicts resolved
+
+- Pilot creation is self-only. The form does not ask the user who is creating the portfolio; older delegated drafts remain private and cannot publish.
+- Keep `PUT /api/dashboard` for draft saves and `POST /api/portfolio/publish` for reviewed publication. The requested `POST /api/profiles` is not added because the owner chose the established route contract.
+- No new per-field visibility system. New public disclosure uses one Introduction (formerly Detailed); Complete Portfolio follows owner approval. The old reduced-disclosure projection remains only to serve historical snapshots without automatic widening. The template field-by-field inventory is the next product decision, after the form is stable.
+- The exact typed handoff values (1600/1200/1200 maxima, optional answers with 80-character minimum when answered, interests 6, languages 10, values 5) take precedence over the attached screenshot's alternative 600/500/400 writing recommendations. Empty optional narratives remain allowed.
+- First and last name are required; middle name is optional. Each part is limited to 50 ASCII letters, spaces, apostrophes and hyphens. This exact requested regex excludes accented and non-Latin names; revisit before a multilingual launch. Full name appears in the public Introduction.
+- DOB is required for publication, from 1920 onward and age at least 18. Gender, a listed height, Marital Status, current country and city, profession title, short description and one shareable primary photo are required. Cultural, astrology, family, lifestyle and preferences remain optional unless an entered value violates its validation rule.
+- Existing published snapshots remain readable. An older draft must meet the current contract before it is republished; never silently truncate or broaden its exposure.
+- The public-snapshot database trigger now rejects fields outside the selected historical/current projection and rejects a mode that disagrees with the published draft. The subsequent single-Introduction trigger rejects new publications using the retired mode. This closes the direct-RPC cross-template field bypass, but it does **not** prove that every allowed value or omitted field in a caller-supplied public snapshot equals the consent-reviewed draft projection. Exact server-owned projection equality is an unresolved publication-integrity gate before pilot deployment.
+
+## Implementation and verification
+
+- `src/features/portfolio/form-contract.ts` provides editor draft/publish validation and dotted field errors. `BlueprintForm.tsx` has the revised narrative prompts, examples, character guidance and keyboard-reachable interest chips. `readiness.ts` drives the same required-fact checklist. The pending migration updates `app_private.portfolio_missing_required_details` so direct database publication cannot bypass required facts or entered-answer limits.
+- The stored lifestyle lists are still comma-separated strings because the established data model and public templates use that shape; the editor renders them as chips, and both API and database bound the item counts. Array storage, universal empty-string-to-null migration, profession autocomplete, optional phone OTP, pets/exercise preferences, and added children-living-status questions are **not complete**. They require compatibility and privacy decisions, not a silent schema rewrite.
+- Focused unit tests cover core contract and UI. Full suite and SQL runtime checks are release gates; maintain a separate record of pre-existing Windows-only test failures rather than calling the entire suite green. Local PostgreSQL, Docker and `psql` are unavailable in this workspace, so the pending migrations and pgTAP tests have not been exercised against a database.
+
+## Acceptance before release
+
+Draft autosave preserves unfinished narratives, including answers shorter than 80 characters; publishing rejects those answers with field-level errors. This is intentional so moving between sections cannot discard a sentence in progress. Publish also rejects missing required facts and a headline location that disagrees with structured city, region, and country. Six interests is the maximum at UI, API and database layers. The public Introduction preview and approved Complete Portfolio remain consistent with the final field matrix. Navigation between sections preserves unsaved answers. Keyboard and screen-reader checks pass for chips and examples. Database tests must confirm direct-publication and public-projection rejections. No PR should be described as pilot-ready until those checks pass.

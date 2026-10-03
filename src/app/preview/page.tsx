@@ -5,9 +5,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { loadOwnerPublicPreview } from "@/features/portfolio/server/owner-preview.service";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
+import type { PortfolioData } from "@/types/portfolio";
 
 export const metadata: Metadata = {
-  title: "Preview Biodata",
+  title: "Public Introduction preview",
+  robots: { index: false, follow: false },
 };
 
 export default async function PreviewPage() {
@@ -16,13 +18,14 @@ export default async function PreviewPage() {
   if (!preview) redirect("/dashboard?edit=1");
   const { portfolio, data, photos } = preview;
   const sunSign = portfolio.sun_sign;
+  const previousSharingSetup = (portfolio.draft_data as PortfolioData).privacy_mode === "private";
 
   return (
     <div className="flex flex-1 flex-col" style={{ colorScheme: getCelestialAppearance(data.style) }}>
       {/* Preview banner */}
       <div data-preview-bar="" className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-soft)] px-4 py-3 text-[color:var(--workspace-ink)]">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold">Public Introduction · Draft preview</span>
+          <span className="text-sm font-semibold">Public Introduction · Draft preview{previousSharingSetup ? " · Your active link remains unchanged until you review and publish" : ""}</span>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Link
               href="/dashboard?edit=1"

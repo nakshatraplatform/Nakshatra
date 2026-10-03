@@ -8,6 +8,7 @@ export const GENDER_OPTIONS = [
   option("male", "Male"),
   option("non_binary", "Non-binary"),
   option("prefer_not_to_say", "Prefer not to say"),
+  option("other", "Other"),
 ];
 
 export const PROFILE_FOR_OPTIONS = [
@@ -17,14 +18,19 @@ export const PROFILE_FOR_OPTIONS = [
 
 export const MARITAL_STATUS_OPTIONS = [
   option("", "Select marital status"),
-  option("Never Married", "Never married"),
+  option("Single"),
+  option("Married"),
   option("Divorced"),
-  option("Previously Married", "Previously married — prefer not to specify"),
   option("Widowed"),
   option("Separated"),
-  option("Annulled"),
   option("Prefer not to say"),
 ];
+
+/** Preserve historical answers without offering obsolete wording to new users. */
+export function withLegacyMaritalStatus(value: string | undefined) {
+  if (!value || MARITAL_STATUS_OPTIONS.some((item) => item.value === value)) return MARITAL_STATUS_OPTIONS;
+  return [...MARITAL_STATUS_OPTIONS, option(value, `${value} (previous answer)`)];
+}
 
 export const HEIGHT_OPTIONS = [
   option("", "Select height"),

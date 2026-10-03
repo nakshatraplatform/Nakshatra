@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CelestialUnion from "../src/components/templates/CelestialUnion";
 import { createApprovedPortfolioSnapshot } from "../src/features/portfolio/server/approved-snapshot.service";
@@ -8,16 +8,15 @@ import { createPublicPortfolioSnapshot } from "../src/features/portfolio/server/
 import { representativePortfolio } from "./fixtures/portfolio-view-fixtures";
 
 describe("representative portfolio views", () => {
-  it("keeps Short View concise and excludes protected identity and contact details", () => {
+  it("shows the chosen public identity facts in Brief Introduction without exposing protected details", () => {
     const data = createPublicPortfolioSnapshot({ ...representativePortfolio, privacy_mode: "private" });
     const { container } = render(<CelestialUnion data={data} sunSign="mesha" accessMode="public" />);
 
     expect(container.querySelector(".portfolio-short-overview")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Ananya" })).toBeInTheDocument();
-    expect(screen.queryByText("Ananya Mehta")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ananya Mehta" })).toBeInTheDocument();
     expect(screen.queryByText("1995-04-18")).not.toBeInTheDocument();
     expect(screen.queryByText("Example Company")).not.toBeInTheDocument();
-    expect(screen.queryByText("Never married")).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("At a glance")).getByText("Never married")).toBeInTheDocument();
     expect(screen.queryByText("Hindu")).not.toBeInTheDocument();
     expect(screen.queryByText("Gujarati")).not.toBeInTheDocument();
     expect(screen.queryByText("family@example.test")).not.toBeInTheDocument();

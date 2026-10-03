@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(27);
+select plan(30);
 
 select pg_temp.create_auth_actor('11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111112', 'owner@perimeter.test');
 select pg_temp.create_auth_actor('22222222-2222-4222-8222-222222222222', '22222222-2222-4222-8222-222222222223', 'viewer@perimeter.test');
@@ -42,7 +42,7 @@ select pg_temp.prime_paid_publication(
 
 update public.portfolios
 set is_published = true,
-    published_data = pg_temp.complete_portfolio_draft(),
+    published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"balanced"}'::jsonb),
     expires_at = now() + interval '90 days'
 where id = '33333333-3333-4333-8333-333333333333';
 
@@ -51,7 +51,7 @@ insert into public.public_portfolio_snapshots (
 ) values (
   '33333333-3333-4333-8333-333333333333',
   'phase1_secure_token_1',
-  '{"privacy_mode":"private","personal":{"name":"Aditi","age":29,"gender":"female"},"astrology":{"rashi":"kanya"},"visibility":{"contact":"restricted"}}'::jsonb,
+  '{"privacy_mode":"balanced","personal":{"name":"Aditi","age":29,"marital_status":"Never Married"},"astrology":{"rashi":"kanya"},"visibility":{"contact":"restricted"}}'::jsonb,
   3,
   '#17151c',
   'kanya',
@@ -63,7 +63,7 @@ insert into public.approved_portfolio_snapshots (
   portfolio_id, data, template_id, theme_color, sun_sign, published_at
 ) values (
   '33333333-3333-4333-8333-333333333333',
-  '{"privacy_mode":"private","personal":{"name":"Aditi Approved","dob":"1996-08-12","gender":"female"},"family":{"father":{"name":"Private Parent"}}}'::jsonb,
+  '{"privacy_mode":"balanced","personal":{"name":"Aditi Approved","dob":"1996-08-12","gender":"female"},"family":{"father":{"name":"Private Parent"}}}'::jsonb,
   3,
   '#17151c',
   'kanya',
@@ -78,6 +78,13 @@ insert into storage.objects (bucket_id, name)
 values
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/hero.webp'),
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/private-unpublished.webp');
+
+select throws_ok(
+  $$update public.portfolios set published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"private"}'::jsonb)
+    where id = '33333333-3333-4333-8333-333333333333'$$,
+  '23514', 'publication_current_introduction_required',
+  'a new publication cannot switch to the retired reduced-disclosure setup'
+);
 
 set local role anon;
 set local request.jwt.claims = '{"role":"anon"}';
@@ -123,9 +130,9 @@ select ok(
   'public resolver omits the private portfolio identifier'
 );
 select ok(
-  public.resolve_public_portfolio('phase1_secure_token_1')::text not like '%second.webp%'
-    and public.resolve_public_portfolio('phase1_secure_token_1')::text like '%second-blur.webp%',
-  'private gallery originals are replaced by generated previews'
+  public.resolve_public_portfolio('phase1_secure_token_1')::text like '%second.webp%'
+    and public.resolve_public_portfolio('phase1_secure_token_1')::text not like '%second-blur.webp%',
+  'the current public Introduction shows the second public gallery photo clearly'
 );
 select ok(
   public.resolve_public_portfolio('phase1_secure_token_1')::text not like '%protected.webp%'
@@ -182,6 +189,16 @@ select throws_ok(
   $$update public.public_portfolio_snapshots set data = jsonb_set(data, '{contact}', '{"email":"private@example.test"}'::jsonb)$$,
   '23514', null,
   'database rejects restricted fields in a public snapshot'
+);
+select throws_ok(
+  $$update public.public_portfolio_snapshots set data = jsonb_set(data, '{personal,dob}', '"1996-08-12"'::jsonb)$$,
+  '23514', null,
+  'public Introduction rejects exact birth data even without an API call'
+);
+select throws_ok(
+  $$update public.public_portfolio_snapshots set data = jsonb_set(data, '{privacy_mode}', '"private"'::jsonb)$$,
+  '23514', null,
+  'public snapshot cannot disagree with the published introduction setup'
 );
 
 set local role authenticated;

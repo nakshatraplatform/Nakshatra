@@ -37,7 +37,7 @@ const RASHI_KEYS = RASHI_OPTIONS.map((r) => r.key) as [string, ...string[]];
 // --- Form Step Schemas ---
 
 export const personalSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name too long"),
+  name: z.string().min(1, "Name is required").max(160, "Name too long"),
   first_name: z.string().max(100).optional(),
   middle_name: z.string().max(100).optional(),
   last_name: z.string().max(100).optional(),
@@ -53,7 +53,7 @@ export const personalSchema = z.object({
   age: z.number().int().min(18).max(120).optional(),
   place_of_birth: z.string().max(200).optional(),
   current_location: z.string().max(200).optional(),
-  gender: z.enum(["male", "female", "non_binary", "prefer_not_to_say"]).optional(),
+  gender: z.enum(["male", "female", "non_binary", "prefer_not_to_say", "other"]).optional(),
   marital_status: z.string().max(100).optional(),
   immigration_status: z.string().max(200).optional(),
   relocation_preference: z.string().max(200).optional(),
@@ -267,7 +267,7 @@ export const portfolioDataSchema = z.object({
 
 // Drafts can be persisted before the required publishing details are complete.
 export const portfolioDraftSchema = portfolioDataSchema.extend({
-  personal: personalSchema.partial(),
+  personal: personalSchema.partial().extend({ name: z.string().max(160, "Name too long").optional() }),
 });
 
 export type PortfolioData = z.infer<typeof portfolioDataSchema>;

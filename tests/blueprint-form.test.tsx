@@ -2,6 +2,7 @@
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { BlueprintForm } from "../src/components/portfolio/BlueprintForm";
 import type { PortfolioData } from "../src/types/portfolio";
 
@@ -65,14 +66,68 @@ describe("blueprint form", () => {
     );
   });
 
-  it("offers only self-creation for the pilot and explains an existing delegated draft", () => {
+  it("hides the self-creation selector while explaining an existing delegated draft", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    const creator = screen.getByLabelText("Who is creating this portfolio?");
-    expect(within(creator).getByRole("option", { name: "I am creating my own portfolio" })).toBeInTheDocument();
-    expect(within(creator).queryByRole("option", { name: "My daughter" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Who is creating this portfolio?")).not.toBeInTheDocument();
     rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, profile_for: "daughter" } }} onUpdate={vi.fn()} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Your draft remains private");
     expect(screen.queryByLabelText("Who is creating this portfolio?")).not.toBeInTheDocument();
+  });
+
+  it("marks gender and height required and validates entered name characters", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    expect(screen.getByLabelText("Gender")).toBeRequired();
+    expect(screen.getByLabelText("Height")).toBeRequired();
+    expect(screen.getByLabelText("First name")).toHaveAttribute("maxLength", "50");
+    expect(screen.getByLabelText("Date of birth")).toHaveAttribute("min", "1920-01-01");
+    rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, first_name: "Aditi2" } }} onUpdate={vi.fn()} />);
+    fireEvent.blur(screen.getByLabelText("First name"));
+    expect(screen.getByLabelText("First name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText(/Use letters, spaces, apostrophes or hyphens only/)).toBeInTheDocument();
+  });
+
+  it("guides optional narrative answers with an accessible example and minimum length", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    expect(screen.getByLabelText("How would your close friends describe you?")).toHaveAttribute("maxLength", "1600");
+    fireEvent.click(screen.getAllByText("See a good example")[0]);
+    expect(screen.getByText(/brings friends together for a relaxed meal/)).toBeVisible();
+    rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, profile_summary: "Good person" } }} onUpdate={vi.fn()} />);
+    fireEvent.blur(screen.getByLabelText("How would your close friends describe you?"));
+    expect(screen.getByText(/If you answer, write at least 80 characters/)).toBeInTheDocument();
+  });
+
+  it("limits interest chips to six and preserves an unsaved answer across sections", () => {
+    function Harness() {
+      const [draft, setDraft] = useState(completeBlueprint);
+      return <BlueprintForm data={draft} onUpdate={(section, value) => setDraft((current) => ({ ...current, [section]: value }))} />;
+    }
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "An unsaved but retained answer" } });
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    const interests = screen.getByRole("combobox", { name: "Select up to 6 Interests" });
+    for (const item of ["Cooking", "Music", "Reading", "Hiking", "Travel", "Art"]) {
+      fireEvent.change(interests, { target: { value: item } });
+      fireEvent.keyDown(interests, { key: "Enter" });
+    }
+    expect(screen.getByText("6 of 6 selected")).toBeInTheDocument();
+    expect(interests).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Remove Cooking" }));
+    expect(interests).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
+    expect(screen.getByLabelText("Short description")).toHaveValue("An unsaved but retained answer");
+  });
+
+  it("offers clear Marital Status choices while retaining a prior saved answer", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    const maritalStatus = screen.getByLabelText("Marital Status");
+    expect(within(maritalStatus).getByRole("option", { name: "Single" })).toBeInTheDocument();
+    expect(within(maritalStatus).getByRole("option", { name: "Married" })).toBeInTheDocument();
+    expect(within(maritalStatus).queryByRole("option", { name: /Never Married/ })).not.toBeInTheDocument();
+
+    rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, marital_status: "Never Married" } }} onUpdate={vi.fn()} />);
+    expect(within(screen.getByLabelText("Marital Status")).getByRole("option", { name: "Never Married (previous answer)" })).toBeInTheDocument();
   });
 
   it("routes required profile, family, contact, appearance, and privacy changes", () => {
@@ -80,7 +135,7 @@ describe("blueprint form", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
 
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Updated" } });
-    fireEvent.change(screen.getByLabelText("Brief personal introduction"), { target: { value: "A concise new bio" } });
+    fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "A concise new bio" } });
     fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
@@ -88,7 +143,6 @@ describe("blueprint form", () => {
     fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
     fireEvent.change(screen.getAllByLabelText("Name of contact")[0], { target: { value: "Updated Contact" } });
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
-    fireEvent.click(screen.getByRole("button", { name: /Detailed Introduction/ }));
 
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ first_name: "Updated", name: "Updated Rao" }));
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ short_bio: "A concise new bio" }));
@@ -102,7 +156,6 @@ describe("blueprint form", () => {
       theme_color: "#121a21",
       template_name: "Nakshatra Portfolio",
     }));
-    expect(onUpdate).toHaveBeenCalledWith("privacy_mode", "balanced");
   });
 
   it("renders a safe minimal draft and grows dynamic sibling and contact groups", () => {
@@ -113,11 +166,11 @@ describe("blueprint form", () => {
     };
     const { rerender } = render(<BlueprintForm data={minimal} onUpdate={onUpdate} />);
 
-    expect(screen.getByText(/0 of 7 required details complete/)).toBeInTheDocument();
+    expect(screen.getByText(/1 of 11 required details complete/)).toBeInTheDocument();
     expect(screen.getByText("Step 1 of 7 · Basics")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Continue: About & lifestyle/ })).toHaveClass("dashboard-primary-action");
+    expect(screen.getByRole("button", { name: /Continue: Personal story & lifestyle/ })).toHaveClass("dashboard-primary-action");
     fireEvent.click(screen.getByRole("button", { name: "Next section" }));
-    expect(screen.getByRole("heading", { name: "About you" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Personal story" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Previous section" }));
     expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     fireEvent.blur(screen.getByLabelText("First name"));
@@ -128,10 +181,10 @@ describe("blueprint form", () => {
     fireEvent.blur(screen.getByLabelText("Date of birth"));
     expect(screen.getByText("You must be 18 or older.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
-    expect(screen.getByRole("button", { name: /Brief Introduction/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Update sharing setup" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
-    expect(screen.getByText(/contacts stay out of both public Introductions/i)).toBeInTheDocument();
+    expect(screen.getByText(/contacts stay out of the public Introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
     expect(screen.getByText(/Optional section/)).toBeInTheDocument();
     expect(screen.queryByText("Sibling 1")).not.toBeInTheDocument();
@@ -157,11 +210,11 @@ describe("blueprint form", () => {
     expect(sectionLabels).toHaveLength(7);
     expect(sectionLabels.map((label) => label?.replace(/\s+/g, " "))).toEqual([
       expect.stringContaining("Basics"),
-      expect.stringContaining("About & lifestyle"),
+      expect.stringContaining("Personal story & lifestyle"),
       expect.stringContaining("Education & work"),
       expect.stringContaining("Family"),
-      expect.stringContaining("Match & future"),
       expect.stringContaining("Astrology & traditions"),
+      expect.stringContaining("Match & future"),
       expect.stringContaining("Privacy & contact"),
     ]);
     expect(screen.queryByText("Optional")).not.toBeInTheDocument();
@@ -170,14 +223,14 @@ describe("blueprint form", () => {
     fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "125k-150k" } });
     expect(onUpdate).toHaveBeenCalledWith("career", expect.objectContaining({ annual_income: "125k-150k" }));
 
-    fireEvent.click(screen.getByRole("button", { name: /About & lifestyle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Personal story & lifestyle/ }));
     fireEvent.change(screen.getByLabelText("Languages"), { target: { value: "Kannada" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Add" })[0]);
     expect(onUpdate).toHaveBeenCalledWith("lifestyle", expect.objectContaining({
       languages: "English, Telugu, Kannada",
     }));
-    fireEvent.focus(screen.getByLabelText("Interests and hobbies"));
-    expect(screen.getByRole("listbox", { name: "Interests and hobbies suggestions" })).toBeInTheDocument();
+    fireEvent.focus(screen.getByLabelText("Select up to 6 Interests"));
+    expect(screen.getByRole("listbox", { name: "Select up to 6 Interests suggestions" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("option", { name: "Photography" }));
     expect(onUpdate).toHaveBeenCalledWith("lifestyle", expect.objectContaining({
       hobbies: "Reading, Photography",
@@ -199,6 +252,18 @@ describe("blueprint form", () => {
     expect(onUpdate).toHaveBeenCalledWith("preferences", expect.objectContaining({ caste_preference: "specific" }));
     rerender(<BlueprintForm data={{ ...completeBlueprint, preferences: { ...completeBlueprint.preferences, caste_preference: "specific" } }} onUpdate={onUpdate} />);
     expect(screen.getByLabelText("Specific communities")).toBeInTheDocument();
+  });
+
+  it("offers one public Introduction and an explicit upgrade for a legacy draft", () => {
+    const onUpdate = vi.fn();
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
+    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    expect(screen.getByText("Public Introduction")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Brief Introduction|Detailed Introduction/ })).not.toBeInTheDocument();
+    rerender(<BlueprintForm data={{ ...completeBlueprint, privacy_mode: "private" }} onUpdate={onUpdate} />);
+    fireEvent.click(screen.getByRole("button", { name: "Update sharing setup" }));
+    expect(onUpdate).toHaveBeenCalledWith("privacy_mode", "balanced");
+    expect(screen.queryByText("Visibility of selected introduction facts")).not.toBeInTheDocument();
   });
 
   it("keeps an independently selected maximum height from changing the minimum", () => {

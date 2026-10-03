@@ -27,9 +27,11 @@ update public.portfolios set is_published = true, share_token = 'legacy_self_pil
   published_data = '{"personal":{"profile_for":"son"}}'
 where id = 'a4000000-0000-4000-8000-000000000001';
 alter table public.portfolios enable trigger user;
+alter table public.public_portfolio_snapshots disable trigger enforce_public_snapshot_contract;
 insert into public.public_portfolio_snapshots(portfolio_id, share_token, data, template_id, is_active)
 values ('a4000000-0000-4000-8000-000000000001', 'legacy_self_pilot_token',
   '{"privacy_mode":"public"}', 1, true);
+alter table public.public_portfolio_snapshots enable trigger enforce_public_snapshot_contract;
 insert into storage.buckets(id, name, public) values ('photos', 'photos', false)
 on conflict (id) do update set public = false;
 insert into storage.objects(bucket_id, name)
