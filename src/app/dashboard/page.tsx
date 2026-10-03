@@ -6,6 +6,7 @@ import { loadDashboardView } from "@/features/portfolio/server/dashboard-view.se
 
 export const metadata: Metadata = {
   title: "Dashboard",
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export default async function DashboardPage({

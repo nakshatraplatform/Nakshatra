@@ -36,6 +36,7 @@ import {
   Edit3,
   Share2,
   LogOut,
+  Menu,
   RefreshCw,
   RotateCcw,
   Save,
@@ -240,9 +241,9 @@ export default function DashboardClient({
       || portfolio?.draft_data?.personal?.name
       || "this profile";
     const text = encodeURIComponent(
-      `Sharing ${profileName}'s VivIntro wedding portfolio.\n\n`
+      `Sharing ${profileName}'s VivIntro marriage introduction.\n\n`
       + `View the introduction: ${shareUrl}\n\n`
-      + "This link opens the selected public Introduction. The Complete Portfolio is shared only after the profile owner approves an introduction."
+      + "This link shows the public Introduction. The Complete Portfolio is available only after the owner approves your interest."
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -575,41 +576,35 @@ export default function DashboardClient({
   return (
     <div className="dashboard-shell flex flex-1 flex-col">
       <header className="dashboard-header px-4 py-3">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
           <VivIntroBrand href="/dashboard" variant="horizontal" priority />
-          <div className="flex items-center gap-3">
+          <div className="dashboard-header-actions">
             <ThemeSwitch />
-            <span className="hidden text-sm text-[light-dark(#64748b,var(--app-dark-muted))] sm:inline">
-              {userEmail}
-            </span>
-            <Link
-              href="/brokers"
-              aria-label="My brokers"
-              title="My brokers"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <UserRoundCog className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/account"
-              aria-label="Account and privacy"
-              title="Account and privacy"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-[light-dark(#475569,var(--app-dark-muted))] transition-colors hover:bg-[light-dark(#f1f5f9,var(--app-dark-canvas))]"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
+            <nav className="dashboard-desktop-nav" aria-label="Account navigation">
+              <span className="dashboard-account-email">{userEmail}</span>
+              <Link href="/brokers" aria-label="My brokers" title="My brokers" className="dashboard-header-icon">
+                <UserRoundCog className="h-4 w-4" />
+              </Link>
+              <Link href="/account" aria-label="Account and privacy" title="Account and privacy" className="dashboard-header-icon">
+                <Settings className="h-4 w-4" />
+              </Link>
+              <button type="button" onClick={handleSignOut} className="dashboard-header-signout">
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </nav>
+            <details className="dashboard-mobile-menu">
+              <summary><Menu className="h-5 w-5" aria-hidden="true" /> Menu</summary>
+              <nav className="dashboard-mobile-menu-panel" aria-label="Account navigation">
+                <Link href="/brokers"><UserRoundCog className="h-4 w-4" aria-hidden="true" /> My brokers</Link>
+                <Link href="/account"><Settings className="h-4 w-4" aria-hidden="true" /> Account and privacy</Link>
+                <button type="button" onClick={handleSignOut}><LogOut className="h-4 w-4" aria-hidden="true" /> Sign out</button>
+              </nav>
+            </details>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 flex-1 px-4 py-8 sm:py-12">
+      <main id="main-content" tabIndex={-1} className="relative z-10 flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
@@ -621,9 +616,9 @@ export default function DashboardClient({
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
                   Private beta testing
                 </p>
-                <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
+                <h1 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
                   Portfolio creation is currently invite-only.
-                </h2>
+                </h1>
                 <p className="mx-auto mt-3 max-w-xl text-[light-dark(#475569,var(--app-dark-muted))]">
                   New portfolio creation is closed while we prepare for launch. You can join the waitlist for updates, or continue using portfolio links shared with you.
                 </p>
@@ -658,9 +653,9 @@ export default function DashboardClient({
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
                   Start your portfolio
                 </p>
-                <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
+                <h1 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
                   Let&apos;s build one clear introduction.
-                </h2>
+                </h1>
                 <p className="mx-auto mt-3 max-w-lg text-[light-dark(#475569,var(--app-dark-muted))]">
                   Begin with the main details. Add photos, family information, and your horoscope when you are ready.
                 </p>
@@ -689,8 +684,8 @@ export default function DashboardClient({
               <section className="dashboard-welcome">
                 <div>
                   <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Link expired" : "Portfolio active"}</span>
-                  <h2>Your portfolio is ready to share.</h2>
-                  <p>Review new interests, see recent activity, or update your portfolio.</p>
+                  <h1>{isExpired ? "Your public link has expired." : "Your introduction is live."}</h1>
+                  <p>{isExpired ? "Reactivate the link to share your introduction again." : "Review interests, manage access, or update your portfolio."}</p>
                 </div>
                 <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
@@ -705,7 +700,7 @@ export default function DashboardClient({
                         {renewing ? "Reactivating link..." : "Reactivate public link"}
                       </button>
                     )
-                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share portfolio</button>}
+                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share on WhatsApp</button>}
                 </div>
               </section>
           )}
@@ -719,7 +714,7 @@ export default function DashboardClient({
                   <span className="text-sm font-medium">Interests received</span>
                 </div>
                 <p className="mt-2 text-2xl font-bold text-[light-dark(#18272e,var(--app-dark-ink))]">{interests.length}</p>
-                <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 1 ? "1 needs a response" : `${pendingInterestCount} need a response`}</a>
+                <a className="dashboard-stat-detail" href="#introductions-and-access">{pendingInterestCount === 0 ? "No direct interests pending" : pendingInterestCount === 1 ? "1 direct interest needs a response" : `${pendingInterestCount} direct interests need a response`}</a>
               </div>
               <div
                 className="dashboard-glass dashboard-stat-card p-4"
@@ -733,7 +728,7 @@ export default function DashboardClient({
                   {isExpired
                     ? "Expired"
                     : portfolio?.is_published && daysLeft === null
-                    ? "Active until unpublished"
+                    ? "Active until you unpublish"
                     : portfolio?.is_published && daysLeft !== null
                     ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
                     : "Not published"}
@@ -763,6 +758,7 @@ export default function DashboardClient({
                     {copied ? "Link copied" : "Copy link"}
                   </button>
                 </div>
+                <p className="dashboard-share-help">This link shows only the public Introduction. Complete details unlock after a viewer shows interest and you approve.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {canCreatePortfolio && (
                     <button

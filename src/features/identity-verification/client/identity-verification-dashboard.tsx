@@ -45,17 +45,20 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
       <div className="dashboard-section-heading">
         <div>
           <h2 id="identity-verification-heading">Photo &amp; liveness check</h2>
-          <p>Verification is required before this profile can be publicly published.</p>
+          <p>Confirm that you match your portfolio&apos;s primary photo.</p>
         </div>
       </div>
-      <p className="text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
-        Didit compares a live selfie with your current primary portfolio photo and performs a passive-liveness check. This candidate flow does not request an identity document. VivIntro stores the consent, result, and a one-way photo binding—not the selfie evidence.
+      <p className="dashboard-verification-copy">
+        Didit compares a live selfie with your main portfolio photo and checks liveness. No identity document is requested.
+      </p>
+      <p className="dashboard-verification-copy">
+        VivIntro saves your consent, the result, and a one-way record linked to your photo. It does not save your selfie.
       </p>
       <label className="mt-4 flex gap-3 text-sm text-[light-dark(#334155,var(--app-dark-ink))]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
         <span>I understand and consent to this primary-photo face match and passive-liveness processing.</span>
       </label>
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="dashboard-verification-actions mt-4 flex flex-wrap gap-3">
         <button type="button" className="dashboard-primary-action" disabled={!consent || pending !== null} onClick={() => void startSelfVerification()}>
           {pending === "self" ? "Starting photo check…" : "Start photo & liveness check"}
         </button>

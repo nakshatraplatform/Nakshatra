@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { dashboardTestToken, dashboardTestUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
 
 const host = "127.0.0.1";
 const port = 54329;
@@ -225,6 +225,7 @@ const server = createServer((request, response) => {
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
   if (url.pathname === "/auth/v1/user") {
     if (request.headers.authorization === `Bearer ${themeTestToken}`) return sendJson(response, 200, themeTestUser);
+    if (request.headers.authorization === `Bearer ${dashboardTestToken}`) return sendJson(response, 200, dashboardTestUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
     }
@@ -232,6 +233,32 @@ const server = createServer((request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/auth/v1/otp") {
     return sendJson(response, 200, {});
+  }
+  if (request.headers.authorization === `Bearer ${dashboardTestToken}`) {
+    if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, {
+      id: portfolioId,
+      user_id: dashboardTestUser.id,
+      candidate_id: null,
+      share_token: "e2e-dashboard-token",
+      draft_data: publicSnapshot.data,
+      published_data: publicSnapshot.data,
+      template_id: 3,
+      theme_color: "#f2c6a7",
+      sun_sign: "kanya",
+      is_published: true,
+      published_at: "2026-10-01T00:00:00Z",
+      expires_at: null,
+      last_renewed_at: null,
+      privacy_mode: "balanced",
+      visibility_settings: {},
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-10-01T00:00:00Z",
+    });
+    if (url.pathname === "/rest/v1/portfolio_views") return sendJson(response, 200, []);
+    if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, []);
+    if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
+    if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, []);
   }
   // Theme browser coverage uses the real page components with loopback-only,
   // read-only projections. Production authorization code is never replaced.

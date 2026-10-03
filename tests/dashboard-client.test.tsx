@@ -142,9 +142,24 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("keeps private dashboard navigation and the main heading accessible on small screens", () => {
+    renderDashboard({ isExpired: false, daysLeft: null });
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+    expect(screen.getByRole("heading", { level: 1, name: "Your introduction is live." })).toBeInTheDocument();
+    const accountMenu = screen.getByText("Menu").closest("details");
+    expect(accountMenu).toBeInTheDocument();
+    expect(within(accountMenu!).getByRole("link", { name: "My brokers" })).toHaveAttribute("href", "/brokers");
+    expect(within(accountMenu!).getByRole("link", { name: "Account and privacy" })).toHaveAttribute("href", "/account");
+    expect(within(accountMenu!).getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(screen.getByText("No direct interests pending")).toHaveAttribute("href", "#introductions-and-access");
+    expect(screen.getByText(/Complete details unlock after a viewer shows interest and you approve/)).toBeInTheDocument();
+  });
+
   it("shows identity-verification actions only after a saved candidate is linked", () => {
     renderDashboard({ portfolio: { ...portfolio, candidate_id: "candidate-1" } });
     expect(screen.getByRole("heading", { name: "Photo & liveness check" })).toBeInTheDocument();
+    expect(screen.getByText(/No identity document is requested/)).toBeInTheDocument();
+    expect(screen.getByText(/does not save your selfie/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start photo & liveness check" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Create candidate invitation" })).toBeInTheDocument();
   });
@@ -208,24 +223,24 @@ describe("dashboard client", () => {
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /share portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /share on WhatsApp/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
-    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro wedding portfolio");
-    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the selected public Introduction");
-    expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is shared only after the profile owner approves");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro marriage introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link shows the public Introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is available only after the owner approves your interest");
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
     await waitFor(() => expect(mocks.unpublish).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(within(document.querySelector(".dashboard-desktop-nav") as HTMLElement).getByRole("button", { name: /sign out/i }));
     await waitFor(() => expect(mocks.clearLocalSession).toHaveBeenCalled());
     expect(mocks.push).toHaveBeenCalledWith("/");
   });
 
   it("uses lifecycle-aware primary actions and expiry statistics", async () => {
     const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6 });
-    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share on WhatsApp" })).toBeInTheDocument();
     expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
       "data-link-state",
       "warning"
