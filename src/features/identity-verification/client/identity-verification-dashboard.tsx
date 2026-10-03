@@ -1,21 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import {
-  createIdentityVerificationInvitationRequest,
-  startSelfIdentityVerificationRequest,
-} from "./identity-verification.api";
+import { startSelfIdentityVerificationRequest } from "./identity-verification.api";
 
-type PendingAction = "self" | "invitation" | null;
+type PendingAction = "self" | null;
 
-/** Provides explicit self-consent and delegated-invitation actions without exposing candidate details. */
+/** Provides explicit consent for a candidate verifying their own portfolio. */
 export function IdentityVerificationDashboard({ candidateId }: { candidateId: string }) {
   const [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
   const [providerUrl, setProviderUrl] = useState<string | null>(null);
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
-  const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
 
   async function startSelfVerification() {
     setPending("self");
@@ -28,15 +24,6 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
       setProviderUrl(result.data.url);
       setManagementUrl(result.data.managementUrl);
     }
-    setPending(null);
-  }
-
-  async function createInvitation() {
-    setPending("invitation");
-    setError(null);
-    const result = await createIdentityVerificationInvitationRequest(candidateId);
-    if (!result.ok) setError(result.message);
-    else setInvitationUrl(result.data.invitationUrl);
     setPending(null);
   }
 
@@ -59,13 +46,9 @@ export function IdentityVerificationDashboard({ candidateId }: { candidateId: st
         <button type="button" className="dashboard-primary-action" disabled={!consent || pending !== null} onClick={() => void startSelfVerification()}>
           {pending === "self" ? "Starting photo check…" : "Start photo & liveness check"}
         </button>
-        <button type="button" className="dashboard-secondary-action" disabled={pending !== null} onClick={() => void createInvitation()}>
-          {pending === "invitation" ? "Creating invitation…" : "Create candidate invitation"}
-        </button>
       </div>
       <div className="mt-4" aria-live="polite" aria-atomic="true">
         {error ? <p className="dashboard-action-error" role="alert">{error}</p> : null}
-        {invitationUrl ? <p className="dashboard-action-note">Share this private invitation only with the candidate: <a href={invitationUrl}>{invitationUrl}</a></p> : null}
         {managementUrl ? <p className="dashboard-action-note">Save your private <a href={managementUrl}>verification-management link</a>.</p> : null}
         {providerUrl ? <a className="dashboard-primary-action mt-3" href={providerUrl}>Continue to Didit verification</a> : null}
       </div>

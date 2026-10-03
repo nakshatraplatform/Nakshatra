@@ -113,7 +113,7 @@ select pg_temp.set_authenticated_claims(
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     '65000000-0000-4000-8000-000000000004',
-    '{"personal":{"name":"Approved Contact Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
     '{"personal":{"name":"Approved Contact Owner"},"contact":{"phone":"+1 555 010 2000","secure_note":"owner only"}}',
     'approved_contact_0001', now() + interval '90 days', 1, '#f7f5ef', null
@@ -124,7 +124,7 @@ select throws_ok(
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     '65000000-0000-4000-8000-000000000004',
-    '{"personal":{"name":"Approved Contact Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
     '{"personal":{"name":"Approved Contact Owner"},"family":{"phone":"+1 555 010 2000"}}',
     'approved_contact_0001', now() + interval '90 days', 1, '#f7f5ef', null
@@ -135,7 +135,7 @@ select throws_ok(
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     '65000000-0000-4000-8000-000000000004',
-    '{"personal":{"name":"Approved Contact Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
     '{"personal":{"name":"Approved Contact Owner"},"contact":{"contacts":[{"name":"Parent","phone":"+1 555 010 2000","secure_note":"owner only"}]}}',
     'approved_contact_0001', now() + interval '90 days', 1, '#f7f5ef', null
@@ -146,7 +146,7 @@ select throws_ok(
 select throws_ok(
   $$select public.publish_portfolio_transaction(
     '65000000-0000-4000-8000-000000000004',
-    '{"personal":{"name":"Approved Contact Owner"}}',
+    pg_temp.complete_portfolio_draft('{"personal":{"name":"Approved Contact Owner"}}'::jsonb),
     '{"privacy_mode":"balanced","personal":{"name":"Approved Contact Owner"}}',
     '{"personal":{"name":"Approved Contact Owner"},"contact":{"contacts":[{},{},{},{},{},{}]}}',
     'approved_contact_0001', now() + interval '90 days', 1, '#f7f5ef', null

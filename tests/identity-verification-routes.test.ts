@@ -62,28 +62,26 @@ describe("identity-verification API routes", () => {
     withdrawConsent.mockResolvedValue(undefined);
   });
 
-  it("creates an owner-authorized invitation with a no-store opaque URL", async () => {
+  it("rejects delegated invitations during the self-created pilot", async () => {
     const response = await createInvitationRoute(request("http://local/api/identity-verification/invitations", { candidateId: "11111111-1111-4111-8111-111111111111" }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ invitationUrl: "http://local/verify/generated-token", expiresAt: "2026-09-01T00:00:00.000Z" });
-    expect(createInvitation).toHaveBeenCalledWith(expect.objectContaining({ candidateId: "11111111-1111-4111-8111-111111111111", tokenHash: "generated-token-hash" }));
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ code: "PILOT_SELF_VERIFICATION_ONLY" });
+    expect(createInvitation).not.toHaveBeenCalled();
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
-  it("rejects cross-site, unauthenticated, rate-limited, and malformed invitation requests", async () => {
+  it("rejects cross-site and unauthenticated invitation requests", async () => {
     expect((await createInvitationRoute(request("http://local/api/identity-verification/invitations", {}, "https://attacker.test"))).status).toBe(403);
     getApiUser.mockResolvedValueOnce({ status: "missing_session" });
     expect((await createInvitationRoute(request("http://local/api/identity-verification/invitations", {}))).status).toBe(401);
-    enforceRateLimit.mockResolvedValueOnce(new Response(null, { status: 429 }));
-    expect((await createInvitationRoute(request("http://local/api/identity-verification/invitations", { candidateId: "11111111-1111-4111-8111-111111111111" }))).status).toBe(429);
-    expect((await createInvitationRoute(request("http://local/api/identity-verification/invitations", {}))).status).toBe(400);
+    expect((await createInvitationRoute(request("http://local/api/identity-verification/invitations", {}))).status).toBe(403);
   });
 
-  it("starts an invitation verification only after explicit consent and never serializes PII", async () => {
+  it("rejects an old invitation token even when explicit consent is supplied", async () => {
     const response = await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: true }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ url: "https://verify.didit.test/session", managementUrl: "http://local/verify/generated-token" });
-    expect(startVerification).toHaveBeenCalledWith(expect.objectContaining({ candidateId: null, invitationTokenHash: "valid-token-hash", managementTokenHash: "generated-token-hash" }));
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ code: "PILOT_SELF_VERIFICATION_ONLY" });
+    expect(startVerification).not.toHaveBeenCalled();
     expect(getApiUser).not.toHaveBeenCalled();
     expect(JSON.stringify(startVerification.mock.calls)).not.toContain("legalName");
     expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: false }))).status).toBe(400);
@@ -95,7 +93,7 @@ describe("identity-verification API routes", () => {
     expect(startVerification).toHaveBeenCalledWith(expect.objectContaining({ candidateId: "11111111-1111-4111-8111-111111111111", invitationTokenHash: null, supabase }));
     expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true }, "https://attacker.test"))).status).toBe(403);
     enforceRateLimit.mockResolvedValueOnce(new Response(null, { status: 429 }));
-    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: true }))).status).toBe(429);
+    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true }))).status).toBe(429);
   });
 
   it("returns generic link state, supports one withdrawal, and protects both calls", async () => {

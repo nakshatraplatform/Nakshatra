@@ -7,7 +7,6 @@ import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import { AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
-import { createClient } from "@/lib/supabase/server";
 
 const tokenSchema = z.string().refine(isIdentityVerificationToken, "Invalid verification token");
 const startSchema = z.discriminatedUnion("authorization", [
@@ -45,18 +44,20 @@ export async function POST(request: Request) {
     );
   }
 
-  let supabase;
-  if (parsed.data.authorization === "self") {
-    const auth = await getApiUser();
-    if (auth.status !== "authenticated") {
-      const response = apiAuthFailureResponse(auth);
-      response.headers.set("Cache-Control", noStore["Cache-Control"]);
-      return response;
-    }
-    supabase = auth.supabase;
-  } else {
-    supabase = await createClient();
+  if (parsed.data.authorization === "invitation") {
+    return NextResponse.json(
+      { code: "PILOT_SELF_VERIFICATION_ONLY", error: "For this pilot, sign in to your own account to complete verification." },
+      { status: 403, headers: noStore }
+    );
   }
+
+  const auth = await getApiUser();
+  if (auth.status !== "authenticated") {
+    const response = apiAuthFailureResponse(auth);
+    response.headers.set("Cache-Control", noStore["Cache-Control"]);
+    return response;
+  }
+  const supabase = auth.supabase;
   const rateLimited = await enforceRateLimit(supabase, request, "identity_verification_start");
   if (rateLimited) {
     rateLimited.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -67,8 +68,8 @@ export async function POST(request: Request) {
   try {
     const result = await startIdentityVerification({
       supabase,
-      candidateId: parsed.data.authorization === "self" ? parsed.data.candidateId : null,
-      invitationTokenHash: parsed.data.authorization === "invitation" ? await hashIdentityVerificationToken(parsed.data.token) : null,
+      candidateId: parsed.data.candidateId,
+      invitationTokenHash: null,
       managementToken,
       managementTokenHash: await hashIdentityVerificationToken(managementToken),
       callbackUrl: createCanonicalAppUrl("/verification/result", request.url),

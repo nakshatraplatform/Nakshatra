@@ -329,7 +329,13 @@ export function BlueprintForm({
         {activeSection === "foundation" && (
           <FormSection eyebrow="Quick start" title="The essentials" description="Start with the facts people need for a useful introduction. This section unlocks your first preview.">
             <InfoCard title="A short first step" audience="Private draft" text="Only seven items are needed for publishing. Everything after this section is optional and can be added when you are ready." />
-              <SelectInput label="Who is this portfolio for?" value={data.personal.profile_for || ""} options={PROFILE_FOR_OPTIONS} onChange={(value) => updatePersonal({ profile_for: value })} requirement="Recommended" audience="Only you" hint="This helps us use the right wording. It is never shown in the portfolio." />
+              {data.personal.profile_for && data.personal.profile_for !== "self" ? (
+                <p role="alert" className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink)]">
+                  This draft was started for someone else. The initial pilot supports only portfolios created by the person featured. Your draft remains private, but it cannot be saved or published during this pilot. Please contact VivIntro support if this is your own portfolio.
+                </p>
+              ) : (
+                <SelectInput label="Who is creating this portfolio?" value={data.personal.profile_for || ""} options={PROFILE_FOR_OPTIONS} onChange={(value) => updatePersonal({ profile_for: value })} required requirement="Required for pilot" audience="Only you" hint="For the initial pilot, you must be the person featured and use your own account. A parent may help you, but cannot create or publish this portfolio for you." />
+              )}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <TextInput label="First name" value={nameParts.first_name} onChange={(value) => updateNamePart("first_name", value)} required requirement="Required" audience="All portfolio views" autoComplete="given-name" />
               <TextInput label="Middle name" value={nameParts.middle_name} onChange={(value) => updateNamePart("middle_name", value)} requirement="Optional" audience="Detailed Introduction and Complete Portfolio" autoComplete="additional-name" />

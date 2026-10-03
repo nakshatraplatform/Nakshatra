@@ -47,7 +47,7 @@ vi.mock("thinking-orbs", () => ({
 import DashboardClient from "../src/app/dashboard/dashboard-client";
 
 const data: PortfolioData = {
-  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
+  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", profile_for: "self" },
   vitals: {}, astrology: { rashi: "kanya" }, education: {}, career: {}, family: {}, lifestyle: {}, contact: {},
   style: { template_name: "Royal Heritage" },
 };
@@ -142,11 +142,27 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("shows a clear pilot-operations entry only to database-authorized administrators", () => {
+    const { rerender } = renderDashboard({ pilotAccessState: { canCreatePortfolio: true, isPilotAdministrator: true, application: null } });
+    expect(screen.getByRole("link", { name: "Manage pilot access" })).toHaveAttribute("href", "/admin/pilot-access");
+    rerender(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com" canCreatePortfolio shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]} mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} pilotAccessState={{ canCreatePortfolio: true, isPilotAdministrator: false, application: null }} />);
+    expect(screen.queryByRole("link", { name: "Manage pilot access" })).not.toBeInTheDocument();
+  });
+
   it("shows identity-verification actions only after a saved candidate is linked", () => {
     renderDashboard({ portfolio: { ...portfolio, candidate_id: "candidate-1" } });
     expect(screen.getByRole("heading", { name: "Photo & liveness check" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start photo & liveness check" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Create candidate invitation" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create candidate invitation" })).not.toBeInTheDocument();
+  });
+
+  it("does not expose sharing controls or a URL when verification is missing", () => {
+    renderDashboard({ isExpired: false, daysLeft: 20 });
+    expect(screen.queryByRole("button", { name: "Share portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy link" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /rotate link/i })).not.toBeInTheDocument();
+    expect(document.querySelector(".dashboard-share-url")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unpublish" })).toBeInTheDocument();
   });
 
   it("opens the canonical editor when requested by an editing route", () => {
@@ -202,7 +218,7 @@ describe("dashboard client", () => {
   }, 10_000);
 
   it("operates published-link controls and signs out", async () => {
-    renderDashboard({ isExpired: false, daysLeft: 20 });
+    renderDashboard({ isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
     expect(document.querySelector(".dashboard-stats-grid")?.children).toHaveLength(3);
     expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
@@ -224,7 +240,7 @@ describe("dashboard client", () => {
   });
 
   it("uses lifecycle-aware primary actions and expiry statistics", async () => {
-    const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6 });
+    const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
     expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
     expect(screen.getByText("Public link").closest(".dashboard-stat-card")).toHaveAttribute(
       "data-link-state",
@@ -242,6 +258,7 @@ describe("dashboard client", () => {
         daysLeft={0}
         media={[media]}
         mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }}
+        publicationReadiness={readyPublicationReadiness}
       />
     );
 

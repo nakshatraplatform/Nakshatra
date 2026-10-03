@@ -130,7 +130,7 @@ select pg_temp.prime_paid_publication(
 );
 update public.portfolios set
   draft_data=pg_temp.complete_portfolio_draft('{"personal":{"name":""}}'::jsonb),
-  published_data='{"personal":{"name":"Published Customer","gender":"female","current_location":"Boston, United States"}}'::jsonb,
+  published_data='{"personal":{"name":"Published Customer","gender":"female","current_location":"Boston, United States","profile_for":"self"}}'::jsonb,
   is_published=true,
   published_at=pg_catalog.now()
 where id='d4000000-0000-4000-8000-000000000001';

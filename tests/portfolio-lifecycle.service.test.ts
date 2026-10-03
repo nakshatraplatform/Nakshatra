@@ -37,6 +37,7 @@ import {
 const draft: PortfolioData = {
   personal: {
     name: "Aditi Rao",
+    profile_for: "self",
     dob: "1996-08-12",
     gender: "female",
     place_of_birth: "Bengaluru",
@@ -104,6 +105,15 @@ describe("portfolio lifecycle services", () => {
       data: { status: "renewed", expiresAt: "2099-01-01T00:00:00.000Z" },
       error: null,
     });
+  });
+
+  it("rejects a delegated portfolio before issuing a public token", async () => {
+    await expect(publishPortfolio({
+      supabase: {} as never,
+      userId: "user-id",
+      data: { ...draft, personal: { ...draft.personal, profile_for: "daughter" } },
+    })).rejects.toMatchObject({ code: "PILOT_SELF_PORTFOLIO_REQUIRED", status: 403 });
+    expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
   });
 
   it("publishes a saved draft with a durable share token and safe snapshot", async () => {

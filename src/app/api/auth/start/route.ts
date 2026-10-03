@@ -6,6 +6,7 @@ import {
   PASSWORD_MIN_LENGTH,
 } from "@/features/auth/password-policy";
 import { ensureOwnerPortfolio } from "@/features/auth/server/portfolio-bootstrap";
+import { isCreatorInvitationValid } from "@/features/pilot-access/server/creator-invitations.service";
 import { consumeRateLimit, rateLimitResponse } from "@/features/security/server/rate-limit.service";
 import {
   AUTH_BODY_LIMIT,
@@ -15,7 +16,7 @@ import {
   requireSameOrigin,
 } from "@/lib/api/request-security";
 import { getRequestId, logServerError } from "@/lib/security/logging";
-import { createCanonicalAppUrl, isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
+import { createCanonicalAppUrl, getPilotInvitationToken, isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
 import { createClient } from "@/lib/supabase/server";
 
 const email = z.string().trim().email().max(180);
@@ -123,9 +124,11 @@ export async function POST(request: Request) {
     if (parsed.data.method === "password_signup") {
       const redirect = sanitizeInternalRedirect(parsed.data.redirect);
       const isBrokerdeskContinuation = isBrokerdeskAuthRedirect(redirect);
-      if (!isBrokerdeskContinuation) {
+      const normalizedEmail = parsed.data.email.toLowerCase();
+      const invitationToken = getPilotInvitationToken(redirect);
+      if (!isBrokerdeskContinuation && (!invitationToken || !(await isCreatorInvitationValid(normalizedEmail, invitationToken)))) {
         return NextResponse.json(
-          { code: "SIGNUP_CLOSED", error: "Public signup is not open yet. Request an invitation to the private pilot." },
+          { code: "SIGNUP_CLOSED", error: "This invitation is unavailable for that email. Use the exact invited address or join the waitlist." },
           { status: 403, headers: { "Cache-Control": "private, no-store" } }
         );
       }
@@ -133,7 +136,6 @@ export async function POST(request: Request) {
         `/api/auth/callback?next=${encodeURIComponent(redirect)}`,
         request.url
       );
-      const normalizedEmail = parsed.data.email.toLowerCase();
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: parsed.data.password,

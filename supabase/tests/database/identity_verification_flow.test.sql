@@ -19,15 +19,17 @@ select ok(
   'authenticated callers cannot read private management tokens'
 );
 
-set local role authenticated;
-do $$ begin
-  perform pg_temp.set_authenticated_claims('95000000-0000-4000-8000-000000000001', '95100000-0000-4000-8000-000000000001');
-end $$;
 select ok(
-  public.create_identity_verification_invitation('96000000-0000-4000-8000-000000000001', repeat('a', 64)) > now(),
-  'an authorized owner creates a short-lived candidate-bound invitation'
+  not has_function_privilege('authenticated', 'public.create_identity_verification_invitation(uuid,text)', 'EXECUTE'),
+  'pilot clients cannot create accountless verification invitations'
 );
 
+-- Keep the older bearer-link defenses covered without reopening invitation
+-- issuance to authenticated clients in the pilot.
+select pg_temp.set_authenticated_claims('95000000-0000-4000-8000-000000000001', '95100000-0000-4000-8000-000000000001');
+select public.create_identity_verification_invitation('96000000-0000-4000-8000-000000000001', repeat('a', 64));
+
+set local role authenticated;
 do $$ begin
   perform pg_temp.set_authenticated_claims('95000000-0000-4000-8000-000000000002', '95100000-0000-4000-8000-000000000002');
 end $$;

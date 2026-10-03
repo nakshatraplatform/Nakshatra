@@ -17,7 +17,7 @@ language sql
 as $$
   select pg_catalog.jsonb_build_object(
     'portfolio', pg_catalog.jsonb_build_object(
-      'draft_data', pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('name', p_draft_name)),
+      'draft_data', pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('name', p_draft_name, 'profile_for', 'self')),
       'template_id', 1,
       'theme_color', '#17151c',
       'sun_sign', 'kanya',
@@ -36,6 +36,7 @@ as $$
     'details', pg_catalog.jsonb_build_object(
       'personal', pg_catalog.jsonb_build_object(
         'preferred_name', 'Aditi',
+        'profile_for', 'self',
         'marital_status', 'never_married',
         'sibling_count', 1
       ),

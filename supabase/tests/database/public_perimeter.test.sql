@@ -41,7 +41,9 @@ select pg_temp.prime_paid_publication(
 );
 
 update public.portfolios
-set is_published = true, expires_at = now() + interval '90 days'
+set is_published = true,
+    published_data = pg_temp.complete_portfolio_draft(),
+    expires_at = now() + interval '90 days'
 where id = '33333333-3333-4333-8333-333333333333';
 
 insert into public.public_portfolio_snapshots (

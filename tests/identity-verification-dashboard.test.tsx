@@ -33,12 +33,9 @@ describe("identity-verification dashboard controls", () => {
     expect(screen.getByRole("link", { name: "verification-management link" })).toHaveAttribute("href", "https://nakshatra.test/verify/manage");
   });
 
-  it("creates an invitation without treating owner authorization as candidate consent", async () => {
-    const user = userEvent.setup();
+  it("does not offer delegated candidate invitations in the pilot", () => {
     render(<IdentityVerificationDashboard candidateId="candidate-id" />);
-
-    await user.click(screen.getByRole("button", { name: "Create candidate invitation" }));
-    await waitFor(() => expect(createInvitation).toHaveBeenCalledWith("candidate-id"));
-    expect(screen.getByRole("link", { name: "https://nakshatra.test/verify/invite" })).toHaveAttribute("href", "https://nakshatra.test/verify/invite");
+    expect(screen.queryByRole("button", { name: "Create candidate invitation" })).not.toBeInTheDocument();
+    expect(createInvitation).not.toHaveBeenCalled();
   });
 });

@@ -32,6 +32,12 @@ export function isPilotAccessAuthRedirect(value: string | null | undefined) {
   return ["/waitlist", "/pilot-access"].includes(new URL(safePath, "https://nakshatra.invalid").pathname);
 }
 
+/** Only a 32-byte URL-safe invitation capability may continue through signup. */
+export function getPilotInvitationToken(value: string | null | undefined) {
+  const safePath = sanitizeInternalRedirect(value, "/");
+  return /^\/invite\/([A-Za-z0-9_-]{43})$/.exec(safePath)?.[1] ?? null;
+}
+
 /** Builds an absolute application URL from the configured production origin or the current local origin. */
 export function createCanonicalAppUrl(path: string, requestUrl: string) {
   const requestOrigin = new URL(requestUrl).origin;

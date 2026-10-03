@@ -32,6 +32,7 @@ const publishTransactionResultSchema = z.object({
     "not_ready",
     "creator_entitlement_required",
     "verification_required",
+    "self_portfolio_required",
   ]),
   action: z.enum(["created", "updated"]).optional(),
   shareToken: z.string().optional(),
@@ -61,6 +62,13 @@ export async function publishPortfolio({
   userId: string;
   data: PortfolioData;
 }) {
+  if (data.personal.profile_for !== "self") {
+    throw new PortfolioPublishError(
+      "The initial pilot supports only portfolios created by the person featured.",
+      "PILOT_SELF_PORTFOLIO_REQUIRED",
+      403
+    );
+  }
   const repository = new DashboardRepository(supabase);
   const { data: portfolio, error: findError } = await repository.findPortfolioForUser(userId);
   if (findError || !portfolio) {
@@ -147,6 +155,9 @@ export async function publishPortfolio({
     if (databaseMessage.includes("publication_content_required")) {
       throw new PortfolioPublishError("Complete all required portfolio details before publishing.", "PORTFOLIO_NOT_READY", 400);
     }
+    if (databaseMessage.includes("publication_self_portfolio_required")) {
+      throw new PortfolioPublishError("The initial pilot supports only portfolios created by the person featured.", "PILOT_SELF_PORTFOLIO_REQUIRED", 403);
+    }
     throw new PortfolioPublishError("We could not publish your portfolio. Please try again.", "PORTFOLIO_TRANSACTION_FAILED");
   }
   if (!transaction.success) {
@@ -171,6 +182,13 @@ export async function publishPortfolio({
       "Complete identity verification before publishing your portfolio.",
       "IDENTITY_VERIFICATION_REQUIRED",
       409
+    );
+  }
+  if (transaction.data.status === "self_portfolio_required") {
+    throw new PortfolioPublishError(
+      "The initial pilot supports only portfolios created by the person featured.",
+      "PILOT_SELF_PORTFOLIO_REQUIRED",
+      403
     );
   }
   if (transaction.data.status !== "ok" || !transaction.data.action || !transaction.data.shareToken) {

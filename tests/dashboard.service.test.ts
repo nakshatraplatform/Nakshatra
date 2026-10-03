@@ -19,7 +19,7 @@ import {
 } from "../src/features/portfolio/server/dashboard.service";
 
 const baseDraft: PortfolioData = {
-  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female" },
+  personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", profile_for: "self" },
 };
 
 describe("saveDashboardDraft", () => {
@@ -33,6 +33,23 @@ describe("saveDashboardDraft", () => {
       },
       error: null,
     });
+  });
+
+  it("rejects a portfolio created for someone else before saving any candidate data", async () => {
+    await expect(saveDashboardDraft({
+      supabase: {} as never,
+      userId: "user-id",
+      data: { ...baseDraft, personal: { ...baseDraft.personal, profile_for: "daughter" } },
+    })).rejects.toMatchObject({ code: "PILOT_SELF_PORTFOLIO_REQUIRED", status: 403 });
+    expect(repository.saveDashboardDraftTransaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps a legacy delegated draft private when the database refuses a rewrite", async () => {
+    repository.saveDashboardDraftTransaction.mockResolvedValue({
+      data: { status: "self_portfolio_required" }, error: null,
+    });
+    await expect(saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft }))
+      .rejects.toMatchObject({ code: "PILOT_SELF_PORTFOLIO_REQUIRED", status: 403 });
   });
 
   it("sends the complete populated draft graph through one transaction", async () => {
