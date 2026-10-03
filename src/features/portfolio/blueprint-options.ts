@@ -11,13 +11,8 @@ export const GENDER_OPTIONS = [
 ];
 
 export const PROFILE_FOR_OPTIONS = [
-  option("", "Select who is creating this"),
-  option("self", "Myself"),
-  option("son", "My son"),
-  option("daughter", "My daughter"),
-  option("sibling", "My sibling"),
-  option("relative", "A relative"),
-  option("friend", "A friend"),
+  option("", "Choose one"),
+  option("self", "I am creating my own portfolio"),
 ];
 
 export const MARITAL_STATUS_OPTIONS = [

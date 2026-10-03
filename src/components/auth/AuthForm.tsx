@@ -19,7 +19,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "@/features/auth/password-policy";
-import { isBrokerdeskAuthRedirect } from "@/lib/security/redirect";
+import { getPilotInvitationToken, isBrokerdeskAuthRedirect } from "@/lib/security/redirect";
 
 type Mode = "login" | "signup";
 type Screen = "credentials" | "verify" | "recovery" | "recovery_sent";
@@ -57,8 +57,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/dashboard";
-  const brokerdeskContinuation = isBrokerdeskAuthRedirect(redirectPath);
+  const requestedRedirect = searchParams.get("redirect") || "/dashboard";
+  const brokerdeskContinuation = isBrokerdeskAuthRedirect(requestedRedirect);
+  const redirectPath = mode === "signup" && !brokerdeskContinuation && !getPilotInvitationToken(requestedRedirect) ? "/dashboard" : requestedRedirect;
   const copy = brokerdeskContinuation
     ? mode === "login"
       ? {
@@ -78,7 +79,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           primaryAction: "Create broker account",
         }
     : COPY[mode];
-  const alternateHref = brokerdeskContinuation
+  const alternateHref = brokerdeskContinuation || getPilotInvitationToken(redirectPath)
     ? `${copy.altHref}?redirect=${encodeURIComponent(redirectPath)}`
     : copy.altHref;
   const authError = searchParams.get("error");

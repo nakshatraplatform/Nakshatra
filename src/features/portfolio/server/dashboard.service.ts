@@ -17,6 +17,7 @@ export type DashboardSaveErrorCode =
   | "DASHBOARD_DATABASE_UPDATE_REQUIRED"
   | "DASHBOARD_DATA_REJECTED"
   | "PILOT_INVITATION_REQUIRED"
+  | "PILOT_SELF_PORTFOLIO_REQUIRED"
   | "DASHBOARD_SAVE_FAILED";
 
 export class DashboardSaveError extends Error {
@@ -77,6 +78,13 @@ export async function saveDashboardDraft({
   userId: string;
   data: PortfolioData;
 }) {
+  if (data.personal.name?.trim() && data.personal.profile_for !== "self") {
+    throw new DashboardSaveError(
+      "For the initial pilot, you can save a portfolio only for yourself. Select that you are creating your own portfolio first.",
+      "PILOT_SELF_PORTFOLIO_REQUIRED",
+      403
+    );
+  }
   const repository = new DashboardRepository(supabase);
   const hasCandidate = Boolean(data.personal.name?.trim());
   const { data: result, error } = await repository.saveDashboardDraftTransaction({
@@ -97,6 +105,13 @@ export async function saveDashboardDraft({
     throw new DashboardSaveError(
       "Portfolio creation is currently available only to invited beta participants.",
       "PILOT_INVITATION_REQUIRED",
+      403
+    );
+  }
+  if (result && typeof result === "object" && (result as { status?: unknown }).status === "self_portfolio_required") {
+    throw new DashboardSaveError(
+      "This pilot supports only a portfolio created by the person featured. Your existing draft remains private.",
+      "PILOT_SELF_PORTFOLIO_REQUIRED",
       403
     );
   }

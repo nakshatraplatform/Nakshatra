@@ -4,9 +4,11 @@ const createClient = vi.hoisted(() => vi.fn());
 const consumeRateLimit = vi.hoisted(() => vi.fn());
 const logServerError = vi.hoisted(() => vi.fn());
 const ensureOwnerPortfolio = vi.hoisted(() => vi.fn());
+const isCreatorInvitationValid = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 vi.mock("@/features/auth/server/portfolio-bootstrap", () => ({ ensureOwnerPortfolio }));
+vi.mock("@/features/pilot-access/server/creator-invitations.service", () => ({ isCreatorInvitationValid }));
 vi.mock("@/features/security/server/rate-limit.service", async () => {
   const actual = await vi.importActual<typeof import("../src/features/security/server/rate-limit.service")>(
     "../src/features/security/server/rate-limit.service"
@@ -56,6 +58,7 @@ describe("authentication start route", () => {
     resend.mockResolvedValue({ error: null });
     resetPasswordForEmail.mockResolvedValue({ error: null });
     ensureOwnerPortfolio.mockResolvedValue("portfolio-id");
+    isCreatorInvitationValid.mockResolvedValue(false);
   });
 
   const canonicalOrigin = () => process.env.NEXT_PUBLIC_APP_URL
@@ -157,6 +160,22 @@ describe("authentication start route", () => {
     }));
     expect(response.status).toBe(403);
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
+  });
+
+  it("permits password signup only for an explicitly invited B2C email", async () => {
+    isCreatorInvitationValid.mockResolvedValueOnce(true);
+    const response = await POST(request({
+      method: "password_signup",
+      email: "Invited@Example.com",
+      password: "strong-pass-1",
+      redirect: `/invite/${"A".repeat(43)}`,
+    }));
+    expect(response.status).toBe(200);
+    expect(isCreatorInvitationValid).toHaveBeenCalledWith("invited@example.com", "A".repeat(43));
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      email: "invited@example.com",
+      options: expect.objectContaining({ data: { entry_context: "portfolio_owner" } }),
+    }));
   });
 
   it("derives BrokerDesk signup context from the allowlisted destination without creating a customer portfolio", async () => {

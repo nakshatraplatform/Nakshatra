@@ -22,7 +22,7 @@ describe("pilot access administrator experience", () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
   it("lists verified waitlist entries without creator approval controls", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ requests: [request] }), { status: 200 }));
+    const fetchMock = vi.fn((url: string) => Promise.resolve(new Response(JSON.stringify(url.includes("creator-invitations") ? { invitations: [] } : { requests: [request] }), { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
     render(<PilotAccessAdminClient />);
     expect(await screen.findByText("aditi@example.com")).toBeInTheDocument();
@@ -37,11 +37,11 @@ describe("pilot access administrator experience", () => {
   });
 
   it("shows an empty waitlist and lets the administrator refresh it", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ requests: [] }), { status: 200 }));
+    const fetchMock = vi.fn((url: string) => Promise.resolve(new Response(JSON.stringify(url.includes("creator-invitations") ? { invitations: [] } : { requests: [] }), { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
     render(<PilotAccessAdminClient />);
     expect(await screen.findByRole("heading", { name: "No waitlist entries yet" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Refresh waitlist" }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
   });
 });

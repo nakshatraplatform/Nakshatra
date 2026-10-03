@@ -393,7 +393,8 @@ describe("static app surfaces", () => {
   it("redirects a live authenticated session away from login and signup", async () => {
     mocks.apiAuthStatus = "authenticated";
     await expect(LoginPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
-    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/waitlist");
+    await expect(SignupPage({ searchParams: Promise.resolve({ redirect: `/invite/${"A".repeat(43)}` }) })).rejects.toThrow(`REDIRECT:/invite/${"A".repeat(43)}`);
   });
 
   it("never renders raw server error details", () => {

@@ -120,7 +120,7 @@ as $$
     (coalesce(p_draft, '{}'::jsonb) - 'personal' - 'career')
     || pg_catalog.jsonb_build_object(
       'personal',
-      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","current_location":"Test City","short_bio":"A complete test introduction."}'::jsonb
+      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","current_location":"Test City","short_bio":"A complete test introduction.","profile_for":"self"}'::jsonb
         || coalesce(p_draft -> 'personal', '{}'::jsonb),
       'career',
       '{"title":"Test role"}'::jsonb || coalesce(p_draft -> 'career', '{}'::jsonb)
@@ -171,6 +171,11 @@ language sql
 security definer
 set search_path = ''
 as $$
+  insert into public.candidate_personal_details(candidate_id, profile_for)
+  select portfolio.candidate_id, 'self'
+  from public.portfolios portfolio where portfolio.id = p_portfolio_id
+  on conflict (candidate_id) do update set profile_for = 'self';
+
   insert into app_private.b2c_creator_entitlements (email_hash)
   select app_private.normalized_email_hash(account.email)
   from public.portfolios portfolio

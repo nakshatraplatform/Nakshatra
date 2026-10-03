@@ -167,6 +167,10 @@ export default function DashboardClient({
       : daysLeft !== null && daysLeft <= 7
         ? "warning"
         : "active";
+  const selfCreatedPortfolio = draftData.personal.profile_for === "self"
+    && portfolio?.published_data?.personal?.profile_for === "self";
+  const publicShareReady = selfCreatedPortfolio
+    && readinessState.verificationStatus === "verified";
   const pendingInterestCount = interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
@@ -228,14 +232,14 @@ export default function DashboardClient({
   }
 
   async function copyLink() {
-    if (!shareUrl) return;
+    if (!shareUrl || !publicShareReady) return;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   async function shareWhatsApp() {
-    if (!shareUrl) return;
+    if (!shareUrl || !publicShareReady) return;
     const profileName = portfolio?.published_data?.personal?.name
       || portfolio?.draft_data?.personal?.name
       || "this profile";
@@ -611,6 +615,10 @@ export default function DashboardClient({
 
       <main className="relative z-10 flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
+          {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[light-dark(#a9c8be,var(--app-dark-border))] bg-[light-dark(#eff7f2,var(--app-dark-surface))] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
+            <div><p className="font-semibold">Pilot operations</p><p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Invite creators by email and review the launch waitlist.</p></div>
+            <Link href="/admin/pilot-access" className="dashboard-primary-action min-h-11 justify-center">Manage pilot access</Link>
+          </section> : null}
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
             <section className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
@@ -688,9 +696,9 @@ export default function DashboardClient({
           ) : (
               <section className="dashboard-welcome">
                 <div>
-                  <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Link expired" : "Portfolio active"}</span>
-                  <h2>Your portfolio is ready to share.</h2>
-                  <p>Review new interests, see recent activity, or update your portfolio.</p>
+                  <span className={`dashboard-status ${isExpired || !publicShareReady ? "is-expired" : ""}`}>{!publicShareReady ? "Sharing paused" : isExpired ? "Link expired" : "Portfolio active"}</span>
+                  <h2>{publicShareReady ? "Your portfolio is ready to share." : "Your portfolio is not shareable yet."}</h2>
+                  <p>{publicShareReady ? "Review new interests, see recent activity, or update your portfolio." : "Only self-created portfolios with current verification can be shared during this pilot. Your saved details remain private."}</p>
                 </div>
                 <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
@@ -698,7 +706,7 @@ export default function DashboardClient({
                       <Edit3 className="h-4 w-4" /> Portfolio details
                     </button>
                   )}
-                  {isExpired
+                  {!publicShareReady ? null : isExpired
                     ? canCreatePortfolio && (
                       <button type="button" onClick={renewLink} disabled={renewing} className="dashboard-primary-action">
                         <RefreshCw className={`h-4 w-4 ${renewing ? "animate-spin" : ""}`} />
@@ -730,7 +738,9 @@ export default function DashboardClient({
                   <span className="text-sm font-medium">Public link</span>
                 </div>
                 <p className="mt-2 text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-                  {isExpired
+                  {!publicShareReady
+                    ? "Unavailable until eligible"
+                    : isExpired
                     ? "Expired"
                     : portfolio?.is_published && daysLeft === null
                     ? "Active until unpublished"
@@ -749,7 +759,7 @@ export default function DashboardClient({
               </div>
             </div>
 
-            {portfolio?.is_published && shareUrl ? (
+            {portfolio?.is_published && shareUrl && publicShareReady ? (
               <div className="dashboard-glass p-4">
                 <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
                 <div className="dashboard-share-link-row">
@@ -788,8 +798,13 @@ export default function DashboardClient({
               <div className="dashboard-glass p-4">
                 <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
                 <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-                  Your saved portfolio, interests, access history, and view totals remain available here. Review and publish when you are ready to create a shareable link.
+                  Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification.
                 </p>
+                {portfolio?.is_published && (
+                  <button onClick={unpublishPortfolio} disabled={unpublishing} className="dashboard-danger-action mt-3">
+                    <LockKeyhole className="h-4 w-4" /> {unpublishing ? "Unpublishing..." : "Unpublish"}
+                  </button>
+                )}
               </div>
             )}
 

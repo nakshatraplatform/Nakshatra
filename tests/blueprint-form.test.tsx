@@ -65,6 +65,16 @@ describe("blueprint form", () => {
     );
   });
 
+  it("offers only self-creation for the pilot and explains an existing delegated draft", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    const creator = screen.getByLabelText("Who is creating this portfolio?");
+    expect(within(creator).getByRole("option", { name: "I am creating my own portfolio" })).toBeInTheDocument();
+    expect(within(creator).queryByRole("option", { name: "My daughter" })).not.toBeInTheDocument();
+    rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, profile_for: "daughter" } }} onUpdate={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Your draft remains private");
+    expect(screen.queryByLabelText("Who is creating this portfolio?")).not.toBeInTheDocument();
+  });
+
   it("routes required profile, family, contact, appearance, and privacy changes", () => {
     const onUpdate = vi.fn();
     render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
