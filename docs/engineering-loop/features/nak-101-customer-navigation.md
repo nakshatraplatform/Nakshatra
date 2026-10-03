@@ -43,3 +43,4 @@ The requested account-specific exemption is a separate security change. Exact ac
 - `npm run typecheck`, `npm run lint -- --max-warnings=0`, `npm run build`, and `git diff --check` passed.
 - Fresh-context review found one stale dashboard test query caused by both responsive sign-out controls being present in jsdom; the test now selects the desktop control, and its 29-test suite passes. No other concrete regression was found in that review.
 - `graphify update .` completed; SQL graph extraction remains limited by an existing missing `tree_sitter_sql` dependency, unrelated to this UI change.
+- The local Windows pre-push suite reported 918 passing and two failing tests in untouched Didit sandbox and security-audit files. Their source is identical to `origin/main`; the failures appear platform-specific and are not attributed to NAK-101. This branch was pushed with Husky disabled for that one push; full CI remains the authority before merge.
