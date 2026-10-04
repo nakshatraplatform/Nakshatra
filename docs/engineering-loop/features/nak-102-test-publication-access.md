@@ -41,7 +41,7 @@ on conflict (user_id) do update set revoked_at = null
 returning user_id;
 ```
 
-Require exactly one returned account and independently verify its email before proceeding. Refresh the dashboard, review public and Complete previews, confirm disclosure, publish, test the guest link and protected-contact flow, then verify it has no identity badge. Do not describe the account as verified.
+Require exactly one returned account and independently verify its email before proceeding. Production must also set `NEXT_PUBLIC_APP_URL=https://www.vivintro.com` and redeploy: the current `createShareUrl` fallback would otherwise return a localhost URL even after successful publication. Refresh the dashboard, review public and Complete previews, confirm disclosure, publish, test the guest link and protected-contact flow, then verify it has no identity badge. Do not describe the account as verified.
 
 Emergency rollback: set `revoked_at=now()` on the exact row after confirming the user ID. The public-link and media predicates then fail closed immediately; there is no need to delete portfolio data. A code rollback before revocation could produce a stale dashboard, so revoke first. Supabase CDN/signed URLs may remain accessible until their short expiry and must be treated as a residual exposure in the release review.
 
