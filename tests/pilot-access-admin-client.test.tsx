@@ -25,6 +25,7 @@ describe("pilot access administrator experience", () => {
     const fetchMock = vi.fn((url: string) => Promise.resolve(new Response(JSON.stringify(url.includes("creator-invitations") ? { invitations: [] } : { requests: [request] }), { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
     render(<PilotAccessAdminClient />);
+    expect(document.querySelector("main")).toHaveClass("pilot-access-shell");
     expect(await screen.findByText("aditi@example.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/admin/pilot-access?status=pending", { cache: "no-store" });
