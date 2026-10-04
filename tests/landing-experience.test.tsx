@@ -8,6 +8,8 @@ describe("LandingExperience consent-led messaging", () => {
   it("makes controlled disclosure and honest forwarding boundaries clear", () => {
     render(<LandingExperience variant="clarity" />);
     expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
+    expect(document.querySelector("#top")).toHaveTextContent(/one marriage introduction link instead of another PDF/i);
+    expect(document.querySelector("#top")).toHaveTextContent(/free during the private pilot/i);
     expect(document.body).toHaveTextContent(/public Introduction can be forwarded or captured/i);
     expect(screen.getByRole("heading", { name: /share the introduction.*decide on the rest/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/protected details need approval/i);
@@ -30,7 +32,8 @@ describe("LandingExperience consent-led messaging", () => {
     expect(screen.getByRole("heading", { name: /how vivintro works/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/create once, share carefully, and decide what comes next/i);
     expect(document.body).toHaveTextContent(/protected access lasts up to 15 days/i);
-    expect(document.body).toHaveTextContent(/current creator pilot is free and invitation-only/i);
+    expect(document.body).toHaveTextContent(/broker-sponsored actions have no separate VivIntro charge for customers/i);
+    expect(document.body).toHaveTextContent(/no paid creator plan yet/i);
     expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
     expect(document.body).toHaveTextContent(/creating an Introduction becomes available only after an invitation is issued/i);
   });
@@ -38,7 +41,7 @@ describe("LandingExperience consent-led messaging", () => {
   it("makes trust and FAQ answers expandable without hiding their questions", () => {
     render(<LandingExperience variant="clarity" />);
     const trust = screen.getByText("Can someone forward the link?").closest("details");
-    const faq = screen.getByText("What stays protected?").closest("details");
+    const faq = screen.getByText("What can someone with my link see?").closest("details");
     expect(trust).not.toHaveAttribute("open");
     expect(faq).not.toHaveAttribute("open");
     fireEvent.click(withinSummary(trust));

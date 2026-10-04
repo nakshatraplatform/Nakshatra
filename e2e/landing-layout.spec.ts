@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("landing explains the family problem, disclosure boundary, and next step", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.locator("#why")).toContainText("different versions");
+  await expect(page.locator("#why")).toContainText("old files and personal details sit in different chats");
   await expect(page.locator("#privacy")).toContainText("Shared introduction");
   await expect(page.locator("#privacy")).toContainText("Protected details need approval");
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();

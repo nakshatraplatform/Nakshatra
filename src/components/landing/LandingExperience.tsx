@@ -8,7 +8,7 @@ import styles from "./LandingExperience.module.css";
 export type LandingVariant = "clarity" | "control" | "story";
 
 const concepts = {
-  clarity: { headline: "One introduction. One link. Always current.", lead: "VivIntro gives families one thoughtful marriage introduction to share—without sending another PDF. Update it anytime. Contact details, horoscope files, and other sensitive information stay protected until you approve access." },
+  clarity: { headline: "One introduction. One link. Always current.", lead: "VivIntro gives families one marriage introduction link instead of another PDF. Update it anytime. Contact details and horoscope files stay protected until you approve access." },
   control: { headline: "Share an introduction. Keep personal details personal.", lead: "One private link gives families a thoughtful first introduction. You decide who can see the details that should not be forwarded freely." },
   story: { headline: "A more human way to make a marriage introduction.", lead: "Present the person, not another attachment. VivIntro keeps the story clear and disclosure under the owner’s control." },
 } as const;
@@ -18,10 +18,10 @@ export const landingFaqs = [
   { question: "Is VivIntro a matchmaking website?", answer: "No. VivIntro does not list profiles, recommend matches, or search on your behalf. It helps a person or family make a private introduction to people they already choose." },
   { question: "How is this different from a biodata PDF?", answer: "You can update a VivIntro introduction without sending a new file. The shared view and protected details are separate, so a viewer must request and receive your approval before seeing the latter. A forwarded PDF cannot be updated or withdrawn." },
   { question: "Who can open a shared link?", answer: "Anyone who receives or is forwarded the link can read the public Introduction. It is not listed in a VivIntro directory and is marked not to appear in search results. A viewer can still forward or capture what they see, so put only information you are comfortable sharing in that first view." },
-  { question: "What stays protected?", answer: "Contact details, the original horoscope file, exact birth details, and other Complete Portfolio information stay outside the public Introduction. For a personally shared link, a viewer confirms their email and requests access; the owner can approve or set the request aside." },
+  { question: "What can someone with my link see?", answer: "The shared Introduction is what someone with your link can read. Contact details, the original horoscope file, exact birth details, and other Complete Portfolio information stay protected. For a personally shared link, a viewer confirms their email and requests access; you can approve or set the request aside." },
   { question: "What does Live photo checked mean?", answer: "When this badge appears, Didit matched a live camera capture to the portfolio’s current primary photo and checked liveness. It does not verify legal identity, profile statements, or suitability. A test publication without this check has no badge." },
   { question: "Can I change or stop sharing it?", answer: "Yes. Edit the published Introduction and the current link shows the update. You can also unpublish it or rotate the link, which makes the previous link stop working. If you approve a viewer, protected access lasts up to 15 days and can end earlier." },
-  { question: "Is the private pilot free?", answer: "Yes. The current creator pilot is free and invitation-only. VivIntro is not offering a paid creator plan during the pilot." },
+  { question: "Is the private pilot free?", answer: "Yes. Invited creators can create and share for free during the pilot. Broker-sponsored actions have no separate VivIntro charge for customers. There is no paid creator plan yet; we will explain any future personal pricing before asking you to pay." },
   { question: "Can I join now?", answer: "VivIntro is inviting people gradually during its private pilot. You sign in with email or Google to request an invitation. Creating an Introduction becomes available only after an invitation is issued." },
 ] as const;
 
@@ -62,7 +62,7 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>Private marriage introductions, shared with care</p><h1>{concept.headline}</h1><p className={styles.heroLead}>{concept.lead}</p>
             <div className={styles.heroActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link><Link href="/waitlist" className={styles.secondaryButton}>Request an invitation</Link></div>
-            <p className={styles.heroNote}><Check aria-hidden="true" /> Private pilot · invitations are released gradually</p>
+            <p className={styles.heroNote}><Check aria-hidden="true" /> Free during the private pilot. Invitation required to create.</p>
             <ul className={styles.heroAssurances} aria-label="VivIntro privacy assurances">
               <li><BadgeCheck aria-hidden="true" /><span><strong>Photo checks are clearly marked</strong><small>Badge shown only after a live check</small></span></li>
               <li><Globe2 aria-hidden="true" /><span><strong>Not searchable</strong><small>No public profile directory</small></span></li>
@@ -72,12 +72,12 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         </section>
 
         <section id="why" className={styles.problemSection}>
-          <div className={styles.sectionHeading}><p className={styles.eyebrow}>The familiar forwarding problem</p><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>Someone asks for an introduction. A family member forwards a file. Then come requests for a newer photo, a corrected detail, or a horoscope. Soon different conversations hold different versions and more personal information than anyone meant to share.</p></div>
+          <div className={styles.sectionHeading}><p className={styles.eyebrow}>The familiar forwarding problem</p><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>A relative forwards a biodata. Someone asks for a newer photo or horoscope. Soon old files and personal details sit in different chats, with no clear next step.</p></div>
           <div className={styles.problemGrid}>{problems.map(({ icon: Icon, title, body }) => <article key={title}><Icon aria-hidden="true" /><div><h3>{title}</h3><p>{body}</p></div></article>)}</div>
         </section>
 
         <section id="privacy" className={styles.controlSection}>
-          <div className={styles.controlIntro}><p className={styles.eyebrow}>What VivIntro changes</p><h2>Share the introduction. Decide on the rest.</h2><p>Make one Introduction for people with the link. Keep contact details, horoscope files, and other protected information for a later step. A viewer confirms their email and asks; the owner decides whether to give access.</p><div className={styles.accessFlow}><span>Shared introduction</span><ArrowRight aria-hidden="true" /><span>Email-confirmed request</span><ArrowRight aria-hidden="true" /><strong>Up to 15 days of approved access</strong></div></div>
+          <div className={styles.controlIntro}><p className={styles.eyebrow}>What VivIntro changes</p><h2>Share the introduction. Decide on the rest.</h2><p>Send your Introduction by link. People can read it without an app. For a personal link, an interested viewer confirms their email to request protected details; you decide who gets access.</p><div className={styles.accessFlow}><span>Shared introduction</span><ArrowRight aria-hidden="true" /><span>Email-confirmed request</span><ArrowRight aria-hidden="true" /><strong>Up to 15 days of approved access</strong></div></div>
           <div className={styles.controlGrid}>{values.map(({ icon: Icon, label, title, body }) => <article key={title}><Icon aria-hidden="true" /><span>{label}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
           <div className={styles.trustFacts}><span><Globe2 aria-hidden="true" />A shared link can be forwarded.</span><span><LockKeyhole aria-hidden="true" />Protected details need approval.</span><span><UserCheck aria-hidden="true" />A request can be set aside privately.</span><span><RefreshCw aria-hidden="true" />Access can be ended early.</span></div>
         </section>
@@ -100,8 +100,8 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         </section>
 
         <section id="beta" className={styles.betaSection}>
-          <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered private pilot</p><h2>For families already making introductions.</h2><p>When someone comes through a relative, friend, community network, or matchmaker, share one current Introduction instead of assembling another file. VivIntro helps you introduce someone to the people you choose. It does not search for or recommend matches.</p></div>
-          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates and publishes their own portfolio and decides who receives protected access.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send the link through WhatsApp, email, relatives, or the matchmaker your family already uses.</span><span><UserCheck aria-hidden="true" /><strong>Free during the private pilot</strong>Request an invitation first. Creating a portfolio begins only after an invitation is issued.</span></div>
+          <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered private pilot</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
+          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send your personal link through WhatsApp, email, relatives, or a matchmaker you choose.</span><span><UserCheck aria-hidden="true" /><strong>Free during the private pilot</strong>Request an invitation first. You can create an Introduction after you are invited.</span></div>
           <div className={styles.betaActions}><Link href="/waitlist" className={styles.primaryButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><Link href="/login" className={styles.secondaryButton}>Existing participant? Sign in</Link></div>
         </section>
 
