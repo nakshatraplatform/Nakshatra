@@ -38,7 +38,7 @@ function messageForState(state: PilotAccessState) {
         icon: Clock3,
       eyebrow: "Request received",
       title: "Your invitation request is confirmed.",
-      body: "We will contact your verified email when a private-pilot place is available. No account or portfolio access has been created yet.",
+      body: "We will contact your verified email when a private-pilot place is available. Your signed-in account does not yet have creator or portfolio access.",
       };
     case "declined":
       return {
@@ -234,7 +234,7 @@ export default function PilotAccessClient({ initialStep = "loading", initialStat
           )}
         </section>
 
-        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>An invitation request does not create an account or portfolio. Signup begins only after VivIntro issues an invitation.</p></div>
+        <div className="mt-6 flex items-start gap-3 px-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]"><LockKeyhole aria-hidden className="mt-1 h-4 w-4 shrink-0" /><p>To request an invitation, you sign in with email or Google. This creates an account for the request, not a portfolio or creator access.</p></div>
       </div>
     </main>
   );

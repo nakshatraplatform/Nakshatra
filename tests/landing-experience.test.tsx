@@ -8,8 +8,9 @@ describe("LandingExperience consent-led messaging", () => {
   it("makes controlled disclosure and honest forwarding boundaries clear", () => {
     render(<LandingExperience variant="clarity" />);
     expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
-    expect(document.body).toHaveTextContent(/Anyone who receives the link can forward and open the shared introduction/i);
-    expect(document.body).toHaveTextContent(/private details do not have to/i);
+    expect(document.body).toHaveTextContent(/public Introduction can be forwarded or captured/i);
+    expect(screen.getByRole("heading", { name: /share the introduction.*decide on the rest/i })).toBeInTheDocument();
+    expect(document.body).toHaveTextContent(/protected details need approval/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Not searchable/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Photo checks are clearly marked/i);
     expect(document.body).not.toHaveTextContent(/Identity-checked creator|Required before publication/i);
@@ -20,7 +21,7 @@ describe("LandingExperience consent-led messaging", () => {
     render(<LandingExperience variant="clarity" />);
     expect(screen.getAllByRole("link", { name: /view.*sample introduction/i })[0]).toHaveAttribute("href", "/demo");
     for (const link of screen.getAllByRole("link", { name: /request an invitation/i })) expect(link).toHaveAttribute("href", "/waitlist");
-    expect(screen.getByRole("link", { name: /read the viewer guide/i })).toHaveAttribute("href", "/received-a-link");
+    for (const link of screen.getAllByRole("link", { name: /read the viewer guide/i })) expect(link).toHaveAttribute("href", "/received-a-link");
   });
 
   it("keeps the guided lifecycle and 15-day approved access distinct", () => {
@@ -30,6 +31,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/create once, share carefully, and decide what comes next/i);
     expect(document.body).toHaveTextContent(/protected access lasts up to 15 days/i);
     expect(document.body).toHaveTextContent(/current creator pilot is free and invitation-only/i);
-    expect(document.body).toHaveTextContent(/owner can unpublish or rotate the public link at any time/i);
+    expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
+    expect(document.body).toHaveTextContent(/creating an Introduction becomes available only after an invitation is issued/i);
   });
 });

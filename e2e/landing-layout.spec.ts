@@ -1,5 +1,35 @@
 import { expect, test } from "@playwright/test";
 
+test("landing explains the family problem, disclosure boundary, and next step", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator("#why")).toContainText("different versions");
+  await expect(page.locator("#privacy")).toContainText("Shared introduction");
+  await expect(page.locator("#privacy")).toContainText("Protected details need approval");
+  await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
+  await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
+  await expect(page.locator("#samples").getByRole("link", { name: "View a sample introduction" })).toHaveAttribute("href", "/demo");
+
+  await page.locator("#questions").getByText("Who can open a shared link?").click();
+  await expect(page.locator("#questions")).toContainText("A viewer can still forward or capture what they see");
+});
+
+test("landing copy fits supported widths in both themes", async ({ page }) => {
+  await page.goto("/");
+  for (const theme of ["light", "dark"] as const) {
+    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    for (const width of [320, 375, 414, 768, 1024, 1081, 1200, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth, `${theme} at ${width}px`).toBeLessThanOrEqual(width + 1);
+      if (width >= 1081) {
+        const navLinkHeights = await page.locator("header nav a").evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
+        expect(Math.max(...navLinkHeights), `${theme} navigation at ${width}px`).toBeLessThanOrEqual(54);
+      }
+    }
+  }
+});
+
 test("tour anchors clear the sticky header on desktop and mobile", async ({ page }) => {
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
@@ -67,7 +97,7 @@ test("frequent tour feedback is immediate and sample CTA opens the real demo", a
   await step.focus();
   await expect(step).toHaveCSS("outline-style", "solid");
 
-  const sample = page.getByRole("main").getByRole("link", { name: "View a sample introduction" });
+  const sample = page.locator("#top").getByRole("link", { name: "View a sample introduction" });
   await expect(sample).toHaveAttribute("href", "/demo");
   await sample.click();
   await expect(page.getByText("Fictional sample introduction", { exact: true })).toBeVisible();
