@@ -72,41 +72,41 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         </section>
 
         <section id="why" className={styles.problemSection}>
-          <div className={styles.sectionHeading}><p className={styles.eyebrow}>The familiar forwarding problem</p><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>A relative forwards a biodata. Someone asks for a newer photo or horoscope. Soon old files and personal details sit in different chats, with no clear next step.</p></div>
+          <div className={styles.sectionHeading}><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>A relative forwards a biodata. Someone asks for a newer photo or horoscope. Soon old files and personal details sit in different chats, with no clear next step.</p></div>
           <div className={styles.problemGrid}>{problems.map(({ icon: Icon, title, body }) => <article key={title}><Icon aria-hidden="true" /><div><h3>{title}</h3><p>{body}</p></div></article>)}</div>
         </section>
 
         <section id="privacy" className={styles.controlSection}>
-          <div className={styles.controlIntro}><p className={styles.eyebrow}>What VivIntro changes</p><h2>Share the introduction. Decide on the rest.</h2><p>Send your Introduction by link. People can read it without an app. For a personal link, an interested viewer confirms their email to request protected details; you decide who gets access.</p><div className={styles.accessFlow}><span>Shared introduction</span><ArrowRight aria-hidden="true" /><span>Email-confirmed request</span><ArrowRight aria-hidden="true" /><strong>Up to 15 days of approved access</strong></div></div>
+          <div className={styles.controlIntro}><h2>Share the introduction. Decide on the rest.</h2><p>Send your Introduction by link. People can read it without an app. For a personal link, an interested viewer confirms their email to request protected details; you decide who gets access.</p><div className={styles.accessFlow}><span>Shared introduction</span><ArrowRight aria-hidden="true" /><span>Email-confirmed request</span><ArrowRight aria-hidden="true" /><strong>Up to 15 days of approved access</strong></div><p className={styles.sharingBoundary}>A shared link can be forwarded. Put only details you are comfortable sharing in the first view.</p></div>
           <div className={styles.controlGrid}>{values.map(({ icon: Icon, label, title, body }) => <article key={title}><Icon aria-hidden="true" /><span>{label}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
-          <div className={styles.trustFacts}><span><Globe2 aria-hidden="true" />A shared link can be forwarded.</span><span><LockKeyhole aria-hidden="true" />Protected details need approval.</span><span><UserCheck aria-hidden="true" />A request can be set aside privately.</span><span><RefreshCw aria-hidden="true" />Access can be ended early.</span></div>
+        </section>
+
+        <section id="samples" className={styles.samplesSection}>
+          <div className={styles.samplesHeading}><div className={styles.sectionHeading}><h2>See an Introduction before you join.</h2></div><p>Open Ananya Mehta’s fictional Introduction. Read the shared view and see where an interested viewer would ask for protected details.</p></div>
+          <div className={styles.betaActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link></div><p className={styles.sampleNote}>Ananya and every detail in the sample are fictional. The Complete Portfolio is not shown.</p>
         </section>
 
         <GuidedTour />
 
         <section id="viewer" className={styles.familySection}>
-          <div className={styles.sectionHeading}><p className={styles.eyebrow}>If you received a link</p><h2>Read first. Request more only if you want to continue.</h2></div>
-          <div className={styles.familyGrid}><article><span className={styles.eyebrow}>01</span><h3>Open the introduction</h3><p>No app or account is required to read the shared view.</p></article><article><span className={styles.eyebrow}>02</span><h3>Decide whether it feels relevant</h3><p>If you want to continue, confirm your email and request protected access.</p></article><article><span className={styles.eyebrow}>03</span><h3>Respect the owner’s decision</h3><p>The owner may approve the request or set it aside privately. Approved access lasts up to 15 days.</p></article><article><Link href="/received-a-link" className={styles.secondaryButton}>Read the viewer guide <ArrowRight aria-hidden="true" /></Link></article></div>
-        </section>
-
-        <section id="samples" className={styles.samplesSection}>
-          <div className={styles.samplesHeading}><div className={styles.sectionHeading}><p className={styles.eyebrow}>See the format</p><h2>See what a family actually receives.</h2></div><p>Open Ananya Mehta’s fictional Introduction. You can read the shared view and see where a real viewer would request protected access. The sample does not reveal a Complete Portfolio.</p></div>
-          <div className={styles.betaActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link><Link href="/received-a-link" className={styles.secondaryButton}>Read the viewer guide</Link></div><p className={styles.sampleNote}>Ananya Mehta, her family, and every detail in this demonstration are fictional.</p>
+          <div className={styles.sectionHeading}><h2>Received a link? Read first, then decide.</h2></div>
+          <div className={styles.familyGrid}><article><span className={styles.eyebrow}>01</span><h3>Open the introduction</h3><p>No app or account is required to read the shared view.</p></article><article><span className={styles.eyebrow}>02</span><h3>Decide whether it feels relevant</h3><p>If you want to continue, confirm your email and request protected access.</p></article><article><span className={styles.eyebrow}>03</span><h3>Respect the owner’s decision</h3><p>The owner may approve the request or set it aside privately. Approved access lasts up to 15 days.</p></article></div>
+          <div className={styles.betaActions}><Link href="/received-a-link" className={styles.secondaryButton}>Read the viewer guide <ArrowRight aria-hidden="true" /></Link></div>
         </section>
 
         <section id="trust" className={styles.familySection}>
-          <div className={styles.sectionHeading}><p className={styles.eyebrow}>Before you share</p><h2>Know what remains in your control.</h2></div>
+          <div className={styles.sectionHeading}><h2>What to know before you share.</h2></div>
           <div className={styles.trustList}>{trustFacts.map(({ icon: Icon, title, body }) => <details key={title}><summary><Icon aria-hidden="true" /><span>{title}</span><ChevronDown className={styles.disclosureChevron} aria-hidden="true" /></summary><p>{body}</p></details>)}</div><div className={styles.betaActions}><Link href="/trust" className={styles.secondaryButton}>Read how VivIntro handles trust</Link><Link href="/privacy" className={styles.secondaryButton}>Privacy policy</Link></div>
         </section>
 
         <section id="beta" className={styles.betaSection}>
           <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered private pilot</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
-          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send your personal link through WhatsApp, email, relatives, or a matchmaker you choose.</span><span><UserCheck aria-hidden="true" /><strong>Free during the private pilot</strong>Request an invitation first. You can create an Introduction after you are invited.</span></div>
+          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send your personal link through WhatsApp, email, relatives, or a matchmaker you choose.</span></div>
           <div className={styles.betaActions}><Link href="/waitlist" className={styles.primaryButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><Link href="/login" className={styles.secondaryButton}>Existing participant? Sign in</Link></div>
         </section>
 
-        <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><p className={styles.eyebrow}>Questions</p><h2>Know exactly what happens.</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
-        <section className={styles.finalCta}><div><p className={styles.eyebrow}>Private pilot</p><h2>Make the next introduction easier to share.</h2><p>Keep one current view for the first conversation and decide when to share more.</p></div><div className={styles.finalAction}><Link href="/waitlist" className={styles.lightButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><span>Portfolio creation begins only after you are invited.</span></div></section>
+        <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><h2>Common questions</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
+        <section className={styles.finalCta}><div><h2>Make the next introduction easier to share.</h2><p>Keep one current view for the first conversation and decide when to share more.</p></div><div className={styles.finalAction}><Link href="/waitlist" className={styles.lightButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><span>Portfolio creation begins only after you are invited.</span></div></section>
       </main>
 
       <footer className={styles.footer}><VivIntroBrand href="/" variant="full-symbol" className={styles.brand} /><p>A thoughtful way to share private marriage introductions.</p><div><Link href="/about">About</Link><Link href="/trust">Trust</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div></footer>

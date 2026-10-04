@@ -12,7 +12,8 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.querySelector("#top")).toHaveTextContent(/free during the private pilot/i);
     expect(document.body).toHaveTextContent(/public Introduction can be forwarded or captured/i);
     expect(screen.getByRole("heading", { name: /share the introduction.*decide on the rest/i })).toBeInTheDocument();
-    expect(document.body).toHaveTextContent(/protected details need approval/i);
+    expect(document.querySelector("#privacy")).toHaveTextContent(/a shared link can be forwarded/i);
+    expect(document.querySelector("#privacy")).toHaveTextContent(/you decide who gets access/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Not searchable/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Photo checks are clearly marked/i);
     expect(document.body).not.toHaveTextContent(/Identity-checked creator|Required before publication/i);
@@ -24,6 +25,19 @@ describe("LandingExperience consent-led messaging", () => {
     expect(screen.getAllByRole("link", { name: /view.*sample introduction/i })[0]).toHaveAttribute("href", "/demo");
     for (const link of screen.getAllByRole("link", { name: /request an invitation/i })) expect(link).toHaveAttribute("href", "/waitlist");
     for (const link of screen.getAllByRole("link", { name: /read the viewer guide/i })) expect(link).toHaveAttribute("href", "/received-a-link");
+  });
+
+  it("shows the fictional example before the tour and keeps the viewer path", () => {
+    render(<LandingExperience variant="clarity" />);
+    const sample = document.querySelector("#samples");
+    const tour = document.querySelector("#how");
+    const viewer = document.querySelector("#viewer");
+    expect(sample).toHaveTextContent(/fictional Introduction/i);
+    expect(sample).toHaveTextContent(/Complete Portfolio is not shown/i);
+    expect(sample?.compareDocumentPosition(tour!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(tour?.compareDocumentPosition(viewer!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(viewer?.querySelectorAll("article")).toHaveLength(3);
+    expect(viewer?.querySelector('a[href="/received-a-link"]')).toBeInTheDocument();
   });
 
   it("keeps the guided lifecycle and 15-day approved access distinct", () => {

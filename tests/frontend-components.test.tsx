@@ -82,7 +82,7 @@ describe("landing and shared frontend components", () => {
     expect(screen.getByRole("heading", { name: /for families already making introductions/i })).toBeInTheDocument();
     expect(screen.getByText(/portfolio creation begins only after you are invited/i)).toBeInTheDocument();
     expect(screen.getByText(/what does the photo badge mean/i).closest("summary")).toBeInTheDocument();
-    expect(screen.getByText(/every detail in this demonstration are fictional/i)).toBeInTheDocument();
+    expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
   });
 
   it("offers distinct privacy and story-led landing concepts", () => {

@@ -1,14 +1,22 @@
 import { expect, test } from "@playwright/test";
 
-test("landing explains the family problem, disclosure boundary, and next step", async ({ page }) => {
+test("landing explains the family problem, disclosure boundary, and next step", async ({ page }, testInfo) => {
   await page.goto("/");
 
   await expect(page.locator("#why")).toContainText("old files and personal details sit in different chats");
   await expect(page.locator("#privacy")).toContainText("Shared introduction");
-  await expect(page.locator("#privacy")).toContainText("Protected details need approval");
+  await expect(page.locator("#privacy")).toContainText("A shared link can be forwarded");
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
   await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
   await expect(page.locator("#samples").getByRole("link", { name: "View a sample introduction" })).toHaveAttribute("href", "/demo");
+  expect(await page.locator("#samples").evaluate((element) => {
+    const tour = document.querySelector("#how");
+    return tour !== null && Boolean(element.compareDocumentPosition(tour) & Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  await expect(page.locator("#viewer article")).toHaveCount(3);
+  if (testInfo.project.name === "chromium") {
+    await page.locator("#samples").screenshot({ path: testInfo.outputPath("sample-section-desktop-light.png"), animations: "disabled" });
+  }
 
   await page.locator("#questions").getByText("Who can open a shared link?").click();
   await expect(page.locator("#questions")).toContainText("A viewer can still forward or capture what they see");
