@@ -1,6 +1,7 @@
 "use client";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { PhoneNumberField } from "@/components/portfolio/PhoneNumberField";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, CheckCircle2, ChevronDown, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
@@ -306,6 +307,7 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
   error: string;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const [phone, setPhone] = useState(() => fieldValue(draft?.phone));
   return (
     <form onSubmit={onSubmit} className="interest-form">
       <div className="interest-form-scroll">
@@ -338,7 +340,7 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
               <option value="" disabled>Choose one</option><option value="self">Myself</option><option value="son">My son</option><option value="daughter">My daughter</option><option value="sibling">My sibling</option><option value="relative">A relative</option>
             </select>
           </label>
-          <Field label="Phone number" name="phone" type="tel" autoComplete="tel" inputMode="tel" defaultValue={fieldValue(draft?.phone)} required />
+          <PhoneNumberField name="phone" value={phone} onChange={setPhone} required hint="Use the calling code for the country where this number can be reached." />
           <label className="interest-field">
             <span>Email address <b aria-hidden="true">*</b></span>
             <div className={sessionEmail ? "interest-verified-input" : undefined}>

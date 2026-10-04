@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, LockKeyhole, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   classifyPhotoOrientation,
   type PortfolioPhoto,
@@ -134,6 +135,8 @@ export function AdaptivePortfolioGallery({
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const lightboxTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const lightboxCloseRef = useRef<HTMLButtonElement | null>(null);
   const orderedPhotos = useMemo(
     () => photos
       .map((photo, index) => ({ photo, index }))
@@ -153,16 +156,42 @@ export function AdaptivePortfolioGallery({
   );
   const lightboxIndex = clearPhotos.findIndex((photo) => photo.id === lightboxPhotoId);
   const lightboxPhoto = lightboxIndex >= 0 ? clearPhotos[lightboxIndex] : null;
+  const lightboxOpen = Boolean(lightboxPhoto);
 
   useEffect(() => {
-    if (!lightboxPhoto) return;
+    if (!lightboxOpen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    lightboxCloseRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      lightboxTriggerRef.current?.focus();
+    };
+  }, [lightboxOpen]);
 
+  useEffect(() => {
+    if (!lightboxOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setLightboxPhotoId(null);
+      } else if (event.key === "Tab") {
+        const controls = Array.from(document.querySelectorAll<HTMLElement>(
+          ".portfolio-lightbox button:not([disabled])"
+        ));
+        if (!controls.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (!document.activeElement?.closest(".portfolio-lightbox")) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       } else if (event.key === "ArrowLeft" && clearPhotos.length > 1) {
         const previous = (lightboxIndex - 1 + clearPhotos.length) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[previous].id);
@@ -173,11 +202,8 @@ export function AdaptivePortfolioGallery({
     }
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [clearPhotos, lightboxIndex, lightboxPhoto]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [clearPhotos, lightboxIndex, lightboxOpen]);
 
   if (!photos.length) return null;
 
@@ -241,7 +267,10 @@ export function AdaptivePortfolioGallery({
               <button
                 type="button"
                 className="portfolio-gallery-open"
-                onClick={() => setLightboxPhotoId(activePhoto.id)}
+                onClick={(event) => {
+                  lightboxTriggerRef.current = event.currentTarget;
+                  setLightboxPhotoId(activePhoto.id);
+                }}
                 aria-label={`Open ${activePhoto.alt || "gallery photo"} full screen`}
               >
                 <GalleryImage
@@ -297,11 +326,13 @@ export function AdaptivePortfolioGallery({
         </div>
       </div>
 
-      {lightboxPhoto && (
-        <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onMouseDown={(event) => {
-          if (event.currentTarget === event.target) setLightboxPhotoId(null);
+      {lightboxPhoto && createPortal(
+        <div data-template="celestial-union" className="portfolio-lightbox-portal">
+        <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
+          const target = event.target;
+          if (target instanceof Element && !target.closest("button, img, figcaption")) setLightboxPhotoId(null);
         }}>
-          <button type="button" autoFocus className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close full-screen photo">
+          <button ref={lightboxCloseRef} type="button" className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close full-screen photo">
             <X aria-hidden="true" />
             <span>Close</span>
           </button>
@@ -323,6 +354,8 @@ export function AdaptivePortfolioGallery({
             </button>
           )}
         </div>
+        </div>,
+        document.body
       )}
     </section>
   );

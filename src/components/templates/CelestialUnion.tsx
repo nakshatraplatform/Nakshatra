@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
+import { PortfolioBackToTop } from "./PortfolioBackToTop";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   CELESTIAL_THEME_COLORS,
@@ -735,13 +736,18 @@ export default function CelestialUnion({
       </main>
 
       <footer className="portfolio-footer">
-        <div><VivIntroBrand variant="full-symbol" decorative /></div>
-        <p>Private marriage introductions, shared with care.</p>
-        <a href="/received-a-link">Received this link? Read the viewer guide</a>
-        <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/privacy#corrections">Report or correct information</a>
+        <div className="portfolio-footer-identity">
+          <VivIntroBrand variant="full-symbol" decorative />
+          <p>Private marriage introductions, shared with care.</p>
+        </div>
+        <nav className="portfolio-footer-links" aria-label="Portfolio help and policies">
+          <a href="/received-a-link">Viewer guide</a>
+          <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/privacy#corrections">Report or correct information</a>
+        </nav>
       </footer>
+      <PortfolioBackToTop />
     </div>
   );
 }

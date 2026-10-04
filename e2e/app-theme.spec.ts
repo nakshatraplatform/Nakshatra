@@ -158,6 +158,7 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       await page.goto(route);
       await expect(page).toHaveURL(new RegExp(`${route}$`));
       await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
+      await expect(page.locator(".dashboard-header")).toHaveCSS("position", "sticky");
       await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
       await noOverflow(page);
       if (route === "/dashboard") {
@@ -193,6 +194,34 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       } else {
         await expect(page.getByRole("navigation", { name: "Customer pages" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
       }
+    }
+  }
+});
+
+test("dashboard header stays available on scroll without covering the editor", async ({ page, context }) => {
+  await context.addCookies([themeTestCookie]);
+  for (const width of [375, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/dashboard");
+    const header = page.locator(".dashboard-header");
+    await expect(header).toHaveCSS("position", "sticky");
+
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect.poll(() => header.evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0);
+    await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
+    await page.getByRole("button", { name: "Start with the basics" }).click();
+    const editor = page.getByRole("dialog", { name: "Portfolio details" });
+    await expect(editor).toBeVisible();
+    const topLayer = await page.evaluate(() => document.elementFromPoint(window.innerWidth / 2, 20)?.closest('[role="dialog"]') !== null);
+    expect(topLayer).toBe(true);
+    await editor.getByRole("button", { name: /Back to dashboard|Dashboard/ }).click();
+
+    for (const route of ["/brokers", "/account"]) {
+      await page.goto(route);
+      // The empty broker fixture is short; extend only the test page to exercise sticky scrolling.
+      await page.locator("main").evaluate((main) => { main.style.minHeight = "1600px"; });
+      await page.evaluate(() => window.scrollTo(0, 900));
+      await expect.poll(() => page.locator(".dashboard-header").evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0);
     }
   }
 });
