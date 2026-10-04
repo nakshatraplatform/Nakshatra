@@ -38,6 +38,10 @@ test("public trust explanation matches the publication exception and link contro
   await page.goto("/trust");
   await expect(page.getByText(/limited pilot test exemption can allow publication without that check/i)).toBeVisible();
   await expect(page.getByText(/exempt introductions do not receive the Live photo checked badge/i)).toBeVisible();
-  await expect(page.getByText(/Owners can unpublish or rotate a public link at any time/i)).toBeVisible();
+  const accessControls = page.getByText("Access and control").locator("xpath=ancestor::details");
+  await expect(accessControls).not.toHaveAttribute("open", "");
+  await accessControls.locator("summary").click();
+  await expect(accessControls).toContainText(/Owners can unpublish or rotate a personal public link at any time/i);
+  await expect(accessControls.getByText(/Owners can unpublish or rotate a personal public link at any time/i)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("trust-375-final.png"), fullPage: true, animations: "disabled" });
 });
