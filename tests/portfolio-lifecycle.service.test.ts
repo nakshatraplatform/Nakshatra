@@ -154,6 +154,18 @@ describe("portfolio lifecycle services", () => {
     expect(result).toMatchObject({ action: "created", shareUrl: expect.stringContaining("/p/") });
   });
 
+  it("allows an owner-safe test exemption through the same server-owned publication transaction", async () => {
+    getPublicationReadiness.mockResolvedValue({
+      portfolioExists: true, lastEditorSection: null, previewedAt: null,
+      selectedPlanCode: null, verificationStatus: "test_exempt", paymentStatus: "none",
+      paymentExpiresAt: null, paymentActive: true, disclosureConfirmed: true,
+      published: false, missingRequired: [],
+    });
+    await expect(publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft }))
+      .resolves.toMatchObject({ action: "created" });
+    expect(repository.publishPortfolioTransaction).toHaveBeenCalledOnce();
+  });
+
   it("normalizes legacy template labels to the Nakshatra portfolio", async () => {
     await publishPortfolio({
       supabase: {} as never,

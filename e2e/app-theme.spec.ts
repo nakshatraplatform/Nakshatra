@@ -105,6 +105,8 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
     if (route === "/dashboard") {
       const overview = page.getByLabel("Portfolio overview");
       await expect(overview).toBeVisible();
+      await expect(overview).toHaveCSS("border-top-width", "1px");
+      await expect(overview.getByLabel("Portfolio activity at a glance")).toBeVisible();
       expect(await overview.evaluate((element) => {
         const journey = document.querySelector('[aria-labelledby="creator-readiness-heading"]');
         return Boolean(journey && (element.compareDocumentPosition(journey) & Node.DOCUMENT_POSITION_FOLLOWING));
