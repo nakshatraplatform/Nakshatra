@@ -286,6 +286,10 @@
   .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+@media (max-width: 360px) {
+  .dashboard-overview { padding: 0.5rem; }
+}
+
 @media (max-width: 640px) {
   .dashboard-welcome { flex-direction: column; }
   .dashboard-welcome-actions { width: 100%; }
@@ -300,7 +304,7 @@
   .dashboard-access-row { align-items: flex-start; flex-direction: column; }
   .dashboard-access-row .dashboard-interest-actions { width: 100%; }
   .dashboard-overview { gap: 0.75rem; }
-  .dashboard-stats-grid { gap: 0.65rem; }
+  .dashboard-stats-grid { gap: 0.5rem; }
   .dashboard-share-link-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
   .dashboard-share-url { width: 100%; min-width: 0; overflow: hidden !important; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-share-link-row .dashboard-secondary-action { min-height: 40px; padding-inline: 0.75rem; }
