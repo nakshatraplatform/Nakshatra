@@ -11,6 +11,9 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/Anyone who receives the link can forward and open the shared introduction/i);
     expect(document.body).toHaveTextContent(/private details do not have to/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Not searchable/i);
+    expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Photo checks are clearly marked/i);
+    expect(document.body).not.toHaveTextContent(/Identity-checked creator|Required before publication/i);
+    expect(document.body).toHaveTextContent(/A test publication without this check has no badge/i);
   });
 
   it("connects every promise to a real route", () => {
@@ -22,11 +25,11 @@ describe("LandingExperience consent-led messaging", () => {
 
   it("keeps the guided lifecycle and 15-day approved access distinct", () => {
     render(<LandingExperience variant="clarity" />);
-    expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Preview and verify.*Share.*Approve/i);
+    expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Preview and prepare.*Share.*Approve/i);
     expect(screen.getByRole("heading", { name: /how vivintro works/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/create once, share carefully, and decide what comes next/i);
-    expect(document.body).toHaveTextContent(/protected access lasts 15 days/i);
+    expect(document.body).toHaveTextContent(/protected access lasts up to 15 days/i);
     expect(document.body).toHaveTextContent(/current creator pilot is free and invitation-only/i);
-    expect(document.body).toHaveTextContent(/public introduction remains available until its owner unpublishes/i);
+    expect(document.body).toHaveTextContent(/owner can unpublish or rotate the public link at any time/i);
   });
 });

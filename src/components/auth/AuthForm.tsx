@@ -38,7 +38,7 @@ const COPY = {
   signup: {
     eyebrow: "Invite-only private beta",
     title: "Create your pilot account",
-    body: "Use the email address invited to the pilot. You can build privately, preview both views, and publish only after completing the required identity check.",
+    body: "Use the email address invited to the pilot. Build privately, preview both views, and follow the publication steps shown in your dashboard.",
     primaryAction: "Create pilot account",
     altPrompt: "Already have an account?",
     altCta: "Sign in",
@@ -234,7 +234,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   <ShieldCheck aria-hidden="true" />
                   <div>
                     <strong>Portfolio creation is limited to invited beta participants.</strong>
-                    <p>Your draft stays private until you publish. Didit identity verification is required before publication. If someone shared a portfolio with you, use that shared link to view it and express interest—you do not need creator access.</p>
+                    <p>Your draft stays private until you publish. A Live photo checked badge appears only after a Didit photo-match and liveness check. If someone shared a portfolio with you, use that link to view it and show interest—you do not need creator access.</p>
                     <Link href="/#samples">See the portfolio format</Link>
                   </div>
                 </div>

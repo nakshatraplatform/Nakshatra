@@ -122,6 +122,7 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Aditi Rao" })).toBeInTheDocument();
+    expect(screen.queryByText("Live photo checked")).not.toBeInTheDocument();
     expect(screen.getByText("A Marriage Introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
@@ -254,6 +255,7 @@ describe("celestial union portfolio", () => {
     expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Live photo match checked\. Didit matched/)).toBeInTheDocument();
+    expect(screen.getByText("Live photo checked")).toBeInTheDocument();
   });
 
   it("always renders the public interest action, even without protected labels", () => {
