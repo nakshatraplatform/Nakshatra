@@ -254,10 +254,11 @@ describe("dashboard client", () => {
     renderDashboard({ isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
     expect(metrics.children).toHaveLength(4);
-    expect(within(metrics).getByText("Recent interests")).toBeInTheDocument();
+    expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
     expect(within(metrics).getByText("Active access")).toBeInTheDocument();
     expect(within(metrics).getByText("Portfolio views")).toBeInTheDocument();
+    expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
@@ -361,7 +362,7 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Recent interests").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Latest interests").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByText("Needs review").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Review requests" })).toHaveAttribute("href", "#introductions-and-access");
 

@@ -133,8 +133,8 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
       <main className="account-privacy-main">
         <div className="account-privacy-heading">
           <p className="site-eyebrow">Account controls</p>
-          <h1>Privacy and sessions</h1>
-          <p>{userEmail}</p>
+          <h1>Account settings</h1>
+          <p>Signed in as {userEmail}</p>
         </div>
 
         <div aria-live="polite" aria-atomic="true">
@@ -142,53 +142,59 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
           {error ? <p className="account-notice is-error">{error}</p> : null}
         </div>
 
-        <section className="account-control-row" aria-labelledby="export-heading">
-          <div>
-            <h2 id="export-heading">Download your data</h2>
-            <p>Export your profile, portfolio, media inventory, memberships, and your own activity as JSON.</p>
-          </div>
-          <button className="dashboard-secondary-action" onClick={downloadExport} disabled={action !== null}>
-            {action === "export" ? <LoaderCircle className="animate-spin" /> : <Download />}
-            Download
-          </button>
+        <section className="account-settings-group" aria-labelledby="data-devices-heading">
+          <h2 id="data-devices-heading">Your data and devices</h2>
+          <section className="account-control-row" aria-labelledby="export-heading">
+            <div>
+              <h3 id="export-heading">Download your data</h3>
+              <p>Export your profile, portfolio, media inventory, memberships, and your own activity as JSON.</p>
+            </div>
+            <button className="dashboard-secondary-action" onClick={downloadExport} disabled={action !== null}>
+              {action === "export" ? <LoaderCircle className="animate-spin" /> : <Download />}
+              Download
+            </button>
+          </section>
+
+          <section className="account-control-row" aria-labelledby="sessions-heading">
+            <div>
+              <h3 id="sessions-heading">Other signed-in devices</h3>
+              <p>End every other active session. This browser stays signed in.</p>
+            </div>
+            <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={action !== null}>
+              {action === "sessions" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
+              Sign out others
+            </button>
+          </section>
         </section>
 
-        <section className="account-control-row" aria-labelledby="sessions-heading">
-          <div>
-            <h2 id="sessions-heading">Other signed-in devices</h2>
-            <p>End every other active session. This browser stays signed in.</p>
-          </div>
-          <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={action !== null}>
-            {action === "sessions" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
-            Sign out others
-          </button>
-        </section>
-
-        <section className="account-control-row account-danger-zone" aria-labelledby="delete-heading">
-          <div>
-            <h2 id="delete-heading">Delete account</h2>
+        <section className="account-settings-group account-settings-danger" aria-labelledby="account-close-heading">
+          <h2 id="account-close-heading">Close your account</h2>
+          <section className="account-control-row account-danger-zone" aria-labelledby="delete-heading">
+            <div>
+              <h3 id="delete-heading">Delete account</h3>
+              {deletionPending ? (
+                <p>
+                  Deletion is scheduled for {new Date(deletion.scheduledFor).toLocaleString()}.
+                  Public and approved portfolio access is already disabled.
+                </p>
+              ) : (
+                <p>Public access is revoked immediately. Permanent deletion begins after a 24-hour recovery window.</p>
+              )}
+            </div>
             {deletionPending ? (
-              <p>
-                Deletion is scheduled for {new Date(deletion.scheduledFor).toLocaleString()}.
-                Public and approved portfolio access is already disabled.
-              </p>
+              <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={action !== null}>
+                {action === "cancel" ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
+                Cancel deletion
+              </button>
+            ) : deletionProcessing ? (
+              <p className="account-notice is-error">Deletion is being processed and can no longer be canceled.</p>
             ) : (
-              <p>Public access is revoked immediately. Permanent deletion begins after a 24-hour recovery window.</p>
+              <button className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={action !== null}>
+                <Trash2 />
+                Delete account
+              </button>
             )}
-          </div>
-          {deletionPending ? (
-            <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={action !== null}>
-              {action === "cancel" ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
-              Cancel deletion
-            </button>
-          ) : deletionProcessing ? (
-            <p className="account-notice is-error">Deletion is being processed and can no longer be canceled.</p>
-          ) : (
-            <button className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={action !== null}>
-              <Trash2 />
-              Delete account
-            </button>
-          )}
+          </section>
         </section>
       </main>
 
@@ -238,6 +244,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
             <label htmlFor="delete-confirmation">Type <strong>DELETE</strong> to continue</label>
             <input
               id="delete-confirmation"
+              type="text"
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               autoComplete="off"
