@@ -73,8 +73,10 @@ An opaque Introduction link is only an address. Forwarding it gives another
 person no profile access and no ability to respond. There is no public Detailed
 fallback on a broker link.
 
-Personal VivIntro links are separate. They remain guest-viewable under the
-existing B2C Detailed/Brief and approval rules and never inherit broker authority.
+Personal VivIntro links are separate. New publication uses the guest-viewable
+Detailed Introduction and owner-approved Complete Portfolio. Historical Brief
+content remains readable for existing published links but is not a new
+publication choice. Personal links never inherit broker authority.
 
 ## What happens after responses
 

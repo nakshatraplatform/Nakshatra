@@ -165,6 +165,9 @@ export default function DashboardClient({
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
   const activeAccessCount = accessGrants.filter((grant) => grant.status === "active").length;
+  const showRelationshipDashboard = Boolean(
+    portfolio?.published_at || interestItems.length || accessGrants.length || accessEvents.length || brokerIntroductionResponses.length
+  );
 
   useEffect(() => {
     if (draftSaveState === "saved") return;
@@ -683,8 +686,8 @@ export default function DashboardClient({
           )}
 
           {(canCreatePortfolio || portfolio) && <>
-          <section className="dashboard-overview" aria-label="Portfolio overview">
-            <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
+          {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
+            {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Recent interests</span></div>
                 <p className="dashboard-stat-value">{interestItems.length}</p>
@@ -709,7 +712,7 @@ export default function DashboardClient({
                 <p className="dashboard-stat-value">{viewCount}</p>
                 <span className="dashboard-stat-caption">Recorded opens</span>
               </div>
-            </div>
+            </div>}
 
             {portfolio?.is_published && shareUrl && publicShareReady ? (
               <div className="dashboard-glass p-4">
@@ -778,9 +781,9 @@ export default function DashboardClient({
                 Preview Complete Portfolio
               </Link>
             </div>}
-          </section>
+          </section>}
 
-          {canCreatePortfolio && !(readinessState.published && completion.readyToPublish) && (
+          {canCreatePortfolio && portfolio && !(readinessState.published && completion.readyToPublish) && (
             <CreatorReadinessTracker
               completion={completion}
               readiness={readinessState}
@@ -789,7 +792,7 @@ export default function DashboardClient({
             />
           )}
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
-          <RelationshipLifecycle
+          {showRelationshipDashboard && <RelationshipLifecycle
             interests={interestItems}
             grants={accessGrants}
             events={accessEvents}
@@ -813,7 +816,7 @@ export default function DashboardClient({
               ));
               router.refresh();
             }}
-          />
+          />}
           </>}
           </div>
           {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6">

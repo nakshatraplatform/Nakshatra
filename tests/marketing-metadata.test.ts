@@ -11,16 +11,16 @@ import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-ima
 
 describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
-    expect(metadata.title).toEqual({ absolute: "VivIntro — Private Marriage Introductions You Control" });
+    expect(metadata.title).toEqual({ absolute: "Private Marriage Introduction Link | VivIntro" });
     expect(metadata.description).toMatch(/marriage introduction/i);
     expect(metadata.description).toMatch(/until you approve/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
-      title: "VivIntro — Private Marriage Introductions You Control",
+      title: "One Introduction. One Link. Always Current. | VivIntro",
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
-      title: "VivIntro — Private Marriage Introductions You Control",
+      title: "One Introduction. One Link. Always Current. | VivIntro",
     });
   });
 

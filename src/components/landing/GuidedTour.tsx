@@ -24,10 +24,10 @@ const tourSteps = [
   },
   {
     number: "02",
-    label: "Preview and verify",
+    label: "Preview and prepare",
     title: "See every view before anyone else does.",
-    body: "Compare the shared introduction with its protected details, then complete the required identity check before publication.",
-    points: ["Shared Introduction preview", "Protected view preview", "Identity check"],
+    body: "Compare the shared introduction with its protected details, then complete the publication steps shown in your dashboard.",
+    points: ["Shared Introduction preview", "Protected view preview", "Publication checks"],
     icon: BadgeCheck,
   },
   {
@@ -43,7 +43,7 @@ const tourSteps = [
     label: "Approve",
     title: "Open protected details deliberately.",
     body: "Review email-confirmed requests in your dashboard and decide who receives protected access for 15 days.",
-    points: ["Verified email request", "Owner approval", "Access can end early"],
+    points: ["Email-confirmed request", "Owner approval", "Access can end early"],
     icon: UserCheck,
   },
 ] as const;

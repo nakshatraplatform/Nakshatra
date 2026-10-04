@@ -16,7 +16,7 @@ export function PolicyLayout({
 }) {
   return (
     <div className="min-h-screen bg-[color:var(--workspace-canvas)] text-[color:var(--workspace-ink)]">
-      <header className="border-b border-[color:var(--workspace-border)] bg-[#fffdf8]/95 px-4 py-3 sm:px-8">
+      <header className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 py-3 sm:px-8">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <VivIntroBrand href="/" variant="horizontal" priority />
           <div className="app-header-actions"><ThemeSwitch />

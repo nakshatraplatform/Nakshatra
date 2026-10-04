@@ -103,14 +103,10 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
     await page.goto(route);
     await expect(page).toHaveURL(new RegExp(`${route}$`));
     if (route === "/dashboard") {
-      const overview = page.getByLabel("Portfolio overview");
-      await expect(overview).toBeVisible();
-      await expect(overview).toHaveCSS("border-top-width", "1px");
-      await expect(overview.getByLabel("Portfolio activity at a glance")).toBeVisible();
-      expect(await overview.evaluate((element) => {
-        const journey = document.querySelector('[aria-labelledby="creator-readiness-heading"]');
-        return Boolean(journey && (element.compareDocumentPosition(journey) & Node.DOCUMENT_POSITION_FOLLOWING));
-      })).toBe(true);
+      await expect(page.getByRole("button", { name: "Start with the basics" })).toBeVisible();
+      await expect(page.getByLabel("Portfolio overview")).toHaveCount(0);
+      await expect(page.getByLabel("Portfolio activity at a glance")).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: /0% complete/i })).toHaveCount(0);
     }
     await page.getByRole("button", { name: "Switch to Dark theme" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
@@ -165,20 +161,8 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       await noOverflow(page);
       if (route === "/dashboard") {
         const cards = page.locator(".dashboard-stats-grid .dashboard-stat-card");
-        await expect(cards).toHaveCount(4);
-        const positions = await cards.evaluateAll((elements) => elements.map((element) => {
-          const { x, y, width: cardWidth } = element.getBoundingClientRect();
-          return { x, y, cardWidth };
-        }));
-        if (width <= 900) {
-          expect(positions[0].y).toBe(positions[1].y);
-          expect(positions[2].y).toBe(positions[3].y);
-          expect(positions[2].y).toBeGreaterThan(positions[0].y);
-          expect(positions[0].x).toBe(positions[2].x);
-          expect(positions[0].cardWidth).toBeGreaterThanOrEqual(130);
-        } else {
-          expect(new Set(positions.map((position) => position.y)).size).toBe(1);
-        }
+        await expect(cards).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Start with the basics" })).toBeVisible();
       }
       if ((width === 375 && (route === "/brokers" || route === "/dashboard")) || (width === 1024 && route === "/dashboard")) {
         await page.screenshot({ path: testInfo.outputPath(`customer-${width}-${label.replaceAll(" ", "-")}.png`), fullPage: true, animations: "disabled" });
