@@ -3,7 +3,7 @@ import {
   getPublicationReadiness,
   updatePublicationProgress,
 } from "@/features/portfolio/server/publication-readiness.service";
-import { publicationReadinessSchema } from "@/features/portfolio/server/publication-readiness.contract";
+import { canPublishWithVerificationStatus, publicationReadinessSchema } from "@/features/portfolio/server/publication-readiness.contract";
 
 const readiness = {
   portfolioExists: true,
@@ -20,6 +20,12 @@ const readiness = {
 };
 
 describe("publication readiness service", () => {
+  it("separates the named test publishing exception from real identity verification", () => {
+    expect(publicationReadinessSchema.parse({ ...readiness, verificationStatus: "test_exempt" }).verificationStatus).toBe("test_exempt");
+    expect(canPublishWithVerificationStatus("test_exempt")).toBe(true);
+    expect(canPublishWithVerificationStatus("verified")).toBe(true);
+    expect(canPublishWithVerificationStatus("required")).toBe(false);
+  });
   it("normalizes omitted optional readiness fields", () => {
     expect(publicationReadinessSchema.parse({
       ...readiness,

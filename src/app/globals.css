@@ -139,7 +139,8 @@
 .dashboard-welcome-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-control-gap); }
 .dashboard-welcome h2 { margin-top: 0.75rem; color: light-dark(#18272e, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; line-height: 1.05; }
 .dashboard-welcome p { margin-top: 0.7rem; color: light-dark(#59686d, var(--app-dark-muted)); }
-.dashboard-overview { display: grid; gap: 1rem; }
+.dashboard-overview { display: grid; gap: 1rem; padding: clamp(0.75rem, 2vw, 1.25rem); border: 1px solid light-dark(#d9ded9, var(--app-dark-border)); border-radius: 18px; background: light-dark(#f8f7f3, var(--app-dark-surface-soft)); }
+.dashboard-test-exemption-note { font-size: 0.85rem; font-weight: 600; }
 .dashboard-stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .dashboard-status { display: inline-flex; border-radius: 999px; padding: 0.4rem 0.65rem; background: light-dark(#dcebe5, var(--app-dark-surface-soft)); color: light-dark(#315f57, var(--app-dark-accent)); font-size: 0.82rem; font-weight: 650; }
 .dashboard-status.is-expired { background: light-dark(#f2dedb, var(--app-dark-danger-surface)); color: light-dark(#8c4141, var(--app-dark-danger)); }
@@ -285,6 +286,10 @@
   .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+@media (max-width: 360px) {
+  .dashboard-overview { padding: 0.5rem; }
+}
+
 @media (max-width: 640px) {
   .dashboard-welcome { flex-direction: column; }
   .dashboard-welcome-actions { width: 100%; }
@@ -299,7 +304,7 @@
   .dashboard-access-row { align-items: flex-start; flex-direction: column; }
   .dashboard-access-row .dashboard-interest-actions { width: 100%; }
   .dashboard-overview { gap: 0.75rem; }
-  .dashboard-stats-grid { gap: 0.65rem; }
+  .dashboard-stats-grid { gap: 0.5rem; }
   .dashboard-share-link-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
   .dashboard-share-url { width: 100%; min-width: 0; overflow: hidden !important; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-share-link-row .dashboard-secondary-action { min-height: 40px; padding-inline: 0.75rem; }

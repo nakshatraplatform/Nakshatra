@@ -23,6 +23,7 @@ import { createShareUrl } from "./share-url.service";
 import { ensurePortfolioPhotoPreviews } from "@/features/media/server/media.service";
 import { resolvePublicationExpiry } from "./lifecycle-policy";
 import { getPublicationReadiness } from "./publication-readiness.service";
+import { canPublishWithVerificationStatus } from "./publication-readiness.contract";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 const publishTransactionResultSchema = z.object({
@@ -104,7 +105,7 @@ export async function publishPortfolio({
   }
 
   const publicationReadiness = await getPublicationReadiness(supabase);
-  if (publicationReadiness.verificationStatus !== "verified") {
+  if (!canPublishWithVerificationStatus(publicationReadiness.verificationStatus)) {
     throw new PortfolioPublishError(
       "Complete identity verification before publishing your portfolio.",
       "IDENTITY_VERIFICATION_REQUIRED",

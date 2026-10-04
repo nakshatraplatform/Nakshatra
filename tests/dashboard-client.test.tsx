@@ -171,6 +171,20 @@ describe("dashboard client", () => {
     expect(screen.queryByRole("button", { name: /rotate link/i })).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Unpublish" })).toBeInTheDocument();
+    expect(screen.queryByText("Sharing paused")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Portfolio overview")).toContainElement(screen.getByLabelText("Portfolio activity at a glance"));
+  });
+
+  it("shows public-link controls for the test account without calling it identity verified", () => {
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "test_exempt" },
+      isExpired: false,
+    });
+    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+    expect(screen.getByText(/not Didit identity verification/i)).toBeInTheDocument();
+    expect(screen.queryByText("Sharing paused")).not.toBeInTheDocument();
   });
 
   it("opens the canonical editor when requested by an editing route", () => {
@@ -186,6 +200,7 @@ describe("dashboard client", () => {
 
   it("opens a new private draft, edits it, saves it, and exposes the gated final review", async () => {
     renderDashboard({ portfolio: null, shareUrl: null, media: [] });
+    expect(screen.queryByText("Public sharing is off")).not.toBeInTheDocument();
     expect(screen.getByText(/one clear introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
     goToFoundation();

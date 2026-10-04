@@ -69,6 +69,7 @@ import {
   PORTFOLIO_VIEW_LABELS,
 } from "@/features/portfolio/template";
 import {
+  canPublishWithVerificationStatus,
   EMPTY_PUBLICATION_READINESS,
   type PublicationReadiness,
 } from "@/features/portfolio/server/publication-readiness.contract";
@@ -159,7 +160,7 @@ export default function DashboardClient({
   const selfCreatedPortfolio = draftData.personal.profile_for === "self"
     && portfolio?.published_data?.personal?.profile_for === "self";
   const publicShareReady = selfCreatedPortfolio
-    && readinessState.verificationStatus === "verified";
+    && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const pendingInterestCount = interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
@@ -658,9 +659,10 @@ export default function DashboardClient({
           ) : (
               <section className="dashboard-welcome">
                 <div>
-                  <span className={`dashboard-status ${isExpired || !publicShareReady ? "is-expired" : ""}`}>{!publicShareReady ? "Sharing paused" : isExpired ? "Link expired" : "Portfolio active"}</span>
+                  {publicShareReady && <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Link expired" : "Portfolio active"}</span>}
                   <h2>{publicShareReady ? "Your portfolio is ready to share." : "Your portfolio is not shareable yet."}</h2>
-                  <p>{publicShareReady ? "Review new interests, see recent activity, or update your portfolio." : "Only self-created portfolios with current verification can be shared during this pilot. Your saved details remain private."}</p>
+                  <p>{publicShareReady ? "Review new interests, see recent activity, or update your portfolio." : "Complete the required steps to share your portfolio. Your saved details remain private."}</p>
+                  {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
                 <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
@@ -681,7 +683,7 @@ export default function DashboardClient({
           )}
 
           {(canCreatePortfolio || portfolio) && <>
-          <div className="dashboard-overview" aria-label="Portfolio overview">
+          <section className="dashboard-overview" aria-label="Portfolio overview">
             <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Recent interests</span></div>
@@ -744,11 +746,13 @@ export default function DashboardClient({
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : portfolio ? (
               <div className="dashboard-glass p-4">
                 <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
                 <p className="mt-1 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-                  Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification.
+                  {readinessState.verificationStatus === "test_exempt"
+                    ? "Review and publish your self-created portfolio to activate its link. Test publishing access does not confirm identity."
+                    : "Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification."}
                 </p>
                 {portfolio?.is_published && (
                   <button onClick={unpublishPortfolio} disabled={unpublishing} className="dashboard-danger-action mt-3">
@@ -756,7 +760,7 @@ export default function DashboardClient({
                   </button>
                 )}
               </div>
-            )}
+            ) : null}
 
             {portfolio && <div className="dashboard-overview-actions flex flex-wrap gap-3">
               <Link
@@ -774,7 +778,7 @@ export default function DashboardClient({
                 Preview Complete Portfolio
               </Link>
             </div>}
-          </div>
+          </section>
 
           {canCreatePortfolio && !(readinessState.published && completion.readyToPublish) && (
             <CreatorReadinessTracker
@@ -812,7 +816,10 @@ export default function DashboardClient({
           />
           </>}
           </div>
-          {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6"><IdentityVerificationDashboard candidateId={portfolio.candidate_id} /></div> : null}
+          {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6">
+            {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Photo and liveness verification is optional while this account has test publishing access. It is still required for broker Introductions and a verified-identity badge.</p>}
+            <IdentityVerificationDashboard candidateId={portfolio.candidate_id} />
+          </div> : null}
         </div>
       </main>
 
@@ -883,7 +890,7 @@ export default function DashboardClient({
                     <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Portfolio answers ready" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
-                      <ReviewRequirement complete={readinessState.verificationStatus === "verified"} label="Primary-photo liveness check complete" pendingLabel="Complete the primary-photo liveness check" />
+                      <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Primary-photo liveness check complete"} pendingLabel="Complete the primary-photo liveness check" />
                       <ReviewRequirement complete={readinessState.paymentActive} label="Private pilot access active" pendingLabel="Private pilot access required" />
                       <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                     </div>
@@ -913,7 +920,7 @@ export default function DashboardClient({
                     || !sensitiveDisclosureAccepted
                     || !completion.readyToPublish
                     || draftData.privacy_mode === "private"
-                    || readinessState.verificationStatus !== "verified"
+                    || !canPublishWithVerificationStatus(readinessState.verificationStatus)
                   }
                   onClick={publishPortfolio}
                 >
@@ -922,7 +929,7 @@ export default function DashboardClient({
                     ? "Publishing..."
                     : !completion.readyToPublish
                       ? completion.missing.length ? "Complete required details" : "Review entered answers"
-                      : readinessState.verificationStatus !== "verified"
+                      : !canPublishWithVerificationStatus(readinessState.verificationStatus)
                         ? "Verification required"
                         : portfolio?.is_published
                           ? readinessState.disclosureConfirmed
@@ -1111,7 +1118,7 @@ function CreatorReadinessTracker({
     { label: "Portfolio details", complete: completion.detailsComplete },
     { label: "Preview", complete: Boolean(readiness.previewedAt) },
     { label: "Ready to publish", complete: completion.readyToPublish },
-    { label: "Photo & liveness check", complete: readiness.verificationStatus === "verified" },
+    { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Photo & liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
     { label: "Pilot access", complete: readiness.paymentActive },
     { label: "Disclosure", complete: readiness.disclosureConfirmed },
     { label: "Published", complete: readiness.published },

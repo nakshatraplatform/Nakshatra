@@ -10,7 +10,7 @@ export const publicationReadinessSchema = z.object({
   lastEditorSection: editorSectionSchema.nullish().transform((value) => value ?? null),
   previewedAt: z.string().nullable(),
   selectedPlanCode: z.string().nullable(),
-  verificationStatus: z.enum(["required", "verified"]),
+  verificationStatus: z.enum(["required", "verified", "test_exempt"]),
   paymentStatus: z.enum(["none", "pending", "paid", "failed", "refunded", "cancelled"]),
   paymentExpiresAt: z.string().nullable(),
   paymentActive: z.boolean().optional().default(false),
@@ -28,6 +28,11 @@ export const publicationProgressActionSchema = z.discriminatedUnion("action", [
 
 export type PublicationReadiness = z.infer<typeof publicationReadinessSchema>;
 export type PublicationProgressAction = z.infer<typeof publicationProgressActionSchema>;
+
+/** The test exemption permits personal publication, but is not an identity-verification claim. */
+export function canPublishWithVerificationStatus(status: PublicationReadiness["verificationStatus"]) {
+  return status === "verified" || status === "test_exempt";
+}
 
 export const EMPTY_PUBLICATION_READINESS: PublicationReadiness = {
   portfolioExists: false,
