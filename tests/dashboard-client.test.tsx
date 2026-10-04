@@ -149,6 +149,14 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("starts a new creator with one clear action instead of empty activity metrics", () => {
+    renderDashboard({ portfolio: null, shareUrl: null, viewCount: 0, media: [] });
+    expect(screen.getByRole("button", { name: "Start with the basics" })).toBeInTheDocument();
+    expect(document.querySelector(".dashboard-stats-grid")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /0% complete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Introductions and access" })).not.toBeInTheDocument();
+  });
+
   it("shows a clear pilot-operations entry only to database-authorized administrators", () => {
     const { rerender } = renderDashboard({ pilotAccessState: { canCreatePortfolio: true, isPilotAdministrator: true, application: null } });
     expect(screen.getByRole("link", { name: "Manage pilot access" })).toHaveAttribute("href", "/admin/pilot-access");

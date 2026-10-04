@@ -300,7 +300,7 @@ export function BlueprintForm({
             </button>
           </div>
         </div>
-        <p className="mb-3 text-sm font-semibold text-[color:var(--workspace-ink-muted)]">
+        <p className="mb-3 hidden text-sm font-semibold text-[color:var(--workspace-ink-muted)] lg:block">
           Step {activeIndex + 1} of {SECTIONS.length} · {SECTIONS[activeIndex].label}
         </p>
         {SECTIONS[activeIndex].optional && (
@@ -309,8 +309,7 @@ export function BlueprintForm({
           </p>
         )}
         {activeSection === "foundation" && (
-          <FormSection eyebrow="Quick start" title="The essentials" description="Start with the facts people need for a useful introduction. This section unlocks your first preview.">
-            <InfoCard title="A short first step" audience="Private draft" text="Complete the essentials here, then choose your Marital Status in Personal story. Other answers can be added when you are ready." />
+          <FormSection eyebrow="Quick start" title="The essentials" description="Start with your name and the details people need for a useful introduction. Your draft stays private until you review and publish it.">
               {data.personal.profile_for && data.personal.profile_for !== "self" ? (
                 <p role="alert" className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink)]">
                   This draft was started for someone else. The initial pilot supports only portfolios created by the person featured. Your draft remains private, but it cannot be saved or published during this pilot. Please contact VivIntro support if this is your own portfolio.
@@ -318,7 +317,7 @@ export function BlueprintForm({
               ) : null}
             <fieldset className="space-y-3">
               <legend className="text-[15px] font-semibold text-[color:var(--workspace-ink)]">Full name</legend>
-              <p className="text-sm text-[color:var(--workspace-ink-muted)]">Your full name appears in both published Introduction views.</p>
+              <p className="text-sm text-[color:var(--workspace-ink-muted)]">Your full name appears in the public Introduction and Complete Portfolio.</p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <TextInput label="First name" value={nameParts.first_name} onChange={(value) => updateNamePart("first_name", value)} required requirement="Required" audience="All portfolio views" autoComplete="given-name" maxLength={NAME_PART_MAX_LENGTH} pattern={NAME_PART_PATTERN} />
               <TextInput label="Middle name" value={nameParts.middle_name} onChange={(value) => updateNamePart("middle_name", value)} requirement="Optional" audience="All portfolio views" autoComplete="additional-name" maxLength={NAME_PART_MAX_LENGTH} pattern={NAME_PART_PATTERN} />
@@ -326,7 +325,7 @@ export function BlueprintForm({
               </div>
             </fieldset>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in initial views · Exact date in Full" hint="You must be at least 18. Initial views show age, not the exact date." min="1920-01-01" max={latestAdultBirthDate()} autoComplete="bday" />
+              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in public Introduction · Exact date in Complete Portfolio" hint="You must be at least 18. The public Introduction shows age, not the exact date." min="1920-01-01" max={latestAdultBirthDate()} autoComplete="bday" />
               <SelectInput label="Gender" value={data.personal.gender || ""} options={GENDER_OPTIONS} onChange={(value) => updatePersonal({ gender: value ? value as PortfolioData["personal"]["gender"] : undefined })} required requirement="Required" audience="Public Introduction and Complete Portfolio" hint="Required to publish and shown in your public Introduction." />
               <SelectInput label="Height" value={data.vitals?.height || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), height: value })} required requirement="Required" audience="All portfolio views" />
             </div>

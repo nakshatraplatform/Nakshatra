@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LandingExperience } from "../src/components/landing/LandingExperience";
 
@@ -34,4 +34,23 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
     expect(document.body).toHaveTextContent(/creating an Introduction becomes available only after an invitation is issued/i);
   });
+
+  it("makes trust and FAQ answers expandable without hiding their questions", () => {
+    render(<LandingExperience variant="clarity" />);
+    const trust = screen.getByText("Can someone forward the link?").closest("details");
+    const faq = screen.getByText("What stays protected?").closest("details");
+    expect(trust).not.toHaveAttribute("open");
+    expect(faq).not.toHaveAttribute("open");
+    fireEvent.click(withinSummary(trust));
+    fireEvent.click(withinSummary(faq));
+    expect(trust).toHaveAttribute("open");
+    expect(faq).toHaveAttribute("open");
+    expect(faq).toHaveTextContent("original horoscope file");
+  });
 });
+
+function withinSummary(details: Element | null) {
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("Expected an expandable summary");
+  return summary;
+}

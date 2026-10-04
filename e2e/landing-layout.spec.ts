@@ -14,6 +14,35 @@ test("landing explains the family problem, disclosure boundary, and next step", 
   await expect(page.locator("#questions")).toContainText("A viewer can still forward or capture what they see");
 });
 
+test("trust and FAQ disclosures work with keyboard in both themes", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  const trust = page.locator("#trust details").first();
+  const trustSummary = trust.locator("summary");
+  await trustSummary.focus();
+  await expect(trustSummary).toHaveCSS("outline-style", "solid");
+  await page.keyboard.press("Enter");
+  await expect(trust).toHaveAttribute("open", "");
+  await expect(trust.getByText(/public Introduction can be forwarded/i)).toBeVisible();
+
+  const faq = page.locator("#questions details").first();
+  await faq.locator("summary").click();
+  await expect(faq).toHaveAttribute("open", "");
+  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await expect(trustSummary).toHaveCSS("outline-color", /rgb\(/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(376);
+  await page.screenshot({ path: testInfo.outputPath("landing-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
+
+  await page.goto("/trust");
+  const photoCheck = page.getByText("Live photo check").locator("xpath=ancestor::details");
+  await expect(photoCheck).toHaveAttribute("open", "");
+  await photoCheck.locator("summary").click();
+  await expect(photoCheck).not.toHaveAttribute("open", "");
+  await page.getByText("Sharing boundary").click();
+  await expect(page.getByText(/personal link can open its public Introduction/i)).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("trust-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
+});
+
 test("landing copy fits supported widths in both themes", async ({ page }) => {
   await page.goto("/");
   for (const theme of ["light", "dark"] as const) {

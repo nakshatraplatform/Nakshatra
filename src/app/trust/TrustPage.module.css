@@ -1,0 +1,14 @@
+.list { display: grid; gap: 0.75rem; }
+.item { min-width: 0; border: 1px solid var(--workspace-border); border-radius: 1rem; background: var(--workspace-surface); transition: border-color 160ms ease, background-color 160ms ease; }
+.item:hover, .item[open] { border-color: var(--workspace-teal); background: var(--workspace-surface-muted); }
+.item summary { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; list-style: none; border-radius: 1rem; padding: 1.1rem 1.25rem; touch-action: manipulation; }
+.item summary::-webkit-details-marker { display: none; }
+.item summary:focus-visible { outline: 3px solid var(--workspace-teal); outline-offset: 3px; }
+.item h2 { margin: 0; color: var(--workspace-ink); font-size: 1.15rem; font-weight: 650; line-height: 1.35; }
+.item summary svg { width: 1.1rem; height: 1.1rem; flex: none; color: var(--workspace-teal); transition: transform 160ms ease; }
+.item[open] summary svg { transform: rotate(180deg); }
+.answer { display: grid; gap: 0.75rem; padding: 0 1.25rem 1.25rem; color: var(--workspace-ink-muted); font-size: 1rem; line-height: 1.65; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .item, .item summary svg { transition: none; }
+}
