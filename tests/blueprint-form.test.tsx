@@ -97,6 +97,14 @@ describe("blueprint form", () => {
     expect(screen.getByText(/If you answer, write at least 80 characters/)).toBeInTheDocument();
   });
 
+  it("explains ambiguous education and family fields without changing what is shared", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    expect(screen.getByText(/City and country where you studied/)).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /04Family/ }));
+    expect(screen.getAllByText(/Place or region your family traces its roots to/)).toHaveLength(2);
+  });
+
   it("limits interest chips to six and preserves an unsaved answer across sections", () => {
     function Harness() {
       const [draft, setDraft] = useState(completeBlueprint);

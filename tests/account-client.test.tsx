@@ -44,7 +44,9 @@ afterEach(() => vi.restoreAllMocks());
 describe("account privacy screen", () => {
   it("downloads the account export and revokes other sessions", async () => {
     render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
-    expect(screen.getByRole("heading", { name: "Privacy and sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Account settings" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your data and devices" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Close your account" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Download" }));
     await waitFor(() => expect(mocks.export).toHaveBeenCalled());

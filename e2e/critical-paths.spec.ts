@@ -185,6 +185,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   await page.keyboard.press("Shift+Tab");
   await expect(privacyControl).toBeFocused();
   await expect(privacyControl).toHaveCSS("outline-width", "2px");
+  await expect(page.locator(".portfolio-long-copy").first()).toHaveCSS("overflow-wrap", "anywhere");
 
   if ((page.viewportSize()?.width || 0) > 720) {
     const chapterStyles = await page.locator(".portfolio-chapter").first().evaluate((element) => {

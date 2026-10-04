@@ -689,16 +689,16 @@ export default function DashboardClient({
           {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
             {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Recent interests</span></div>
-                <p className="dashboard-stat-value">{interestItems.length}</p>
-                <span className="dashboard-stat-caption">Latest requests</span>
+                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
+                <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
+                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 requests" : "Requests received"}</span>
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                 <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
                 <p className="dashboard-stat-value">{pendingInterestCount}</p>
                 {pendingInterestCount > 0
                   ? <a className="dashboard-stat-detail" href="#introductions-and-access">Review requests</a>
-                  : <span className="dashboard-stat-caption">All caught up</span>}
+                  : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Active access</span></div>
@@ -710,7 +710,7 @@ export default function DashboardClient({
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Portfolio views</span></div>
                 <p className="dashboard-stat-value">{viewCount}</p>
-                <span className="dashboard-stat-caption">Recorded opens</span>
+                <span className="dashboard-stat-caption">All recorded opens</span>
               </div>
             </div>}
 

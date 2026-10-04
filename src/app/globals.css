@@ -351,12 +351,14 @@
 .account-back-link svg,
 .account-control-row button svg,
 .account-confirm-dialog button svg { width: 1rem; height: 1rem; }
+.account-settings-group { margin-top: 2.25rem; }
+.account-settings-group > h2 { margin-bottom: 0.85rem; color: light-dark(#243940, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: 1.5rem; font-weight: 500; }
 .account-control-row { display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-top: 1px solid light-dark(#d8d8d2, var(--app-dark-border)); padding: 1.6rem 0.2rem; }
-.account-control-row h2 { color: light-dark(#243940, var(--app-dark-ink)); font-size: 1rem; font-weight: 750; }
+.account-control-row h3 { color: light-dark(#243940, var(--app-dark-ink)); font-size: 1rem; font-weight: 750; }
 .account-control-row p { max-width: 58ch; margin-top: 0.4rem; color: light-dark(#667478, var(--app-dark-muted)); font-size: 0.88rem; line-height: 1.55; }
 .account-control-row button { flex: none; }
-.account-danger-zone { margin-top: 2rem; border-bottom: 1px solid light-dark(#e3c5c2, var(--app-dark-border)); border-top-color: light-dark(#e3c5c2, var(--app-dark-border)); }
-.account-danger-zone h2 { color: light-dark(#873a3a, var(--app-dark-danger)); }
+.account-danger-zone { border-bottom: 1px solid light-dark(#e3c5c2, var(--app-dark-border)); border-top-color: light-dark(#e3c5c2, var(--app-dark-border)); }
+.account-danger-zone h3 { color: light-dark(#873a3a, var(--app-dark-danger)); }
 .account-notice { margin-bottom: 1rem; border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.88rem; }
 .account-notice.is-success { border: 1px solid light-dark(#a8c8be, var(--app-dark-border)); background: light-dark(#e0eee9, var(--app-dark-surface-soft)); color: light-dark(#315f57, var(--app-dark-accent)); }
 .account-notice.is-error { border: 1px solid light-dark(#d6aaaa, var(--app-dark-border)); background: light-dark(#fbeceb, var(--app-dark-canvas)); color: light-dark(#873a3a, var(--app-dark-danger)); }
@@ -365,7 +367,9 @@
 .account-confirm-dialog h2 { color: light-dark(#18272e, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: 1.8rem; font-weight: 500; }
 .account-confirm-dialog > p:not(.site-eyebrow) { margin: 0.8rem 0 1rem; color: light-dark(#5e6d72, var(--app-dark-muted)); font-size: 0.9rem; line-height: 1.6; }
 .account-confirm-dialog label { display: block; margin-bottom: 0.45rem; color: light-dark(#30464e, var(--app-dark-ink)); font-size: 0.85rem; }
-.account-confirm-dialog input { width: 100%; height: 46px; margin-bottom: 1rem; border: 1px solid light-dark(#adb8ba, var(--app-dark-border)); border-radius: 8px; padding: 0 0.75rem; background: light-dark(#fff, var(--app-dark-surface)); color: light-dark(#1d3038, var(--app-dark-ink)); font: inherit; }
+.account-confirm-dialog input[type="text"] { width: 100%; height: 46px; margin-bottom: 1rem; border: 1px solid light-dark(#adb8ba, var(--app-dark-border)); border-radius: 8px; padding: 0 0.75rem; background: light-dark(#fff, var(--app-dark-surface)); color: light-dark(#1d3038, var(--app-dark-ink)); font: inherit; }
+.account-confirm-dialog fieldset label { display: flex; align-items: center; gap: 0.55rem; min-height: 2rem; }
+.account-confirm-dialog input[type="radio"] { width: 1rem; height: 1rem; margin: 0; flex: none; }
 .account-confirm-dialog input:focus-visible { outline: 3px solid light-dark(rgb(71 123 119 / 0.25), var(--app-dark-accent)); outline-offset: 1px; }
 .account-confirm-dialog > .dashboard-danger-action { width: 100%; }
 .account-confirm-close { position: absolute; top: 0.85rem; right: 0.85rem; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid light-dark(#c3c9c8, var(--app-dark-border)); border-radius: 50%; background: transparent; color: light-dark(#30464e, var(--app-dark-ink)); }
@@ -2462,6 +2466,7 @@ body {
 
 [data-template="celestial-union"] .portfolio-long-copy {
   max-width: 66ch;
+  overflow-wrap: anywhere;
   margin: 0;
   color: var(--portfolio-muted);
   font-size: 18px;
