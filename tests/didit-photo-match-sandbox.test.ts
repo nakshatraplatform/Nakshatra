@@ -153,7 +153,15 @@ describe("document-free Didit Sandbox contract", () => {
     const file = join(directory, "session.json");
     try {
       const recovery = createSandboxRecoveryJournal(file);
-      await recovery.record({ vendorData: "nak60-sandbox:test", workflowId, createdAt: "2026-09-30T00:00:00Z" });
+      const entry = { vendorData: "nak60-sandbox:test", workflowId, createdAt: "2026-09-30T00:00:00Z" };
+      if (((await stat(directory)).mode & 0o077) !== 0) {
+        // Some hosts, including Windows, do not expose owner-only POSIX bits
+        // for temporary directories. The journal must fail closed there.
+        await expect(recovery.record(entry)).rejects.toThrow("DIDIT_SANDBOX_JOURNAL_INVALID");
+        await expect(readFile(file)).rejects.toThrow();
+        return;
+      }
+      await recovery.record(entry);
       expect((await stat(file)).mode & 0o777).toBe(0o600);
       expect(JSON.parse(await readFile(file, "utf8"))).toMatchObject({ workflowId });
       await expect(recovery.record({ vendorData: "overwrite" })).rejects.toThrow();

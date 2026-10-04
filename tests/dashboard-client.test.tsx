@@ -165,6 +165,7 @@ describe("dashboard client", () => {
 
   it("does not expose sharing controls or a URL when verification is missing", () => {
     renderDashboard({ isExpired: false, daysLeft: 20 });
+    expect(screen.getByRole("button", { name: "Edit portfolio" })).toHaveClass("dashboard-edit-action");
     expect(screen.queryByRole("button", { name: "Share portfolio" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Copy link" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /rotate link/i })).not.toBeInTheDocument();
@@ -407,7 +408,7 @@ describe("dashboard client", () => {
 
   it("updates, deletes, and uploads owner photos", async () => {
     const { container } = renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     expect(screen.getByText("1/8")).toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Profile photo" })).toHaveClass("w-36", "sm:w-40");
@@ -439,7 +440,7 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }],
       publicationReadiness: readyPublicationReadiness,
     });
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_expired"));
@@ -450,7 +451,7 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }],
       publicationReadiness: readyPublicationReadiness,
     });
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /open public introduction/i })).toHaveAttribute("href", "/preview");
@@ -480,7 +481,7 @@ describe("dashboard client", () => {
       publicationReadiness: disclosurePending,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
     acceptPublicationDisclosure();
@@ -505,7 +506,7 @@ describe("dashboard client", () => {
       publicationReadiness: readyPublicationReadiness,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
     acceptPublicationDisclosure();
@@ -532,7 +533,7 @@ describe("dashboard client", () => {
       publicationReadiness: readyPublicationReadiness,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
     acceptPublicationDisclosure();
@@ -784,7 +785,7 @@ describe("dashboard client", () => {
       error: { code: "DASHBOARD_SAVE_FAILED", message: "We could not save your portfolio right now." },
     });
     renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
     const beforeUnload = new Event("beforeunload", { cancelable: true });
@@ -828,7 +829,7 @@ describe("dashboard client", () => {
 
   it("requires an explicit choice for legacy photo privacy without expanding access", () => {
     renderDashboard({ media: [{ ...media, visibility: "hidden" }] });
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     expect(screen.getByLabelText("Photo visibility")).toHaveValue("");
     expect(screen.getByText(/existing privacy remains unchanged/i)).toBeInTheDocument();
@@ -841,7 +842,7 @@ describe("dashboard client", () => {
       error: { code: "AUTH_SESSION_REVOKED", message: "This session was signed out", status: 401 },
     });
     renderDashboard();
-    fireEvent.click(screen.getByRole("button", { name: /portfolio details/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     goToFoundation();
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_revoked"));
@@ -868,7 +869,7 @@ describe("dashboard client", () => {
     expect(screen.getByRole("heading", { name: "Portfolio creation is currently invite-only." })).toBeInTheDocument();
     expect(screen.getByText(/continue using portfolio links shared with you/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /start with the basics/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /portfolio details/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /edit portfolio/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /interests to review/i })).not.toBeInTheDocument();
   });
 

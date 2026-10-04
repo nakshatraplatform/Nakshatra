@@ -252,7 +252,7 @@ test("interest popup stays in view and keeps extra details optional", async ({ p
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
   await dialog.getByText("Add more details").click();
-  await expect(dialog.getByLabel("Country")).not.toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Country", { exact: true })).not.toHaveAttribute("required", "");
   await expect(dialog.getByLabel("State or province")).not.toHaveAttribute("required", "");
   await expect(dialog.getByLabel("City")).not.toHaveAttribute("required", "");
   const optionalLayout = await dialog.locator(".interest-optional").evaluate((element) => ({
@@ -277,6 +277,49 @@ test("Private portfolio keeps one gallery photo clear and shows protected placeh
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(6);
   await expect(gallery.getByAltText("Public portrait", { exact: true })).toBeVisible();
   await expect(gallery.locator('.portfolio-gallery-feature[data-presentation="clear"]')).toBeVisible();
+});
+
+test("gallery photo viewer closes from the backdrop on touch and restores the opener", async ({ page }) => {
+  await page.goto("/p/e2e-portfolio-token");
+  const opener = page.locator(".portfolio-gallery-open");
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Gallery photo viewer" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Close full-screen photo" })).toBeFocused();
+  const bounds = await dialog.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (page.context().browser()?.browserType().name() === "chromium" && page.viewportSize()!.width <= 720) {
+    await page.touchscreen.tap(bounds!.x + 4, bounds!.y + bounds!.height / 2);
+  } else {
+    await page.mouse.click(bounds!.x + 4, bounds!.y + bounds!.height / 2);
+  }
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
+test("portfolio navigation, help links, and return-to-top work at each viewport", async ({ page }) => {
+  await page.goto("/p/e2e-portfolio-token");
+  const footer = page.getByRole("navigation", { name: "Portfolio help and policies" });
+  await expect(page.locator(".portfolio-footer-identity")).toHaveCSS("display", "grid");
+  const helpLinks = footer.getByRole("link");
+  await expect(helpLinks).toHaveCount(4);
+  await expect(footer.getByRole("link", { name: "Report or correct information" })).toBeVisible();
+  const viewportWidth = page.viewportSize()!.width;
+  const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(horizontalOverflow).toBeLessThanOrEqual(1);
+  if (viewportWidth >= 1200) {
+    const linkTops = await helpLinks.evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+    expect(new Set(linkTops).size).toBe(1);
+  }
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const backToTop = page.getByRole("button", { name: "Back to top of introduction" });
+  await expect(backToTop).toBeVisible();
+  await backToTop.click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
 test("portfolio actions and hero remain usable across supported viewports", async ({ page }) => {

@@ -165,7 +165,8 @@ describe("interest request flow", () => {
 
     expect(screen.getByLabelText("Your full name")).toHaveValue("Rohan Mehta");
     expect(screen.getByLabelText("Contacting for")).toHaveValue("relative");
-    expect(screen.getByLabelText("Phone number")).toHaveValue("+1 555 010 2200");
+    expect(screen.getByLabelText("Country calling code")).toHaveValue("1");
+    expect(screen.getByLabelText("Phone number")).toHaveValue("555 010 2200");
     expect(screen.getByLabelText("Email address")).toHaveValue("rohan@example.com");
   });
 

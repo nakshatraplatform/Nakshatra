@@ -570,7 +570,7 @@ export default function DashboardClient({
     <div className="dashboard-shell flex flex-1 flex-col">
       <CustomerAppHeader currentPage="dashboard" userEmail={userEmail} />
 
-      <main className="relative z-10 flex-1 px-4 py-8 sm:py-12">
+      <main className="relative flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
           {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[light-dark(#a9c8be,var(--app-dark-border))] bg-[light-dark(#eff7f2,var(--app-dark-surface))] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
             <div><p className="font-semibold">Pilot operations</p><p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Invite creators by email and review the launch waitlist.</p></div>
@@ -664,8 +664,8 @@ export default function DashboardClient({
                 </div>
                 <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
-                    <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action">
-                      <Edit3 className="h-4 w-4" /> Portfolio details
+                    <button type="button" onClick={() => setFormOpen(true)} className="dashboard-edit-action dashboard-secondary-action">
+                      <Edit3 className="h-4 w-4" aria-hidden="true" /> <span>Edit portfolio</span>
                     </button>
                   )}
                   {!publicShareReady ? null : isExpired

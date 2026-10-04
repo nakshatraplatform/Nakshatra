@@ -75,7 +75,7 @@ export default function PilotAccessAdminClient() {
   }
 
   return (
-    <main id="main-content" className="min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-12">
+    <main id="main-content" className="pilot-access-shell min-h-screen bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] px-4 py-8 text-[light-dark(#18272e,var(--app-dark-ink))] sm:py-12">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-5 border-b border-[light-dark(#d8d8d2,var(--app-dark-border))] pb-7 sm:flex-row sm:items-end">
           <div>

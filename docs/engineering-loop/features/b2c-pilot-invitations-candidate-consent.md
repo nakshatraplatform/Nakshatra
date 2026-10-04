@@ -1,6 +1,6 @@
 # B2C pilot invitations and candidate-owned consent
 
-Mode: full. Status: invitation and self-created-pilot restriction implemented locally, unshipped; representative-created candidate consent deferred.
+Mode: full. Status: invitation UI/API observed in Production, but invitation database migration and canonical application URL are missing; representative-created candidate consent deferred.
 
 ## Problem and goal
 
@@ -59,9 +59,15 @@ This is not interchangeable with the creator invitation above. The parent may ow
 
 ## Validation and release hold
 
+- Production read-only audit on 2026-10-03: the signed-in Rahul account has an active row in `app_private.pilot_administrators`, which is why the dashboard exposes Pilot operations. This grant is independent of the permanent test-account publication exemption; do not change either without an explicit operator-access decision.
+- After the owner signed in with Google and explicitly approved the Production role grant, `nakshatra.platform@gmail.com` was confirmed in Auth and added to `app_private.pilot_administrators` on 2026-10-03. A follow-up read-only query verified one active grant for that account and one for Rahul; Rahul's grant was not changed. This role grant does not resolve the missing invitation migration or application URL.
+- The Production migration history does not include `20261003120000_b2c_admin_creator_invitations`, and `public.list_b2c_creator_invites(integer)` is absent. Consequently the administration page's invitation list returns its safe 503 fallback. Apply the pending migrations through the documented CI-then-CD release sequence, not ad hoc SQL against Production.
+- The deployed invitation POST also returns `APP_URL_MISSING` because its required Production `NEXT_PUBLIC_APP_URL` is unset. Configure the canonical HTTPS origin in the application deployment environment and redeploy before sending an invitation; do not substitute the request Host header in Production. Neither observed failure creates an invitation.
+- The invitation action's invisible light-theme state came from rendering `dashboard-primary-action` outside the shared product-token shell. The admin page now supplies `pilot-access-shell`; component regression coverage asserts that scope. This local UI correction still requires its normal application release.
+
 - TypeScript, full ESLint, focused route/component tests (118/118), and a production build with local placeholder Supabase configuration passed on 2026-10-03. The initial build without Supabase configuration failed at page-data collection, as expected for the required environment settings. Database migration, pgTAP authorization tests, browser OAuth/password journeys, SMTP delivery, and production admin provisioning remain unverified.
 - Independent read-only review found that suppressing the public RPC alone left legacy representative media and approved-data policies open. The migration now gates `is_published_portfolio` and `is_public_portfolio_media_path`; a legacy published-path pgTAP regression fixture was added. The reviewer found no remaining high source-level issue in the corrected migration, but the database and Storage-policy test has not run.
-- No production database migration, Vercel deployment, or live administrator grant has been made from this checkout.
+- At initial implementation, no production database migration, Vercel deployment, or live administrator grant was made from that checkout. The 2026-10-03 Production audit above supersedes that historical snapshot for the invitation workflow.
 - Parent/representative publication remains outside the candidate-owned-consent acceptance contract until the next security slice is implemented and tested.
-- To provision the requested operator, first sign in to VivIntro as `nakshatra.platform@gmail.com` with Google so Supabase has a confirmed account. A trusted operator with production service credentials then runs `npm run pilot:admin -- grant nakshatra.platform@gmail.com` in the correct production environment. Do not paste the service-role key into chat or the browser.
+- For future operator grants, first sign in to VivIntro as the requested address so Supabase has a confirmed account. A trusted operator with production service credentials should use `npm run pilot:admin -- grant <email>` in the correct environment. Do not paste the service-role key into chat or the browser. The 2026-10-03 grant above used an exact-account Production SQL Editor insert after the existing service-credential workflow was unavailable; it was verified immediately afterward.
 - Latest full unit suite: 891/893 passed. The two failures remain Windows-specific Didit Sandbox journal and security-audit CLI tests, unrelated to this pilot restriction. Focused TypeScript and ESLint passed. Database suite could not run: Supabase/Postgres CLI is unavailable on this machine. The migration and pgTAP tests require review and execution against a disposable local/staging database before production deployment.

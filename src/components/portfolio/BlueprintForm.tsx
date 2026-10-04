@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { LocationFields, type LocationValue } from "@/components/portfolio/LocationFields";
+import { PhoneNumberField } from "@/components/portfolio/PhoneNumberField";
 import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
 import { CELESTIAL_UNION_TEMPLATE_NAME } from "@/features/portfolio/template";
 import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
@@ -485,7 +486,7 @@ export function BlueprintForm({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <SelectInput label="Who is this?" value={contact.relationship || "self"} options={CONTACT_RELATIONSHIPS} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, relationship: value } : item))} />
                     <TextInput label="Name of contact" value={contact.name || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item))} />
-                    <TextInput label="Phone" type="tel" value={contact.phone || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item))} hint="Provide a phone number, an email, or both." />
+                    <PhoneNumberField value={contact.phone || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item))} hint="Add the country code and number, or provide an email instead." />
                     <TextInput label="Email" type="email" value={contact.email || ""} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, email: value } : item))} />
                   </div>
                 </div>

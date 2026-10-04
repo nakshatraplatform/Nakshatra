@@ -323,8 +323,10 @@ describe("blueprint form", () => {
 
     const sectionNotice = screen.getByText("Protected contact").parentElement;
     expect(sectionNotice).toHaveTextContent("Shown after approval");
-    for (const label of ["Who is this?", "Name of contact", "Phone", "Email"]) {
+    for (const label of ["Who is this?", "Name of contact", "Phone number", "Email"]) {
       expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shown after approval");
     }
+    expect(screen.getByLabelText("Country calling code")).toHaveValue("91");
+    expect(screen.getByLabelText("Phone number")).toHaveValue("90000 00000");
   });
 });
