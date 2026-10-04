@@ -135,8 +135,12 @@ describe("npm audit execution boundary", () => {
           console.log(${JSON.stringify(JSON.stringify(fixture().production))});
         } else { console.log('registry unavailable'); process.exitCode = 1; }
       `);
+      // Windows treats environment variable names case-insensitively; npm may
+      // supply npm_execPath alongside this test's npm_execpath override.
+      const childEnv = Object.fromEntries(Object.entries(process.env)
+        .filter(([key]) => key.toLowerCase() !== "npm_execpath"));
       const result = spawnSync(process.execPath, ["scripts/security-audit.mjs"], {
-        env: { ...process.env, npm_execpath: fakeNpm, NODE_ENV: "production" },
+        env: { ...childEnv, npm_execpath: fakeNpm, NODE_ENV: "production" },
         encoding: "utf8", timeout: 10000,
       });
       expect(result.status).toBe(1);
