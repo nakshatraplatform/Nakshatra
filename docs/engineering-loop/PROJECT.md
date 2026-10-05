@@ -16,6 +16,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Open creator onboarding and feedback](features/open-creator-onboarding.md): owner-approved replacement for the invite-only waitlist; implementation and critical release checks in progress. Rahul's Production pilot-admin grant was soft-revoked, leaving only the platform account active. Publication safeguards remain separate.
+
 - [NAK-103 signed-in UX clarity pass](features/nak-103-signed-in-ux-clarity.md): narrowly scoped dashboard, portfolio form/view, and account-settings presentation improvements; no landing-page or product-rule changes.
 - [Temporary ESLint audit risk acceptance](features/eslint-glob-audit-remediation.md): user-approved exception for one exact development advisory/graph until October 9, 2026 at 00:00 New York; all other high/critical findings remain blocking.
 - [Membership anonymous grants](features/membership-anonymous-grants.md): forward revoke migration verified by hosted clean replay and all 924 pgTAP assertions at 283e78b; production application remains pending CD.

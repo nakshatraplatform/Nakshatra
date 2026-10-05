@@ -41,15 +41,16 @@ describe("AuthForm", () => {
     const user = userEvent.setup();
     render(<AuthForm mode="signup" />);
 
-    expect(screen.getByRole("heading", { name: "Create your pilot account" })).toBeInTheDocument();
-    expect(screen.getByText(/limited to invited beta participants/i)).toBeInTheDocument();
-    expect(screen.getByText(/Liveness checked badge appears only after Didit liveness and IP checks/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Create your account" })).toBeInTheDocument();
+    expect(screen.getByText(/your portfolio begins as a private draft/i)).toBeInTheDocument();
+    expect(screen.getByText(/publishing requires your own portfolio/i)).toBeInTheDocument();
     expect(screen.getByText(/use that link to view it and show interest/i)).toBeInTheDocument();
+    expect(screen.getByText(/Liveness checked badge appears only after those checks succeed/i)).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: /access model/i })).toHaveTextContent(/Begin privately.*15 days/i);
 
     await user.type(screen.getByLabelText("Email address"), "New@Example.com");
     await user.type(screen.getByLabelText("Password"), "Wedding2026");
-    await user.click(screen.getByRole("button", { name: "Create pilot account" }));
+    await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(startAuthentication).toHaveBeenCalledWith({
       method: "password_signup",
@@ -77,7 +78,7 @@ describe("AuthForm", () => {
     render(<AuthForm mode="signup" />);
     await user.type(screen.getByLabelText("Email address"), "new@example.com");
     await user.type(screen.getByLabelText("Password"), "onlyletters");
-    await user.click(screen.getByRole("button", { name: "Create pilot account" }));
+    await user.click(screen.getByRole("button", { name: "Create account" }));
     expect(screen.getByRole("alert")).toHaveTextContent(/letter and a number/i);
     expect(startAuthentication).not.toHaveBeenCalled();
   });

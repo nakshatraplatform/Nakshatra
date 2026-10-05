@@ -26,6 +26,13 @@ export function isBrokerdeskAuthRedirect(value: string | null | undefined) {
   return pathname === "/brokerdesk" || pathname.startsWith("/brokerdesk/");
 }
 
+/** Only owner dashboard continuations should automatically create a portfolio. */
+export function isOwnerDashboardAuthRedirect(value: string | null | undefined) {
+  const safePath = sanitizeInternalRedirect(value);
+  const pathname = new URL(safePath, "https://nakshatra.invalid").pathname;
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+}
+
 /** Identifies the applicant-only continuation that must never bootstrap a portfolio. */
 export function isPilotAccessAuthRedirect(value: string | null | undefined) {
   const safePath = sanitizeInternalRedirect(value);

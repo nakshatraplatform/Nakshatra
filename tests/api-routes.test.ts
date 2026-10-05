@@ -350,9 +350,9 @@ describe("authentication callback", () => {
       from,
       rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
     });
-    const response = await authCallback(new Request("http://local/api/auth/callback?code=ok&next=/edit"));
+    const response = await authCallback(new Request("http://local/api/auth/callback?code=ok&next=/dashboard"));
     const origin = process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin : "http://local";
-    expect(response.headers.get("location")).toBe(`${origin}/edit`);
+    expect(response.headers.get("location")).toBe(`${origin}/dashboard`);
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({ user_id: "owner" }),
       { onConflict: "user_id", ignoreDuplicates: true }

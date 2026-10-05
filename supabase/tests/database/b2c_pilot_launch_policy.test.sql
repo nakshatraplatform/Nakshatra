@@ -58,24 +58,22 @@ select pg_temp.set_authenticated_claims(
   '71000000-0000-4000-8000-000000000001',
   '72000000-0000-4000-8000-000000000001'
 );
-select ok(not public.current_user_can_create_portfolio(), 'a signed-in viewer is not a creator by default');
-select is(
-  public.save_dashboard_draft_transaction('{}') ->> 'status',
-  'creator_entitlement_required',
-  'an uninvited viewer receives a safe draft-save status'
+select ok(public.current_user_can_create_portfolio(), 'a confirmed account can create its own private portfolio');
+select throws_ok(
+  $$select public.save_dashboard_draft_transaction('{}')$$,
+  '22023', 'invalid portfolio draft payload',
+  'open creator access still validates draft structure'
 );
 select is(
   pg_temp.publish_portfolio_as_owner(
     '74000000-0000-4000-8000-000000000001', '{}', '{}', '{}',
     'pilot_policy_token_01', now() + interval '90 days', 1, '#17151c', null
   ) ->> 'status',
-  'creator_entitlement_required',
-  'an uninvited viewer cannot publish an existing draft'
+  'self_portfolio_required',
+  'open creator access does not bypass self-created portfolio rules'
 );
 
 reset role;
-insert into app_private.b2c_creator_entitlements (email_hash)
-values (app_private.normalized_email_hash('invited@pilot.test'));
 insert into public.candidate_personal_details(candidate_id, profile_for)
 values ('73000000-0000-4000-8000-000000000001', 'self');
 update public.portfolios set draft_data = pg_temp.complete_portfolio_draft(
@@ -88,7 +86,7 @@ select pg_temp.set_authenticated_claims(
   '71000000-0000-4000-8000-000000000001',
   '72000000-0000-4000-8000-000000000001'
 );
-select ok(public.current_user_can_create_portfolio(), 'a confirmed allowlisted account receives creator access');
+select ok(public.current_user_can_create_portfolio(), 'a confirmed account needs no invitation or entitlement');
 select is(
   pg_temp.publish_portfolio_as_owner(
     '74000000-0000-4000-8000-000000000001',
@@ -125,7 +123,7 @@ select is(
     'pilot_policy_token_01', now() + interval '90 days', 1, '#17151c', null
   ) ->> 'status',
   'ok',
-  'an invited and currently verified owner can publish'
+  'a self-created and currently verified owner can publish'
 );
 select ok(
   (select expires_at is null

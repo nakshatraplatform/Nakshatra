@@ -21,7 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createCanonicalAppUrl,
   isBrokerdeskAuthRedirect,
-  isPilotAccessAuthRedirect,
+  isOwnerDashboardAuthRedirect,
   sanitizeInternalRedirect,
 } from "@/lib/security/redirect";
 import { getRequestId, logServerError } from "@/lib/security/logging";
@@ -102,7 +102,7 @@ export async function GET(request: Request) {
         return response;
       }
 
-      if (user && !isBrokerdeskAuthRedirect(next) && !isPilotAccessAuthRedirect(next)) {
+      if (user && isOwnerDashboardAuthRedirect(next) && !isBrokerdeskAuthRedirect(next)) {
         try {
           await ensureOwnerPortfolio(supabase, user.id);
         } catch (err) {

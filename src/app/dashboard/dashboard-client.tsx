@@ -1,6 +1,7 @@
 "use client";
 
 import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
+import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardingFeedback";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -577,8 +578,8 @@ export default function DashboardClient({
       <main className="relative flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
           {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[light-dark(#a9c8be,var(--app-dark-border))] bg-[light-dark(#eff7f2,var(--app-dark-surface))] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
-            <div><p className="font-semibold">Pilot operations</p><p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Invite creators by email and review the launch waitlist.</p></div>
-            <Link href="/admin/pilot-access" className="dashboard-primary-action min-h-11 justify-center">Manage pilot access</Link>
+            <div><p className="font-semibold">Creator insights</p><p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Review private onboarding feedback from portfolio creators.</p></div>
+            <Link href="/admin/onboarding-feedback" className="dashboard-primary-action min-h-11 justify-center">View feedback</Link>
           </section> : null}
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
@@ -588,35 +589,16 @@ export default function DashboardClient({
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
-                  Private beta testing
+                  Account setup
                 </p>
                 <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
-                  Portfolio creation is currently invite-only.
+                  Your portfolio is not ready to start yet.
                 </h2>
                 <p className="mx-auto mt-3 max-w-xl text-[light-dark(#475569,var(--app-dark-muted))]">
-                  New portfolio creation is closed while we prepare for launch. You can join the waitlist for updates, or continue using portfolio links shared with you.
+                  Please refresh this page. If this continues, contact VivIntro support. Your existing account and shared-link access remain available.
                 </p>
               </div>
-              {pilotAccessState?.application?.status === "pending" ? (
-                <div className="rounded-xl border border-[light-dark(#c9bc91,var(--app-dark-border))] bg-[light-dark(#f4efdf,var(--app-dark-surface-soft))] px-4 py-3 text-sm text-[light-dark(#725d2b,var(--app-dark-gold))]">
-                  You are on the VivIntro launch waitlist. This does not provide portfolio creation access.
-                </div>
-              ) : pilotAccessState?.application?.status === "declined" ? (
-                <div className="rounded-xl border border-[light-dark(#d6aaaa,var(--app-dark-border))] bg-[light-dark(#fff3f0,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#873a3a,var(--app-dark-danger))]">
-                  Creator access is not available for this account yet. Your viewer access remains active.
-                </div>
-              ) : pilotAccessState?.application?.status === "revoked" ? (
-                <div className="rounded-xl border border-[light-dark(#d6aaaa,var(--app-dark-border))] bg-[light-dark(#fff3f0,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#873a3a,var(--app-dark-danger))]">
-                  Creator access for this account has been paused. Your saved information remains protected.
-                </div>
-              ) : (
-                <Link href="/waitlist" className="dashboard-primary-action">
-                  Request an invitation
-                </Link>
-              )}
-              <Link href="/" className="text-sm font-semibold text-[light-dark(#315f57,var(--app-dark-accent))]">
-                Learn about the private beta
-              </Link>
+              <button type="button" className="dashboard-primary-action" onClick={() => router.refresh()}>Refresh account status</button>
             </section>
           ) : !portfolio?.is_published ? (
             <div className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
@@ -820,9 +802,10 @@ export default function DashboardClient({
           </>}
           </div>
           {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6">
-            {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Photo and liveness verification is optional while this account has test publishing access. It is still required for broker Introductions and a verified-identity badge.</p>}
+            {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Liveness and IP checks are optional for public test publishing while this access remains active. Without them, your introduction will not show the Liveness checked badge.</p>}
             <IdentityVerificationDashboard candidateId={portfolio.candidate_id} />
           </div> : null}
+          {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
         </div>
       </main>
 
@@ -894,7 +877,7 @@ export default function DashboardClient({
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Portfolio answers ready" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
                       <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness and IP checks complete"} pendingLabel="Complete the liveness and IP checks" />
-                      <ReviewRequirement complete={readinessState.paymentActive} label="Private pilot access active" pendingLabel="Private pilot access required" />
+                      <ReviewRequirement complete={readinessState.paymentActive} label="Creator account active" pendingLabel="Creator account required" />
                       <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                     </div>
                   </section>
@@ -1122,7 +1105,7 @@ function CreatorReadinessTracker({
     { label: "Preview", complete: Boolean(readiness.previewedAt) },
     { label: "Ready to publish", complete: completion.readyToPublish },
     { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
-    { label: "Pilot access", complete: readiness.paymentActive },
+    { label: "Creator account", complete: readiness.paymentActive },
     { label: "Disclosure", complete: readiness.disclosureConfirmed },
     { label: "Published", complete: readiness.published },
   ];

@@ -74,13 +74,13 @@ describe("landing and shared frontend components", () => {
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /request.*invitation/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /create your portfolio/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
     expect(screen.getByText(/Private marriage introductions, shared with care/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/protected access/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /for families already making introductions/i })).toBeInTheDocument();
-    expect(screen.getByText(/portfolio creation begins only after you are invited/i)).toBeInTheDocument();
+    expect(screen.getByText(/begin with a private draft/i)).toBeInTheDocument();
     expect(screen.getByText(/what does the liveness badge mean/i).closest("summary")).toBeInTheDocument();
     expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
   });

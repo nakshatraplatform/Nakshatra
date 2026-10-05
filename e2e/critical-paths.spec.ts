@@ -1,18 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page presents the product and reaches the launch waitlist", async ({ page }) => {
+test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Private Marriage Introduction Link | VivIntro");
   await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /request an invitation/i }).first();
-  await expect(primaryCta).toHaveAttribute("href", "/waitlist");
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first();
+  await expect(primaryCta).toHaveAttribute("href", "/signup");
   await page.goto("/waitlist");
-  await expect(page).toHaveURL(/\/waitlist$/);
-  await expect(page.getByRole("heading", { name: /request your vivintro invitation/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(page.getByRole("heading", { name: /create your account/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByRole("button", { name: /verify email to request/i })).toBeEnabled();
-  await expect(page.getByRole("button", { name: /verify with google/i })).toBeEnabled();
-  await expect(page.getByText(/this creates an account for the request/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
 });
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
@@ -57,11 +55,11 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /request an invitation/i }).first()).toBeVisible();
+  await expect(main.getByRole("link", { name: /create your portfolio/i }).first()).toBeVisible();
   await expect(page.locator("#top").getByRole("link", { name: /view a sample introduction/i })).toBeVisible();
 });
 
-test("landing concepts keep the same clear path to the launch waitlist", async ({ page }) => {
+test("landing concepts keep the same clear path to signup", async ({ page }) => {
   const concepts = [
     ["/landing/control", /keep personal details personal/i],
     ["/landing/story", /more human way to make a marriage introduction/i],
@@ -70,9 +68,9 @@ test("landing concepts keep the same clear path to the launch waitlist", async (
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /request an invitation/i }).first()).toHaveAttribute(
+    await expect(page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first()).toHaveAttribute(
       "href",
-      "/waitlist"
+      "/signup"
     );
   }
 });

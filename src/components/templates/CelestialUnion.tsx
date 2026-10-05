@@ -725,10 +725,10 @@ export default function CelestialUnion({
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
               <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
-              <p>Request a private-pilot invitation to create one current introduction and keep sensitive details protected until you approve access.</p>
+              <p>Create your own private portfolio and keep sensitive details protected until you approve access.</p>
             </div>
-            <a href="/waitlist">
-              Request an invitation
+            <a href="/signup">
+              Create your portfolio
               <ArrowRight aria-hidden="true" />
             </a>
           </aside>

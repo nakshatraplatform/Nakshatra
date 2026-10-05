@@ -11,19 +11,24 @@ vi.mock("@/features/pilot-access/server/pilot-access.service", () => ({ loadPilo
 
 import PilotAccessPage from "../src/app/pilot-access/page";
 import PilotAccessAdminPage from "../src/app/admin/pilot-access/page";
+import OnboardingFeedbackAdminPage from "../src/app/admin/onboarding-feedback/page";
 
 describe("pilot access pages", () => {
-  it("redirects the legacy applicant route to the canonical waitlist", () => {
-    expect(() => PilotAccessPage()).toThrow("redirect:/waitlist");
-    expect(redirect).toHaveBeenCalledWith("/waitlist");
+  it("redirects the legacy applicant route to open signup", () => {
+    expect(() => PilotAccessPage()).toThrow("redirect:/signup");
+    expect(redirect).toHaveBeenCalledWith("/signup");
   });
 
-  it("renders administration only for a separately authorized operator", async () => {
+  it("moves the old operator route to private onboarding feedback", () => {
+    expect(() => PilotAccessAdminPage()).toThrow("redirect:/admin/onboarding-feedback");
+  });
+
+  it("renders feedback only for a separately authorized operator", async () => {
     getAuthenticatedUser.mockResolvedValue({ supabase: {} });
     loadPilotAccessState.mockResolvedValue({ canCreatePortfolio: false, isPilotAdministrator: true, application: null });
-    await expect(PilotAccessAdminPage()).resolves.toMatchObject({ type: expect.any(Function) });
+    await expect(OnboardingFeedbackAdminPage()).resolves.toMatchObject({ type: expect.any(Function) });
     loadPilotAccessState.mockResolvedValueOnce({ canCreatePortfolio: false, isPilotAdministrator: false, application: null });
-    await expect(PilotAccessAdminPage()).rejects.toThrow("not-found");
+    await expect(OnboardingFeedbackAdminPage()).rejects.toThrow("not-found");
     expect(notFound).toHaveBeenCalled();
   });
 });

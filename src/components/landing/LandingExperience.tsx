@@ -21,8 +21,8 @@ export const landingFaqs = [
   { question: "What can someone with my link see?", answer: "The shared Introduction is what someone with your link can read. Contact details, the original horoscope file, exact birth details, and other Complete Portfolio information stay protected. For a personally shared link, a viewer confirms their email and requests access; you can approve or set the request aside." },
   { question: "What does Liveness checked mean?", answer: "When this badge appears, Didit approved a live camera liveness check and IP analysis. It does not verify legal identity, profile statements, or suitability. A test publication without this check has no badge." },
   { question: "Can I change or stop sharing it?", answer: "Yes. Edit the published Introduction and the current link shows the update. You can also unpublish it or rotate the link, which makes the previous link stop working. If you approve a viewer, protected access lasts up to 15 days and can end earlier." },
-  { question: "Is the private pilot free?", answer: "Yes. Invited creators can create and share for free during the pilot. Broker-sponsored actions have no separate VivIntro charge for customers. There is no paid creator plan yet; we will explain any future personal pricing before asking you to pay." },
-  { question: "Can I join now?", answer: "VivIntro is inviting people gradually during its private pilot. You sign in with email or Google to request an invitation. Creating an Introduction becomes available only after an invitation is issued." },
+  { question: "Is VivIntro free to try?", answer: "Yes. You can create a portfolio for free. Broker-sponsored actions have no separate VivIntro charge for customers. There is no paid creator plan yet; we will explain any future personal pricing before asking you to pay." },
+  { question: "Can I join now?", answer: "Yes. Create an account with email or Google, confirm your email, and begin a private portfolio. Publishing has separate content, consent, and liveness and IP check steps." },
 ] as const;
 
 const problems = [
@@ -53,7 +53,7 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         <nav className={styles.navigation} aria-label="Main navigation">
           <ThemeSwitch />
           <div className={styles.navigationLinks}><a href="#how">How it works</a><a href="#privacy">Your privacy</a><Link href="/received-a-link">Received a link?</Link><a href="#questions">Questions</a></div>
-          <Link href="/login" className={styles.signIn}>Sign in</Link><Link href="/waitlist" className={styles.primaryButton}>Request an invitation</Link>
+          <Link href="/login" className={styles.signIn}>Sign in</Link><Link href="/signup" className={styles.primaryButton}>Create your portfolio</Link>
         </nav>
       </header>
 
@@ -61,10 +61,10 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         <section id="top" className={styles.hero}>
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>Private marriage introductions, shared with care</p><h1>{concept.headline}</h1><p className={styles.heroLead}>{concept.lead}</p>
-            <div className={styles.heroActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link><Link href="/waitlist" className={styles.secondaryButton}>Request an invitation</Link></div>
-            <p className={styles.heroNote}><Check aria-hidden="true" /> Free during the private pilot. Invitation required to create.</p>
+            <div className={styles.heroActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link><Link href="/signup" className={styles.secondaryButton}>Create your portfolio</Link></div>
+            <p className={styles.heroNote}><Check aria-hidden="true" /> Free to create. Your draft stays private until you publish.</p>
             <ul className={styles.heroAssurances} aria-label="VivIntro privacy assurances">
-              <li><BadgeCheck aria-hidden="true" /><span><strong>Photo checks are clearly marked</strong><small>Badge shown only after a live check</small></span></li>
+              <li><BadgeCheck aria-hidden="true" /><span><strong>Liveness checks are clearly marked</strong><small>Badge shown only after approved checks</small></span></li>
               <li><Globe2 aria-hidden="true" /><span><strong>Not searchable</strong><small>No public profile directory</small></span></li>
               <li><LockKeyhole aria-hidden="true" /><span><strong>Sensitive details stay protected</strong><small>Approval required for protected access</small></span></li>
             </ul>
@@ -100,13 +100,13 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         </section>
 
         <section id="beta" className={styles.betaSection}>
-          <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered private pilot</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
+          <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered introduction</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
           <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send your personal link through WhatsApp, email, relatives, or a matchmaker you choose.</span></div>
-          <div className={styles.betaActions}><Link href="/waitlist" className={styles.primaryButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><Link href="/login" className={styles.secondaryButton}>Existing participant? Sign in</Link></div>
+          <div className={styles.betaActions}><Link href="/signup" className={styles.primaryButton}>Create your portfolio <ArrowRight aria-hidden="true" /></Link><Link href="/login" className={styles.secondaryButton}>Already have an account? Sign in</Link></div>
         </section>
 
         <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><h2>Common questions</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
-        <section className={styles.finalCta}><div><h2>Make the next introduction easier to share.</h2><p>Keep one current view for the first conversation and decide when to share more.</p></div><div className={styles.finalAction}><Link href="/waitlist" className={styles.lightButton}>Request an invitation <ArrowRight aria-hidden="true" /></Link><span>Portfolio creation begins only after you are invited.</span></div></section>
+        <section className={styles.finalCta}><div><h2>Make the next introduction easier to share.</h2><p>Keep one current view for the first conversation and decide when to share more.</p></div><div className={styles.finalAction}><Link href="/signup" className={styles.lightButton}>Create your portfolio <ArrowRight aria-hidden="true" /></Link><span>Start privately. Choose when to publish.</span></div></section>
       </main>
 
       <footer className={styles.footer}><VivIntroBrand href="/" variant="full-symbol" className={styles.brand} /><p>A thoughtful way to share private marriage introductions.</p><div><Link href="/about">About</Link><Link href="/trust">Trust</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div></footer>

@@ -19,7 +19,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "@/features/auth/password-policy";
-import { getPilotInvitationToken, isBrokerdeskAuthRedirect } from "@/lib/security/redirect";
+import { isBrokerdeskAuthRedirect } from "@/lib/security/redirect";
 
 type Mode = "login" | "signup";
 type Screen = "credentials" | "verify" | "recovery" | "recovery_sent";
@@ -32,14 +32,14 @@ const COPY = {
     body: "Use your email and password, or continue with Google.",
     primaryAction: "Sign in",
     altPrompt: "New to VivIntro?",
-    altCta: "Request an invitation",
-    altHref: "/waitlist",
+    altCta: "Create an account",
+    altHref: "/signup",
   },
   signup: {
-    eyebrow: "Invite-only private beta",
-    title: "Create your pilot account",
-    body: "Use the email address invited to the pilot. Build privately, preview both views, and follow the publication steps shown in your dashboard.",
-    primaryAction: "Create pilot account",
+    eyebrow: "Begin privately",
+    title: "Create your account",
+    body: "Create a private portfolio, preview both views, and follow the publication steps shown in your dashboard.",
+    primaryAction: "Create account",
     altPrompt: "Already have an account?",
     altCta: "Sign in",
     altHref: "/login",
@@ -59,7 +59,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const searchParams = useSearchParams();
   const requestedRedirect = searchParams.get("redirect") || "/dashboard";
   const brokerdeskContinuation = isBrokerdeskAuthRedirect(requestedRedirect);
-  const redirectPath = mode === "signup" && !brokerdeskContinuation && !getPilotInvitationToken(requestedRedirect) ? "/dashboard" : requestedRedirect;
+  const redirectPath = requestedRedirect;
   const copy = brokerdeskContinuation
     ? mode === "login"
       ? {
@@ -79,7 +79,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           primaryAction: "Create broker account",
         }
     : COPY[mode];
-  const alternateHref = brokerdeskContinuation || getPilotInvitationToken(redirectPath)
+  const alternateHref = redirectPath !== "/dashboard"
     ? `${copy.altHref}?redirect=${encodeURIComponent(redirectPath)}`
     : copy.altHref;
   const authError = searchParams.get("error");
@@ -233,8 +233,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 <div className="account-pilot-note">
                   <ShieldCheck aria-hidden="true" />
                   <div>
-                    <strong>Portfolio creation is limited to invited beta participants.</strong>
-                    <p>Your draft stays private until you publish. A Liveness checked badge appears only after Didit liveness and IP checks. These checks do not establish identity or photo ownership. If someone shared a portfolio with you, use that link to view it and show interest—you do not need creator access.</p>
+                    <strong>Your portfolio begins as a private draft.</strong>
+                    <p>Confirm your email to start creating. Publishing requires your own portfolio, required details, your final review, and liveness and IP checks. A Liveness checked badge appears only after those checks succeed; it does not verify legal identity or photo ownership. If someone shared a portfolio with you, use that link to view it and show interest—you do not need to create your own portfolio.</p>
                     <Link href="/#samples">See the portfolio format</Link>
                   </div>
                 </div>

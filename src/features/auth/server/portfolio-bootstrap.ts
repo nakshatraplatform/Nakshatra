@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Reads the database-backed pilot creator entitlement without exposing allowlist data. */
+/** Reads the database-backed, confirmed-account creator capability. */
 export async function canCreatePortfolio(supabase: SupabaseClient): Promise<boolean> {
   const { data, error } = await supabase.rpc("current_user_can_create_portfolio");
   if (error) throw error;
@@ -14,8 +14,8 @@ export async function ensureOwnerPortfolio(
   supabase: SupabaseClient,
   userId: string
 ) {
-  // An absent invitation is a product entitlement boundary, not an auth
-  // failure. Keep the viewer signed in and do not create a draft for them.
+  // A viewer may sign in only to request protected access. Do not create a
+  // draft unless the owner journey explicitly calls this helper.
   if (!(await canCreatePortfolio(supabase))) return null;
 
   const { data: existing, error: lookupError } = await supabase
