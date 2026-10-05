@@ -7,24 +7,20 @@ export class IdentityVerificationSessionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   begin(candidateId: string | null, invitationTokenHash: string | null, managementTokenHash: string) {
-    return this.supabase.rpc("begin_candidate_photo_verification", {
+    return this.supabase.rpc("begin_candidate_liveness_verification", {
       p_candidate_id: candidateId,
       p_invitation_token_hash: invitationTokenHash,
       p_management_token_hash: managementTokenHash,
     });
   }
 
-  downloadPhotoReference(path: string, authorizedReader: SupabaseClient = this.supabase) {
-    return authorizedReader.storage.from("photos").download(path);
-  }
-
-  registerPhotoProviderCreate(
+  registerCandidateProviderCreate(
     attemptId: string,
     workflowId: string,
     workflowVersion: number,
     managementTokenHash: string
   ) {
-    return this.supabase.rpc("register_candidate_photo_provider_create", {
+    return this.supabase.rpc("register_candidate_liveness_provider_create", {
       p_attempt_id: attemptId,
       p_management_token_hash: managementTokenHash,
       p_workflow_id: workflowId,
@@ -32,19 +28,17 @@ export class IdentityVerificationSessionRepository {
     });
   }
 
-  attachCandidatePhotoSession(input: {
+  attachCandidateSession(input: {
     attemptId: string;
     providerSessionRef: string;
-    referenceSha256: string;
     workflowId: string;
     workflowVersion: number;
     managementTokenHash: string;
   }) {
-    return this.supabase.rpc("attach_candidate_photo_provider_session", {
+    return this.supabase.rpc("attach_candidate_liveness_provider_session", {
       p_attempt_id: input.attemptId,
       p_management_token_hash: input.managementTokenHash,
       p_provider_session_ref: input.providerSessionRef,
-      p_reference_sha256: input.referenceSha256,
       p_workflow_id: input.workflowId,
       p_workflow_version: input.workflowVersion,
     });
@@ -81,7 +75,7 @@ export class IdentityVerificationSessionRepository {
   }
 
   retry(tokenHash: string, replacementManagementTokenHash: string) {
-    return this.supabase.rpc("retry_candidate_photo_verification", {
+    return this.supabase.rpc("retry_candidate_liveness_verification", {
       p_token_hash: tokenHash,
       p_management_token_hash: replacementManagementTokenHash,
     });

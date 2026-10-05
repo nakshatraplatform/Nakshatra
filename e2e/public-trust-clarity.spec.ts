@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("a checked-photo badge explains itself at compact and wide sizes", async ({ page }, testInfo) => {
+test("a liveness badge explains itself at compact and wide sizes", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-chromium", "The width matrix runs once in Chromium.");
   test.setTimeout(120_000);
 
@@ -15,11 +15,12 @@ test("a checked-photo badge explains itself at compact and wide sizes", async ({
       await expect(portfolio).toHaveAttribute("data-appearance", appearance);
       const badge = portfolio.locator(".portfolio-verified-badge");
       await expect(badge).toBeVisible();
-      await expect(badge.getByText("Live photo checked")).toBeVisible();
+      await expect(badge.getByText("Liveness checked")).toBeVisible();
+      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness and IP checks.*does not verify legal identity, portfolio photo ownership/i);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       if (width === 375 || width === 1440) {
         await page.screenshot({
-          path: testInfo.outputPath(`checked-photo-${width}-${appearance}.png`),
+          path: testInfo.outputPath(`liveness-checked-${width}-${appearance}.png`),
           animations: "disabled",
         });
       }
@@ -27,7 +28,7 @@ test("a checked-photo badge explains itself at compact and wide sizes", async ({
   }
 });
 
-test("the fictional introduction does not claim a real photo check", async ({ page }) => {
+test("the fictional introduction does not claim a real liveness check", async ({ page }) => {
   await page.goto("/demo");
   await expect(page.getByText("Fictional sample introduction")).toBeVisible();
   await expect(page.locator(".portfolio-verified-badge")).toHaveCount(0);
@@ -36,8 +37,10 @@ test("the fictional introduction does not claim a real photo check", async ({ pa
 test("public trust explanation matches the publication exception and link controls", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto("/trust");
+  await expect(page.getByRole("heading", { name: "Liveness and IP checks", exact: true })).toBeVisible();
+  await expect(page.getByText(/These checks do not establish identity or photo ownership/i)).toBeVisible();
   await expect(page.getByText(/limited pilot test exemption can allow publication without that check/i)).toBeVisible();
-  await expect(page.getByText(/exempt introductions do not receive the Live photo checked badge/i)).toBeVisible();
+  await expect(page.getByText(/exempt introductions do not receive the Liveness checked badge/i)).toBeVisible();
   const accessControls = page.getByText("Access and control").locator("xpath=ancestor::details");
   await expect(accessControls).not.toHaveAttribute("open", "");
   await accessControls.locator("summary").click();

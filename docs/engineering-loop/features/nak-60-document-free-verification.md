@@ -1,5 +1,9 @@
 # NAK-60 document-free verification
 
+> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
+> requirement or face matching. See [NAK-60 liveness/IP contract](nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+
+
 Mode: full (critical biometric, authorization, database and provider boundaries). Status: integrated on `feat/nak-60-liveness-integration`; provider and deployment evidence still required before release.
 
 ## Execution context

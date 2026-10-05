@@ -43,7 +43,7 @@ describe("AuthForm", () => {
 
     expect(screen.getByRole("heading", { name: "Create your pilot account" })).toBeInTheDocument();
     expect(screen.getByText(/limited to invited beta participants/i)).toBeInTheDocument();
-    expect(screen.getByText(/Live photo checked badge appears only after a Didit photo-match and liveness check/i)).toBeInTheDocument();
+    expect(screen.getByText(/Liveness checked badge appears only after Didit liveness and IP checks/i)).toBeInTheDocument();
     expect(screen.getByText(/use that link to view it and show interest/i)).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: /access model/i })).toHaveTextContent(/Begin privately.*15 days/i);
 

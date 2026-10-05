@@ -4,7 +4,7 @@ import { VerificationLinkClient } from "./verification-link-client";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const metadata: Metadata = {
-  title: "Identity verification · VivIntro",
+  title: "Verification · VivIntro",
   robots: { index: false, follow: false },
 };
 

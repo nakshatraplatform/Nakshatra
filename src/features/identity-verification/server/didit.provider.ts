@@ -12,13 +12,12 @@ const diditSessionSchema = z.object({
   url: z.url(),
 }).passthrough();
 
-const photoMatchSessionSchema = diditSessionSchema.extend({
+const candidateSessionSchema = diditSessionSchema.extend({
   session_id: z.uuid(),
   workflow_id: z.uuid(),
   workflow_version: z.number().int().positive(),
 });
 
-const MAX_REFERENCE_BYTES = 2 * 1024 * 1024;
 const DIDIT_TIMEOUT_MS = 10_000;
 
 const diditHostedOrigin = "https://verify.didit.me";
@@ -59,23 +58,23 @@ function expectedName(legalName: string) {
   return { first_name: firstName, ...(names.length > 0 ? { last_name: names.join(" ") } : {}) };
 }
 
-function photoMatchConfig() {
+export function getCandidateVerificationConfig() {
   const parsed = z.uuid().safeParse(process.env.DIDIT_WORKFLOW_ID?.trim());
   const version = z.coerce.number().int().positive().safeParse(process.env.DIDIT_WORKFLOW_VERSION?.trim());
-  if (!parsed.success || !version.success) throw new DiditProviderError();
+  if (!parsed.success || !version.success) throw new DiditProviderError("IDENTITY_VERIFICATION_CONFIGURATION_INVALID");
   return { ...getDiditConfigForKey(), workflowId: parsed.data, workflowVersion: version.data };
 }
 
 function getDiditConfigForKey() {
   const apiKey = process.env.DIDIT_API_KEY?.trim();
-  if (!apiKey) throw new DiditProviderError();
+  if (!apiKey) throw new DiditProviderError("IDENTITY_VERIFICATION_CONFIGURATION_INVALID");
   return { apiKey };
 }
 
 async function postSession(body: Record<string, unknown>, timeoutMs?: number) {
   // The existing ID route has no durable uncertain-create reconciliation yet.
-  // Keep its pre-existing request behavior; only the disconnected photo adapter
-  // uses a bounded create request until its recovery queue is implemented.
+  // Keep its pre-existing request behavior; the candidate adapter
+  // uses a bounded create request with its durable recovery queue.
   const controller = timeoutMs === undefined ? null : new AbortController();
   const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
@@ -86,16 +85,25 @@ async function postSession(body: Record<string, unknown>, timeoutMs?: number) {
       cache: "no-store",
       ...(controller ? { signal: controller.signal } : {}),
     });
-    if (!response.ok) throw new DiditProviderError();
+    if (!response.ok) {
+      const code = response.status === 401 || response.status === 403
+        ? "IDENTITY_VERIFICATION_PROVIDER_CREDENTIALS"
+        : response.status === 429 ? "IDENTITY_VERIFICATION_PROVIDER_RATE_LIMITED"
+        : "IDENTITY_VERIFICATION_PROVIDER_REJECTED";
+      throw new DiditProviderError(code);
+    }
     return await response.json();
-  } catch {
-    throw new DiditProviderError();
+  } catch (error) {
+    if (error instanceof DiditProviderError) throw error;
+    throw new DiditProviderError(controller?.signal.aborted
+      ? "IDENTITY_VERIFICATION_PROVIDER_TIMEOUT"
+      : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
   } finally {
     if (timeout) clearTimeout(timeout);
   }
 }
 
-async function purgeUnattachedPhotoMatchSession(sessionId: string) {
+async function purgeUnattachedCandidateSession(sessionId: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), DIDIT_TIMEOUT_MS);
   try {
@@ -118,35 +126,27 @@ async function purgeUnattachedPhotoMatchSession(sessionId: string) {
   }
 }
 
-/** Starts an ID-free hosted workflow using only a server-supplied photo reference. */
-export async function createDiditPhotoMatchSession(input: {
+/** Starts the pinned liveness/IP workflow without sending a portfolio photo or identity details. */
+export async function createDiditLivenessSession(input: {
   attemptId: string;
   providerSubjectRef: string;
   callbackUrl: string;
-  portraitImageBase64: string;
 }) {
-  const config = photoMatchConfig();
-  const image = input.portraitImageBase64;
-  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(image)
-    || image.length === 0
-    || Buffer.from(image, "base64").length > MAX_REFERENCE_BYTES) {
-    throw new DiditProviderError("IDENTITY_VERIFICATION_REFERENCE_UNAVAILABLE");
-  }
+  const config = getCandidateVerificationConfig();
   const raw = await postSession({
     workflow_id: config.workflowId,
     vendor_data: `iv:${input.providerSubjectRef}:${input.attemptId}`,
     callback: input.callbackUrl,
     callback_method: "both",
     language: "en",
-    portrait_image: image,
   }, DIDIT_TIMEOUT_MS);
-  const parsed = photoMatchSessionSchema.safeParse(raw);
+  const parsed = candidateSessionSchema.safeParse(raw);
   const hostedOrigin = parsed.success ? new URL(parsed.data.url).origin : null;
   if (!parsed.success || parsed.data.workflow_id !== config.workflowId
     || parsed.data.workflow_version !== config.workflowVersion
     || hostedOrigin !== diditHostedOrigin) {
     const sessionId = z.uuid().safeParse((raw as { session_id?: unknown } | null)?.session_id);
-    if (sessionId.success) await purgeUnattachedPhotoMatchSession(sessionId.data);
+    if (sessionId.success) await purgeUnattachedCandidateSession(sessionId.data);
     throw new DiditProviderError();
   }
   return {

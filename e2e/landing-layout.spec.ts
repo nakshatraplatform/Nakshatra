@@ -42,10 +42,10 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
   await page.screenshot({ path: testInfo.outputPath("landing-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
 
   await page.goto("/trust");
-  const photoCheck = page.getByText("Live photo check").locator("xpath=ancestor::details");
-  await expect(photoCheck).toHaveAttribute("open", "");
-  await photoCheck.locator("summary").click();
-  await expect(photoCheck).not.toHaveAttribute("open", "");
+  const livenessCheck = page.getByRole("heading", { name: "Liveness and IP checks", exact: true }).locator("xpath=ancestor::details");
+  await expect(livenessCheck).toHaveAttribute("open", "");
+  await livenessCheck.locator("summary").click();
+  await expect(livenessCheck).not.toHaveAttribute("open", "");
   await page.getByText("Sharing boundary").click();
   await expect(page.getByText(/personal link can open its public Introduction/i)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("trust-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });

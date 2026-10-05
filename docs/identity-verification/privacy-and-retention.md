@@ -1,5 +1,9 @@
 # Didit privacy, retention, and deletion controls
 
+> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
+> requirement or face matching. See [NAK-60 liveness/IP contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+
+
 ## Approved retention position
 
 Nakshatra must use data minimization. A provider verification session may
@@ -82,12 +86,12 @@ in Sandbox before live enablement.
 
 1. Create an owner-only directory outside the repository on an encrypted,
    access-controlled volume. Run
-   `node scripts/verify-didit-photo-match-sandbox.mjs <test-portrait-path> <absolute-recovery-journal-path>`.
+   `node scripts/verify-didit-liveness-sandbox.mjs <absolute-recovery-journal-path>`.
    The script creates the journal with mode `0600` before calling Didit and
    removes it only after a confirmed deletion. It records a random lookup
    correlation and workflow ID, not the portrait or API key.
 2. If the probe fails and the journal remains, run
-   `node scripts/verify-didit-photo-match-sandbox.mjs --recover <absolute-recovery-journal-path>`
+   `node scripts/verify-didit-liveness-sandbox.mjs --recover <absolute-recovery-journal-path>`
    with the same Sandbox API key. Recovery lists exact `vendor_data` and
    workflow matches, requests deletion without face-template retention, and
    removes the journal only after every returned deletion is confirmed.
