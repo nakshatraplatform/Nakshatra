@@ -41,8 +41,10 @@ select pg_temp.set_authenticated_claims('81000000-0000-4000-8000-000000000001', 
 select is(public.get_current_pilot_access_state() ->> 'canCreatePortfolio', 'false', 'unconfirmed email cannot create a portfolio');
 
 reset role;
+insert into app_private.pilot_access_audit_events(event_name, outcome)
+values ('pilot.test', 'succeeded');
 select throws_ok(
-  $$update app_private.pilot_access_audit_events set outcome = 'failed'$$,
+  $$update app_private.pilot_access_audit_events set outcome = 'failed' where event_name = 'pilot.test'$$,
   '55000', 'pilot access audit events are append-only',
   'historical audit events cannot be rewritten'
 );

@@ -37,7 +37,7 @@ create function public.submit_creator_onboarding_feedback(
 )
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare portfolio_record public.portfolios%rowtype;
-  clean_comment text := pg_catalog.nullif(pg_catalog.btrim(p_comment), '');
+  clean_comment text := nullif(pg_catalog.btrim(p_comment), '');
 begin
   perform app_private.require_current_session();
   if p_ease_rating not between 1 and 5
