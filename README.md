@@ -134,23 +134,29 @@ for verification and removal instructions.
 ## Production releases
 
 Vercel's GitHub integration owns application builds and deployments. The GitHub
-`CD` workflow only applies Supabase migrations; it does not need `VERCEL_TOKEN`,
+`Production Database Deployment` workflow previews or applies Supabase migrations;
+it does not need `VERCEL_TOKEN`,
 `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID`.
 
 - CI runs on pull requests targeting `main` and pushes to `main`. Its database
   job replays migrations in a disposable local Supabase database and runs pgTAP.
-- After the selected main revision passes CI, manually dispatch `CD` on `main`
-  with `confirm_production` enabled. Configure `SUPABASE_ACCESS_TOKEN`,
+- After the selected main revision passes CI, manually dispatch
+  `Production Database Deployment` on `main` with `confirm_production` unchecked
+  (the default). Configure `SUPABASE_ACCESS_TOKEN`,
   `SUPABASE_PROJECT_REF`, and `SUPABASE_DB_PASSWORD` as GitHub Actions secrets
   available to the `production` environment. The workflow pins checkout to the
-  dispatch revision, previews and applies pending migrations, then verifies
-  every checked-out migration is recorded remotely. It skips Vault updates.
-- CD does not run test fixtures or reset production. Its final history check
+  dispatch revision and previews pending migrations without applying them or
+  updating Vault. Review the migration list and commit SHA. Then dispatch again
+  with `confirm_production` enabled to preview, apply and verify every checked-out
+  migration is recorded remotely. If `main` changed, review a new preview and CI
+  for that revision first. Preview does not reserve database state; also account
+  for any intervening manual database changes.
+- This workflow does not run test fixtures or reset production. Its final history check
   verifies recorded versions, not schema drift or application behavior. The
   current manual workflow does not automatically enforce a successful CI run;
   check CI for the selected revision before confirming the release.
 - Vercel does not wait for this separate workflow. Release backward-compatible
-  schema additions first, apply them through CD, then merge dependent application
+  schema additions first, apply them through this workflow, then merge dependent application
   changes. Remove obsolete database structures in a later compatible release.
 
 Clean replay and final-schema tests do not prove all populated upgrades work.
