@@ -114,7 +114,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       </article>)}</div>
     </section>}
     <section className={styles.panel}>
-      <div className={styles.panelTitle}><Send /><div><h2>Broker introductions</h2><p>Choose another ready customer in this workspace. Both portfolios must be published and identity-verified.</p></div></div>
+      <div className={styles.panelTitle}><Send /><div><h2>Broker introductions</h2><p>Choose another ready customer in this workspace. Both portfolios must be published, and both customers must have completed liveness and IP checks.</p></div></div>
       {canCreate && eligibleRecipients.length > 0 ? <form className={styles.introductionForm} onSubmit={create}>
         <label>Introduce this customer to
           <select className="min-h-11 rounded-lg border border-[light-dark(#d6cec0,var(--app-dark-border))] bg-[light-dark(#fff,var(--app-dark-surface-soft))] px-3 text-inherit" name="recipientRelationshipRef" required defaultValue="">
@@ -125,7 +125,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
           </select>
         </label>
         <button disabled={pending} type="submit"><Link2 /> {pending ? "Working…" : "Create private introduction"}</button>
-      </form> : <p className={styles.empty}>{canCreate ? "No other active, published and identity-verified customer is available yet." : "This customer needs an active mandate, a published portfolio and completed identity verification before introductions can be created."}</p>}
+      </form> : <p className={styles.empty}>{canCreate ? "No other active customer with a published portfolio and completed liveness and IP checks is available yet." : "This customer needs an active mandate, a published portfolio and completed liveness and IP checks before introductions can be created."}</p>}
       {created && <div className={styles.createdLink}><strong>Customer-only introduction link</strong><code>{created.introductionUrl}</code><button disabled={pending} type="button" onClick={activateAndCopy}><Copy /> Activate and copy</button><small>Only the selected customer can open this link after signing in to VivIntro. Forwarding the URL does not grant anyone else access.</small></div>}
       {message && <p className={styles.notice} role="status">{message}</p>}
       <div className={styles.timeline}>{introductions.length === 0 ? <p className={styles.empty}>No broker introductions yet.</p> : introductions.map((item) => <article className={styles.introductionRow} key={item.introductionRef}>

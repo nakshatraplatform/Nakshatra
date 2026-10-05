@@ -24,7 +24,7 @@ describe("identity-verification dashboard controls", () => {
     const user = userEvent.setup();
     render(<IdentityVerificationDashboard candidateId="candidate-id" />);
 
-    const self = screen.getByRole("button", { name: "Start photo & liveness check" });
+    const self = screen.getByRole("button", { name: "Start liveness check" });
     expect(self).toBeDisabled();
     await user.click(screen.getByRole("checkbox"));
     await user.click(self);

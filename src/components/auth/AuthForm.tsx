@@ -234,7 +234,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   <ShieldCheck aria-hidden="true" />
                   <div>
                     <strong>Portfolio creation is limited to invited beta participants.</strong>
-                    <p>Your draft stays private until you publish. A Live photo checked badge appears only after a Didit photo-match and liveness check. If someone shared a portfolio with you, use that link to view it and show interest—you do not need creator access.</p>
+                    <p>Your draft stays private until you publish. A Liveness checked badge appears only after Didit liveness and IP checks. These checks do not establish identity or photo ownership. If someone shared a portfolio with you, use that link to view it and show interest—you do not need creator access.</p>
                     <Link href="/#samples">See the portfolio format</Link>
                   </div>
                 </div>

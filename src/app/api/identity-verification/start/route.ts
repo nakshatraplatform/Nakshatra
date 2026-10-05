@@ -1,3 +1,4 @@
+import { candidateVerificationConsentVersion } from "@/features/identity-verification/identity-verification.types";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { createIdentityVerificationToken, hashIdentityVerificationToken, isIdentityVerificationToken } from "@/features/identity-verification/server/identity-verification.tokens";
@@ -10,8 +11,8 @@ import { createCanonicalAppUrl } from "@/lib/security/redirect";
 
 const tokenSchema = z.string().refine(isIdentityVerificationToken, "Invalid verification token");
 const startSchema = z.discriminatedUnion("authorization", [
-  z.object({ authorization: z.literal("self"), candidateId: z.uuid(), consent: z.literal(true) }).strict(),
-  z.object({ authorization: z.literal("invitation"), token: tokenSchema, consent: z.literal(true) }).strict(),
+  z.object({ authorization: z.literal("self"), candidateId: z.uuid(), consent: z.literal(true), consentVersion: z.literal(candidateVerificationConsentVersion) }).strict(),
+  z.object({ authorization: z.literal("invitation"), token: tokenSchema, consent: z.literal(true), consentVersion: z.literal(candidateVerificationConsentVersion) }).strict(),
 ]);
 const noStore = { "Cache-Control": "private, no-store" };
 

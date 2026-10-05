@@ -602,11 +602,11 @@ export default function CelestialUnion({
               {identityVerified && (
                 <span
                   className="portfolio-verified-badge"
-                  aria-label="Live photo match checked. Didit matched a live capture to this portfolio’s current primary photo and performed passive liveness. It does not verify legal identity, profile statements, or endorse a match."
-                  title="Live photo match checked"
+                  aria-label="Liveness checked. A live person completed liveness and IP checks. This does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match."
+                  title="Liveness checked"
                 >
                   <ShieldCheck aria-hidden="true" />
-                  <span>Live photo checked</span>
+                  <span>Liveness checked</span>
                 </span>
               )}
             </div>

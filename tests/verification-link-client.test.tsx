@@ -30,8 +30,8 @@ describe("verification bearer-link page", () => {
     startInvitation.mockResolvedValueOnce({ ok: true, data: { url: "https://verify.didit.test/session/opaque", managementUrl: "https://nakshatra.test/verify/manage" } });
     const user = userEvent.setup();
     render(<VerificationLinkClient token="opaque-token" />);
-    await screen.findByText("Confirm your identity");
-    expect(screen.getByText(/compares a live camera capture with your current primary portfolio photo/i)).toBeInTheDocument();
+    await screen.findByText("Complete your liveness check");
+    expect(screen.getByText(/checks that a live person is present/i)).toBeInTheDocument();
     expect(screen.getByText(/does not request an identity document/i)).toBeInTheDocument();
     expect(screen.queryByText(/legal name, date of birth/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Private Candidate/)).not.toBeInTheDocument();
@@ -50,6 +50,8 @@ describe("verification bearer-link page", () => {
     render(<VerificationLinkClient token="management-token" />);
     await screen.findByText("Verification management");
     expect(screen.getByText("failed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry verification" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Retry verification" }));
     expect(retry).toHaveBeenCalledWith("management-token");
     await user.click(screen.getByRole("button", { name: "Withdraw consent" }));

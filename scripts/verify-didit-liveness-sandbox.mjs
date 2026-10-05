@@ -4,7 +4,6 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const BASE = "https://verification.didit.me/v3/session";
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const TIMEOUT_MS = 10_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -62,14 +61,11 @@ export function createSandboxRecoveryJournal(path) {
   };
 }
 
-/** Proves a sandbox workflow accepts a supplied reference; attempts purge of any issued session. */
-export async function verifyPhotoMatchSandbox({ apiKey, workflowId, workflowVersion, portrait, journal, fetchImpl = fetch }) {
+/** Proves a sandbox liveness workflow creates a session without a reference; attempts purge of any issued session. */
+export async function verifyLivenessSandbox({ apiKey, workflowId, workflowVersion, journal, fetchImpl = fetch }) {
   if (!apiKey || !UUID_PATTERN.test(workflowId ?? "")
     || !Number.isSafeInteger(workflowVersion) || workflowVersion < 1) {
     throw failure("DIDIT_SANDBOX_CONFIG_INVALID");
-  }
-  if (!Buffer.isBuffer(portrait) || portrait.length === 0 || portrait.length > MAX_IMAGE_BYTES) {
-    throw failure("DIDIT_SANDBOX_REFERENCE_INVALID");
   }
   if (typeof journal?.record !== "function" || typeof journal?.complete !== "function") {
     throw failure("DIDIT_SANDBOX_JOURNAL_REQUIRED");
@@ -86,7 +82,6 @@ export async function verifyPhotoMatchSandbox({ apiKey, workflowId, workflowVers
       body: JSON.stringify({
         workflow_id: workflowId,
         vendor_data: vendorData,
-        portrait_image: portrait.toString("base64"),
         sandbox_scenario: "approve",
       }),
     });
@@ -127,7 +122,7 @@ export async function verifyPhotoMatchSandbox({ apiKey, workflowId, workflowVers
 }
 
 /** Retries cleanup using the exact vendor correlation retained before session creation. */
-export async function recoverPhotoMatchSandbox({ apiKey, journal, fetchImpl = fetch }) {
+export async function recoverLivenessSandbox({ apiKey, journal, fetchImpl = fetch }) {
   if (!apiKey || typeof journal?.read !== "function" || typeof journal?.complete !== "function") {
     throw failure("DIDIT_SANDBOX_CONFIG_INVALID");
   }
@@ -171,23 +166,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     if (firstArg === "--recover") {
       if (!secondArg) throw failure("DIDIT_SANDBOX_JOURNAL_REQUIRED");
-      const result = await recoverPhotoMatchSandbox({
+      const result = await recoverLivenessSandbox({
         apiKey: process.env.DIDIT_SANDBOX_API_KEY,
         journal: createSandboxRecoveryJournal(secondArg),
       });
       process.stdout.write(`Didit Sandbox recovery confirmed ${result.deleted} deletion(s).\n`);
     } else {
-      if (!firstArg) throw failure("DIDIT_SANDBOX_REFERENCE_PATH_REQUIRED");
-      if (!secondArg) throw failure("DIDIT_SANDBOX_JOURNAL_REQUIRED");
-      const portrait = await readFile(firstArg);
-      await verifyPhotoMatchSandbox({
+      if (!firstArg) throw failure("DIDIT_SANDBOX_JOURNAL_REQUIRED");
+      await verifyLivenessSandbox({
         apiKey: process.env.DIDIT_SANDBOX_API_KEY,
-        workflowId: process.env.DIDIT_SANDBOX_PHOTO_MATCH_WORKFLOW_ID,
-        workflowVersion: Number(process.env.DIDIT_SANDBOX_PHOTO_MATCH_WORKFLOW_VERSION),
-        portrait,
-        journal: createSandboxRecoveryJournal(secondArg),
+        workflowId: process.env.DIDIT_SANDBOX_WORKFLOW_ID,
+        workflowVersion: Number(process.env.DIDIT_SANDBOX_WORKFLOW_VERSION),
+        journal: createSandboxRecoveryJournal(firstArg),
       });
-      process.stdout.write("Document-free Didit Sandbox create-and-delete contract passed.\n");
+      process.stdout.write("Liveness/IP Didit Sandbox create-and-delete contract passed.\n");
     }
   } catch (error) {
     const code = error instanceof Error && /^DIDIT_SANDBOX_[A-Z_]+$/.test(error.message)

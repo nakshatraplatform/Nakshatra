@@ -91,7 +91,7 @@ export default function PilotAccessAdminClient() {
 
         <section className="mt-7 rounded-xl border border-[light-dark(#d0d3ce,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-5 sm:p-6" aria-labelledby="invite-heading">
           <h2 id="invite-heading" className="text-xl font-semibold">Invite a portfolio creator</h2>
-          <p className="mt-2 max-w-2xl text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Enter the exact address they will use with Google or email and password. Their seven-day, single-use link creates access only after they verify that email. Their portfolio starts as a private draft; publishing still requires the photo and liveness check.</p>
+          <p className="mt-2 max-w-2xl text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Enter the exact address they will use with Google or email and password. Their seven-day, single-use link creates access only after they verify that email. Their portfolio starts as a private draft; standard publishing still requires liveness and IP checks.</p>
           <form className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); void manageInvite(inviteEmail.trim().toLowerCase(), "grant"); }}>
             <label className="flex-1 text-sm font-medium" htmlFor="creator-invite-email">Email address
               <input id="creator-invite-email" type="email" autoComplete="off" required maxLength={180} value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="person@gmail.com" className="mt-2 block min-h-11 w-full rounded-lg border border-[light-dark(#b8c4c4,var(--app-dark-border))] bg-[light-dark(#fff,var(--app-dark-canvas))] px-3" />
