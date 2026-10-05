@@ -81,7 +81,7 @@ describe("landing and shared frontend components", () => {
     expect(screen.getAllByText(/protected access/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /for families already making introductions/i })).toBeInTheDocument();
     expect(screen.getByText(/begin with a private draft/i)).toBeInTheDocument();
-    expect(screen.getByText(/what does the photo badge mean/i).closest("summary")).toBeInTheDocument();
+    expect(screen.getByText(/what does the liveness badge mean/i).closest("summary")).toBeInTheDocument();
     expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
   });
 

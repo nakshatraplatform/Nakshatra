@@ -79,11 +79,11 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await page.goto("/p/e2e-portfolio-token");
 
   await expect(page.getByRole("heading", { name: "Aditi Rao" })).toBeVisible();
-  const verifiedBadge = page.getByLabel(/Live photo match checked\. Didit matched/);
+  const verifiedBadge = page.getByLabel(/Liveness checked\. A live person/);
   await expect(verifiedBadge).toBeVisible();
   await expect(verifiedBadge).toHaveAttribute(
     "aria-label",
-    /does not verify legal identity, profile statements, or endorse a match/
+    /does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
@@ -161,7 +161,9 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
     "http://127.0.0.1:3100/p/e2e-portfolio-token/opengraph-image"
   );
 
-  const accents = await page.locator(".portfolio-root").evaluate((element) => {
+  const portfolio = page.locator(".portfolio-root:visible");
+  await expect(portfolio).toBeVisible();
+  const accents = await portfolio.evaluate((element) => {
     const styles = getComputedStyle(element);
     return {
       background: styles.getPropertyValue("--portfolio-background").trim(),
@@ -177,7 +179,8 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
     gold: "#8f6628",
   });
 
-  const privacyControl = page.locator(".portfolio-brand");
+  const privacyControl = portfolio.locator(".portfolio-brand");
+  await expect(privacyControl).toBeVisible();
   await privacyControl.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
@@ -327,6 +330,7 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
 
   const viewportWidth = page.viewportSize()?.width || 0;
   const hero = page.locator(".portfolio-photo-stage");
+  await expect(hero).toBeVisible();
   const heroBounds = await hero.boundingBox();
   expect(heroBounds).not.toBeNull();
 

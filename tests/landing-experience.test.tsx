@@ -15,7 +15,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.querySelector("#privacy")).toHaveTextContent(/a shared link can be forwarded/i);
     expect(document.querySelector("#privacy")).toHaveTextContent(/you decide who gets access/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Not searchable/i);
-    expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Photo checks are clearly marked/i);
+    expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Liveness checks are clearly marked/i);
     expect(document.body).not.toHaveTextContent(/Identity-checked creator|Required before publication/i);
     expect(document.body).toHaveTextContent(/A test publication without this check has no badge/i);
   });

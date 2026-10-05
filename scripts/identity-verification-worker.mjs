@@ -48,6 +48,26 @@ export function evaluateDiditDecision(
     throw workerError("IDENTITY_MATCH_KEY_UNAVAILABLE");
   }
 
+  if (claim.verification_method === "candidate_liveness_ip") {
+    if (claim.subject_type !== "candidate") throw workerError("IDENTITY_VERIFICATION_METHOD_INVALID");
+    const absent = (field) => decision[field] == null
+      || (Array.isArray(decision[field]) && decision[field].length === 0);
+    const workflowMatches = decision.workflow_id === claim.provider_workflow_id
+      && Number.isSafeInteger(decision.workflow_version)
+      && decision.workflow_version === Number(claim.provider_workflow_version)
+      && decision.vendor_data === claim.provider_vendor_data;
+    const livenessVerified = allApproved(decision, "liveness_checks");
+    const ipVerified = allApproved(decision, "ip_analyses");
+    const checksPass = workflowMatches && livenessVerified && ipVerified
+      && absent("id_verifications") && absent("face_matches");
+    const status = normalizeStatus(decision.status);
+    let outcome = "pending";
+    if (status === "APPROVED") outcome = checksPass ? "verified" : "declined";
+    else if (status === "DECLINED") outcome = "declined";
+    else if (["ABANDONED", "EXPIRED", "KYC_EXPIRED"].includes(status)) outcome = "expired";
+    return { outcome, livenessVerified, ipVerified, idVerified: false,
+      passiveLivenessVerified: false, faceMatchVerified: false, nameMatches: false, birthDateMatches: false };
+  }
   if (claim.verification_method === "portfolio_photo_liveness") {
     const workflowMatches = decision.workflow_id === claim.provider_workflow_id
       && Number(decision.workflow_version) === Number(claim.provider_workflow_version);
@@ -125,8 +145,8 @@ export function createIdentityVerificationWorker(supabase, {
   apiKey = process.env.DIDIT_API_KEY,
   fetchImpl = fetch,
   identityMatchKey = process.env.IDENTITY_VERIFICATION_MATCH_HMAC_KEY,
-  photoWorkflowId = process.env.DIDIT_WORKFLOW_ID,
-  photoWorkflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION),
+  candidateWorkflowId = process.env.DIDIT_WORKFLOW_ID,
+  candidateWorkflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION),
   now = () => new Date(),
   requestTimeoutMs = PROVIDER_REQUEST_TIMEOUT_MS,
 } = {}) {
@@ -248,12 +268,12 @@ export function createIdentityVerificationWorker(supabase, {
   async function process(claim) {
     try {
       if (claim.task_type === "reconcile"
-        && claim.verification_method === "portfolio_photo_liveness"
-        && (!UUID_PATTERN.test(photoWorkflowId ?? "")
-          || !Number.isSafeInteger(photoWorkflowVersion) || photoWorkflowVersion < 1
-          || claim.provider_workflow_id !== photoWorkflowId
-          || Number(claim.provider_workflow_version) !== photoWorkflowVersion)) {
-        throw workerError("DIDIT_PHOTO_WORKFLOW_MISMATCH");
+        && ["portfolio_photo_liveness", "candidate_liveness_ip"].includes(claim.verification_method)
+        && (!UUID_PATTERN.test(candidateWorkflowId ?? "")
+          || !Number.isSafeInteger(candidateWorkflowVersion) || candidateWorkflowVersion < 1
+          || claim.provider_workflow_id !== candidateWorkflowId
+          || Number(claim.provider_workflow_version) !== candidateWorkflowVersion)) {
+        throw workerError("DIDIT_WORKFLOW_MISMATCH");
       }
       if (claim.task_type === "provider_recovery") {
         if (!claim.provider_session_ref) {
@@ -294,7 +314,8 @@ export function createIdentityVerificationWorker(supabase, {
         p_claim_token: claim.claim_token,
         p_outcome: result.outcome,
         p_id_verified: result.idVerified,
-        p_passive_liveness_verified: result.passiveLivenessVerified,
+        p_passive_liveness_verified: result.livenessVerified ?? result.passiveLivenessVerified,
+        ...(claim.verification_method === "candidate_liveness_ip" ? { p_ip_verified: result.ipVerified } : {}),
         p_face_match_verified: result.faceMatchVerified,
         p_name_matches: result.nameMatches,
         p_birth_date_matches: result.birthDateMatches,

@@ -802,7 +802,7 @@ export default function DashboardClient({
           </>}
           </div>
           {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6">
-            {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Photo and liveness verification is optional while this account has test publishing access. It is still required for broker Introductions and a verified-identity badge.</p>}
+            {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Liveness and IP checks are optional for public test publishing while this access remains active. Without them, your introduction will not show the Liveness checked badge.</p>}
             <IdentityVerificationDashboard candidateId={portfolio.candidate_id} />
           </div> : null}
           {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
@@ -876,7 +876,7 @@ export default function DashboardClient({
                     <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Portfolio answers ready" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
-                      <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Primary-photo liveness check complete"} pendingLabel="Complete the primary-photo liveness check" />
+                      <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness and IP checks complete"} pendingLabel="Complete the liveness and IP checks" />
                       <ReviewRequirement complete={readinessState.paymentActive} label="Creator account active" pendingLabel="Creator account required" />
                       <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
                     </div>
@@ -1104,8 +1104,8 @@ function CreatorReadinessTracker({
     { label: "Portfolio details", complete: completion.detailsComplete },
     { label: "Preview", complete: Boolean(readiness.previewedAt) },
     { label: "Ready to publish", complete: completion.readyToPublish },
-    { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Photo & liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
-    { label: "Pilot access", complete: readiness.paymentActive },
+    { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
+    { label: "Creator account", complete: readiness.paymentActive },
     { label: "Disclosure", complete: readiness.disclosureConfirmed },
     { label: "Published", complete: readiness.published },
   ];

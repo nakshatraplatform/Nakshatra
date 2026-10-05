@@ -1,5 +1,9 @@
 # VivIntro / Nakshatra project map
 
+> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
+> requirement or face matching. See [NAK-60 liveness/IP contract](features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+
+
 Product: VivIntro lets marriage prospects create, publish and selectively share portfolios. The repository and Linear project are named Nakshatra. This map covers the areas inspected for NAK-60, not a whole-repository audit.
 
 ## Observed stack and boundaries
@@ -19,6 +23,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [Membership anonymous grants](features/membership-anonymous-grants.md): forward revoke migration verified by hosted clean replay and all 924 pgTAP assertions at 283e78b; production application remains pending CD.
 - [Database-only CD](features/database-only-cd.md): removes duplicate Vercel deployment, retains CI database tests before/after merge, and adds production migration-history verification; workflow changes are local pending release.
 - [Disclosure migration recovery](features/disclosure-migration-recovery.md): fixes the populated-upgrade reference-prefix prerequisite; all 70 migrations confirmed applied with zero pending; additional object/advisor queries are limited by intermittent CLI authentication. Supabase CLI is upgraded locally to 2.119.0.
+- [NAK-60 liveness + IP](features/nak-60-liveness-ip.md): current candidate policy implemented locally with photo-free preparation, exact-attempt retries, strict dual-check approval and bounded public claims; release requires migration plus matching app/worker configuration and Sandbox evidence.
 - [NAK-60 document-free verification](features/nak-60-document-free-verification.md): integrated; local pre-production configuration rename uses `DIDIT_WORKFLOW_ID` and `DIDIT_WORKFLOW_VERSION` across app/webhook/worker. Provider Sandbox and biometric privacy gates remain open; see the feature record for the single-workflow limitation and current checks.
 - [NAK-60 portfolio viewer refinement](features/nak-60-portfolio-view-refinement.md): implemented locally; responsive navigation, complete authorized gallery and post-gallery astrology placement validated in component tests.
 - [NAK-101 portfolio and dashboard usability follow-up](features/nak-101-portfolio-ux-followup.md): portfolio modal, phone entry, footer, and return-to-top improvements; shared customer header now sticks on Dashboard, My brokers, and Account, and the published-owner edit action is single-line on desktop. Prepared on the follow-up branch; pending PR/release.

@@ -126,24 +126,24 @@ where portfolio_id='94000000-0000-4000-8000-000000000002' and media_type='hero';
 select is(
   (select status::text from app_private.identity_verification_subjects
    where candidate_id='92000000-0000-4000-8000-000000000002'),
-  'expired','changing the verified primary photo makes the proof stale rather than permanently revoked'
+  'verified','changing the primary photo does not revoke a liveness/IP proof'
 );
 set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '91000000-0000-4000-8000-000000000002','91100000-0000-4000-8000-000000000002'
 );
 select lives_ok(
-  $$select * from public.begin_candidate_photo_verification(
+  $$select * from public.begin_candidate_liveness_verification(
     '92000000-0000-4000-8000-000000000002',null,repeat('e',64)
   )$$,
   'a creator can begin fresh verification after replacing the primary photo'
 );
 select ok(
-  public.is_current_identity_reference_storage_object(
+  not public.is_current_identity_reference_storage_object(
     'photos',
     '91000000-0000-4000-8000-000000000002/94000000-0000-4000-8000-000000000002/hero.webp.replacement'
   ),
-  'the newly active photo reference is protected from direct Storage deletion before completion'
+  'a liveness-only attempt does not bind or lock a primary photo'
 );
 reset role;
 

@@ -62,7 +62,7 @@ select throws_ok($$select public.publish_portfolio_transaction('a4000000-0000-40
   '{"personal":{"profile_for":"son"}}', '{}', '{}', 'self_pilot_token_01', null, 1, '#17151c', null)$$,
   '42501', null, 'browser credentials cannot publish through the retired RPC');
 select throws_ok($$select * from public.begin_candidate_photo_verification(
-  null::uuid, repeat('a',64), repeat('b',64))$$, '42501', 'pilot self verification only', 'old invitation cannot start verification');
+  null::uuid, repeat('a',64), repeat('b',64))$$, '42501', null, 'old invitation cannot start verification');
 select ok(public.resolve_public_portfolio('self_pilot_token_01') is null, 'unpublished link resolves no portfolio');
 select ok(not public.record_public_portfolio_view('self_pilot_token_01'), 'suppressed link cannot record a public view');
 select ok(not public.submit_public_interest('self_pilot_token_01', 'Viewer', 'self', '+15555550000',

@@ -192,8 +192,8 @@ describe("identity-verification worker", () => {
     await expect(createIdentityVerificationWorker(rotated.client, {
       apiKey: "test-api-key",
       fetchImpl: rotatedDelete,
-      photoWorkflowId: "88888888-8888-4888-8888-888888888888",
-      photoWorkflowVersion: 9,
+      candidateWorkflowId: "88888888-8888-4888-8888-888888888888",
+      candidateWorkflowVersion: 9,
     }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
     expect(rotatedDelete).toHaveBeenCalledTimes(1);
   });

@@ -234,7 +234,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   <ShieldCheck aria-hidden="true" />
                   <div>
                     <strong>Your portfolio begins as a private draft.</strong>
-                    <p>Confirm your email to start creating. Publishing requires your own portfolio, required details, your final review, and the live-photo check. A Live photo checked badge appears only after a successful photo-match and liveness check.</p>
+                    <p>Confirm your email to start creating. Publishing requires your own portfolio, required details, your final review, and liveness and IP checks. A Liveness checked badge appears only after those checks succeed; it does not verify legal identity or photo ownership. If someone shared a portfolio with you, use that link to view it and show interest—you do not need to create your own portfolio.</p>
                     <Link href="/#samples">See the portfolio format</Link>
                   </div>
                 </div>

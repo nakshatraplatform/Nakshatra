@@ -1,5 +1,9 @@
 # Didit provider readiness runbook
 
+> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
+> requirement or face matching. See [NAK-60 liveness/IP contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+
+
 > **Current split policy (2 October 2026):** B2C candidates use an ID-free,
 > version-pinned biometric-authentication workflow that compares a live capture
 > with the current primary portfolio photo. BrokerDesk representatives retain

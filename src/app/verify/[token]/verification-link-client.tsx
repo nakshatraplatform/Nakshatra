@@ -59,6 +59,7 @@ export function VerificationLinkClient({ token }: { token: string }) {
     const result = await retryIdentityVerificationRequest(token);
     if (!result.ok) {
       setError(result.message);
+      if (result.managementUrl) setManagementUrl(result.managementUrl);
       setAction(null);
       return;
     }
@@ -80,8 +81,8 @@ export function VerificationLinkClient({ token }: { token: string }) {
   return (
     <main className="mx-auto max-w-xl px-6 py-16"><ThemeNavigation />
       <div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div>
-      <p className="site-eyebrow">VivIntro identity verification</p>
-      <h1>{link.kind === "invitation" ? "Confirm your identity" : "Verification management"}</h1>
+      <p className="site-eyebrow">VivIntro liveness check</p>
+      <h1>{link.kind === "invitation" ? "Complete your liveness check" : "Verification management"}</h1>
       <div aria-live="polite" aria-atomic="true">
         {error ? <p className="account-notice is-error">{error}</p> : null}
         {managementUrl ? <p className="account-notice is-success">Save your private management link: <a href={managementUrl}>verification management</a>.</p> : null}
@@ -90,11 +91,11 @@ export function VerificationLinkClient({ token }: { token: string }) {
 
       {link.kind === "invitation" ? (
         <section>
-          <p>Didit compares a live camera capture with your current primary portfolio photo and performs a passive-liveness check before your portfolio can be published.</p>
-          <p>This candidate check does not request an identity document and does not verify your legal identity, age, marital status, or profile statements. VivIntro keeps your consent, the result, and a one-way binding to the checked photo—not the live capture or biometric evidence. You can withdraw consent through the private management link provided after you continue.</p>
+          <p>Didit checks that a live person is present and assesses IP and device risk before your portfolio can be published.</p>
+          <p>This candidate check does not request an identity document and does not verify your legal identity, age, marital status, or profile statements. VivIntro keeps consent and check results, not camera evidence or IP reports. There is no comparison with your portfolio photo. You can withdraw consent through the private management link provided after you continue.</p>
           <label className="mt-6 flex gap-3">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>I consent to Didit processing my current primary portfolio photo and live camera capture for this photo-match and passive-liveness check.</span>
+            <span>I consent to Didit processing my live camera capture and IP/device information for liveness and IP checks.</span>
           </label>
           <button className="dashboard-primary-action mt-6" disabled={!consent || action !== null} onClick={start}>
             {action === "start" ? "Starting secure verification…" : "Continue to Didit"}
@@ -104,7 +105,8 @@ export function VerificationLinkClient({ token }: { token: string }) {
         <section>
           <p>Status: <strong>{link.status.replaceAll("_", " ")}</strong></p>
           <p>This page is not verification proof. VivIntro confirms outcomes through its protected provider process.</p>
-          {link.canRetry ? <button className="dashboard-primary-action mt-4" disabled={action !== null} onClick={retry}>{action === "retry" ? "Restarting…" : "Retry verification"}</button> : null}
+          {link.canRetry ? <label className="mt-6 flex gap-3"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I consent to Didit processing my live camera capture and IP/device information for liveness and IP checks. VivIntro retains consent and results, not camera evidence or IP reports. This does not verify identity or match my portfolio photo.</span></label> : null}
+          {link.canRetry ? <button className="dashboard-primary-action mt-4" disabled={!consent || action !== null} onClick={retry}>{action === "retry" ? "Restarting…" : "Retry verification"}</button> : null}
           {link.canWithdraw ? <button className="dashboard-danger-action mt-4" disabled={action !== null} onClick={withdraw}>{action === "withdraw" ? "Withdrawing…" : "Withdraw consent"}</button> : null}
         </section>
       )}

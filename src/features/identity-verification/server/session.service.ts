@@ -3,22 +3,18 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 import {
-  createDiditPhotoMatchSession,
+  createDiditLivenessSession,
+  getCandidateVerificationConfig,
   createDiditVerificationSession,
   DiditProviderError,
 } from "./didit.provider";
 import { hashIdentityBirthDate } from "./identity-match.mjs";
-import { PhotoReferenceError, preparePhotoReference } from "./photo-reference";
 import { IdentityVerificationSessionRepository } from "./session.repository";
 import { getIdentityVerificationMatchKey } from "@/lib/env";
-import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 const preparedCandidateSessionSchema = z.object({
   attempt_id: z.uuid(),
   provider_subject_ref: z.uuid(),
-  portfolio_id: z.uuid(),
-  reference_media_id: z.uuid(),
-  reference_storage_path: z.string().min(3).max(1024),
 }).strict();
 
 const preparedRepresentativeSessionSchema = z.object({
@@ -53,57 +49,34 @@ function preparedCandidateSession(data: unknown) {
   return parsed.data;
 }
 
-function unavailableFromDatabase(error: { code?: string } | null, fallback: string, managementToken?: string): never {
+function unavailableFromDatabase(error: { code?: string } | null, fallback: string, managementToken?: string, stage = "database"): never {
+  console.warn("identity_verification_failure", { stage, sqlstate: /^[A-Z0-9]{5}$/.test(error?.code ?? "") ? error?.code : "UNKNOWN" });
   if (error?.code === "42501") {
     throw new IdentityVerificationSessionError("This verification action is not available.", "IDENTITY_VERIFICATION_FORBIDDEN", 403, managementToken);
   }
-  if (error?.code === "22023") {
+  if (error?.code === "IV001") {
     throw new IdentityVerificationSessionError("This verification link is unavailable or has expired.", "IDENTITY_VERIFICATION_LINK_INVALID", 400, managementToken);
+  }
+  if (error?.code === "IV003") {
+    throw new IdentityVerificationSessionError("Verification is temporarily unavailable. Please try again later.", "IDENTITY_VERIFICATION_CONFIGURATION_INVALID", 503, managementToken);
+  }
+  if (error?.code === "IV002") {
+    throw new IdentityVerificationSessionError("This verification cannot continue in its current state. Use its management link or start a new check from your dashboard.", "IDENTITY_VERIFICATION_STATE_CONFLICT", 409, managementToken);
   }
   throw new IdentityVerificationSessionError("We could not complete identity verification. Please try again.", fallback, 503, managementToken);
 }
 
-async function attachCandidatePhotoSession(input: {
+async function attachCandidateSession(input: {
   repository: IdentityVerificationSessionRepository;
   prepared: z.infer<typeof preparedCandidateSessionSchema>;
   managementTokenHash: string;
   callbackUrl: string;
   managementToken: string;
-  referenceSupabase?: SupabaseClient;
 }) {
-  const { data: source, error: downloadError } = await input.repository.downloadPhotoReference(
-    input.prepared.reference_storage_path,
-    input.referenceSupabase ?? createServiceRoleClient()
-  );
-  if (downloadError || !source) {
-    throw new IdentityVerificationSessionError(
-      "Add a current primary portfolio photo before starting verification.",
-      "IDENTITY_VERIFICATION_REFERENCE_UNAVAILABLE",
-      409,
-      input.managementToken
-    );
-  }
-
-  let reference;
-  try {
-    reference = await preparePhotoReference(Buffer.from(await source.arrayBuffer()));
-  } catch (error) {
-    const code = error instanceof PhotoReferenceError
-      ? error.message
-      : "IDENTITY_VERIFICATION_REFERENCE_UNAVAILABLE";
-    throw new IdentityVerificationSessionError(
-      "We could not prepare your primary photo for verification. Upload it again and retry.",
-      code,
-      409,
-      input.managementToken
-    );
-  }
-
   let didit;
   try {
-    const workflowId = process.env.DIDIT_WORKFLOW_ID?.trim() || "";
-    const workflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION);
-    const registration = await input.repository.registerPhotoProviderCreate(
+    const { workflowId, workflowVersion } = getCandidateVerificationConfig();
+    const registration = await input.repository.registerCandidateProviderCreate(
       input.prepared.attempt_id,
       workflowId,
       workflowVersion,
@@ -113,29 +86,28 @@ async function attachCandidatePhotoSession(input: {
       unavailableFromDatabase(
         registration.error,
         "IDENTITY_VERIFICATION_START_FAILED",
-        input.managementToken
+        input.managementToken,
+        "register_provider_create"
       );
     }
-    didit = await createDiditPhotoMatchSession({
+    didit = await createDiditLivenessSession({
       attemptId: input.prepared.attempt_id,
       providerSubjectRef: input.prepared.provider_subject_ref,
       callbackUrl: input.callbackUrl,
-      portraitImageBase64: reference.portraitImageBase64,
     });
   } catch (error) {
     if (error instanceof IdentityVerificationSessionError) throw error;
     const code = error instanceof DiditProviderError ? error.code : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE";
     throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again.", code, 503, input.managementToken);
   }
-  const { error } = await input.repository.attachCandidatePhotoSession({
+  const { error } = await input.repository.attachCandidateSession({
     attemptId: input.prepared.attempt_id,
     providerSessionRef: didit.sessionId,
-    referenceSha256: reference.sourceSha256,
     workflowId: didit.workflowId,
     workflowVersion: didit.workflowVersion,
     managementTokenHash: input.managementTokenHash,
   });
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken);
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken, "attach_provider_session");
   return { url: didit.url };
 }
 
@@ -171,7 +143,6 @@ async function attachRepresentativeProviderSession(input: {
 /** Atomically authorizes, records consent, and starts one hosted Didit verification. */
 export async function startIdentityVerification(input: {
   supabase: SupabaseClient;
-  referenceSupabase?: SupabaseClient;
   candidateId: string | null;
   invitationTokenHash: string | null;
   managementToken: string;
@@ -180,14 +151,13 @@ export async function startIdentityVerification(input: {
 }) {
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.begin(input.candidateId, input.invitationTokenHash, input.managementTokenHash);
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED");
-  return attachCandidatePhotoSession({
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", undefined, "begin_candidate_liveness");
+  return attachCandidateSession({
     repository,
     prepared: preparedCandidateSession(data),
     managementTokenHash: input.managementTokenHash,
     callbackUrl: input.callbackUrl,
     managementToken: input.managementToken,
-    referenceSupabase: input.referenceSupabase,
   });
 }
 
@@ -257,13 +227,12 @@ export async function getIdentityVerificationLinkStatus(supabase: SupabaseClient
 /** Revokes VivIntro's verification projection immediately after one valid withdrawal request. */
 export async function withdrawIdentityVerificationConsent(supabase: SupabaseClient, tokenHash: string) {
   const { error } = await new IdentityVerificationSessionRepository(supabase).withdrawConsent(tokenHash);
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_WITHDRAW_FAILED");
+  if (error) unavailableFromDatabase(error.code === "22023" ? { code: "IV001" } : error, "IDENTITY_VERIFICATION_WITHDRAW_FAILED");
 }
 
 /** Creates a fresh attempt from an unwithdrawn consent record and starts the hosted flow again. */
 export async function retryIdentityVerification(input: {
   supabase: SupabaseClient;
-  referenceSupabase?: SupabaseClient;
   tokenHash: string;
   managementToken: string;
   managementTokenHash: string;
@@ -271,13 +240,12 @@ export async function retryIdentityVerification(input: {
 }) {
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.retry(input.tokenHash, input.managementTokenHash);
-  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_RETRY_FAILED");
-  return attachCandidatePhotoSession({
+  if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_RETRY_FAILED", undefined, "retry_candidate_liveness");
+  return attachCandidateSession({
     repository,
     prepared: preparedCandidateSession(data),
     managementTokenHash: input.managementTokenHash,
     callbackUrl: input.callbackUrl,
     managementToken: input.managementToken,
-    referenceSupabase: input.referenceSupabase,
   });
 }

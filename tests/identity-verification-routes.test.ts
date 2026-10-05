@@ -78,7 +78,7 @@ describe("identity-verification API routes", () => {
   });
 
   it("rejects an old invitation token even when explicit consent is supplied", async () => {
-    const response = await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: true }));
+    const response = await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: true, consentVersion: "2026-10-03-liveness-ip" }));
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({ code: "PILOT_SELF_VERIFICATION_ONLY" });
     expect(startVerification).not.toHaveBeenCalled();
@@ -87,13 +87,24 @@ describe("identity-verification API routes", () => {
     expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "invitation", token: "valid-token", consent: false }))).status).toBe(400);
   });
 
+  it("rejects stale consent from an old photo-workflow client before any verification work", async () => {
+    expect((await startRoute(request("http://local/api/identity-verification/start", {
+      authorization: "invitation", token: "valid-token", consent: true,
+    }))).status).toBe(400);
+    expect((await retryRoute(request("http://local/api/identity-verification/retry", {
+      token: "valid-token", consent: true, consentVersion: "old-photo-consent",
+    }))).status).toBe(400);
+    expect(startVerification).not.toHaveBeenCalled();
+    expect(retryVerification).not.toHaveBeenCalled();
+  });
+
   it("uses authenticated primary-owner flow for self verification and fails closed for cross-site/rate-limited calls", async () => {
-    const self = await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true }));
+    const self = await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true, consentVersion: "2026-10-03-liveness-ip" }));
     expect(self.status).toBe(200);
     expect(startVerification).toHaveBeenCalledWith(expect.objectContaining({ candidateId: "11111111-1111-4111-8111-111111111111", invitationTokenHash: null, supabase }));
-    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true }, "https://attacker.test"))).status).toBe(403);
+    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true, consentVersion: "2026-10-03-liveness-ip" }, "https://attacker.test"))).status).toBe(403);
     enforceRateLimit.mockResolvedValueOnce(new Response(null, { status: 429 }));
-    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true }))).status).toBe(429);
+    expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true, consentVersion: "2026-10-03-liveness-ip" }))).status).toBe(429);
   });
 
   it("returns generic link state, supports one withdrawal, and protects both calls", async () => {
@@ -109,7 +120,7 @@ describe("identity-verification API routes", () => {
   });
 
   it("retries only from an opaque management token and returns a replacement link", async () => {
-    const response = await retryRoute(request("http://local/api/identity-verification/retry", { token: "valid-token" }));
+    const response = await retryRoute(request("http://local/api/identity-verification/retry", { token: "valid-token", consent: true, consentVersion: "2026-10-03-liveness-ip" }));
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ url: "https://verify.didit.test/retry", managementUrl: "http://local/verify/generated-token" });
     expect(retryVerification).toHaveBeenCalledWith(expect.objectContaining({ tokenHash: "valid-token-hash", managementTokenHash: "generated-token-hash" }));

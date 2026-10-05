@@ -16,6 +16,7 @@ describe("completed-portfolio feedback", () => {
     render(<CreatorOnboardingFeedback />);
 
     expect(screen.getByText(/private and never appears on your portfolio/i)).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Liveness and IP checks" })).toBeInTheDocument();
     const submit = screen.getByRole("button", { name: "Send feedback" });
     expect(submit).toBeDisabled();
     await user.click(screen.getByRole("radio", { name: "4" }));

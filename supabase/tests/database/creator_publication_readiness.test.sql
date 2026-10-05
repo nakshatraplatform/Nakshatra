@@ -125,7 +125,7 @@ join public.portfolio_media media on media.portfolio_id=portfolio.id and media.m
 where subject.candidate_id='a3000000-0000-4000-8000-000000000001';
 update app_private.identity_verification_subjects subject set
   status='verified',verified_at=now(),expires_at=now()+interval '365 days',
-  current_proof_method='portfolio_photo_liveness',
+  current_proof_method='candidate_liveness_ip',current_liveness_verified=true,current_ip_verified=true,
   current_proof_attempt_id='a5000000-0000-4000-8000-000000000001',
   current_proof_portfolio_id=portfolio.id,current_proof_media_id=media.id,
   current_proof_sha256=repeat('d',64),

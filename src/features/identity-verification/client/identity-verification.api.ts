@@ -1,3 +1,4 @@
+import { candidateVerificationConsentVersion } from "@/features/identity-verification/identity-verification.types";
 export type IdentityVerificationApiFailure = { ok: false; code: string; message: string; status: number; managementUrl?: string };
 export type IdentityVerificationApiResult<T> = { ok: true; data: T } | IdentityVerificationApiFailure;
 export type HostedIdentityVerification = { url: string; managementUrl: string };
@@ -37,7 +38,7 @@ export function startInvitationIdentityVerificationRequest(token: string) {
   return identityVerificationRequest<HostedIdentityVerification>("/api/identity-verification/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ authorization: "invitation", token, consent: true }),
+    body: JSON.stringify({ authorization: "invitation", token, consent: true, consentVersion: candidateVerificationConsentVersion }),
   });
 }
 
@@ -46,7 +47,7 @@ export function startSelfIdentityVerificationRequest(candidateId: string) {
   return identityVerificationRequest<HostedIdentityVerification>("/api/identity-verification/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ authorization: "self", candidateId, consent: true }),
+    body: JSON.stringify({ authorization: "self", candidateId, consent: true, consentVersion: candidateVerificationConsentVersion }),
   });
 }
 
@@ -63,7 +64,7 @@ export function retryIdentityVerificationRequest(token: string) {
   return identityVerificationRequest<HostedIdentityVerification>("/api/identity-verification/retry", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, consent: true, consentVersion: candidateVerificationConsentVersion }),
   });
 }
 

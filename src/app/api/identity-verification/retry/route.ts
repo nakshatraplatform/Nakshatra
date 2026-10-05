@@ -1,3 +1,4 @@
+import { candidateVerificationConsentVersion } from "@/features/identity-verification/identity-verification.types";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { createIdentityVerificationToken, hashIdentityVerificationToken, isIdentityVerificationToken } from "@/features/identity-verification/server/identity-verification.tokens";
@@ -7,7 +8,7 @@ import { AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSam
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
 import { createClient } from "@/lib/supabase/server";
 
-const retrySchema = z.object({ token: z.string().refine(isIdentityVerificationToken, "Invalid verification token") }).strict();
+const retrySchema = z.object({ token: z.string().refine(isIdentityVerificationToken, "Invalid verification token"), consent: z.literal(true), consentVersion: z.literal(candidateVerificationConsentVersion) }).strict();
 const noStore = { "Cache-Control": "private, no-store" };
 
 /** Starts a fresh hosted session only from a valid, unwithdrawn management link. */
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     const parsed = retrySchema.safeParse(await readJsonBody(request, AUTH_BODY_LIMIT));
     if (!parsed.success) {
       return NextResponse.json(
-        { code: "IDENTITY_VERIFICATION_LINK_INVALID", error: "This verification link is unavailable or has expired." },
+        { code: "IDENTITY_VERIFICATION_CONSENT_REQUIRED", error: "Use a valid management link and accept the liveness and IP notice before retrying." },
         { status: 400, headers: noStore }
       );
     }
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && "code" in error && "status" in error) {
       const known = error as IdentityVerificationSessionError;
-      return NextResponse.json({ code: known.code, error: known.message }, { status: known.status, headers: noStore });
+      return NextResponse.json({ code: known.code, error: known.message, ...(known.managementToken ? { managementUrl: createCanonicalAppUrl(`/verify/${known.managementToken}`, request.url) } : {}) }, { status: known.status, headers: noStore });
     }
     if (error instanceof Error) {
       const response = requestSecurityErrorResponse(error);
