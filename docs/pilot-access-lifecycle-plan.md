@@ -1,5 +1,11 @@
 # Pilot Access Lifecycle Implementation Plan
 
+## 2026-10-04 open-onboarding decision
+
+The product owner superseded the invite-only launch flow. New visitors can sign up with email/password or Google, confirm their email, and create a private, self-owned portfolio without a waitlist or creator invitation. Publication still requires the existing content, disclosure, and live-photo/liveness gates (apart from a separately authorized test exception). Waitlist and invitation records remain historical private data; their public write surfaces are retired. The sole active Production pilot administrator is `nakshatra.platform@gmail.com`; Rahul's admin grant was soft-revoked on 2026-10-04. Optional private feedback is requested after portfolio details are complete. See [open creator onboarding](engineering-loop/features/open-creator-onboarding.md) for the current implementation and release contract.
+
+The 2026-09-12 decision and older phases below are historical, not active rules.
+
 ## 2026-09-12 superseding waitlist decision
 
 The self-service pilot application and approval model below is retained as historical context but is no longer the active launch contract. Until public launch:

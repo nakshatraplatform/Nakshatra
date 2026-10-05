@@ -157,11 +157,11 @@ describe("dashboard client", () => {
     expect(screen.queryByRole("heading", { name: "Introductions and access" })).not.toBeInTheDocument();
   });
 
-  it("shows a clear pilot-operations entry only to database-authorized administrators", () => {
+  it("shows onboarding insights only to database-authorized administrators", () => {
     const { rerender } = renderDashboard({ pilotAccessState: { canCreatePortfolio: true, isPilotAdministrator: true, application: null } });
-    expect(screen.getByRole("link", { name: "Manage pilot access" })).toHaveAttribute("href", "/admin/pilot-access");
+    expect(screen.getByRole("link", { name: "View feedback" })).toHaveAttribute("href", "/admin/onboarding-feedback");
     rerender(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com" canCreatePortfolio shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]} mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} pilotAccessState={{ canCreatePortfolio: true, isPilotAdministrator: false, application: null }} />);
-    expect(screen.queryByRole("link", { name: "Manage pilot access" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "View feedback" })).not.toBeInTheDocument();
   });
 
   it("shows identity-verification actions only after a saved candidate is linked", () => {
@@ -880,7 +880,7 @@ describe("dashboard client", () => {
     );
   });
 
-  it("shows the private-beta boundary without creator controls for non-invited accounts", () => {
+  it("fails safely when account setup has not become available", () => {
     renderDashboard({
       portfolio: null,
       canCreatePortfolio: false,
@@ -889,9 +889,9 @@ describe("dashboard client", () => {
       viewCount: 0,
     });
 
-    expect(screen.getByText("Private beta testing")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Portfolio creation is currently invite-only." })).toBeInTheDocument();
-    expect(screen.getByText(/continue using portfolio links shared with you/i)).toBeInTheDocument();
+    expect(screen.getByText("Account setup")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your portfolio is not ready to start yet." })).toBeInTheDocument();
+    expect(screen.getByText(/shared-link access remain available/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /start with the basics/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edit portfolio/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /interests to review/i })).not.toBeInTheDocument();

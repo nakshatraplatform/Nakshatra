@@ -371,9 +371,8 @@ describe("static app surfaces", () => {
     ]));
   });
 
-  it("renders the invitation route for signed-out visitors", async () => {
-    render(await WaitlistPage());
-    expect(screen.getByTestId("pilot-access-props")).toHaveTextContent('"initialStep":"identify"');
+  it("redirects old waitlist bookmarks to open signup", () => {
+    expect(() => WaitlistPage()).toThrow("REDIRECT:/signup");
   });
 
   it("renders auth pages, layout, and loading states", async () => {
@@ -381,7 +380,8 @@ describe("static app surfaces", () => {
     expect(layout.props.lang).toBe("en");
     const { rerender } = render(await LoginPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText("auth:login")).toBeInTheDocument();
-    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/waitlist");
+    rerender(await SignupPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText("auth:signup")).toBeInTheDocument();
     rerender(<DashboardLoading />);
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
     rerender(<EditLoading />);
@@ -393,7 +393,7 @@ describe("static app surfaces", () => {
   it("redirects a live authenticated session away from login and signup", async () => {
     mocks.apiAuthStatus = "authenticated";
     await expect(LoginPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
-    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/waitlist");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("REDIRECT:/dashboard");
     await expect(SignupPage({ searchParams: Promise.resolve({ redirect: `/invite/${"A".repeat(43)}` }) })).rejects.toThrow(`REDIRECT:/invite/${"A".repeat(43)}`);
   });
 

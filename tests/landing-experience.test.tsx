@@ -9,7 +9,7 @@ describe("LandingExperience consent-led messaging", () => {
     render(<LandingExperience variant="clarity" />);
     expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
     expect(document.querySelector("#top")).toHaveTextContent(/one marriage introduction link instead of another PDF/i);
-    expect(document.querySelector("#top")).toHaveTextContent(/free during the private pilot/i);
+    expect(document.querySelector("#top")).toHaveTextContent(/free to create/i);
     expect(document.body).toHaveTextContent(/public Introduction can be forwarded or captured/i);
     expect(screen.getByRole("heading", { name: /share the introduction.*decide on the rest/i })).toBeInTheDocument();
     expect(document.querySelector("#privacy")).toHaveTextContent(/a shared link can be forwarded/i);
@@ -23,7 +23,7 @@ describe("LandingExperience consent-led messaging", () => {
   it("connects every promise to a real route", () => {
     render(<LandingExperience variant="clarity" />);
     expect(screen.getAllByRole("link", { name: /view.*sample introduction/i })[0]).toHaveAttribute("href", "/demo");
-    for (const link of screen.getAllByRole("link", { name: /request an invitation/i })) expect(link).toHaveAttribute("href", "/waitlist");
+    for (const link of screen.getAllByRole("link", { name: /create your portfolio/i })) expect(link).toHaveAttribute("href", "/signup");
     for (const link of screen.getAllByRole("link", { name: /read the viewer guide/i })) expect(link).toHaveAttribute("href", "/received-a-link");
   });
 
@@ -49,7 +49,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/broker-sponsored actions have no separate VivIntro charge for customers/i);
     expect(document.body).toHaveTextContent(/no paid creator plan yet/i);
     expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
-    expect(document.body).toHaveTextContent(/creating an Introduction becomes available only after an invitation is issued/i);
+    expect(document.body).toHaveTextContent(/confirm your email, and begin a private portfolio/i);
   });
 
   it("makes trust and FAQ answers expandable without hiding their questions", () => {

@@ -254,7 +254,7 @@ describe("portfolio lifecycle services", () => {
     });
     await expect(
       publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft })
-    ).rejects.toMatchObject({ code: "PILOT_INVITATION_REQUIRED", status: 403 });
+    ).rejects.toMatchObject({ code: "CREATOR_ACCOUNT_REQUIRED", status: 403 });
 
     repository.publishPortfolioTransaction.mockResolvedValue({
       data: { status: "verification_required" },

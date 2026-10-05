@@ -190,8 +190,8 @@ export async function publishPortfolio({
   }
   if (transaction.data.status === "creator_entitlement_required") {
     throw new PortfolioPublishError(
-      "Portfolio creation is currently available only to invited beta participants.",
-      "PILOT_INVITATION_REQUIRED",
+      "A confirmed creator account is required to publish a portfolio.",
+      "CREATOR_ACCOUNT_REQUIRED",
       403
     );
   }

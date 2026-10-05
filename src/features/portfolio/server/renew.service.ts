@@ -37,8 +37,8 @@ export async function renewPortfolioLink({
   }
   if (result.data.status === "creator_entitlement_required") {
     throw new PortfolioRenewalError(
-      "Portfolio creation is currently available only to invited beta participants.",
-      "PILOT_INVITATION_REQUIRED",
+      "A confirmed creator account is required to reactivate a portfolio link.",
+      "CREATOR_ACCOUNT_REQUIRED",
       403
     );
   }

@@ -16,7 +16,7 @@ import { DashboardRepository } from "./dashboard.repository";
 export type DashboardSaveErrorCode =
   | "DASHBOARD_DATABASE_UPDATE_REQUIRED"
   | "DASHBOARD_DATA_REJECTED"
-  | "PILOT_INVITATION_REQUIRED"
+  | "CREATOR_ACCOUNT_REQUIRED"
   | "PILOT_SELF_PORTFOLIO_REQUIRED"
   | "DASHBOARD_SAVE_FAILED";
 
@@ -103,8 +103,8 @@ export async function saveDashboardDraft({
     (result as { status?: unknown }).status === "creator_entitlement_required"
   ) {
     throw new DashboardSaveError(
-      "Portfolio creation is currently available only to invited beta participants.",
-      "PILOT_INVITATION_REQUIRED",
+      "A confirmed creator account is required to edit a portfolio.",
+      "CREATOR_ACCOUNT_REQUIRED",
       403
     );
   }

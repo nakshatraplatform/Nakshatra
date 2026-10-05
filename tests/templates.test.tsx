@@ -273,7 +273,7 @@ describe("celestial union portfolio", () => {
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Request an invitation" })).toHaveAttribute("href", "/waitlist");
+    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
   });
 
   it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
@@ -286,10 +286,10 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Want to share an introduction with this level of care?" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Request an invitation" })).toHaveAttribute("href", "/waitlist");
+    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
 
     rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
-    expect(screen.queryByRole("link", { name: "Request an invitation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();
   });
 
   it("links protected chapters to the interest action and explains the disclosure bundle", () => {

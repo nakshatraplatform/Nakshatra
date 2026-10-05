@@ -20,8 +20,8 @@ export function PolicyLayout({
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <VivIntroBrand href="/" variant="horizontal" priority />
           <div className="app-header-actions"><ThemeSwitch />
-          <Link href="/waitlist" className="workspace-focus inline-flex min-h-12 items-center rounded-lg bg-[color:var(--workspace-action)] px-4 text-sm font-semibold text-white">
-            Request invitation
+          <Link href="/signup" className="workspace-focus inline-flex min-h-12 items-center rounded-lg bg-[color:var(--workspace-action)] px-4 text-sm font-semibold text-white">
+            Create an account
           </Link></div>
         </div>
       </header>

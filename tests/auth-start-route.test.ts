@@ -4,11 +4,9 @@ const createClient = vi.hoisted(() => vi.fn());
 const consumeRateLimit = vi.hoisted(() => vi.fn());
 const logServerError = vi.hoisted(() => vi.fn());
 const ensureOwnerPortfolio = vi.hoisted(() => vi.fn());
-const isCreatorInvitationValid = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 vi.mock("@/features/auth/server/portfolio-bootstrap", () => ({ ensureOwnerPortfolio }));
-vi.mock("@/features/pilot-access/server/creator-invitations.service", () => ({ isCreatorInvitationValid }));
 vi.mock("@/features/security/server/rate-limit.service", async () => {
   const actual = await vi.importActual<typeof import("../src/features/security/server/rate-limit.service")>(
     "../src/features/security/server/rate-limit.service"
@@ -58,7 +56,6 @@ describe("authentication start route", () => {
     resend.mockResolvedValue({ error: null });
     resetPasswordForEmail.mockResolvedValue({ error: null });
     ensureOwnerPortfolio.mockResolvedValue("portfolio-id");
-    isCreatorInvitationValid.mockResolvedValue(false);
   });
 
   const canonicalOrigin = () => process.env.NEXT_PUBLIC_APP_URL
@@ -93,21 +90,14 @@ describe("authentication start route", () => {
     });
   });
 
-  it("starts pilot OTP verification with a fixed applicant continuation", async () => {
+  it("retires the waitlist-specific OTP entry point", async () => {
     const response = await POST(request({
       method: "pilot_access_otp",
       email: "Applicant@Example.com",
       redirect: "/dashboard",
     }));
-    expect(response.status).toBe(200);
-    expect(signInWithOtp).toHaveBeenCalledWith({
-      email: "applicant@example.com",
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${canonicalOrigin()}/api/auth/callback?next=%2Fwaitlist`,
-        data: { entry_context: "pilot_applicant" },
-      },
-    });
+    expect(response.status).toBe(400);
+    expect(signInWithOtp).not.toHaveBeenCalled();
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
@@ -134,20 +124,20 @@ describe("authentication start route", () => {
     expect(logServerError).not.toHaveBeenCalled();
   });
 
-  it("keeps public B2C password signup closed", async () => {
+  it("lets a new creator sign up without an invitation", async () => {
     const response = await POST(request({
       method: "password_signup",
       email: "Owner@Example.com",
       password: "strong-pass-1",
-      redirect: "/edit",
+      redirect: "/dashboard",
     }));
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toMatchObject({ code: "SIGNUP_CLOSED" });
-    expect(signUp).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ verificationRequired: true });
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ email: "owner@example.com" }));
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
-  it("does not provision a portfolio through a direct public signup request", async () => {
+  it("does not silently create a portfolio for a viewer destination", async () => {
     signUp.mockResolvedValueOnce({
       data: { user: { id: "new-owner" }, session: { access_token: "token" } },
       error: null,
@@ -156,14 +146,13 @@ describe("authentication start route", () => {
       method: "password_signup",
       email: "owner@example.com",
       password: "strong-pass-1",
-      redirect: "/edit",
+      redirect: "/p/shared-token",
     }));
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(200);
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
-  it("permits password signup only for an explicitly invited B2C email", async () => {
-    isCreatorInvitationValid.mockResolvedValueOnce(true);
+  it("continues an older invitation link without depending on its entitlement", async () => {
     const response = await POST(request({
       method: "password_signup",
       email: "Invited@Example.com",
@@ -171,7 +160,6 @@ describe("authentication start route", () => {
       redirect: `/invite/${"A".repeat(43)}`,
     }));
     expect(response.status).toBe(200);
-    expect(isCreatorInvitationValid).toHaveBeenCalledWith("invited@example.com", "A".repeat(43));
     expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
       email: "invited@example.com",
       options: expect.objectContaining({ data: { entry_context: "portfolio_owner" } }),

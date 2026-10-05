@@ -15,6 +15,7 @@ export default function PrivacyPage() {
       <PolicySection title="Information you provide">
         <p>Depending on what you choose to complete, VivIntro may store identity and contact details, education and work information, family background, lifestyle and partner preferences, astrology details, photos, and an optional horoscope document.</p>
         <p>We use this information to save your private draft, create your public Introduction and approval-only Complete Portfolio, operate sharing controls, and maintain your account.</p>
+        <p>After completing your portfolio details, you may optionally rate the onboarding experience, choose the step you found hardest, and leave a short comment. This feedback is kept separate from your portfolio, is never shown to viewers, and is available only to the VivIntro platform administrator to improve onboarding.</p>
       </PolicySection>
 
       <PolicySection title="Public, approved, and private information">
@@ -45,7 +46,7 @@ export default function PrivacyPage() {
         <p>VivIntro is intended for adults aged 18 and over. Do not upload another person&apos;s private information or documents unless you have their permission and are authorized to manage the introduction.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 3, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 4, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }

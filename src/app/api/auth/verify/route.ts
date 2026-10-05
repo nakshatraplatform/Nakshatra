@@ -10,11 +10,11 @@ import {
   requireSameOrigin,
 } from "@/lib/api/request-security";
 import { getRequestId, logServerError } from "@/lib/security/logging";
-import { isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
+import { isOwnerDashboardAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
 import { createClient } from "@/lib/supabase/server";
 
 const verificationSchema = z.object({
-  purpose: z.enum(["owner_signup", "viewer_interest", "pilot_access"]),
+  purpose: z.enum(["owner_signup", "viewer_interest"]),
   email: z.string().trim().email().max(180),
   token: z.string().trim().regex(/^\d{6}$/),
   redirect: z.string().max(500).optional(),
@@ -58,10 +58,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const redirect = parsed.data.purpose === "pilot_access"
-      ? "/waitlist"
-      : sanitizeInternalRedirect(parsed.data.redirect);
-    if (parsed.data.purpose === "owner_signup" && !isBrokerdeskAuthRedirect(redirect)) {
+    const redirect = sanitizeInternalRedirect(parsed.data.redirect);
+    if (parsed.data.purpose === "owner_signup" && isOwnerDashboardAuthRedirect(redirect)) {
       await ensureOwnerPortfolio(supabase, data.user.id);
     }
 

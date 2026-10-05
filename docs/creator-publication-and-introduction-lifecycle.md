@@ -11,7 +11,7 @@
 
 The dashboard presents one resumable journey:
 
-`Basics → Portfolio details → Preview → Ready to publish → Photo & liveness check → Pilot access → Disclosure → Published`
+`Sign up → Confirm account → Private portfolio draft → Preview → Complete required details → Photo & liveness check → Disclosure → Published → Optional onboarding feedback`
 
 - Draft answers are saved automatically after a short idle period and can still be saved manually.
 - `last_editor_section` is persisted independently from portfolio content so a returning creator resumes where they stopped.
@@ -25,10 +25,13 @@ primary photo. It does not request an identity document and must not be
 described as proof of legal identity or profile accuracy. Changing or deleting
 the matched primary photo invalidates the proof and requires a new check.
 
-Billing is deliberately deferred during the invite-only pilot. An active
-creator entitlement satisfies the temporary `Pilot access` readiness step;
-the system does not create a payment event or paid entitlement. Plan selection,
-payment-method collection, and the proposed one-month trial remain future work.
+Billing remains deferred. Any confirmed account can create its own private
+portfolio without a waitlist or invitation. Creator eligibility is separate
+from publication readiness: required content, current photo-bound liveness,
+and disclosure consent remain mandatory, except for a separately authorized
+account-specific test exemption. The system does not create a payment event or
+paid entitlement. Plan selection, payment-method collection, and the proposed
+one-month trial remain future work.
 
 ## Publication invariants
 
@@ -36,9 +39,9 @@ A publication transition succeeds only when all of the following are current for
 
 1. Required portfolio content and a shareable primary photo are present.
 2. The candidate has a current successful identity verification.
-3. During the pilot, the authenticated owner has an active creator entitlement.
-   After billing launches, this temporary condition must be replaced by the
-   approved trial/payment entitlement rule.
+3. The authenticated, confirmed owner created the portfolio for themself.
+   Creator signup is open; this does not grant operator access or allow a
+   viewer to see protected details without owner approval.
 4. The owner confirmed `publication-disclosure-v1` for the exact current draft fingerprint.
 
 The application service checks these rules for clear user feedback. A database trigger repeats them so direct client calls and future integration mistakes fail closed.
@@ -76,8 +79,8 @@ Run `enqueue_due_full_view_expiry_reminders()` from a service-role scheduler. De
 1. Apply migration `20260913120000_creator_publication_readiness.sql`.
 2. Configure the dedicated candidate photo-match workflow and validate signed
    Didit callbacks plus the recovery worker.
-3. Confirm that pilot creator entitlement, current photo-bound verification,
-   disclosure, and required content are all enforced server-side.
+3. Confirm that current photo-bound verification, disclosure, self-ownership,
+   and required content are all enforced server-side after open signup.
 4. Keep plan selection and payment routes deferred until the trial and billing
    design is approved.
 5. Configure a notification delivery worker and a recurring expiry-reminder scheduler.

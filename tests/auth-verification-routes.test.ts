@@ -81,15 +81,14 @@ describe("authentication verification routes", () => {
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
-  it("verifies a pilot applicant without creating a portfolio or accepting another redirect", async () => {
+  it("rejects the retired waitlist OTP purpose", async () => {
     const response = await verifyPost(request("/api/auth/verify", {
       purpose: "pilot_access",
       email: "reader@example.com",
       token: "123456",
       redirect: "/dashboard",
     }));
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ redirect: "/waitlist" });
+    expect(response.status).toBe(400);
     expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
@@ -105,7 +104,7 @@ describe("authentication verification routes", () => {
       purpose: "owner_signup",
       email: "owner@example.com",
       token: "654321",
-      redirect: "/edit",
+      redirect: "/dashboard",
     }));
     expect(response.status).toBe(200);
     expect(verifyOtp).toHaveBeenCalledWith(expect.objectContaining({ type: "signup" }));
@@ -143,7 +142,7 @@ describe("authentication verification routes", () => {
       purpose: "owner_signup",
       email: "owner@example.com",
       token: "654321",
-      redirect: "/edit",
+      redirect: "/dashboard",
     }));
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({ code: "OTP_VERIFY_FAILED" });
