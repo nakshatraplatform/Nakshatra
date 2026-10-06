@@ -168,6 +168,7 @@ export default function DashboardClient({
     && portfolio?.published_data?.personal?.profile_for === "self";
   const publicShareReady = selfCreatedPortfolio
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
+  const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
   const pendingInterestCount = interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
@@ -689,10 +690,12 @@ export default function DashboardClient({
                   : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Active access</span></div>
+                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Current approvals</span></div>
                 <p className="dashboard-stat-value">{activeAccessCount}</p>
                 {activeAccessCount > 0
-                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
+                  ? viewerAccessAvailable
+                    ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
+                    : <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Viewing unavailable · Manage</a>
                   : <span className="dashboard-stat-caption">No current grants</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
@@ -785,6 +788,7 @@ export default function DashboardClient({
             onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
             interests={interestItems}
             grants={accessGrants}
+            viewerAccessAvailable={viewerAccessAvailable}
             events={accessEvents}
             brokerResponses={brokerIntroductionResponses}
             disclosedCategories={disclosedCategories}
@@ -1321,6 +1325,7 @@ function RelationshipLifecycle({
   onToggleStage,
   interests,
   grants,
+  viewerAccessAvailable,
   events,
   brokerResponses,
   disclosedCategories,
@@ -1331,6 +1336,7 @@ function RelationshipLifecycle({
   onToggleStage: (stage: RelationshipStage) => void;
   interests: DashboardInterest[];
   grants: AccessGrant[];
+  viewerAccessAvailable: boolean;
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
   disclosedCategories: string[];
@@ -1499,7 +1505,7 @@ function RelationshipLifecycle({
     : listModal === "set-aside"
       ? "Requests set aside"
       : listModal === "access"
-        ? "Active Complete Portfolio access"
+        ? "Current Complete Portfolio approvals"
         : "Relationship history";
 
   return (
@@ -1545,16 +1551,16 @@ function RelationshipLifecycle({
 
       <CompactRelationshipStage
         stage="access"
-        title="Complete Portfolio access"
-        description="Active viewers who can currently open protected details."
+        title="Complete Portfolio approvals"
+        description={viewerAccessAvailable ? "Approved viewers can open protected details until their grants end." : "Existing approvals remain on record, but viewers cannot open protected details while the Introduction is unavailable."}
         count={activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
         onToggle={() => onToggleStage("access")}
         onViewAll={() => openList("access")}
-        empty="Nobody currently has Complete Portfolio access."
+        empty="No current approvals."
       >
         {activeGrants.slice(0, 3).map((grant) => (
-          <GrantSummaryCard key={grant.id} grant={grant} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
+          <GrantSummaryCard key={grant.id} grant={grant} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
         ))}
       </CompactRelationshipStage>
 
@@ -1579,7 +1585,7 @@ function RelationshipLifecycle({
                 <option value="broker">Broker introductions</option>
                 <option value="verified">Verified email</option>
                 <option value="pending">Pending review</option>
-                <option value="active">Active access</option>
+                <option value="active">Current approvals</option>
                 <option value="ended">Ended access</option>
               </select>
             </label>
@@ -1588,7 +1594,7 @@ function RelationshipLifecycle({
             {visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
               <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
             ) : record.kind === "grant" ? (
-              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} onPrimary={() => setRecordDetail(record)} />
+              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
             ) : (
               <BrokerResponseSummaryCard key={record.item.introductionRef} response={record.item} onPrimary={() => setRecordDetail(record)} />
             ))}
@@ -1614,7 +1620,7 @@ function RelationshipLifecycle({
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
-            <GrantDetail grant={recordDetail.item} events={events} />
+            <GrantDetail grant={recordDetail.item} events={events} viewerAccessAvailable={viewerAccessAvailable} />
           ) : (
             <BrokerResponseDetail response={recordDetail.item} />
           )}
@@ -1742,7 +1748,7 @@ function InterestSummaryCard({ interest, statusLabel, primaryLabel, onPrimary, d
   );
 }
 
-function GrantSummaryCard({ grant, onPrimary }: { grant: AccessGrant; onPrimary: () => void }) {
+function GrantSummaryCard({ grant, viewerAccessAvailable, onPrimary }: { grant: AccessGrant; viewerAccessAvailable: boolean; onPrimary: () => void }) {
   const urgent = grant.status === "active" && daysUntil(grant.expiresAt) <= 3;
   const sourceType = grant.sourceType || "direct";
   return (
@@ -1750,9 +1756,9 @@ function GrantSummaryCard({ grant, onPrimary }: { grant: AccessGrant; onPrimary:
       <div className="dashboard-summary-main">
         <div className="dashboard-summary-heading"><strong>{grant.viewerName || "Verified viewer"}</strong><span className={`dashboard-source-tag is-${sourceType}`}>{sourceType === "broker" ? "Broker introduction" : "Direct introduction"}</span></div>
         <p>{grant.viewerEmail || "Verified viewer"}</p>
-        <p className="dashboard-message-preview">{grant.status === "active" ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Access ended"}</p>
+        <p className="dashboard-message-preview">{grant.status === "active" ? viewerAccessAvailable ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : `Viewing unavailable · Approval ends ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Access ended"}</p>
       </div>
-      <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{urgent ? "Expiring soon" : grant.status === "active" ? "Active" : grant.status === "expired" ? "Expired" : "Ended"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Manage</button></div>
+      <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{grant.status === "active" && !viewerAccessAvailable ? "Viewing unavailable" : urgent ? "Expiring soon" : grant.status === "active" ? "Active" : grant.status === "expired" ? "Expired" : "Ended"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Manage</button></div>
     </article>
   );
 }
@@ -1813,11 +1819,12 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
   );
 }
 
-function GrantDetail({ grant, events }: { grant: AccessGrant; events: AccessAuditEvent[] }) {
+function GrantDetail({ grant, events, viewerAccessAvailable }: { grant: AccessGrant; events: AccessAuditEvent[]; viewerAccessAvailable: boolean }) {
   const relatedEvents = events.filter((event) => !event.viewerName || event.viewerName === grant.viewerName).slice(0, 8);
   return (
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
+      {grant.status === "active" && !viewerAccessAvailable && <p>Approval remains on record, but this viewer cannot open the Complete Portfolio while your Introduction is unavailable.</p>}
       <dl className="dashboard-detail-grid">
         <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
         <div><dt>Access ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>

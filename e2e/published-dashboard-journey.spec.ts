@@ -55,7 +55,7 @@ test("published creator can understand sharing, requests, and Complete access", 
   await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Close details" }).click();
   await page.getByRole("link", { name: "Manage access" }).click();
   const access = page.locator('[data-stage="access"]');
-  await expect(access.getByRole("button", { name: /Complete Portfolio access/ })).toHaveAttribute("aria-expanded", "true");
+  await expect(access.getByRole("button", { name: /Complete Portfolio approvals/ })).toHaveAttribute("aria-expanded", "true");
   await access.getByRole("button", { name: "Manage" }).click();
   await expect(page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "End access" })).toBeVisible();
   await page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "Close details" }).click();

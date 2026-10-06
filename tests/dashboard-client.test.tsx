@@ -256,7 +256,7 @@ describe("dashboard client", () => {
     expect(metrics.children).toHaveLength(4);
     expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
-    expect(within(metrics).getByText("Active access")).toBeInTheDocument();
+    expect(within(metrics).getByText("Current approvals")).toBeInTheDocument();
     expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
     expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
@@ -393,6 +393,8 @@ describe("dashboard client", () => {
 
   it("lets the owner renew and revoke Complete Portfolio access", async () => {
     renderDashboard({
+      isExpired: false,
+      publicationReadiness: readyPublicationReadiness,
       accessSummary: {
         grants: [{
           id: accessGrantId,
@@ -415,7 +417,7 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Active access").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Manage access" })).toHaveAttribute("href", "#introductions-and-access");
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
@@ -430,6 +432,34 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
     fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
     expect(screen.getByText("Complete Portfolio access granted to Rohan Mehta")).toBeInTheDocument();
+  });
+
+  it("distinguishes an existing approval from currently available viewing", () => {
+    renderDashboard({
+      isExpired: false,
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required" },
+      accessSummary: {
+        grants: [{
+          id: accessGrantId,
+          interestRequestId: "22222222-2222-4222-8222-222222222222",
+          viewerName: "Rohan Mehta",
+          status: "active",
+          expiresAt: "2099-01-01T12:00:00.000Z",
+          renewedAt: null,
+          revokedAt: null,
+          lastAccessedAt: null,
+        }],
+        events: [],
+      },
+    });
+
+    const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
+    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByRole("link", { name: "Viewing unavailable · Manage" })).toHaveAttribute("href", "#introductions-and-access");
+    expect(screen.getByText("Viewing unavailable · Approval ends Jan 1, 2099")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
+    expect(screen.getByText(/Approval remains on record, but this viewer cannot open/)).toBeInTheDocument();
+    expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
   });
 
   it("updates, deletes, and uploads owner photos", async () => {
