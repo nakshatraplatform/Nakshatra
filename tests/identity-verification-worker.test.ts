@@ -23,7 +23,7 @@ const approvedDecision = {
 };
 
 function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
-  const rpc = vi.fn((name: string) => Promise.resolve(
+  const rpc = vi.fn((name: string): Promise<{ data: Array<Record<string, unknown>> | boolean | null; error: { code: string } | null }> => Promise.resolve(
     name === "claim_identity_verification_work" ? { data: claims, error: null } : { data: true, error: null }
   ));
   return { rpc, client: { rpc } };
@@ -31,6 +31,38 @@ function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
 
 describe("identity-verification worker", () => {
   afterEach(() => vi.unstubAllEnvs());
+
+  it("continues the batch when provider failure races with a retired candidate lease", async () => {
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);
+    const candidate = { ...claim, verification_method: "candidate_liveness_only", provider_workflow_id: workflowId, provider_workflow_version: 1, provider_vendor_data: "iv:fixture:attempt" };
+    const second = { ...candidate, attempt_id: "77777777-7777-4777-8777-777777777777" };
+    const { client, rpc } = workerClient([candidate, second]);
+    rpc.mockImplementation(async name => ({ data: name === "claim_identity_verification_work" ? [candidate, second] : name === "defer_identity_verification_work" ? false : true, error: null }));
+    const fetchImpl = vi.fn().mockRejectedValueOnce(new Error("provider timeout")).mockResolvedValueOnce(Response.json({ session_id: candidate.provider_session_ref, workflow_id: workflowId, workflow_version: 1, vendor_data: candidate.provider_vendor_data, status: "Approved", liveness_checks: [{ status: "Approved" }] }));
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl }).run(2)).resolves.toMatchObject({ completed: 2, deferred: 0 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not hide database errors when deferring a candidate failure", async () => {
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);
+    const candidate = { ...claim, verification_method: "candidate_liveness_only", provider_workflow_id: workflowId, provider_workflow_version: 1, provider_vendor_data: "iv:fixture:attempt" };
+    const { client, rpc } = workerClient([candidate]);
+    rpc.mockImplementation(async name => name === "defer_identity_verification_work" ? { data: null, error: { code: "08006" } } : { data: name === "claim_identity_verification_work" ? [candidate] : true, error: null });
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl: vi.fn().mockRejectedValue(new Error("provider timeout")) }).run(1)).rejects.toThrow("IDENTITY_VERIFICATION_DEFERRAL_FAILED");
+  });
+
+  it("does not raise cleanup alerts for a candidate lease retired during reconciliation", async () => {
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);
+    const candidate = { ...claim, verification_method: "candidate_liveness_only", provider_workflow_id: workflowId, provider_workflow_version: 1, provider_vendor_data: "iv:fixture:attempt" };
+    const { client, rpc } = workerClient([candidate]);
+    rpc.mockImplementation(async name => ({ data: name === "claim_identity_verification_work" ? [candidate] : name === "complete_identity_verification_reconciliation" ? false : true, error: null }));
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({ session_id: candidate.provider_session_ref, workflow_id: workflowId, workflow_version: 1, vendor_data: candidate.provider_vendor_data, status: "Approved", liveness_checks: [{ status: "Approved" }] }));
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
+    expect(rpc.mock.calls.some(([name]) => name === "defer_identity_verification_work")).toBe(false);
+  });
 
   it("reconciles a photo claim using the shared workflow environment settings", async () => {
     const workflowId = "66666666-6666-4666-8666-666666666666";
@@ -174,8 +206,9 @@ describe("identity-verification worker", () => {
     await expect(createIdentityVerificationWorker(unknown.client, {
       apiKey: "test-api-key",
       fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 404 })),
-    }).run(1)).resolves.toMatchObject({ completed: 0, deferred: 1 });
+    }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
     expect(unknown.rpc).not.toHaveBeenCalledWith("complete_identity_verification_provider_redaction", expect.anything());
+    expect(unknown.rpc).toHaveBeenCalledWith("complete_identity_verification_provider_absence", expect.objectContaining({ p_attempt_id: redaction.attempt_id }));
 
     const oldPhotoRedaction = {
       ...redaction,

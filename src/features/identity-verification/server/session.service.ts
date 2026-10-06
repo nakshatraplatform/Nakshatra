@@ -36,7 +36,7 @@ const linkStatusSchema = z.discriminatedUnion("kind", [
 export type IdentityVerificationLinkStatus = z.infer<typeof linkStatusSchema>;
 
 export class IdentityVerificationSessionError extends Error {
-  constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string) {
+  constructor(message: string, readonly code: string, readonly status: number, readonly managementToken?: string, readonly retryAfter?: number) {
     super(message);
   }
 }
@@ -49,7 +49,7 @@ function preparedCandidateSession(data: unknown) {
   return parsed.data;
 }
 
-function unavailableFromDatabase(error: { code?: string } | null, fallback: string, managementToken?: string, stage = "database"): never {
+function unavailableFromDatabase(error: { code?: string; details?: string } | null, fallback: string, managementToken?: string, stage = "database"): never {
   console.warn("identity_verification_failure", { stage, sqlstate: /^[A-Z0-9]{5}$/.test(error?.code ?? "") ? error?.code : "UNKNOWN" });
   if (error?.code === "42501") {
     throw new IdentityVerificationSessionError("This verification action is not available.", "IDENTITY_VERIFICATION_FORBIDDEN", 403, managementToken);
@@ -61,7 +61,11 @@ function unavailableFromDatabase(error: { code?: string } | null, fallback: stri
     throw new IdentityVerificationSessionError("Verification is temporarily unavailable. Please try again later.", "IDENTITY_VERIFICATION_CONFIGURATION_INVALID", 503, managementToken);
   }
   if (error?.code === "IV002") {
-    throw new IdentityVerificationSessionError("This verification cannot continue in its current state. Use its management link or start a new check from your dashboard.", "IDENTITY_VERIFICATION_STATE_CONFLICT", 409, managementToken);
+    throw new IdentityVerificationSessionError("An existing check needs your attention. Refresh your dashboard to resume it or cancel it before starting again.", "IDENTITY_VERIFICATION_STATE_CONFLICT", 409, managementToken);
+  }
+  if (error?.code === "IV004") {
+    const seconds = /^\d{1,4}$/.test(error.details ?? "") ? Math.min(3600, Math.max(1, Number(error.details))) : 3600;
+    throw new IdentityVerificationSessionError("You have reached the new-check limit. You can still resume or cancel an existing check.", "RATE_LIMITED", 429, managementToken, seconds);
   }
   throw new IdentityVerificationSessionError("We could not complete identity verification. Please try again.", fallback, 503, managementToken);
 }
@@ -108,7 +112,7 @@ async function attachCandidateSession(input: {
     managementTokenHash: input.managementTokenHash,
   });
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", input.managementToken, "attach_provider_session");
-  return { url: didit.url };
+  return { url: didit.url, attemptId: input.prepared.attempt_id };
 }
 
 async function attachRepresentativeProviderSession(input: {
@@ -149,6 +153,9 @@ export async function startIdentityVerification(input: {
   managementTokenHash: string;
   callbackUrl: string;
 }) {
+  try { getCandidateVerificationConfig(); } catch {
+    throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again later.", "IDENTITY_VERIFICATION_CONFIGURATION_INVALID", 503);
+  }
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.begin(input.candidateId, input.invitationTokenHash, input.managementTokenHash);
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_START_FAILED", undefined, "begin_candidate_liveness");
@@ -238,6 +245,9 @@ export async function retryIdentityVerification(input: {
   managementTokenHash: string;
   callbackUrl: string;
 }) {
+  try { getCandidateVerificationConfig(); } catch {
+    throw new IdentityVerificationSessionError("Identity verification is temporarily unavailable. Please try again.", "IDENTITY_VERIFICATION_CONFIGURATION_INVALID", 503);
+  }
   const repository = new IdentityVerificationSessionRepository(input.supabase);
   const { data, error } = await repository.retry(input.tokenHash, input.managementTokenHash);
   if (error) unavailableFromDatabase(error, "IDENTITY_VERIFICATION_RETRY_FAILED", undefined, "retry_candidate_liveness");

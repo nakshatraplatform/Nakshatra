@@ -155,6 +155,49 @@ export async function createDiditLivenessSession(input: {
   };
 }
 
+/** Retrieves an existing hosted capability transiently; never creates or persists it. */
+export async function retrieveDiditLivenessSession(input: {
+  sessionId: string; workflowId: string; workflowVersion: number; vendorData: string;
+}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DIDIT_TIMEOUT_MS);
+  try {
+    const response = await fetch(`https://verification.didit.me/v3/session/${encodeURIComponent(input.sessionId)}/decision/`, {
+      headers: { "x-api-key": getDiditConfigForKey().apiKey },
+      cache: "no-store", redirect: "error", signal: controller.signal,
+    });
+    if (!response.ok) throw new DiditProviderError(response.status === 429
+      ? "IDENTITY_VERIFICATION_PROVIDER_RATE_LIMITED" : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
+    const reader = response.body?.getReader();
+    if (!reader) throw new DiditProviderError();
+    let text = ""; let bytes = 0;
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > 262144) throw new DiditProviderError();
+        text += decoder.decode(value, { stream: true });
+      }
+      text += decoder.decode();
+    } finally { await reader.cancel(); }
+    const decision = z.object({ session_id: z.uuid(), workflow_id: z.uuid(), workflow_version: z.number().int().positive(),
+      vendor_data: z.string(), status: z.string(), session_url: z.string().optional() }).parse(JSON.parse(text));
+    if (decision.session_id !== input.sessionId || decision.workflow_id !== input.workflowId
+      || decision.workflow_version !== input.workflowVersion || decision.vendor_data !== input.vendorData) throw new DiditProviderError();
+    const status = decision.status.trim().toUpperCase().replace(/[\s-]+/g, "_");
+    if (["APPROVED", "DECLINED", "EXPIRED", "ABANDONED", "KYC_EXPIRED", "IN_REVIEW"].includes(status)) return { awaitingResult: true as const };
+    if (!["NOT_STARTED", "IN_PROGRESS", "CREATED"].includes(status)) throw new DiditProviderError();
+    const url = new URL(decision.session_url ?? "");
+    if (url.origin !== diditHostedOrigin || url.username || url.password) throw new DiditProviderError();
+    return { awaitingResult: false as const, url: url.href };
+  } catch (error) {
+    if (error instanceof DiditProviderError) throw error;
+    throw new DiditProviderError(controller.signal.aborted ? "IDENTITY_VERIFICATION_PROVIDER_TIMEOUT" : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
+  } finally { clearTimeout(timeout); }
+}
+
 /** Creates a Didit hosted session without retaining its session token or provider evidence. */
 export async function createDiditVerificationSession(input: {
   attemptId: string;

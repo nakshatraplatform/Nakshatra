@@ -132,11 +132,11 @@ set local role authenticated;
 select pg_temp.set_authenticated_claims(
   '91000000-0000-4000-8000-000000000002','91100000-0000-4000-8000-000000000002'
 );
-select lives_ok(
+select throws_ok(
   $$select * from public.begin_candidate_liveness_verification(
     '92000000-0000-4000-8000-000000000002',null,repeat('e',64)
   )$$,
-  'a creator can begin fresh verification after replacing the primary photo'
+  'IV002', null, 'changing the primary photo does not restart an already verified liveness proof'
 );
 select ok(
   not public.is_current_identity_reference_storage_object(
