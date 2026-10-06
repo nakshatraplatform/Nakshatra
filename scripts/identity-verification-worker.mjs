@@ -155,9 +155,11 @@ export function createIdentityVerificationWorker(supabase, {
     throw workerError("DIDIT_PROVIDER_UNAVAILABLE");
   }
 
-  async function rpcBoolean(name, args, code) {
+  async function rpcBoolean(name, args, code, allowStale = false) {
     const { data, error } = await supabase.rpc(name, args);
+    if (!error && data === false && allowStale) return false;
     if (error || data !== true) throw workerError(code);
+    return true;
   }
 
   async function fetchDecision(providerSessionRef) {
@@ -189,6 +191,7 @@ export function createIdentityVerificationWorker(supabase, {
         cache: "no-store",
         signal: controller.signal,
       });
+      if (response.status === 404) return "absent";
       if (response.status !== 200) throw workerError("DIDIT_SESSION_PURGE_FAILED");
       const deletion = await response.json();
       if (deletion?.session_id !== providerSessionRef
@@ -196,6 +199,7 @@ export function createIdentityVerificationWorker(supabase, {
         || deletion?.biometric_template_uuid != null) {
         throw workerError("DIDIT_SESSION_PURGE_FAILED");
       }
+      return "deleted";
     } catch {
       throw workerError("DIDIT_SESSION_PURGE_FAILED");
     } finally {
@@ -257,12 +261,12 @@ export function createIdentityVerificationWorker(supabase, {
   }
 
   async function defer(claim, errorCode) {
-    await rpcBoolean("defer_identity_verification_work", {
+    return rpcBoolean("defer_identity_verification_work", {
       p_attempt_id: claim.attempt_id,
       p_claim_token: claim.claim_token,
       p_error_code: errorCode,
       p_task_type: claim.task_type,
-    }, "IDENTITY_VERIFICATION_DEFERRAL_FAILED");
+    }, "IDENTITY_VERIFICATION_DEFERRAL_FAILED", claim.task_type === "reconcile" && claim.verification_method === "candidate_liveness_only");
   }
 
   async function process(claim) {
@@ -306,8 +310,8 @@ export function createIdentityVerificationWorker(supabase, {
       }
       if (!claim.provider_session_ref) throw workerError("DIDIT_SESSION_REFERENCE_MISSING");
       if (claim.task_type === "provider_redaction") {
-        await deleteSession(claim.provider_session_ref);
-        await rpcBoolean("complete_identity_verification_provider_redaction", {
+        const outcome = await deleteSession(claim.provider_session_ref);
+        await rpcBoolean(outcome === "absent" ? "complete_identity_verification_provider_absence" : "complete_identity_verification_provider_redaction", {
           p_attempt_id: claim.attempt_id,
           p_claim_token: claim.claim_token,
         }, "IDENTITY_VERIFICATION_REDACTION_COMPLETION_FAILED");
@@ -317,7 +321,7 @@ export function createIdentityVerificationWorker(supabase, {
 
       const decision = await fetchDecision(claim.provider_session_ref);
       const result = evaluateDiditDecision(decision, claim, identityMatchKey);
-      await rpcBoolean("complete_identity_verification_reconciliation", {
+      const applied = await rpcBoolean("complete_identity_verification_reconciliation", {
         p_attempt_id: claim.attempt_id,
         p_claim_token: claim.claim_token,
         p_outcome: result.outcome,
@@ -327,19 +331,25 @@ export function createIdentityVerificationWorker(supabase, {
         p_face_match_verified: result.faceMatchVerified,
         p_name_matches: result.nameMatches,
         p_birth_date_matches: result.birthDateMatches,
-      }, "IDENTITY_VERIFICATION_RECONCILIATION_COMPLETION_FAILED");
+      }, "IDENTITY_VERIFICATION_RECONCILIATION_COMPLETION_FAILED", claim.verification_method === "candidate_liveness_only");
+      // Cancellation/expiry can retire a lease during the provider request.
+      // A rejected stale result is a no-op, not an operational failure to retry.
+      if (!applied) return { status: "completed" };
       return { status: result.outcome === "pending" ? "pending" : "completed" };
     } catch (error) {
       const code = error instanceof Error && /^[A-Z_]{3,64}$/.test(error.message)
         ? error.message
         : "IDENTITY_VERIFICATION_PROCESSING_FAILED";
-      await defer(claim, code);
-      return { status: "deferred" };
+      const deferred = await defer(claim, code);
+      // Retired leases are harmless even when the outstanding provider call failed.
+      return { status: deferred ? "deferred" : "completed" };
     }
   }
 
   /** Claims a bounded batch and returns only aggregate, non-identifying execution counts. */
   async function run(limit) {
+    const expiry = await supabase.rpc("expire_candidate_liveness_attempts", { p_limit: limit });
+    if (expiry.error) throw workerError("IDENTITY_VERIFICATION_EXPIRY_FAILED");
     const { data: claims, error } = await supabase.rpc("claim_identity_verification_work", { p_limit: limit });
     if (error) throw workerError("IDENTITY_VERIFICATION_CLAIM_FAILED");
 

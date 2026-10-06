@@ -59,8 +59,9 @@ export async function POST(request: Request) {
     return response;
   }
   const supabase = auth.supabase;
-  const rateLimited = await enforceRateLimit(supabase, request, "identity_verification_start");
+  const rateLimited = await enforceRateLimit(supabase, request, "candidate_liveness_interaction");
   if (rateLimited) {
+    rateLimited.headers.set("X-RateLimit-Scope", "interaction");
     rateLimited.headers.set("Cache-Control", noStore["Cache-Control"]);
     return rateLimited;
   }
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       managementTokenHash: await hashIdentityVerificationToken(managementToken),
       callbackUrl: createCanonicalAppUrl("/verification/result", request.url),
     });
-    return NextResponse.json({ url: result.url, managementUrl: managementUrl(managementToken, request) }, { headers: noStore });
+    return NextResponse.json({ url: result.url, attemptId: result.attemptId, managementUrl: managementUrl(managementToken, request) }, { headers: noStore });
   } catch (error) {
     const known = error instanceof IdentityVerificationSessionError ? error : null;
     return NextResponse.json(
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
         error: known?.message || "We could not start identity verification. Please try again.",
         ...(known?.managementToken ? { managementUrl: managementUrl(known.managementToken, request) } : {}),
       },
-      { status: known?.status || 503, headers: noStore }
+      { status: known?.status || 503, headers: { ...noStore, ...(known?.retryAfter ? { "Retry-After": String(known.retryAfter), "X-RateLimit-Scope": "creation" } : {}) } }
     );
   }
 }
