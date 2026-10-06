@@ -19,7 +19,7 @@ describe("identity verification operations", () => {
     expect(jobEnvironment).not.toContain("secrets.");
     expect(workflow).toContain("secrets.DIDIT_API_KEY");
     expect(workflow.match(/DIDIT_WORKFLOW_ID: \$\{\{ secrets\.DIDIT_WORKFLOW_ID \}\}/g)).toHaveLength(2);
-    expect(workflow.match(/DIDIT_WORKFLOW_VERSION: \$\{\{ secrets\.DIDIT_WORKFLOW_VERSION \}\}/g)).toHaveLength(2);
+    expect(workflow).not.toContain("DIDIT_WORKFLOW_VERSION");
     expect(workflow).not.toContain("DIDIT_PHOTO_MATCH_WORKFLOW");
     expect(workflow).toContain("secrets.SUPABASE_SERVICE_ROLE_KEY");
     expect(workflow).toContain('url.hostname === process.env.EXPECTED_SUPABASE_HOST');

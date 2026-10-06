@@ -1,7 +1,8 @@
 # Didit liveness-only verification decision
 
-> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
-> requirement or face matching. See [NAK-60 liveness/IP contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+> Current candidate policy (2026-10-05): liveness only; no IP analysis, portfolio-photo
+> requirement or face matching. Workflow versions come from session responses, not env.
+> See [NAK-60 current contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
 
 
 Status: **approved product/privacy direction; implementation and provider

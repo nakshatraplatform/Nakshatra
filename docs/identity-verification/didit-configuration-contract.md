@@ -1,10 +1,11 @@
 # NAK-47 — Didit configuration and webhook compatibility
 
-> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
-> requirement or face matching. See [NAK-60 liveness/IP contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+> Current candidate policy (2026-10-05): liveness only; no IP analysis, portfolio-photo
+> requirement or face matching. Workflow versions come from session responses, not env.
+> See [NAK-60 current contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
 
 
-> Current pre-production naming (2026-10-02): candidate sessions and worker
+> Historical pre-production naming (2026-10-02): candidate sessions and worker
 > reconciliation use `DIDIT_WORKFLOW_ID` + `DIDIT_WORKFLOW_VERSION`; webhook
 > admission uses that same ID and `DIDIT_WEBHOOK_SECRET`. The original
 > three-setting contract below is historical. See the

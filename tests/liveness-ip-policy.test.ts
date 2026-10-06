@@ -52,7 +52,7 @@ describe("candidate liveness and IP policy", () => {
     const fetchImpl = vi.fn().mockImplementation(async () => Response.json(decision));
     const worker = createIdentityVerificationWorker({ rpc }, {
       apiKey: "test-key", candidateWorkflowId: claim.provider_workflow_id,
-      candidateWorkflowVersion: 1, fetchImpl,
+      fetchImpl,
     });
     const work = { ...claim, task_type: "reconcile", attempt_id: "attempt", claim_token: "lease" };
     expect(await worker.process(work)).toEqual({ status: "completed" });
@@ -61,7 +61,7 @@ describe("candidate liveness and IP policy", () => {
       p_id_verified: false, p_passive_liveness_verified: true, p_ip_verified: true,
       p_face_match_verified: false, p_name_matches: false, p_birth_date_matches: false,
     });
-    expect(await worker.process({ ...work, provider_workflow_version: 2 })).toEqual({ status: "deferred" });
+    expect(await worker.process({ ...work, provider_workflow_id: "33333333-3333-4333-8333-333333333333" })).toEqual({ status: "deferred" });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

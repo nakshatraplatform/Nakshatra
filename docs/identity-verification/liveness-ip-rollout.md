@@ -1,5 +1,29 @@
 # Candidate liveness and IP workflow rollout
 
+## Current liveness-only deployment (2026-10-05)
+
+The IP rollout below is historical. The current contract is liveness only.
+Save a Didit workflow with Liveness enabled and Face Match, IP analysis and ID
+verification disabled. Configure `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID` and
+`DIDIT_WEBHOOK_SECRET`; no manual version setting is needed. Didit returns the
+session version, which is stored and matched by the worker.
+
+Drain older registered candidate attempts and unresolved cleanup jobs before
+changing workflow IDs. Apply `20261006030752_candidate_liveness_only_verification.sql`
+through protected database CD first, then deploy matching application/worker code.
+Use the same workflow ID/API key in Vercel and the protected worker environment.
+Existing IP proof is not rewritten, and still requires IP approval. A failed old
+attempt can retry only with fresh current consent after cleanup.
+
+Test dashboard consent, real Sandbox camera handoff, signed webhook, worker
+approval, publication badge, retry, withdrawal and confirmed provider deletion.
+The optional create/delete probe needs only `DIDIT_SANDBOX_API_KEY` and
+`DIDIT_SANDBOX_WORKFLOW_ID`, plus the existing private recovery-journal path.
+It does not test the full camera/webhook journey. Keep representative document
+verification separate; the current shared workflow ID cannot serve both policies.
+
+## Historical liveness + IP rollout
+
 Current policy: [NAK-60 contract](../engineering-loop/features/nak-60-liveness-ip.md).
 This replaces portfolio-photo matching for candidates. Representatives retain
 their document policy and must not use the candidate workflow. The self-created

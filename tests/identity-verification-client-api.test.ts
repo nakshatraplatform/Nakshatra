@@ -38,7 +38,7 @@ describe("identity verification client API", () => {
       ["/api/identity-verification/retry", "POST"],
       ["/api/identity-verification/status", "DELETE"],
     ]);
-    expect(fetchMock.mock.calls[1][1].body).toBe(JSON.stringify({ authorization: "self", candidateId: "candidate-id", consent: true, consentVersion: "2026-10-03-liveness-ip" }));
+    expect(fetchMock.mock.calls[1][1].body).toBe(JSON.stringify({ authorization: "self", candidateId: "candidate-id", consent: true, consentVersion: "2026-10-05-liveness-only" }));
     expect(fetchMock.mock.calls[2][1].body).toBe(JSON.stringify({ candidateId: "candidate-id" }));
   });
 

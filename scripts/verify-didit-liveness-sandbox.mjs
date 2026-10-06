@@ -62,9 +62,8 @@ export function createSandboxRecoveryJournal(path) {
 }
 
 /** Proves a sandbox liveness workflow creates a session without a reference; attempts purge of any issued session. */
-export async function verifyLivenessSandbox({ apiKey, workflowId, workflowVersion, journal, fetchImpl = fetch }) {
-  if (!apiKey || !UUID_PATTERN.test(workflowId ?? "")
-    || !Number.isSafeInteger(workflowVersion) || workflowVersion < 1) {
+export async function verifyLivenessSandbox({ apiKey, workflowId, journal, fetchImpl = fetch }) {
+  if (!apiKey || !UUID_PATTERN.test(workflowId ?? "")) {
     throw failure("DIDIT_SANDBOX_CONFIG_INVALID");
   }
   if (typeof journal?.record !== "function" || typeof journal?.complete !== "function") {
@@ -90,7 +89,7 @@ export async function verifyLivenessSandbox({ apiKey, workflowId, workflowVersio
       sessionId = body.session_id;
     }
     if (!sessionId || body.workflow_id !== workflowId
-      || body.workflow_version !== workflowVersion
+      || !Number.isSafeInteger(body.workflow_version) || body.workflow_version < 1
       || typeof body.url !== "string" || new URL(body.url).origin !== "https://verify.didit.me") {
       throw failure("DIDIT_SANDBOX_RESPONSE_INVALID");
     }
@@ -176,10 +175,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       await verifyLivenessSandbox({
         apiKey: process.env.DIDIT_SANDBOX_API_KEY,
         workflowId: process.env.DIDIT_SANDBOX_WORKFLOW_ID,
-        workflowVersion: Number(process.env.DIDIT_SANDBOX_WORKFLOW_VERSION),
         journal: createSandboxRecoveryJournal(firstArg),
       });
-      process.stdout.write("Liveness/IP Didit Sandbox create-and-delete contract passed.\n");
+      process.stdout.write("Liveness-only Didit Sandbox create-and-delete contract passed.\n");
     }
   } catch (error) {
     const code = error instanceof Error && /^DIDIT_SANDBOX_[A-Z_]+$/.test(error.message)

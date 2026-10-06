@@ -17,10 +17,9 @@ describe("Didit provider gateway", () => {
     delete process.env.DIDIT_WORKFLOW_VERSION;
   });
 
-  it("creates a candidate liveness/IP session without document expectations", async () => {
+  it("creates a candidate liveness-only session without document expectations", async () => {
     process.env.DIDIT_API_KEY = "secret-api-key";
     process.env.DIDIT_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
-    process.env.DIDIT_WORKFLOW_VERSION = "3";
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       session_id: "44444444-4444-4444-8444-444444444444",
       url: "https://verify.didit.me/session/opaque-provider-token",
@@ -80,8 +79,7 @@ describe("Didit provider gateway", () => {
     expect(fetchMock.mock.calls[3][1].method).toBe("DELETE");
   });
 
-  it("does not contact Didit without a pinned workflow version", async () => {
-    process.env.DIDIT_API_KEY = "secret-api-key";
+  it("does not contact Didit without an API key", async () => {
     process.env.DIDIT_WORKFLOW_ID = "33333333-3333-4333-8333-333333333333";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -94,14 +92,14 @@ describe("Didit provider gateway", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("purges an issued session when the published workflow version drifts", async () => {
+  it("purges an issued session with an untrusted hosted URL", async () => {
     process.env.DIDIT_API_KEY = "secret-api-key";
     process.env.DIDIT_WORKFLOW_ID = "55555555-5555-4555-8555-555555555555";
     process.env.DIDIT_WORKFLOW_VERSION = "3";
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: "44444444-4444-4444-8444-444444444444",
-        url: "https://verify.didit.me/session/opaque-provider-token",
+        url: "https://attacker.test/session/opaque-provider-token",
         workflow_id: process.env.DIDIT_WORKFLOW_ID,
         workflow_version: 4,
       }), { status: 201 }))
@@ -127,7 +125,7 @@ describe("Didit provider gateway", () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
-        url: "https://verify.didit.me/session/opaque-provider-token",
+        url: "https://attacker.test/session/opaque-provider-token",
         workflow_id: process.env.DIDIT_WORKFLOW_ID,
         workflow_version: 4,
       }), { status: 201 }))

@@ -42,7 +42,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
   await page.screenshot({ path: testInfo.outputPath("landing-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
 
   await page.goto("/trust");
-  const livenessCheck = page.getByRole("heading", { name: "Liveness and IP checks", exact: true }).locator("xpath=ancestor::details");
+  const livenessCheck = page.getByRole("heading", { name: "Liveness checks", exact: true }).locator("xpath=ancestor::details");
   await expect(livenessCheck).toHaveAttribute("open", "");
   await livenessCheck.locator("summary").click();
   await expect(livenessCheck).not.toHaveAttribute("open", "");

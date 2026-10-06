@@ -6,7 +6,7 @@ const preparePhotoReference = vi.hoisted(() => vi.fn());
 const privilegedPhotoDownload = vi.hoisted(() => vi.fn());
 vi.mock("@/features/identity-verification/server/didit.provider", () => ({
   createDiditLivenessSession,
-  getCandidateVerificationConfig: () => ({ workflowId: process.env.DIDIT_WORKFLOW_ID, workflowVersion: Number(process.env.DIDIT_WORKFLOW_VERSION) }),
+  getCandidateVerificationConfig: () => ({ workflowId: process.env.DIDIT_WORKFLOW_ID }),
   createDiditVerificationSession,
   DiditProviderError: class DiditProviderError extends Error {
     constructor(readonly code: string) {
@@ -99,7 +99,7 @@ describe("identity-verification services", () => {
     })).rejects.toEqual(expect.objectContaining<Partial<IdentityVerificationInvitationError>>({ code: "IDENTITY_VERIFICATION_INVITATION_FAILED", status: 503 }));
   });
 
-  it("starts without a photo or Storage read and attaches the liveness/IP session", async () => {
+  it("starts without a photo or Storage read and attaches the liveness-only session", async () => {
     const supabase = supabaseWith([
       { data: [prepared], error: null },
       { data: null, error: null },
@@ -120,7 +120,7 @@ describe("identity-verification services", () => {
       attemptId: prepared.attempt_id,
     }));
     expect((supabase as { rpc: ReturnType<typeof vi.fn> }).rpc).toHaveBeenNthCalledWith(2, "register_candidate_liveness_provider_create", expect.objectContaining({
-      p_workflow_version: 3,
+      p_workflow_version: null,
     }));
     expect((supabase as { rpc: ReturnType<typeof vi.fn> }).rpc).toHaveBeenLastCalledWith("attach_candidate_liveness_provider_session", expect.objectContaining({
       p_attempt_id: prepared.attempt_id,

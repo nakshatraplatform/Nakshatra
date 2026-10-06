@@ -40,7 +40,7 @@ export async function updatePublicationProgress(
     throw new PublicationProgressError("Save your portfolio before continuing.", "PORTFOLIO_DRAFT_MISSING", 409);
   }
   if (result?.status === "verification_required") {
-    throw new PublicationProgressError("Complete the liveness and IP checks before confirming disclosure.", "IDENTITY_VERIFICATION_REQUIRED", 409);
+    throw new PublicationProgressError("Complete the liveness checks before confirming disclosure.", "IDENTITY_VERIFICATION_REQUIRED", 409);
   }
   if (result?.status === "content_required") {
     throw new PublicationProgressError("Complete all required portfolio details before confirming disclosure.", "PORTFOLIO_NOT_READY", 409);

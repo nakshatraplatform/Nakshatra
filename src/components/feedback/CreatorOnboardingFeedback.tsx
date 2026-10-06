@@ -12,7 +12,7 @@ const steps = [
   ["none", "Nothing stood out"],
   ["details", "Writing my details"],
   ["photos", "Adding photos"],
-  ["verification", "Liveness and IP checks"],
+  ["verification", "Liveness checks"],
   ["publishing", "Understanding publishing"],
   ["other", "Something else"],
 ] as const;

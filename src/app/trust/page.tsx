@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Trust and safety", description: "How
 
 export default function TrustPage() {
   return <PolicyLayout eyebrow="Trust and safety" title="What VivIntro protects—and what no shared link can promise." summary="Trust starts with accurate boundaries. VivIntro controls disclosure inside the product; it cannot control conversations or screenshots outside it.">
-    <div className={styles.list}><TrustDisclosure title="Liveness and IP checks" defaultOpen>
-      <p>Standard creator publication requires Didit liveness and IP checks. These checks do not establish identity or photo ownership. A limited pilot test exemption can allow publication without that check; exempt introductions do not receive the Liveness checked badge.</p>
+    <div className={styles.list}><TrustDisclosure title="Liveness checks" defaultOpen>
+      <p>Standard creator publication requires Didit liveness checks. These checks do not establish identity or photo ownership. A limited pilot test exemption can allow publication without that check; exempt introductions do not receive the Liveness checked badge.</p>
       <p>This is not a legal-ID check, a check of profile statements, or an endorsement of a match. VivIntro records consent and result, not the live camera capture.</p>
     </TrustDisclosure>
     <TrustDisclosure title="Sharing boundary"><p>Anyone who receives or is forwarded a personal link can open its public Introduction. There is no public directory, and Introduction pages are marked not to appear in search results. Contact details and protected documents require the owner’s approval on a personal link.</p></TrustDisclosure>
