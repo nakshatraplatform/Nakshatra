@@ -174,7 +174,7 @@ describe("dashboard client", () => {
   it("does not expose sharing controls or a URL when verification is missing", () => {
     renderDashboard({ isExpired: false, daysLeft: 20 });
     expect(screen.getByRole("button", { name: "Edit portfolio" })).toHaveClass("dashboard-edit-action");
-    expect(screen.queryByRole("button", { name: "Share portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Share Introduction" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Copy link" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /rotate link/i })).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).not.toBeInTheDocument();
@@ -189,7 +189,7 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "test_exempt" },
       isExpired: false,
     });
-    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share Introduction" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
     expect(screen.getByText(/not Didit identity verification/i)).toBeInTheDocument();
     expect(screen.queryByText("Sharing paused")).not.toBeInTheDocument();
@@ -264,12 +264,12 @@ describe("dashboard client", () => {
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /share portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /share introduction/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
-    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro wedding portfolio");
-    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the selected public Introduction");
-    expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is shared only after the profile owner approves");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro marriage introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the public Introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Protected details are shared only if the owner approves a request");
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
@@ -281,7 +281,7 @@ describe("dashboard client", () => {
 
   it("uses lifecycle-aware primary actions without treating link status as an insight", async () => {
     const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
-    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share Introduction" })).toBeInTheDocument();
     expect(screen.queryByText("Public link")).not.toBeInTheDocument();
 
     rerender(
@@ -300,6 +300,8 @@ describe("dashboard client", () => {
     );
 
     expect(screen.queryByText("Public link")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your Introduction link has expired." })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Share Introduction" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reactivate public link" }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
   });
@@ -724,7 +726,7 @@ describe("dashboard client", () => {
     });
 
     expect(screen.queryByText("Your publishing journey")).not.toBeInTheDocument();
-    expect(screen.getByText("Portfolio active")).toBeInTheDocument();
+    expect(screen.getByText("Introduction link active")).toBeInTheDocument();
   });
 
   it("cancels publication review without changing the public portfolio", async () => {

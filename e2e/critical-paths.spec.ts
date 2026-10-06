@@ -345,5 +345,6 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(headerAction).toBeVisible();
   await expect(headerAction).toHaveText("Show interest");
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
+  expect((await headerAction.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });

@@ -239,9 +239,9 @@ export default function DashboardClient({
       || portfolio?.draft_data?.personal?.name
       || "this profile";
     const text = encodeURIComponent(
-      `Sharing ${profileName}'s VivIntro wedding portfolio.\n\n`
+      `Sharing ${profileName}'s VivIntro marriage introduction.\n\n`
       + `View the introduction: ${shareUrl}\n\n`
-      + "This link opens the selected public Introduction. The Complete Portfolio is shared only after the profile owner approves an introduction."
+      + "This link opens the public Introduction. Protected details are shared only if the owner approves a request."
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -644,9 +644,9 @@ export default function DashboardClient({
           ) : (
               <section className="dashboard-welcome">
                 <div>
-                  {publicShareReady && <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Link expired" : "Portfolio active"}</span>}
-                  <h2>{publicShareReady ? "Your portfolio is ready to share." : "Your portfolio is not shareable yet."}</h2>
-                  <p>{publicShareReady ? "Review new interests, see recent activity, or update your portfolio." : "Complete the required steps to share your portfolio. Your saved details remain private."}</p>
+                  {publicShareReady && <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Introduction link expired" : "Introduction link active"}</span>}
+                  <h2>{publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h2>
+                  <p>{publicShareReady ? isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Share your public Introduction, review new interests, or update your portfolio." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>
                   {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
                 <div className="dashboard-welcome-actions">
@@ -662,7 +662,7 @@ export default function DashboardClient({
                         {renewing ? "Reactivating link..." : "Reactivate public link"}
                       </button>
                     )
-                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share portfolio</button>}
+                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" /> Share Introduction</button>}
                 </div>
               </section>
           )}
@@ -698,7 +698,7 @@ export default function DashboardClient({
 
             {portfolio?.is_published && shareUrl && publicShareReady ? (
               <div className="dashboard-glass p-4">
-                <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Portfolio link</p>
+                <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Introduction link</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
                     {shareUrl}
