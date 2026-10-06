@@ -60,9 +60,8 @@ function expectedName(legalName: string) {
 
 export function getCandidateVerificationConfig() {
   const parsed = z.uuid().safeParse(process.env.DIDIT_WORKFLOW_ID?.trim());
-  const version = z.coerce.number().int().positive().safeParse(process.env.DIDIT_WORKFLOW_VERSION?.trim());
-  if (!parsed.success || !version.success) throw new DiditProviderError("IDENTITY_VERIFICATION_CONFIGURATION_INVALID");
-  return { ...getDiditConfigForKey(), workflowId: parsed.data, workflowVersion: version.data };
+  if (!parsed.success) throw new DiditProviderError("IDENTITY_VERIFICATION_CONFIGURATION_INVALID");
+  return { ...getDiditConfigForKey(), workflowId: parsed.data };
 }
 
 function getDiditConfigForKey() {
@@ -126,7 +125,7 @@ async function purgeUnattachedCandidateSession(sessionId: string) {
   }
 }
 
-/** Starts the pinned liveness/IP workflow without sending a portfolio photo or identity details. */
+/** Starts the configured liveness-only workflow; Didit returns the session's actual version. */
 export async function createDiditLivenessSession(input: {
   attemptId: string;
   providerSubjectRef: string;
@@ -143,7 +142,6 @@ export async function createDiditLivenessSession(input: {
   const parsed = candidateSessionSchema.safeParse(raw);
   const hostedOrigin = parsed.success ? new URL(parsed.data.url).origin : null;
   if (!parsed.success || parsed.data.workflow_id !== config.workflowId
-    || parsed.data.workflow_version !== config.workflowVersion
     || hostedOrigin !== diditHostedOrigin) {
     const sessionId = z.uuid().safeParse((raw as { session_id?: unknown } | null)?.session_id);
     if (sessionId.success) await purgeUnattachedCandidateSession(sessionId.data);

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const parsed = retrySchema.safeParse(await readJsonBody(request, AUTH_BODY_LIMIT));
     if (!parsed.success) {
       return NextResponse.json(
-        { code: "IDENTITY_VERIFICATION_CONSENT_REQUIRED", error: "Use a valid management link and accept the liveness and IP notice before retrying." },
+        { code: "IDENTITY_VERIFICATION_CONSENT_REQUIRED", error: "Use a valid management link and accept the liveness-only notice before retrying." },
         { status: 400, headers: noStore }
       );
     }

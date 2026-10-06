@@ -107,7 +107,7 @@ export async function publishPortfolio({
   const publicationReadiness = await getPublicationReadiness(supabase);
   if (!canPublishWithVerificationStatus(publicationReadiness.verificationStatus)) {
     throw new PortfolioPublishError(
-      "Complete the liveness and IP checks before publishing your portfolio.",
+      "Complete the liveness checks before publishing your portfolio.",
       "IDENTITY_VERIFICATION_REQUIRED",
       409
     );
@@ -165,7 +165,7 @@ export async function publishPortfolio({
   if (transactionError) {
     const databaseMessage = transactionError.message || "";
     if (databaseMessage.includes("publication_verification_required")) {
-      throw new PortfolioPublishError("Complete the liveness and IP checks before publishing your portfolio.", "IDENTITY_VERIFICATION_REQUIRED", 409);
+      throw new PortfolioPublishError("Complete the liveness checks before publishing your portfolio.", "IDENTITY_VERIFICATION_REQUIRED", 409);
     }
     if (databaseMessage.includes("publication_disclosure_required")) {
       throw new PortfolioPublishError("Confirm the final disclosure review before publishing your portfolio.", "DISCLOSURE_REQUIRED", 409);
@@ -197,7 +197,7 @@ export async function publishPortfolio({
   }
   if (transaction.data.status === "verification_required") {
     throw new PortfolioPublishError(
-      "Complete the liveness and IP checks before publishing your portfolio.",
+      "Complete the liveness checks before publishing your portfolio.",
       "IDENTITY_VERIFICATION_REQUIRED",
       409
     );

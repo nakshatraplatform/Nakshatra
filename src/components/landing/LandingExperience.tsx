@@ -19,10 +19,10 @@ export const landingFaqs = [
   { question: "How is this different from a biodata PDF?", answer: "You can update a VivIntro introduction without sending a new file. The shared view and protected details are separate, so a viewer must request and receive your approval before seeing the latter. A forwarded PDF cannot be updated or withdrawn." },
   { question: "Who can open a shared link?", answer: "Anyone who receives or is forwarded the link can read the public Introduction. It is not listed in a VivIntro directory and is marked not to appear in search results. A viewer can still forward or capture what they see, so put only information you are comfortable sharing in that first view." },
   { question: "What can someone with my link see?", answer: "The shared Introduction is what someone with your link can read. Contact details, the original horoscope file, exact birth details, and other Complete Portfolio information stay protected. For a personally shared link, a viewer confirms their email and requests access; you can approve or set the request aside." },
-  { question: "What does Liveness checked mean?", answer: "When this badge appears, Didit approved a live camera liveness check and IP analysis. It does not verify legal identity, profile statements, or suitability. A test publication without this check has no badge." },
+  { question: "What does Liveness checked mean?", answer: "When this badge appears, Didit approved a live camera liveness check. It does not verify legal identity, profile statements, or suitability. A test publication without this check has no badge." },
   { question: "Can I change or stop sharing it?", answer: "Yes. Edit the published Introduction and the current link shows the update. You can also unpublish it or rotate the link, which makes the previous link stop working. If you approve a viewer, protected access lasts up to 15 days and can end earlier." },
   { question: "Is VivIntro free to try?", answer: "Yes. You can create a portfolio for free. Broker-sponsored actions have no separate VivIntro charge for customers. There is no paid creator plan yet; we will explain any future personal pricing before asking you to pay." },
-  { question: "Can I join now?", answer: "Yes. Create an account with email or Google, confirm your email, and begin a private portfolio. Publishing has separate content, consent, and liveness and IP check steps." },
+  { question: "Can I join now?", answer: "Yes. Create an account with email or Google, confirm your email, and begin a private portfolio. Publishing has separate content, consent, and liveness check steps." },
 ] as const;
 
 const problems = [
@@ -41,7 +41,7 @@ const trustFacts = [
   { icon: ShieldCheck, title: "Can someone forward the link?", body: "Yes. The public Introduction can be forwarded or captured. Only place details there that you are comfortable sharing; protected details still require approval." },
   { icon: Globe2, title: "Is this a matchmaking website?", body: "No. VivIntro has no searchable profile directory and does not recommend matches. You choose who receives the introduction." },
   { icon: Smartphone, title: "Does the viewer need an app?", body: "No. The introduction opens in a regular browser on a phone or computer." },
-  { icon: BadgeCheck, title: "What does the liveness badge mean?", body: "It appears only after approved liveness and IP checks. It does not establish photo ownership. It does not verify legal identity or the claims in an introduction." },
+  { icon: BadgeCheck, title: "What does the liveness badge mean?", body: "It appears only after approved liveness checks. It does not establish photo ownership. It does not verify legal identity or the claims in an introduction." },
 ] as const;
 
 export function LandingExperience({ variant = "clarity" }: { variant?: LandingVariant }) {

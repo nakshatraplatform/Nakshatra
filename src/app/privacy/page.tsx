@@ -25,7 +25,7 @@ export default function PrivacyPage() {
 
       <PolicySection title="Storage and service providers">
         <p>VivIntro currently uses Supabase for authentication, database and file storage; Vercel for hosting and privacy-focused, cookie-free traffic analytics on public marketing pages; Didit for hosted verification checks; Google when you choose Google sign-in; and Resend when transactional email delivery is enabled. Introduction links, account routes, and URL query strings are excluded from traffic analytics.</p>
-        <p>The current self-created candidate flow uses Didit for camera liveness and IP analysis; it does not request an identity document, compare a portfolio photo, or verify legal identity. VivIntro stores consent and normalized results, not the live capture or IP reports. Separate broker verification may use different checks.</p>
+        <p>The current self-created candidate flow uses Didit for camera liveness; it does not request an identity document, compare a portfolio photo, or verify legal identity. VivIntro stores consent and normalized results, not the live capture or IP reports. Separate broker verification may use different checks.</p>
         <p>Public pages are marked not to be indexed by search engines, but this cannot prevent a person who has the link from saving or forwarding what they can view.</p>
       </PolicySection>
 

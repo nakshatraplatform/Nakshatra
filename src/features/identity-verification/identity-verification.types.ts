@@ -1,4 +1,4 @@
-export const candidateVerificationConsentVersion = "2026-10-03-liveness-ip" as const;
+export const candidateVerificationConsentVersion = "2026-10-05-liveness-only" as const;
 
 export const identityVerificationStatuses = [
   "pending",

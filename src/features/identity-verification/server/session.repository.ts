@@ -17,7 +17,7 @@ export class IdentityVerificationSessionRepository {
   registerCandidateProviderCreate(
     attemptId: string,
     workflowId: string,
-    workflowVersion: number,
+    workflowVersion: number | null,
     managementTokenHash: string
   ) {
     return this.supabase.rpc("register_candidate_liveness_provider_create", {

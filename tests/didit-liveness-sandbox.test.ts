@@ -32,7 +32,7 @@ describe("document-free Didit Sandbox contract", () => {
       }), { status: 200 }));
 
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2, journal: recovery, fetchImpl,
+      apiKey: "sandbox-key", workflowId, journal: recovery, fetchImpl,
     })).resolves.toEqual({ workflowVersion: 2 });
     const request = JSON.parse(fetchImpl.mock.calls[0][1].body);
     expect(request).toEqual(expect.objectContaining({
@@ -63,7 +63,7 @@ describe("document-free Didit Sandbox contract", () => {
         biometric_template_uuid: null,
       }), { status: 200 }));
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 1, journal: recovery, fetchImpl,
+      apiKey: "sandbox-key", workflowId, journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_RESPONSE_INVALID");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(recovery.complete).toHaveBeenCalledTimes(1);
@@ -84,7 +84,7 @@ describe("document-free Didit Sandbox contract", () => {
         biometric_template_uuid: "77777777-7777-4777-8777-777777777777",
       }), { status: 200 }));
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2, journal: recovery, fetchImpl,
+      apiKey: "sandbox-key", workflowId, journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_PURGE_FAILED");
     expect(recovery.complete).not.toHaveBeenCalled();
   });
@@ -107,7 +107,7 @@ describe("document-free Didit Sandbox contract", () => {
         session_id: sessionId, face_retention_outcome: "deleted", biometric_template_uuid: null,
       }), { status: 200 }));
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      apiKey: "sandbox-key", workflowId,
       journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_PURGE_FAILED");
     expect(recovery.record).toHaveBeenCalledBefore(fetchImpl);
@@ -123,7 +123,7 @@ describe("document-free Didit Sandbox contract", () => {
       .mockResolvedValueOnce(new Response("not-json", { status: 201 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ next: null, results: [] }), { status: 200 }));
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      apiKey: "sandbox-key", workflowId,
       journal: recovery, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_RESPONSE_INVALID");
     await expect(recoverLivenessSandbox({ apiKey: "sandbox-key", journal: recovery, fetchImpl }))
@@ -134,7 +134,7 @@ describe("document-free Didit Sandbox contract", () => {
   it("requires a durable journal before any provider request", async () => {
     const fetchImpl = vi.fn();
     await expect(verifyLivenessSandbox({
-      apiKey: "sandbox-key", workflowId, workflowVersion: 2,
+      apiKey: "sandbox-key", workflowId,
       journal: null, fetchImpl,
     })).rejects.toThrow("DIDIT_SANDBOX_JOURNAL_REQUIRED");
     expect(fetchImpl).not.toHaveBeenCalled();

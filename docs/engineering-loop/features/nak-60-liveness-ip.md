@@ -1,5 +1,81 @@
 # NAK-60 candidate liveness and IP checks
 
+## Current contract: liveness only (2026-10-05)
+
+The product owner's current request supersedes the historical IP requirement below.
+New candidate attempts use `candidate_liveness_only`, fresh `2026-10-05-liveness-only`
+consent, and an approved nonempty liveness result. ID, face-match and IP analysis
+reports are incompatible with this workflow. Existing `candidate_liveness_ip`
+attempts/proofs remain distinct and retain their stricter dual-check requirement.
+Representative document verification is unchanged.
+
+`DIDIT_API_KEY` and a UUID `DIDIT_WORKFLOW_ID` configure session creation. No
+`DIDIT_WORKFLOW_VERSION` is required: Didit chooses the saved workflow version and
+returns it. Durable registration records the workflow/correlation before POST;
+attachment stores the positive returned version. Reconciliation matches the exact
+session, workflow, version and vendor reference, not a mutable version env setting.
+Uncertain creation recovery uses V3 listing plus a decision metadata check before
+deletion. Owner/live-session checks, leases, retry supersession, withdrawal,
+webhook signature/replay protection and provider cleanup remain enforced.
+
+### Acceptance and evaluation
+
+- Create a photo-free session with version env absent; reject a wrong workflow,
+  missing/invalid returned version or untrusted hosted origin (provider tests).
+- Approve liveness-only without IP; reject absent/declined liveness, metadata
+  mismatches and extra ID/face/IP checks (new worker policy tests).
+- Register before knowing the version; attach the returned version; deny strangers,
+  null/failed liveness, privileged approval from clients and withdrawn/expired
+  tokens (new pgTAP suite). Retain legacy IP negative cases separately.
+- Preserve retry/late-webhook/cleanup and publication contracts (full existing
+  database and unit suites). Current consent, dashboard, badge and public trust
+  copy must describe liveness only.
+
+### Execution context and rollout
+
+Branch `fix/nak-60-liveness-only-verification`, base `6c4c16a` (`origin/main`).
+Changed boundaries: provider/session repository and service, worker and worker
+workflow, Sandbox probe, candidate/public copy, tests, and the forward migration
+`20261006030752_candidate_liveness_only_verification.sql`. Public RPC signatures
+are unchanged; generated public database types need no contract change.
+
+Before deployment, drain any older registered candidate attempts/cleanup, apply
+the new migration through protected CD, then deploy matching app and worker code.
+The migration does not rewrite existing proof or consent. Keep the liveness-only
+workflow ID/API key aligned in Vercel and the worker; webhook signing configuration
+is unchanged. Do not reuse this workflow for representative ID verification.
+Real camera, signed webhook, worker approval, withdrawal and deletion must still
+be exercised in Didit Sandbox after deployment. No remote operation is authorized
+or performed by this implementation task.
+
+Implemented locally; not committed, pushed or deployed. Validation:
+
+- `npm run test:unit:coverage`: 984 tests / 150 files pass; feature coverage passes
+  for 54 files at the existing 80% per-metric gate.
+- `npm run typecheck`, lint (two pre-existing OpenGraph warnings), `db:smoke`,
+  `git diff --check`, and production `npm run build -- --webpack` pass.
+- All migrations replayed on an isolated native PostgreSQL 14 database; the full
+  suite passes: 42 suites / 1125 assertions. Synthetic Auth/Storage and manual
+  pgTAP installation are supplemental evidence, not the real Supabase stack.
+- Three Playwright public-trust cases pass; the badge matrix covers 320–1440px
+  and both portfolio appearances. No hosted camera flow is inferred from this.
+- Fresh-context independent review on `e05f4e7785f0e6c40956b39d3470db68f26d738bce748cc8e24024475d3d2f0b`
+  found no material code/migration issues and independently passed 112 focused
+  unit tests plus ten native suites / 257 assertions. Actual model identity was
+  unavailable. Low/nonmaterial NAK60-LO-COPY-R1 (retry error still mentioned IP)
+  is corrected; a limited return review verifies final copy/documentation.
+- Docker daemon diagnostics timed out; authoritative Supabase CI remains
+  unverified locally. Graphify is not installed. No live Didit/remote database
+  operation or independent populated-upgrade rehearsal was performed.
+
+Regression-first provider/worker tests failed for the
+intended missing-version and unsupported-method defects before implementation.
+An initial test collection attempt was blocked by disk exhaustion; only this
+repository's regenerable coverage/test-results outputs were removed. Native
+PostgreSQL uses synthetic Auth/Storage and does not substitute for Supabase CI.
+
+## Historical liveness + IP implementation
+
 Mode: full. Risk: critical (consent, verification, publication and migration).
 Branch: `fix/nak-60-liveness-ip-verification`, original base `1b92ba1`; integrated main `ef61233`.
 Authority: product owner request on 2026-10-03; NAK-60 in Phoenix works / Nakshatra.

@@ -16,7 +16,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
       const badge = portfolio.locator(".portfolio-verified-badge");
       await expect(badge).toBeVisible();
       await expect(badge.getByText("Liveness checked")).toBeVisible();
-      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness and IP checks.*does not verify legal identity, portfolio photo ownership/i);
+      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, portfolio photo ownership/i);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       if (width === 375 || width === 1440) {
         await page.screenshot({
@@ -37,7 +37,7 @@ test("the fictional introduction does not claim a real liveness check", async ({
 test("public trust explanation matches the publication exception and link controls", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 375, height: 844 });
   await page.goto("/trust");
-  await expect(page.getByRole("heading", { name: "Liveness and IP checks", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Liveness checks", exact: true })).toBeVisible();
   await expect(page.getByText(/These checks do not establish identity or photo ownership/i)).toBeVisible();
   await expect(page.getByText(/limited pilot test exemption can allow publication without that check/i)).toBeVisible();
   await expect(page.getByText(/exempt introductions do not receive the Liveness checked badge/i)).toBeVisible();

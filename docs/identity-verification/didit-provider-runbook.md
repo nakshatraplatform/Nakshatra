@@ -1,7 +1,8 @@
 # Didit provider readiness runbook
 
-> Current candidate policy (2026-10-03): liveness + IP analysis only; no portfolio-photo
-> requirement or face matching. See [NAK-60 liveness/IP contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
+> Current candidate policy (2026-10-05): liveness only; no IP analysis, portfolio-photo
+> requirement or face matching. Workflow versions come from session responses, not env.
+> See [NAK-60 current contract](../engineering-loop/features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
 
 
 > **Current split policy (2 October 2026):** B2C candidates use an ID-free,
@@ -67,13 +68,12 @@ secrets, or raw identity data to Linear.
 
 ## Credential and webhook handling
 
-The Didit deployment variables are `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`,
-`DIDIT_WORKFLOW_VERSION`, and
+The Didit deployment variables are `DIDIT_API_KEY`, `DIDIT_WORKFLOW_ID`, and
 `DIDIT_WEBHOOK_SECRET`, following the
 [official integration guide](https://docs.didit.me/integration/api-full-flow).
 Application ID, Organization ID, and a separate Didit environment variable are
 not required. Choose Sandbox or Production by configuring its matching scoped
-API key, workflow ID, the pinned workflow version, and destination
+API key, workflow ID, and destination
 signing secret together. Existing
 Nakshatra configuration (app URL, Supabase credentials, and the shared
 `IDENTITY_VERIFICATION_MATCH_HMAC_KEY`) is still required.
@@ -81,12 +81,12 @@ Nakshatra configuration (app URL, Supabase credentials, and the shared
 In App Settings, copy the API key from **API keys** and create a **Webhooks**
 destination with the final public HTTPS URL `/api/webhooks/didit`, version `v3`,
 and events `status.updated` and `data.updated`. Use its signing secret, avoid
-redirects or browser challenges, set all four Didit variables in Vercel, and redeploy.
+redirects or browser challenges, set all three Didit variables in Vercel, and redeploy.
 Set the same API key on the existing worker. Complete a real sandbox session
 from Nakshatra and verify a 202 receipt, worker processing, and session purge.
 Console sample vendor references are placeholders, not local verification attempts.
 
-Pre-production configuration decision (2026-10-02): candidate creation, webhook
+Historical pre-production configuration decision (2026-10-02): candidate creation, webhook
 allowlisting and worker reconciliation use the same `DIDIT_WORKFLOW_ID` and
 the candidate's pinned `DIDIT_WORKFLOW_VERSION`. The old photo-prefixed names
 are not aliases. Rename settings in Vercel and the protected GitHub worker

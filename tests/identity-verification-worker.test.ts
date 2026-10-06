@@ -35,7 +35,7 @@ describe("identity-verification worker", () => {
   it("reconciles a photo claim using the shared workflow environment settings", async () => {
     const workflowId = "66666666-6666-4666-8666-666666666666";
     vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);
-    vi.stubEnv("DIDIT_WORKFLOW_VERSION", "7");
+
     const photoClaim = {
       ...claim, verification_method: "portfolio_photo_liveness",
       provider_workflow_id: workflowId, provider_workflow_version: 7,
@@ -52,7 +52,7 @@ describe("identity-verification worker", () => {
     expect(rpc).toHaveBeenCalledWith("complete_identity_verification_reconciliation", expect.objectContaining({
       p_outcome: "verified", p_id_verified: false,
     }));
-    vi.stubEnv("DIDIT_WORKFLOW_VERSION", "8");
+    vi.stubEnv("DIDIT_WORKFLOW_ID", "88888888-8888-4888-8888-888888888888");
     const mismatched = workerClient([photoClaim]);
     await expect(createIdentityVerificationWorker(mismatched.client, { apiKey: "test-api-key", fetchImpl }).run(1))
       .resolves.toMatchObject({ completed: 0, deferred: 1 });
@@ -193,7 +193,7 @@ describe("identity-verification worker", () => {
       apiKey: "test-api-key",
       fetchImpl: rotatedDelete,
       candidateWorkflowId: "88888888-8888-4888-8888-888888888888",
-      candidateWorkflowVersion: 9,
+
     }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
     expect(rotatedDelete).toHaveBeenCalledTimes(1);
   });
@@ -218,6 +218,12 @@ describe("identity-verification worker", () => {
         workflow_id: recoveryClaim.provider_workflow_id,
         workflow_version: 3,
       }] }), { status: 200 }))
+      .mockResolvedValueOnce(Response.json({
+        session_id: orphanSessionId,
+        vendor_data: recoveryClaim.provider_vendor_data,
+        workflow_id: recoveryClaim.provider_workflow_id,
+        workflow_version: 3,
+      }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: orphanSessionId,
         face_retention_outcome: "deleted",

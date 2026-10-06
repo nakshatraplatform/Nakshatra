@@ -1,7 +1,7 @@
 import { matchesIdentityBirthDate } from "../src/features/identity-verification/server/identity-match.mjs";
 
 const DIDIT_BASE_URL = "https://verification.didit.me/v3/session";
-const DIDIT_SESSION_LIST_URL = "https://verification.didit.me/v2/sessions";
+const DIDIT_SESSION_LIST_URL = "https://verification.didit.me/v3/sessions/";
 const PROVIDER_REQUEST_TIMEOUT_MS = 10_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -48,7 +48,7 @@ export function evaluateDiditDecision(
     throw workerError("IDENTITY_MATCH_KEY_UNAVAILABLE");
   }
 
-  if (claim.verification_method === "candidate_liveness_ip") {
+  if (["candidate_liveness_only", "candidate_liveness_ip"].includes(claim.verification_method)) {
     if (claim.subject_type !== "candidate") throw workerError("IDENTITY_VERIFICATION_METHOD_INVALID");
     const absent = (field) => decision[field] == null
       || (Array.isArray(decision[field]) && decision[field].length === 0);
@@ -57,8 +57,9 @@ export function evaluateDiditDecision(
       && decision.workflow_version === Number(claim.provider_workflow_version)
       && decision.vendor_data === claim.provider_vendor_data;
     const livenessVerified = allApproved(decision, "liveness_checks");
-    const ipVerified = allApproved(decision, "ip_analyses");
-    const checksPass = workflowMatches && livenessVerified && ipVerified
+    const livenessOnly = claim.verification_method === "candidate_liveness_only";
+    const ipVerified = !livenessOnly && allApproved(decision, "ip_analyses");
+    const checksPass = workflowMatches && livenessVerified && (livenessOnly ? absent("ip_analyses") : ipVerified)
       && absent("id_verifications") && absent("face_matches");
     const status = normalizeStatus(decision.status);
     let outcome = "pending";
@@ -146,7 +147,6 @@ export function createIdentityVerificationWorker(supabase, {
   fetchImpl = fetch,
   identityMatchKey = process.env.IDENTITY_VERIFICATION_MATCH_HMAC_KEY,
   candidateWorkflowId = process.env.DIDIT_WORKFLOW_ID,
-  candidateWorkflowVersion = Number(process.env.DIDIT_WORKFLOW_VERSION),
   now = () => new Date(),
   requestTimeoutMs = PROVIDER_REQUEST_TIMEOUT_MS,
 } = {}) {
@@ -244,7 +244,7 @@ export function createIdentityVerificationWorker(supabase, {
         if (typeof next !== "string") throw workerError("DIDIT_SESSION_RECOVERY_INVALID");
         const nextUrl = new URL(next, DIDIT_SESSION_LIST_URL);
         if (nextUrl.origin !== "https://verification.didit.me"
-          || nextUrl.pathname !== "/v2/sessions") {
+          || nextUrl.pathname !== "/v3/sessions/") {
           throw workerError("DIDIT_SESSION_RECOVERY_INVALID");
         }
         nextUrl.searchParams.set("vendor_data", vendorData);
@@ -268,20 +268,28 @@ export function createIdentityVerificationWorker(supabase, {
   async function process(claim) {
     try {
       if (claim.task_type === "reconcile"
-        && ["portfolio_photo_liveness", "candidate_liveness_ip"].includes(claim.verification_method)
+        && ["portfolio_photo_liveness", "candidate_liveness_ip", "candidate_liveness_only"].includes(claim.verification_method)
         && (!UUID_PATTERN.test(candidateWorkflowId ?? "")
-          || !Number.isSafeInteger(candidateWorkflowVersion) || candidateWorkflowVersion < 1
           || claim.provider_workflow_id !== candidateWorkflowId
-          || Number(claim.provider_workflow_version) !== candidateWorkflowVersion)) {
+          || !Number.isSafeInteger(claim.provider_workflow_version) || claim.provider_workflow_version < 1)) {
         throw workerError("DIDIT_WORKFLOW_MISMATCH");
       }
       if (claim.task_type === "provider_recovery") {
         if (!claim.provider_session_ref) {
           const sessions = await findSessionsByVendorData(claim.provider_vendor_data);
           for (const session of sessions) {
-            if (session?.workflow_id !== claim.provider_workflow_id
-              || Number(session?.workflow_version) !== Number(claim.provider_workflow_version)
-              || typeof session?.session_id !== "string") {
+            if (!UUID_PATTERN.test(session?.session_id ?? "")) {
+              throw workerError("DIDIT_SESSION_RECOVERY_MISMATCH");
+            }
+            // An uncertain POST has no returned version yet. Recover exact correlation
+            // through the decision endpoint, not optional fields in list summaries.
+            const recovered = await fetchDecision(session.session_id);
+            if (recovered?.session_id !== session.session_id
+              || recovered?.vendor_data !== claim.provider_vendor_data
+              || recovered?.workflow_id !== claim.provider_workflow_id
+              || !Number.isSafeInteger(recovered?.workflow_version) || recovered.workflow_version < 1
+              || (claim.provider_workflow_version != null
+                && recovered.workflow_version !== claim.provider_workflow_version)) {
               throw workerError("DIDIT_SESSION_RECOVERY_MISMATCH");
             }
             await deleteSession(session.session_id);
@@ -315,7 +323,7 @@ export function createIdentityVerificationWorker(supabase, {
         p_outcome: result.outcome,
         p_id_verified: result.idVerified,
         p_passive_liveness_verified: result.livenessVerified ?? result.passiveLivenessVerified,
-        ...(claim.verification_method === "candidate_liveness_ip" ? { p_ip_verified: result.ipVerified } : {}),
+        ...(["candidate_liveness_ip", "candidate_liveness_only"].includes(claim.verification_method) ? { p_ip_verified: result.ipVerified } : {}),
         p_face_match_verified: result.faceMatchVerified,
         p_name_matches: result.nameMatches,
         p_birth_date_matches: result.birthDateMatches,

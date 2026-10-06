@@ -71,7 +71,7 @@ select ok(
   exists (
     select 1 from app_private.identity_verification_attempts attempt
     where attempt.id = (select attempt_id from invitation_start)
-      and attempt.consent_version = '2026-10-03-liveness-ip'
+      and attempt.consent_version = '2026-10-05-liveness-only'
       and attempt.consented_at is not null
       and attempt.consent_purpose is not null
       and attempt.consent_processing_details is not null

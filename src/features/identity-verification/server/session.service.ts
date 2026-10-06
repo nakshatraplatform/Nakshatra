@@ -75,11 +75,11 @@ async function attachCandidateSession(input: {
 }) {
   let didit;
   try {
-    const { workflowId, workflowVersion } = getCandidateVerificationConfig();
+    const { workflowId } = getCandidateVerificationConfig();
     const registration = await input.repository.registerCandidateProviderCreate(
       input.prepared.attempt_id,
       workflowId,
-      workflowVersion,
+      null,
       input.managementTokenHash
     );
     if (registration.error) {
