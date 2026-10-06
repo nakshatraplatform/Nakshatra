@@ -228,7 +228,7 @@ describe("public portfolio pages", () => {
     await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction not found", robots: { index: false } });
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     const metadata = await generateMetadata({ params: Promise.resolve({ token: "token" }) });
-    expect(metadata.title).toBe("Aditi’s private introduction");
+    expect(metadata.title).toBe("Aditi’s marriage introduction");
     expect(metadata.description).toContain("Aditi");
   });
 
@@ -237,8 +237,9 @@ describe("public portfolio pages", () => {
     await expect(PublicBiodataPage({ params: Promise.resolve({ token: "missing" }) })).rejects.toThrow("NOT_FOUND");
     mocks.outcomes.resolve_public_portfolio_status = { data: "expired" };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "expired-token" }) }));
-    expect(screen.getByRole("heading", { name: /portfolio link has expired/i })).toBeInTheDocument();
-    expect(screen.getByText(/No portfolio information is available/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Introduction link has expired/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
+    expect(screen.getByText(/No Introduction details are available/i)).toBeInTheDocument();
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     mocks.outcomes.record_public_portfolio_view = { data: true };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
@@ -336,6 +337,7 @@ describe("complete portfolio access landing", () => {
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "expired" } };
     const { rerender } = render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
     expect(screen.getByRole("heading", { name: /access has expired/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
 
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "revoked" } };
     rerender(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));

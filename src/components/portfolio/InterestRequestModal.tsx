@@ -100,12 +100,6 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
 
-  useEffect(() => {
-    if (step !== "success") return;
-    const timer = window.setTimeout(() => setOpen(false), 1800);
-    return () => window.clearTimeout(timer);
-  }, [step]);
-
   function closeModal() {
     if (!pending) setOpen(false);
   }
@@ -233,7 +227,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> You can continue reading the introduction.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> The owner will decide whether to share protected details.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -287,8 +281,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             {step === "success" && (
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
-                <h3>Request sent to {firstName(profileName)}&apos;s family.</h3>
-                <p>This window will close and return you to the introduction.</p>
+                <h3>Request sent to {firstName(profileName)}.</h3>
+                <p>The introduction owner can review it and decide whether to share protected details. You can return whenever you&apos;re ready.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}

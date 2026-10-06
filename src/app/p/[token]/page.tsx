@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BiodataTemplate } from "@/components/templates";
 import type { Metadata } from "next";
@@ -31,21 +32,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const data = portfolio.data;
   const firstName = data.personal?.first_name || data.personal?.name?.split(" ")[0] || "A VivIntro member";
-  const description = `A private marriage introduction from ${firstName}, shared through VivIntro.`;
+  const description = `A marriage introduction from ${firstName}, shared through VivIntro.`;
 
   return {
-    title: `${firstName}’s private introduction`,
+    title: `${firstName}’s marriage introduction`,
     description,
     robots: { index: false, follow: false, noarchive: true },
     openGraph: {
-      title: `${firstName}’s private introduction`,
+      title: `${firstName}’s marriage introduction`,
       description,
       type: "profile",
       images: [{
         url: `/p/${token}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: `${firstName}’s private VivIntro introduction`,
+        alt: `${firstName}’s VivIntro marriage introduction`,
       }],
     },
   };
@@ -100,11 +101,12 @@ function ExpiredPortfolioLink() {
   return (
     <main id="main-content" className="grid min-h-screen place-items-center bg-[color:var(--workspace-canvas)] px-5 py-16 text-[color:var(--workspace-ink)]">
       <section className="w-full max-w-xl rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-7 text-center shadow-sm sm:p-10" aria-labelledby="expired-portfolio-title">
-        <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">VivIntro private beta</p>
-        <h1 id="expired-portfolio-title" className="mt-3 text-3xl font-semibold">This portfolio link has expired</h1>
+        <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">VivIntro</p>
+        <h1 id="expired-portfolio-title" className="mt-3 text-3xl font-semibold">This Introduction link has expired</h1>
         <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[color:var(--workspace-ink-muted)]">
-          Ask the person who shared it to renew their portfolio link. No portfolio information is available from an expired link.
+          Ask the person who shared it to reactivate the link. No Introduction details are available from an expired link.
         </p>
+        <Link href="/received-a-link" className="dashboard-secondary-action mt-6 inline-flex min-h-11 items-center justify-center">Read the viewer guide</Link>
       </section>
     </main>
   );

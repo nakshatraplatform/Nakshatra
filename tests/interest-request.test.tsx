@@ -41,7 +41,13 @@ describe("interest request flow", () => {
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
 
-    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
+    expect(screen.getByText(/The introduction owner can review it and decide whether to share protected details/i)).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 1900));
+    expect(screen.getByRole("dialog", { name: "Request sent" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Return to introduction" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("The owner will decide whether to share protected details.");
     const request = vi.mocked(fetch).mock.calls[0];
     const submitted = JSON.parse(String((request[1] as RequestInit).body));
     expect(submitted).toMatchObject({
@@ -83,7 +89,7 @@ describe("interest request flow", () => {
       token: "123456",
       redirect: "/p/portfolio-token",
     }));
-    expect(await screen.findByText(/Request sent to Ananya's family/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
   });
 
   it("keeps verification disabled until six digits and resets an invalid code", async () => {

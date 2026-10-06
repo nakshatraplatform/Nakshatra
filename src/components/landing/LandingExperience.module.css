@@ -285,7 +285,7 @@
 .introduction strong { margin-top: 1rem; color: var(--gold); font-size: 0.78rem; }
 .introduction > p:last-child { max-width: 30ch; margin-top: 1.25rem; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
 
-.portfolioCard > footer { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+.portfolioCard > footer { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
 .portfolioCard > footer span { padding: 0.9rem 0.75rem; border-right: 1px solid var(--line); font-size: 0.7rem; font-weight: 700; }
 .portfolioCard > footer span:last-child { border: 0; }
 
@@ -511,7 +511,18 @@
 .page a:focus-visible,
 .page summary:focus-visible { outline: 3px solid light-dark(rgb(35 118 125 / 0.32), var(--app-dark-accent)); outline-offset: 4px; border-radius: 0.3rem; }
 
-@media (min-width: 861px) and (max-height: 860px) {
+@media (min-width: 861px) and (min-height: 700px) and (max-height: 860px) {
+  .guidedTourInner { grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr); gap: clamp(2rem, 4vw, 4rem); }
+  .guidedTourIntro h2 { font-size: clamp(2.5rem, 3.6vw, 3.5rem); }
+  .tourCard { min-height: 0; height: calc(100vh - 122px); grid-template-rows: auto minmax(0, 1fr); }
+  .tourCardCopy { padding: clamp(1.15rem, 2vw, 1.7rem); }
+  .tourCard h3 { margin-top: 0.7rem; font-size: clamp(1.9rem, 2.7vw, 2.5rem); }
+  .tourCardCopy > p { margin-top: 0.6rem; line-height: 1.45; }
+  .tourCard ul { margin-top: 0.7rem; }
+  .tourVisual { min-height: 0; padding: clamp(1rem, 2vw, 1.5rem); }
+}
+
+@media (min-width: 861px) and (max-height: 699px) {
   .guidedTourInner { max-width: 740px; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
   .guidedTourIntro { position: static; }
   .tourStack { display: grid; gap: 1rem; padding-bottom: 0; }

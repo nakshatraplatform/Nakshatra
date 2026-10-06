@@ -49,7 +49,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/broker-sponsored actions have no separate VivIntro charge for customers/i);
     expect(document.body).toHaveTextContent(/no paid creator plan yet/i);
     expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
-    expect(document.body).toHaveTextContent(/confirm your email, and begin a private portfolio/i);
+    expect(document.body).toHaveTextContent(/confirm your email, and begin an unpublished portfolio draft/i);
   });
 
   it("makes trust and FAQ answers expandable without hiding their questions", () => {

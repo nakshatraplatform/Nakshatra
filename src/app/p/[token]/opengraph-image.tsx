@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { createClient } from "@/lib/supabase/server";
 import { resolvePublicPortfolio } from "@/features/portfolio/server/public-portfolio.service";
 
-export const alt = "A private marriage introduction shared through VivIntro";
+export const alt = "A marriage introduction shared through VivIntro";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

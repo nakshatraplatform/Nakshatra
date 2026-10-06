@@ -174,7 +174,7 @@ describe("dashboard client", () => {
   it("does not expose sharing controls or a URL when verification is missing", () => {
     renderDashboard({ isExpired: false, daysLeft: 20 });
     expect(screen.getByRole("button", { name: "Edit portfolio" })).toHaveClass("dashboard-edit-action");
-    expect(screen.queryByRole("button", { name: "Share portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Share Introduction" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Copy link" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /rotate link/i })).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).not.toBeInTheDocument();
@@ -189,7 +189,7 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "test_exempt" },
       isExpired: false,
     });
-    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share Introduction" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
     expect(screen.getByText(/not Didit identity verification/i)).toBeInTheDocument();
     expect(screen.queryByText("Sharing paused")).not.toBeInTheDocument();
@@ -256,20 +256,20 @@ describe("dashboard client", () => {
     expect(metrics.children).toHaveLength(4);
     expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
-    expect(within(metrics).getByText("Active access")).toBeInTheDocument();
-    expect(within(metrics).getByText("Portfolio views")).toBeInTheDocument();
+    expect(within(metrics).getByText("Current approvals")).toBeInTheDocument();
+    expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
     expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /share portfolio/i }));
+    fireEvent.click(screen.getByRole("button", { name: /share introduction/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
-    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro wedding portfolio");
-    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the selected public Introduction");
-    expect(decodeURIComponent(whatsappUrl)).toContain("The Complete Portfolio is shared only after the profile owner approves");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro marriage introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the public Introduction");
+    expect(decodeURIComponent(whatsappUrl)).toContain("Protected details are shared only if the owner approves a request");
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
@@ -281,7 +281,7 @@ describe("dashboard client", () => {
 
   it("uses lifecycle-aware primary actions without treating link status as an insight", async () => {
     const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
-    expect(screen.getByRole("button", { name: "Share portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share Introduction" })).toBeInTheDocument();
     expect(screen.queryByText("Public link")).not.toBeInTheDocument();
 
     rerender(
@@ -300,6 +300,8 @@ describe("dashboard client", () => {
     );
 
     expect(screen.queryByText("Public link")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your Introduction link has expired." })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Share Introduction" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reactivate public link" }));
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
   });
@@ -391,6 +393,8 @@ describe("dashboard client", () => {
 
   it("lets the owner renew and revoke Complete Portfolio access", async () => {
     renderDashboard({
+      isExpired: false,
+      publicationReadiness: readyPublicationReadiness,
       accessSummary: {
         grants: [{
           id: accessGrantId,
@@ -413,7 +417,7 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Active access").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Manage access" })).toHaveAttribute("href", "#introductions-and-access");
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
@@ -428,6 +432,34 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
     fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
     expect(screen.getByText("Complete Portfolio access granted to Rohan Mehta")).toBeInTheDocument();
+  });
+
+  it("distinguishes an existing approval from currently available viewing", () => {
+    renderDashboard({
+      isExpired: false,
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required" },
+      accessSummary: {
+        grants: [{
+          id: accessGrantId,
+          interestRequestId: "22222222-2222-4222-8222-222222222222",
+          viewerName: "Rohan Mehta",
+          status: "active",
+          expiresAt: "2099-01-01T12:00:00.000Z",
+          renewedAt: null,
+          revokedAt: null,
+          lastAccessedAt: null,
+        }],
+        events: [],
+      },
+    });
+
+    const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
+    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByRole("link", { name: "Viewing unavailable · Manage" })).toHaveAttribute("href", "#introductions-and-access");
+    expect(screen.getByText("Viewing unavailable · Approval ends Jan 1, 2099")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
+    expect(screen.getByText(/Approval remains on record, but this viewer cannot open/)).toBeInTheDocument();
+    expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
   });
 
   it("updates, deletes, and uploads owner photos", async () => {
@@ -663,7 +695,7 @@ describe("dashboard client", () => {
     expect(within(dialog).queryByText("Viewer 1")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: /Next/i }));
     expect(within(dialog).getByText("Viewer 1")).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email"), { target: { value: "Viewer 4" } });
+    fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email…"), { target: { value: "Viewer 4" } });
     expect(within(dialog).getByText("Viewer 4")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 5")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close and return to dashboard" }));
@@ -724,7 +756,7 @@ describe("dashboard client", () => {
     });
 
     expect(screen.queryByText("Your publishing journey")).not.toBeInTheDocument();
-    expect(screen.getByText("Portfolio active")).toBeInTheDocument();
+    expect(screen.getByText("Introduction link active")).toBeInTheDocument();
   });
 
   it("cancels publication review without changing the public portfolio", async () => {

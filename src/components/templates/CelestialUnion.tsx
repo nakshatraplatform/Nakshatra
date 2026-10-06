@@ -280,7 +280,7 @@ export default function CelestialUnion({
         </div>
       ),
     });
-  } else if (isRestricted(data, "journey")) {
+  } else if (!hasApprovedAccess && isRestricted(data, "journey")) {
     chapters.push(protectedChapter(
       "journey",
       "Journey",
@@ -349,7 +349,7 @@ export default function CelestialUnion({
         </>
       ),
     });
-  } else if (familyProtected) {
+  } else if (!hasApprovedAccess && familyProtected) {
     chapters.push(protectedChapter(
       "family",
       "Family and roots",
@@ -405,7 +405,7 @@ export default function CelestialUnion({
         </>
       ),
     });
-  } else if (astrologyProtected) {
+  } else if (!hasApprovedAccess && astrologyProtected) {
     chapters.push(protectedChapter(
       "astrology",
       "Astrology",
@@ -598,7 +598,7 @@ export default function CelestialUnion({
           <div className="portfolio-hero-copy">
             <p className="portfolio-eyebrow">A Marriage Introduction</p>
             <div className="portfolio-name-row">
-              <h1 id="portfolio-name">{clean(data.personal.name) || "Private introduction"}</h1>
+              <h1 id="portfolio-name">{clean(data.personal.name) || "Marriage introduction"}</h1>
               {identityVerified && (
                 <span
                   className="portfolio-verified-badge"
@@ -725,7 +725,7 @@ export default function CelestialUnion({
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
               <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
-              <p>Create your own private portfolio and keep sensitive details protected until you approve access.</p>
+              <p>Create your portfolio privately. When you are ready, share an Introduction and keep sensitive details behind your approval.</p>
             </div>
             <a href="/signup">
               Create your portfolio
@@ -738,7 +738,7 @@ export default function CelestialUnion({
       <footer className="portfolio-footer">
         <div className="portfolio-footer-identity">
           <VivIntroBrand variant="full-symbol" decorative />
-          <p>Private marriage introductions, shared with care.</p>
+          <p>One introduction, shared with care.</p>
         </div>
         <nav className="portfolio-footer-links" aria-label="Portfolio help and policies">
           <a href="/received-a-link">Viewer guide</a>

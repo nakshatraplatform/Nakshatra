@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Private Marriage Introduction Link | VivIntro");
+  await expect(page).toHaveTitle("Marriage Introduction Link | VivIntro");
   await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
   const primaryCta = page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");
@@ -112,6 +112,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   const hero = page.locator('.portfolio-hero-media[data-orientation="portrait"]');
   await expect(hero).toBeVisible();
   await expect(hero.getByAltText("Public portrait")).toBeVisible();
+  await expect.poll(() => hero.getByAltText("Public portrait").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
   await expect
     .poll(async () => {
       const bounds = await page.locator(".portfolio-primary-photo").evaluate((element) => {
@@ -345,5 +346,6 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(headerAction).toBeVisible();
   await expect(headerAction).toHaveText("Show interest");
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
+  expect((await headerAction.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();
 });

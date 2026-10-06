@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LandingExperience, landingFaqs } from "@/components/landing/LandingExperience";
 
 export const metadata: Metadata = {
-  title: { absolute: "Private Marriage Introduction Link | VivIntro" },
+  title: { absolute: "Marriage Introduction Link | VivIntro" },
   description:
     "Share one up-to-date marriage introduction link instead of forwarding biodata PDFs. Keep contact details and horoscope files protected until you approve access.",
   alternates: { canonical: "/" },

@@ -11,7 +11,7 @@ import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-ima
 
 describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
-    expect(metadata.title).toEqual({ absolute: "Private Marriage Introduction Link | VivIntro" });
+    expect(metadata.title).toEqual({ absolute: "Marriage Introduction Link | VivIntro" });
     expect(metadata.description).toMatch(/marriage introduction/i);
     expect(metadata.description).toMatch(/until you approve/i);
     expect(metadata.openGraph).toMatchObject({

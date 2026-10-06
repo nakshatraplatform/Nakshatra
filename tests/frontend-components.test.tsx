@@ -76,7 +76,7 @@ describe("landing and shared frontend components", () => {
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: /create your portfolio/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
-    expect(screen.getByText(/Private marriage introductions, shared with care/i)).toBeInTheDocument();
+    expect(screen.getByText(/Marriage introductions, shared with care/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/protected access/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /for families already making introductions/i })).toBeInTheDocument();

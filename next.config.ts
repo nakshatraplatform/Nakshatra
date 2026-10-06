@@ -1,6 +1,18 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
+/** Allows the loopback Supabase fixture in development without widening Production CSP. */
+export function resolveLocalSupabaseOrigin(nodeEnv: string | undefined, configuredUrl: string | undefined) {
+  if (nodeEnv === "production" || !configuredUrl) return null;
+  try {
+    const url = new URL(configuredUrl);
+    return url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname) ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+const localSupabaseOrigin = resolveLocalSupabaseOrigin(process.env.NODE_ENV, process.env.NEXT_PUBLIC_SUPABASE_URL);
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -9,9 +21,9 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  `img-src 'self' data: blob: https://*.supabase.co${localSupabaseOrigin ? ` ${localSupabaseOrigin}` : ""}`,
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${localSupabaseOrigin ? ` ${localSupabaseOrigin}` : ""}`,
   "media-src 'self' blob: https://*.supabase.co",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
