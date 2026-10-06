@@ -87,3 +87,24 @@ the original blocking audit without dependency or application changes.
 Evidence source: https://github.com/advisories/GHSA-vfj7-8cjw-p6xm and npm registry
 metadata, checked 2026-10-02. No application, migration or production changes.
 Graphify executable unavailable. No production mutation or application code changes.
+
+## Separate production dependency repair (2026-10-06)
+
+The liveness-only PR exposed GHSA-68fv-2mgg-jv7q in the existing locked
+`next -> postcss -> source-map-js@1.2.1` dependency chain. The production audit
+reproduced the blocking failure before this repair. Upgrade only the lockfile's
+`source-map-js` entry to patched 1.2.2 within existing dependency ranges; do not
+change the audit policy, package manifest, or temporary development exception.
+This is a Standard-risk compatible patch, not a new exception or schema change.
+
+Clean `npm ci --ignore-scripts`, security audit, typecheck and lint passed
+(lint retains two pre-existing OpenGraph warnings). The production audit has no
+high/critical findings; the five separately accepted development findings remain.
+All 984 unit tests and `npm run build -- --webpack` passed on rerun after local
+disk exhaustion interrupted their initial runs. Only ignored `.next-e2e` output
+was removed to recover space; Playwright can regenerate it. Hosted CI remains
+pending. The fix is prepared on `fix/nak-60-liveness-only-verification`.
+
+Acceptance: only the intended package changes, clean installation resolves 1.2.2,
+the unchanged production audit passes, and unit tests/build remain compatible.
+Evidence: https://github.com/advisories/GHSA-68fv-2mgg-jv7q.
