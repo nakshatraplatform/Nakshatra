@@ -13,9 +13,11 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - Supabase Postgres, Auth and private Storage store portfolio and normalized verification state. Forward-only SQL migrations are in `supabase/migrations`; pgTAP tests are in `supabase/tests/database`. Protected CD applies production migrations.
 - Didit hosted sessions use server-only API credentials. `src/features/identity-verification/server/` owns candidate/representative session creation, signed webhooks and repositories. `scripts/identity-verification-worker.mjs` fetches decisions and deletes provider sessions; database RPCs own authoritative state transitions.
 - `src/features/media/server/` stores private portfolio photos. A `portfolio_media` hero row is the primary photo and can change after verification.
-- `src/features/portfolio/server/` and `src/components/templates/` consume publication and public-badge state. BrokerDesk representative verification is a separate subject type that currently shares the provider worker/RPC.
+- `src/features/portfolio/server/` and `src/components/templates/` consume publication and public-badge state. BrokerDesk representative verification is a separate subject type; the candidate-only scheduler excludes its queued work, while the legacy shared worker/RPC remains compatible.
 
 ## Relevant feature status
+
+- [Candidate-only verification worker](features/candidate-only-verification-worker.md): removes representative matching-key dependencies from the scheduled portfolio worker and filters candidate jobs before leasing. Local checks and independent review pass; additive migration and matching worker deployment remain pending.
 
 - [Open creator onboarding and feedback](features/open-creator-onboarding.md): owner-approved replacement for the invite-only waitlist; implementation and critical release checks in progress. Rahul's Production pilot-admin grant was soft-revoked, leaving only the platform account active. Publication safeguards remain separate.
 
