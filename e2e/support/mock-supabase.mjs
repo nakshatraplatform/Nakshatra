@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { approvedViewerToken, approvedViewerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
 
 const host = "127.0.0.1";
 const port = 54329;
@@ -45,6 +45,48 @@ const publicSnapshot = {
       contact: "restricted",
     },
   },
+};
+
+const ownerPortfolio = {
+  id: portfolioId,
+  user_id: publishedOwnerUser.id,
+  candidate_id: null,
+  share_token: "e2e-portfolio-token",
+  draft_data: {
+    ...publicSnapshot.data,
+    personal: { ...publicSnapshot.data.personal, name: "Aditi Rao", first_name: "Aditi", last_name: "Rao", profile_for: "self", dob: "1997-02-12", country: "United States", city: "Boston", current_location: "Boston, United States", marital_status: "Never Married", profile_summary: undefined, shared_life_plans: undefined },
+    vitals: { height: "5'5\"" },
+    contact: { contact_person: "Aditi Rao", phone: "+1 555 010 0200", email: "aditi@example.test" },
+  },
+  published_data: {
+    ...publicSnapshot.data,
+    personal: { ...publicSnapshot.data.personal, profile_for: "self", dob: "1997-02-12" },
+  },
+  template_id: 3,
+  theme_color: "#f2c6a7",
+  sun_sign: "kanya",
+  is_published: true,
+  published_at: "2026-10-01T00:00:00Z",
+  expires_at: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+  last_renewed_at: null,
+  privacy_mode: "balanced",
+  visibility_settings: {},
+  created_at: "2026-09-15T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+};
+
+const ownerInterests = [
+  { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T12:00:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
+  { id: "34343434-3434-4434-8434-343434343434", viewer_name: "A long family name for layout testing that should wrap without hiding the decision", viewer_phone: null, viewer_email: "family@example.test", viewer_family_context: null, message: "Would it be possible to talk first?", status: "new", requester_user_id: "abababab-abab-4bab-8bab-abababababab", metadata: { profile_for: "family" }, created_at: "2026-10-02T12:00:00Z", email_verified: false, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
+  { id: "56565656-5656-4656-8656-565656565656", viewer_name: "Samira", viewer_phone: null, viewer_email: "samira@example.test", viewer_family_context: null, message: null, status: "rejected", requester_user_id: null, metadata: {}, created_at: "2026-09-27T12:00:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
+];
+
+const ownerAccess = {
+  grants: [
+    { id: "78787878-7878-4878-8878-787878787878", interestRequestId: "90909090-9090-4090-8090-909090909090", viewerName: "Rohan", viewerEmail: "rohan@example.test", sourceType: "direct", brokerName: null, status: "active", expiresAt: new Date(Date.now() + 2 * 86_400_000).toISOString(), renewedAt: null, revokedAt: null, lastAccessedAt: "2026-10-04T10:00:00Z" },
+    { id: "89898989-8989-4898-8898-898989898989", interestRequestId: "91919191-9191-4191-8191-919191919191", viewerName: "Priya", viewerEmail: "priya@example.test", sourceType: "direct", brokerName: null, status: "expired", expiresAt: "2026-09-20T00:00:00Z", renewedAt: null, revokedAt: null, lastAccessedAt: null },
+  ],
+  events: [{ id: 1, eventType: "grant_created", viewerName: "Rohan", createdAt: "2026-10-01T12:00:00Z", metadata: {} }],
 };
 
 const publicMedia = [
@@ -226,6 +268,7 @@ const server = createServer((request, response) => {
   if (url.pathname === "/auth/v1/user") {
     if (request.headers.authorization === `Bearer ${themeTestToken}`) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
+    if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) return sendJson(response, 200, publishedOwnerUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
     }
@@ -256,6 +299,19 @@ const server = createServer((request, response) => {
       }],
     });
     if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests"].includes(url.pathname)) return sendJson(response, 200, null);
+  }
+  if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) {
+    if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, ownerPortfolio);
+    if (url.pathname === "/rest/v1/portfolio_views") {
+      response.writeHead(200, { "Content-Range": "0-11/12", "Access-Control-Allow-Origin": "*" });
+      return response.end();
+    }
+    if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMedia[0]]);
+    if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
+    if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
+    if (url.pathname === "/rest/v1/rpc/list_portfolio_access") return sendJson(response, 200, ownerAccess);
+    if (url.pathname === "/rest/v1/rpc/get_portfolio_publication_readiness") return sendJson(response, 200, { portfolioExists: true, lastEditorSection: "future", previewedAt: "2026-09-30T00:00:00Z", selectedPlanCode: "launch_30", verificationStatus: "test_exempt", paymentStatus: "paid", paymentExpiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), paymentActive: true, disclosureConfirmed: true, published: true, missingRequired: [] });
   }
   if (url.pathname === "/rest/v1/public_portfolio_snapshots" || url.pathname === "/rest/v1/portfolio_media") {
     return sendJson(response, 403, { message: "Direct public table access is disabled" });

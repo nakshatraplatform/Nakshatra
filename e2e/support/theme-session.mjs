@@ -36,3 +36,20 @@ export const approvedViewerCookie = {
   ...themeTestCookie,
   value: `base64-${encode({ access_token: approvedViewerToken, refresh_token: "approved-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: approvedViewerUser })}`,
 };
+
+// Published creator fixture: accepted only by the local loopback mock.
+export const publishedOwnerUser = {
+  ...themeTestUser,
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  email: "published-owner@example.test",
+  email_confirmed_at: "2026-10-01T00:00:00Z",
+};
+export const publishedOwnerToken = [
+  encode({ alg: "HS256", typ: "JWT" }),
+  encode({ sub: publishedOwnerUser.id, role: publishedOwnerUser.role, exp: 4102444800, session_id: "ffffffff-ffff-4fff-8fff-ffffffffffff" }),
+  Buffer.from("not-a-signature-published-local-fixture").toString("base64url"),
+].join(".");
+export const publishedOwnerCookie = {
+  ...themeTestCookie,
+  value: `base64-${encode({ access_token: publishedOwnerToken, refresh_token: "published-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: publishedOwnerUser })}`,
+};

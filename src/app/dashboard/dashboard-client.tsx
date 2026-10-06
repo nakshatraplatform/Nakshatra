@@ -96,6 +96,7 @@ interface Props {
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
+type RelationshipStage = "awaiting" | "set-aside" | "access";
 
 export default function DashboardClient({
   portfolio,
@@ -137,6 +138,11 @@ export default function DashboardClient({
   const [activePortfolioId, setActivePortfolioId] = useState(portfolio?.id ?? null);
   const [interestItems, setInterestItems] = useState(interests);
   const [accessGrants, setAccessGrants] = useState(accessSummary.grants);
+  const [expandedRelationshipStages, setExpandedRelationshipStages] = useState<Record<RelationshipStage, boolean>>({
+    awaiting: false,
+    "set-aside": false,
+    access: false,
+  });
   const [readinessState, setReadinessState] = useState(publicationReadiness);
   const accessEvents = accessSummary.events;
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -679,18 +685,18 @@ export default function DashboardClient({
                 <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
                 <p className="dashboard-stat-value">{pendingInterestCount}</p>
                 {pendingInterestCount > 0
-                  ? <a className="dashboard-stat-detail" href="#introductions-and-access">Review requests</a>
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review requests</a>
                   : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Active access</span></div>
                 <p className="dashboard-stat-value">{activeAccessCount}</p>
                 {activeAccessCount > 0
-                  ? <a className="dashboard-stat-detail" href="#introductions-and-access">Manage access</a>
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
                   : <span className="dashboard-stat-caption">No current grants</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Portfolio views</span></div>
+                <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Introduction views</span></div>
                 <p className="dashboard-stat-value">{viewCount}</p>
                 <span className="dashboard-stat-caption">All recorded opens</span>
               </div>
@@ -775,6 +781,8 @@ export default function DashboardClient({
           )}
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
           {showRelationshipDashboard && <RelationshipLifecycle
+            expandedStages={expandedRelationshipStages}
+            onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
             interests={interestItems}
             grants={accessGrants}
             events={accessEvents}
@@ -1309,6 +1317,8 @@ function ReceivedBrokerIntroductions({ introductions }: { introductions: Receive
 }
 
 function RelationshipLifecycle({
+  expandedStages,
+  onToggleStage,
   interests,
   grants,
   events,
@@ -1317,6 +1327,8 @@ function RelationshipLifecycle({
   onDecision,
   onGrantChange,
 }: {
+  expandedStages: Record<RelationshipStage, boolean>;
+  onToggleStage: (stage: RelationshipStage) => void;
   interests: DashboardInterest[];
   grants: AccessGrant[];
   events: AccessAuditEvent[];
@@ -1325,8 +1337,7 @@ function RelationshipLifecycle({
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
   onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
 }) {
-  type StageKey = "awaiting" | "set-aside" | "access";
-  type ListModal = StageKey | "history" | null;
+  type ListModal = RelationshipStage | "history" | null;
   type RecordDetail =
     | { kind: "interest"; item: DashboardInterest }
     | { kind: "grant"; item: AccessGrant }
@@ -1346,11 +1357,6 @@ function RelationshipLifecycle({
   const [searchQuery, setSearchQuery] = useState("");
   const [recordFilter, setRecordFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [expandedStages, setExpandedStages] = useState<Record<StageKey, boolean>>({
-    awaiting: false,
-    "set-aside": false,
-    access: false,
-  });
   const isMobileDashboard = useMobileDashboard();
   const approvalTitleId = useId();
   const approvalConfirmRef = useRef<HTMLButtonElement>(null);
@@ -1367,6 +1373,9 @@ function RelationshipLifecycle({
     const focusTarget = recordDetail ? closeDetailRef.current : closeListRef.current;
     focusTarget?.focus();
     const handleKey = (event: KeyboardEvent) => {
+      // The disclosure confirmation owns Escape while it is open. Closing it
+      // must return the owner to this request, not dismiss both dialogs.
+      if (approvalCandidate) return;
       const dialog = (recordDetail ? closeDetailRef.current : closeListRef.current)?.closest<HTMLElement>("[role='dialog']") || null;
       if (event.key === "Escape" && workingId === null) {
         if (recordDetail) setRecordDetail(null);
@@ -1381,7 +1390,7 @@ function RelationshipLifecycle({
       document.body.style.overflow = previousOverflow;
       previous?.focus();
     };
-  }, [listModal, recordDetail, workingId]);
+  }, [listModal, recordDetail, workingId, approvalCandidate]);
 
   useEffect(() => {
     if (!approvalCandidate) return;
@@ -1457,10 +1466,6 @@ function RelationshipLifecycle({
     setListModal(mode);
   }
 
-  function toggleStage(stage: StageKey) {
-    setExpandedStages((current) => ({ ...current, [stage]: !current[stage] }));
-  }
-
   const listRecords = listModal === "awaiting"
     ? waitingInterests.map((item) => ({ kind: "interest" as const, item }))
     : listModal === "set-aside"
@@ -1511,10 +1516,10 @@ function RelationshipLifecycle({
       <CompactRelationshipStage
         stage="awaiting"
         title="Awaiting review"
-        description="Verified introductions ready for your decision."
+        description="New requests ready for your decision. Check each person's verification status before sharing more."
         count={waitingInterests.length}
         expanded={!isMobileDashboard || expandedStages.awaiting}
-        onToggle={() => toggleStage("awaiting")}
+        onToggle={() => onToggleStage("awaiting")}
         onViewAll={() => openList("awaiting")}
         empty="New interests will appear here after viewers introduce themselves."
       >
@@ -1529,7 +1534,7 @@ function RelationshipLifecycle({
         description="Requests you can reopen when you are ready."
         count={setAsideInterests.length}
         expanded={!isMobileDashboard || expandedStages["set-aside"]}
-        onToggle={() => toggleStage("set-aside")}
+        onToggle={() => onToggleStage("set-aside")}
         onViewAll={() => openList("set-aside")}
         empty="No requests are currently set aside."
       >
@@ -1544,7 +1549,7 @@ function RelationshipLifecycle({
         description="Active viewers who can currently open protected details."
         count={activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
-        onToggle={() => toggleStage("access")}
+        onToggle={() => onToggleStage("access")}
         onViewAll={() => openList("access")}
         empty="Nobody currently has Complete Portfolio access."
       >
@@ -1556,7 +1561,6 @@ function RelationshipLifecycle({
       <button type="button" className="dashboard-history-action" onClick={() => openList("history")}>
         <History className="h-4 w-4" aria-hidden="true" />
         Access history
-        <span>{historicalGrants.length + archivedInterests.length + brokerResponses.length + events.length}</span>
       </button>
 
       {listModal && !recordDetail && (
@@ -1565,11 +1569,11 @@ function RelationshipLifecycle({
             <label>
               <span className="sr-only">Search {listTitle.toLowerCase()}</span>
               <Search aria-hidden="true" />
-              <input value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} placeholder="Search by name or email" />
+              <input name="relationship-search" autoComplete="off" spellCheck={false} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} placeholder="Search by name or email…" />
             </label>
             <label>
               <span className="sr-only">Filter records</span>
-              <select value={recordFilter} onChange={(event) => { setRecordFilter(event.target.value); setPage(1); }}>
+              <select name="relationship-filter" value={recordFilter} onChange={(event) => { setRecordFilter(event.target.value); setPage(1); }}>
                 <option value="all">All records</option>
                 <option value="direct">Direct introductions</option>
                 <option value="broker">Broker introductions</option>
@@ -1606,7 +1610,7 @@ function RelationshipLifecycle({
       )}
 
       {recordDetail && (
-        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Access details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail>
+        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Access details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail inactive={Boolean(approvalCandidate)}>
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
@@ -1639,28 +1643,30 @@ function RelationshipLifecycle({
             role="dialog"
             aria-modal="true"
             aria-labelledby={approvalTitleId}
-            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-5 text-[light-dark(#18272e,var(--app-dark-ink))] shadow-2xl sm:p-7"
+            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] text-[light-dark(#18272e,var(--app-dark-ink))] shadow-2xl"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Confirm controlled disclosure</p>
-            <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Complete Portfolio access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
-            <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-              Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
-            </p>
-            <div className="mt-5 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f8fafc,var(--app-dark-surface))] p-4">
-              <p className="text-sm font-semibold">The Complete Portfolio will disclose:</p>
-              {disclosedCategories.length > 0 ? (
-                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[light-dark(#334155,var(--app-dark-ink))]">
-                  {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
-                </ul>
-              ) : (
-                <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">No additional protected information has been added yet.</p>
-              )}
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Confirm controlled disclosure</p>
+              <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Complete Portfolio access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
+              <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+                Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
+              </p>
+              <div className="mt-5 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f8fafc,var(--app-dark-surface))] p-4">
+                <p className="text-sm font-semibold">The Complete Portfolio will disclose:</p>
+                {disclosedCategories.length > 0 ? (
+                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[light-dark(#334155,var(--app-dark-ink))]">
+                    {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">No additional protected information has been added yet.</p>
+                )}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+                You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
+              </p>
+              {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
             </div>
-            <p className="mt-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-              You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
-            </p>
-            {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 flex-col gap-2 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-5">
               <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
               <button
                 ref={approvalConfirmRef}
@@ -1764,9 +1770,9 @@ function BrokerResponseSummaryCard({ response, onPrimary }: { response: OwnerBro
   );
 }
 
-function DashboardModal({ titleId, title, closeLabel, closeRef, onClose, detail = false, children }: { titleId: string; title: string; closeLabel: string; closeRef: React.RefObject<HTMLButtonElement | null>; onClose: () => void; detail?: boolean; children: React.ReactNode }) {
+function DashboardModal({ titleId, title, closeLabel, closeRef, onClose, detail = false, inactive = false, children }: { titleId: string; title: string; closeLabel: string; closeRef: React.RefObject<HTMLButtonElement | null>; onClose: () => void; detail?: boolean; inactive?: boolean; children: React.ReactNode }) {
   return (
-    <div className="dashboard-modal-backdrop" role="presentation">
+    <div className="dashboard-modal-backdrop" role="presentation" inert={inactive} aria-hidden={inactive || undefined}>
       <section role="dialog" aria-modal="true" aria-labelledby={titleId} className={`dashboard-records-modal${detail ? " is-detail" : ""}`}>
         <header><div><p className="portfolio-eyebrow">Introductions and access</p><h2 id={titleId}>{title}</h2></div><button ref={closeRef} type="button" className="dashboard-modal-close" aria-label={closeLabel} onClick={onClose}><X aria-hidden="true" /></button></header>
         <div className="dashboard-modal-body">{children}</div>
@@ -1802,7 +1808,7 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
       {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
       {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
       {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro portfolio</Link>}
-      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant Complete Portfolio access</button> : <span className="dashboard-action-note">Verified account required before access can be granted.</span>}</> : null}
+      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant Complete Portfolio access</button> : <span className="dashboard-action-note">A verified VivIntro account is required before Complete access can be granted.</span>}</> : null}
     </>
   );
 }

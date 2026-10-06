@@ -257,7 +257,7 @@ describe("dashboard client", () => {
     expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
     expect(within(metrics).getByText("Active access")).toBeInTheDocument();
-    expect(within(metrics).getByText("Portfolio views")).toBeInTheDocument();
+    expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
     expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
     expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
@@ -665,7 +665,7 @@ describe("dashboard client", () => {
     expect(within(dialog).queryByText("Viewer 1")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: /Next/i }));
     expect(within(dialog).getByText("Viewer 1")).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email"), { target: { value: "Viewer 4" } });
+    fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email…"), { target: { value: "Viewer 4" } });
     expect(within(dialog).getByText("Viewer 4")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 5")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close and return to dashboard" }));
