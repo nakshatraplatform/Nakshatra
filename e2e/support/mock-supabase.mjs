@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
 const port = 54329;
@@ -266,7 +267,7 @@ const server = createServer((request, response) => {
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
   if (url.pathname === "/auth/v1/user") {
-    if (request.headers.authorization === `Bearer ${themeTestToken}`) return sendJson(response, 200, themeTestUser);
+    if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
     if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) return sendJson(response, 200, publishedOwnerUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
@@ -279,7 +280,12 @@ const server = createServer((request, response) => {
   }
   // Theme browser coverage uses the real page components with loopback-only,
   // read-only projections. Production authorization code is never replaced.
-  if (request.headers.authorization === `Bearer ${themeTestToken}`) {
+  if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
+    if (request.headers.authorization === `Bearer ${recoveryTestToken}` && url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, {
+      id: portfolioId, candidate_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", user_id: themeTestUser.id,
+      draft_data: { personal: { profile_for: "self" } }, published_data: null, is_published: false,
+      privacy_mode: "balanced", visibility_settings: {}, created_at: "2026-10-06T00:00:00Z", updated_at: "2026-10-06T00:00:00Z",
+    });
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
     if (url.pathname === "/rest/v1/rpc/resolve_customer_broker_relationships") return sendJson(response, 200, { available: true, relationships: [] });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });

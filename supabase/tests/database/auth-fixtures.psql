@@ -254,6 +254,16 @@ as $$
 $$;
 
 -- A saved self-owned draft is required by the current pilot, but its primary
+create or replace function pg_temp.set_invalid_session_claims(p_user_id uuid, p_session_id text)
+returns void language plpgsql as $$
+begin
+  if exists(select 1 from auth.sessions where id::text=p_session_id and user_id=p_user_id) then
+    raise exception 'negative fixture cannot represent an active owned session';
+  end if;
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',p_user_id,'role','authenticated','session_id',p_session_id)::text,true);
+end;
+$$;
+
 -- photo is not a verification input. Use only in verification-specific suites.
 create or replace function pg_temp.create_self_verification_draft(p_candidate_id uuid)
 returns void language plpgsql as $$

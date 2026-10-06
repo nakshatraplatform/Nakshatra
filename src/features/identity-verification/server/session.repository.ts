@@ -6,6 +6,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export class IdentityVerificationSessionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
+  current(candidateId: string) {
+    return this.supabase.rpc("get_current_candidate_liveness_verification", { p_candidate_id: candidateId });
+  }
+
+  cancel(candidateId: string, attemptId: string) {
+    return this.supabase.rpc("cancel_candidate_liveness_verification", { p_candidate_id: candidateId, p_attempt_id: attemptId });
+  }
+
+  requestReconciliation(candidateId: string, attemptId: string) {
+    return this.supabase.rpc("request_candidate_liveness_reconciliation", { p_candidate_id: candidateId, p_attempt_id: attemptId });
+  }
+
   begin(candidateId: string | null, invitationTokenHash: string | null, managementTokenHash: string) {
     return this.supabase.rpc("begin_candidate_liveness_verification", {
       p_candidate_id: candidateId,

@@ -2472,6 +2472,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_candidate_liveness_verification: {
+        Args: { p_attempt_id: string; p_candidate_id: string }
+        Returns: Json
+      }
+      complete_identity_verification_provider_absence: {
+        Args: { p_attempt_id: string; p_claim_token: string }
+        Returns: boolean
+      }
+      expire_candidate_liveness_attempts: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      get_current_candidate_liveness_verification: {
+        Args: { p_candidate_id: string }
+        Returns: Json
+      }
+      request_candidate_liveness_reconciliation: {
+        Args: { p_attempt_id: string; p_candidate_id: string }
+        Returns: undefined
+      }
       advance_account_deletion_stage: {
         Args: { p_claim_token: string; p_request_id: string; p_stage: string }
         Returns: boolean

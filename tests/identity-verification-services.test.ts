@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createDiditVerificationSession = vi.hoisted(() => vi.fn());
 const createDiditLivenessSession = vi.hoisted(() => vi.fn());
+const getCandidateConfig = vi.hoisted(() => vi.fn());
 const preparePhotoReference = vi.hoisted(() => vi.fn());
 const privilegedPhotoDownload = vi.hoisted(() => vi.fn());
 vi.mock("@/features/identity-verification/server/didit.provider", () => ({
   createDiditLivenessSession,
-  getCandidateVerificationConfig: () => ({ workflowId: process.env.DIDIT_WORKFLOW_ID }),
+  getCandidateVerificationConfig: getCandidateConfig,
   createDiditVerificationSession,
   DiditProviderError: class DiditProviderError extends Error {
     constructor(readonly code: string) {
@@ -53,6 +54,7 @@ function supabaseWith(results: Array<{ data?: unknown; error?: unknown }>) {
 describe("identity-verification services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getCandidateConfig.mockImplementation(() => ({ workflowId: process.env.DIDIT_WORKFLOW_ID }));
     createDiditVerificationSession.mockResolvedValue({ sessionId: "provider-session", url: "https://verify.didit.test/session" });
     createDiditLivenessSession.mockResolvedValue({
       sessionId: "55555555-5555-4555-8555-555555555555",
@@ -65,6 +67,22 @@ describe("identity-verification services", () => {
     vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "test-identity-match-key-with-at-least-32-characters");
     vi.stubEnv("DIDIT_WORKFLOW_ID", "66666666-6666-4666-8666-666666666666");
     vi.stubEnv("DIDIT_WORKFLOW_VERSION", "3");
+  });
+
+  it.each(["120", "invalid", "0"])("returns bounded creation cooldown for quota details %s", async details => {
+    await expect(startIdentityVerification({
+      supabase: supabaseWith([{ data: prepared }, { error: { code: "IV004", details } }]), candidateId: "candidate", invitationTokenHash: null,
+      managementToken: "management", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
+    })).rejects.toMatchObject({ status: 429, retryAfter: details === "120" ? 120 : details === "0" ? 1 : 3600 });
+    expect(createDiditLivenessSession).not.toHaveBeenCalled();
+  });
+
+  it("does not reserve any attempt when configuration fails before start or retry", async () => {
+    getCandidateConfig.mockImplementation(() => { throw new Error("missing config"); });
+    const supabase = supabaseWith([]);
+    await expect(startIdentityVerification({ supabase, candidateId: "candidate", invitationTokenHash: null, managementToken: "management", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result" })).rejects.toMatchObject({ code: "IDENTITY_VERIFICATION_CONFIGURATION_INVALID" });
+    await expect(retryIdentityVerification({ supabase, tokenHash: "a".repeat(64), managementToken: "management", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result" })).rejects.toMatchObject({ code: "IDENTITY_VERIFICATION_CONFIGURATION_INVALID" });
+    expect((supabase as { rpc: unknown }).rpc).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -112,7 +130,7 @@ describe("identity-verification services", () => {
       managementToken: "management-token",
       managementTokenHash: "b".repeat(64),
       callbackUrl: "https://nakshatra.test/verification/result",
-    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session" });
+    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session", attemptId: "11111111-1111-4111-8111-111111111111" });
     expect(createDiditVerificationSession).not.toHaveBeenCalled();
     expect(privilegedPhotoDownload).not.toHaveBeenCalled();
     expect(preparePhotoReference).not.toHaveBeenCalled();
@@ -215,7 +233,7 @@ describe("identity-verification services", () => {
     const supabase = supabaseWith([{ data: [prepared], error: null }, { data: null, error: null }, { data: null, error: null }]);
     await expect(retryIdentityVerification({
       supabase, tokenHash: "a".repeat(64), managementToken: "next-management", managementTokenHash: "b".repeat(64), callbackUrl: "https://nakshatra.test/result",
-    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session" });
+    })).resolves.toEqual({ url: "https://verify.didit.test/photo-session", attemptId: "11111111-1111-4111-8111-111111111111" });
   });
 
   it("fails closed for malformed prepared records and persistence failures", async () => {

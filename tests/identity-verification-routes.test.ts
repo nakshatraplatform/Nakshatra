@@ -56,10 +56,19 @@ describe("identity-verification API routes", () => {
     createToken.mockReturnValue("generated-token");
     hashToken.mockImplementation(async (token: string) => `${token}-hash`);
     createInvitation.mockResolvedValue({ expiresAt: "2026-09-01T00:00:00.000Z" });
-    startVerification.mockResolvedValue({ url: "https://verify.didit.test/session" });
+    startVerification.mockResolvedValue({ url: "https://verify.didit.test/session", attemptId: "22222222-2222-4222-8222-222222222222" });
     retryVerification.mockResolvedValue({ url: "https://verify.didit.test/retry" });
     getLinkStatus.mockResolvedValue({ kind: "invitation", status: "ready" });
     withdrawConsent.mockResolvedValue(undefined);
+  });
+
+  it("retains the anonymous management-link retry throttle", async () => {
+    getApiUser.mockResolvedValue({ status: "missing_session" });
+    enforceRateLimit.mockResolvedValue(new Response(null, { status: 429 }));
+    const response = await retryRoute(request("http://local/api/identity-verification/retry", { token: "valid-token", consent: true, consentVersion: "2026-10-05-liveness-only" }));
+    expect(response.status).toBe(429);
+    expect(enforceRateLimit).toHaveBeenCalledWith(supabase, expect.any(Request), "identity_verification_retry");
+    expect(retryVerification).not.toHaveBeenCalled();
   });
 
   it("rejects delegated invitations during the self-created pilot", async () => {
@@ -101,6 +110,7 @@ describe("identity-verification API routes", () => {
   it("uses authenticated primary-owner flow for self verification and fails closed for cross-site/rate-limited calls", async () => {
     const self = await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true, consentVersion: "2026-10-05-liveness-only" }));
     expect(self.status).toBe(200);
+    await expect(self.json()).resolves.toMatchObject({ attemptId: "22222222-2222-4222-8222-222222222222", url: "https://verify.didit.test/session" });
     expect(startVerification).toHaveBeenCalledWith(expect.objectContaining({ candidateId: "11111111-1111-4111-8111-111111111111", invitationTokenHash: null, supabase }));
     expect((await startRoute(request("http://local/api/identity-verification/start", { authorization: "self", candidateId: "11111111-1111-4111-8111-111111111111", consent: true, consentVersion: "2026-10-05-liveness-only" }, "https://attacker.test"))).status).toBe(403);
     enforceRateLimit.mockResolvedValueOnce(new Response(null, { status: 429 }));
