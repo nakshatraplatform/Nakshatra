@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import nextConfig, { resolveOutputMode } from "../next.config";
+import nextConfig, { resolveLocalSupabaseOrigin, resolveOutputMode } from "../next.config";
 
 describe("Next.js deployment output", () => {
   it("lets Vercel package the application while retaining standalone Docker output", () => {
@@ -10,6 +10,14 @@ describe("Next.js deployment output", () => {
 });
 
 describe("Next.js security headers", () => {
+  it("allows only the configured loopback mock outside Production", () => {
+    expect(resolveLocalSupabaseOrigin("development", "http://127.0.0.1:54329")).toBe("http://127.0.0.1:54329");
+    expect(resolveLocalSupabaseOrigin("test", "http://localhost:54329/path")).toBe("http://localhost:54329");
+    expect(resolveLocalSupabaseOrigin("production", "http://127.0.0.1:54329")).toBeNull();
+    expect(resolveLocalSupabaseOrigin("development", "https://untrusted.example")).toBeNull();
+    expect(resolveLocalSupabaseOrigin("development", "http://127.0.0.1.evil.example")).toBeNull();
+  });
+
   it("applies browser defenses globally and no-store policy to sensitive routes", async () => {
     expect(nextConfig.poweredByHeader).toBe(false);
     const rules = await nextConfig.headers?.();

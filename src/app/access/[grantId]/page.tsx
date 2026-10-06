@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { z } from "zod/v4";
 import { AccessVerificationClient } from "./access-verification-client";
 import { createClient } from "@/lib/supabase/server";
@@ -41,7 +42,7 @@ export default async function CompletePortfolioAccessPage({ params }: { params: 
 }
 
 function AccessState({ title, copy }: { title: string; copy: string }) {
-  return <AccessShell title={title} copy={copy} />;
+  return <AccessShell title={title} copy={copy}><Link href="/received-a-link" className="dashboard-secondary-action mt-7 inline-flex min-h-11 items-center justify-center">Read the viewer guide</Link></AccessShell>;
 }
 
 function AccessShell({ title, copy, children }: { title: string; copy: string; children?: React.ReactNode }) {

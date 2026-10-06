@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { approvedViewerToken, approvedViewerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
 
 const host = "127.0.0.1";
 const port = 54329;
@@ -225,6 +225,7 @@ const server = createServer((request, response) => {
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
   if (url.pathname === "/auth/v1/user") {
     if (request.headers.authorization === `Bearer ${themeTestToken}`) return sendJson(response, 200, themeTestUser);
+    if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
     }
@@ -273,8 +274,42 @@ const server = createServer((request, response) => {
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_identity_verified") {
     return sendJson(response, 200, true);
   }
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_status") {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").p_share_token === "e2e-expired-token" ? "expired" : "unavailable"));
+  }
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_complete_portfolio_access") {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== `Bearer ${approvedViewerToken}`) return sendJson(response, 200, { status: "signin_required" });
+      const grantId = JSON.parse(body || "{}").p_grant_id;
+      if (grantId === "11111111-1111-4111-8111-111111111111") return sendJson(response, 200, { status: "active", shareToken: "e2e-portfolio-token", expiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString() });
+      if (grantId === "22222222-2222-4222-8222-222222222222") return sendJson(response, 200, { status: "expired" });
+      if (grantId === "33333333-3333-4333-8333-333333333333") return sendJson(response, 200, { status: "revoked" });
+      return sendJson(response, 200, { status: "unavailable" });
+    });
+  }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_approved_portfolio") {
-    return sendJson(response, 200, null);
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== `Bearer ${approvedViewerToken}` || JSON.parse(body || "{}").p_share_token !== "e2e-portfolio-token") return sendJson(response, 200, null);
+      return sendJson(response, 200, {
+        ...resolvedPortfolio(false),
+        data: {
+          ...publicSnapshot.data,
+          contact: { contact_person: "Aditi Rao", phone: "+1 555 010 0200", email: "aditi@example.test" },
+        },
+        media: resolvedPortfolio(false).media.map((item) => ({
+          ...item,
+          accessPath: publicMediaWithPreviews[item.sortOrder].storage_path,
+          presentation: "clear",
+        })),
+        accessExpiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+      });
+    });
   }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/record_public_portfolio_view") {
     return sendJson(response, 200, true);

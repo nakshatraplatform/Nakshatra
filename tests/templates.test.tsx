@@ -313,6 +313,23 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
   });
 
+  it("does not promise another approval when a Complete Portfolio has no details in a restricted chapter", () => {
+    const sparseData = {
+      privacy_mode: "balanced" as const,
+      personal: { name: "Aditi", short_bio: "A short hello." },
+      visibility: { journey: "restricted" as const, family: "restricted" as const, astrology: "restricted" as const },
+    };
+    const { rerender } = render(<CelestialUnion data={sparseData} sunSign={null} accessMode="approved" />);
+    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/can be requested after a respectful introduction/i)).not.toBeInTheDocument();
+
+    rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="owner" />);
+    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+
+    rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="public" interestAction={<button type="button">Show interest</button>} />);
+    expect(screen.getByText("Family shared after approval")).toBeInTheDocument();
+  });
+
   it("keeps protected gallery slots visible in the Brief Introduction", () => {
     const protectedGalleryPhoto: PortfolioPhoto = {
       ...photos[1],

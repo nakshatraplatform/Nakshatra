@@ -18,3 +18,21 @@ export const themeTestCookie = {
   domain: "127.0.0.1",
   path: "/",
 };
+
+// Local browser fixture for the recipient of an approved personal-link grant.
+// The loopback mock alone accepts this synthetic token; it cannot authenticate to Production.
+export const approvedViewerUser = {
+  ...themeTestUser,
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  email: "approved-viewer@example.test",
+  email_confirmed_at: "2026-10-01T00:00:00Z",
+};
+export const approvedViewerToken = [
+  encode({ alg: "HS256", typ: "JWT" }),
+  encode({ sub: approvedViewerUser.id, role: approvedViewerUser.role, exp: 4102444800, session_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" }),
+  Buffer.from("not-a-signature-approved-local-fixture").toString("base64url"),
+].join(".");
+export const approvedViewerCookie = {
+  ...themeTestCookie,
+  value: `base64-${encode({ access_token: approvedViewerToken, refresh_token: "approved-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: approvedViewerUser })}`,
+};

@@ -280,7 +280,7 @@ export default function CelestialUnion({
         </div>
       ),
     });
-  } else if (isRestricted(data, "journey")) {
+  } else if (!hasApprovedAccess && isRestricted(data, "journey")) {
     chapters.push(protectedChapter(
       "journey",
       "Journey",
@@ -349,7 +349,7 @@ export default function CelestialUnion({
         </>
       ),
     });
-  } else if (familyProtected) {
+  } else if (!hasApprovedAccess && familyProtected) {
     chapters.push(protectedChapter(
       "family",
       "Family and roots",
@@ -405,7 +405,7 @@ export default function CelestialUnion({
         </>
       ),
     });
-  } else if (astrologyProtected) {
+  } else if (!hasApprovedAccess && astrologyProtected) {
     chapters.push(protectedChapter(
       "astrology",
       "Astrology",

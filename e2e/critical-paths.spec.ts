@@ -112,6 +112,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   const hero = page.locator('.portfolio-hero-media[data-orientation="portrait"]');
   await expect(hero).toBeVisible();
   await expect(hero.getByAltText("Public portrait")).toBeVisible();
+  await expect.poll(() => hero.getByAltText("Public portrait").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
   await expect
     .poll(async () => {
       const bounds = await page.locator(".portfolio-primary-photo").evaluate((element) => {
