@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Private Marriage Introduction Link | VivIntro");
+  await expect(page).toHaveTitle("Marriage Introduction Link | VivIntro");
   await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
   const primaryCta = page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");

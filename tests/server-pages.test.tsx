@@ -228,7 +228,7 @@ describe("public portfolio pages", () => {
     await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction not found", robots: { index: false } });
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     const metadata = await generateMetadata({ params: Promise.resolve({ token: "token" }) });
-    expect(metadata.title).toBe("Aditi’s private introduction");
+    expect(metadata.title).toBe("Aditi’s marriage introduction");
     expect(metadata.description).toContain("Aditi");
   });
 

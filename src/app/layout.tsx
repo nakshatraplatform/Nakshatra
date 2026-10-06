@@ -43,11 +43,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "https://www.vivintro.com"
   ),
   title: {
-    default: "VivIntro — Private Marriage Introductions You Control",
+    default: "VivIntro — Marriage Introductions Shared with Care",
     template: "%s | VivIntro",
   },
   description:
-    "Share one private marriage introduction. Keep contact details and documents protected until you approve each request.",
+    "Share one current marriage introduction link. Keep contact details and documents protected until you approve access.",
   openGraph: {
     type: "website",
     siteName: "VivIntro",

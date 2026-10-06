@@ -2953,6 +2953,7 @@ body {
   display: grid;
   grid-template-columns: minmax(210px, 0.72fr) minmax(0, 1.28fr);
   column-gap: 36px;
+  padding-bottom: 104px;
 }
 
 [data-template="celestial-union"] .portfolio-footer .portfolio-footer-identity {
@@ -3356,7 +3357,7 @@ body {
   }
 
   [data-template="celestial-union"] .portfolio-footer {
-    padding: 28px 16px;
+    padding: 28px 16px 104px;
     grid-template-columns: 1fr;
     gap: 20px;
   }

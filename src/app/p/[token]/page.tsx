@@ -31,21 +31,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const data = portfolio.data;
   const firstName = data.personal?.first_name || data.personal?.name?.split(" ")[0] || "A VivIntro member";
-  const description = `A private marriage introduction from ${firstName}, shared through VivIntro.`;
+  const description = `A marriage introduction from ${firstName}, shared through VivIntro.`;
 
   return {
-    title: `${firstName}’s private introduction`,
+    title: `${firstName}’s marriage introduction`,
     description,
     robots: { index: false, follow: false, noarchive: true },
     openGraph: {
-      title: `${firstName}’s private introduction`,
+      title: `${firstName}’s marriage introduction`,
       description,
       type: "profile",
       images: [{
         url: `/p/${token}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: `${firstName}’s private VivIntro introduction`,
+        alt: `${firstName}’s VivIntro marriage introduction`,
       }],
     },
   };

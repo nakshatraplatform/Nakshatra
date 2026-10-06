@@ -89,7 +89,7 @@ test("short desktop viewports can reach every part of the guided tour", async ({
 
       for (const [step, detail] of [["01", "Changes saved"], ["04", "Access can end early"]] as const) {
         const card = page.locator(`#tour-step-${step}`);
-        await expect(card).toHaveCSS("position", "relative");
+        await expect(card).toHaveCSS("position", height < 700 ? "relative" : "sticky");
         await card.getByText(detail).scrollIntoViewIfNeeded();
         await expect(card.getByText(detail)).toBeInViewport();
       }
@@ -109,6 +109,41 @@ test("tall desktop viewports keep fully visible sticky tour cards", async ({ pag
       const cardBottom = await card.evaluate((element) => element.getBoundingClientRect().bottom);
       expect(cardBottom).toBeLessThan(height);
     }
+  }
+});
+
+test("laptop tour cards remain readable and scroll-pinned", async ({ page }, testInfo) => {
+  for (const [width, height] of [[861, 700], [1024, 720], [1280, 720], [1366, 768]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await page.locator('a[href="#tour-step-01"]').click();
+
+    const card = page.locator("#tour-step-01");
+    if (width === 1366) await page.screenshot({ path: testInfo.outputPath("tour-laptop-1366.png"), animations: "disabled" });
+    await expect(card).toHaveCSS("position", "sticky");
+    const bounds = await card.evaluate((element) => element.getBoundingClientRect().toJSON());
+    expect(bounds.bottom).toBeLessThanOrEqual(height - 8);
+    await expect(card.getByText("Changes saved")).toBeInViewport();
+  }
+});
+
+test("sample portfolio footer links stay clear of the back-to-top control", async ({ page }, testInfo) => {
+  for (const width of [375, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/demo");
+    if (width === 1440) await page.locator(".portfolio-hero").screenshot({ path: testInfo.outputPath("sample-portfolio-hero-1440.png"), animations: "disabled" });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const topButton = page.getByRole("button", { name: "Back to top of introduction" });
+    await expect(topButton).toBeVisible();
+    const overlap = await page.evaluate(() => {
+      const button = document.querySelector(".portfolio-back-to-top")!.getBoundingClientRect();
+      return Array.from(document.querySelectorAll(".portfolio-footer-links a")).some((link) => {
+        const target = link.getBoundingClientRect();
+        return button.left < target.right && button.right > target.left && button.top < target.bottom && button.bottom > target.top;
+      });
+    });
+    expect(overlap, `${width}px sample portfolio footer`).toBe(false);
+    if (width === 375) await page.screenshot({ path: testInfo.outputPath("sample-portfolio-footer-375.png"), animations: "disabled" });
   }
 });
 
