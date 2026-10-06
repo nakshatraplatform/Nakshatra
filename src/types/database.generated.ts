@@ -2472,6 +2472,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_candidate_identity_verification_work: {
+        Args: { p_limit?: number }
+        Returns: {
+          subject_id: string
+          candidate_id: string
+          subject_type: string
+          task_type: string
+          claim_token: string
+          attempt_id: string
+          provider_session_ref: string
+          legal_name: string
+          birth_date: string
+          birth_date_hash: string
+          verification_method: string
+          provider_workflow_id: string
+          provider_workflow_version: number
+          provider_vendor_data: string
+          work_attempts: number
+        }[]
+      }
       cancel_candidate_liveness_verification: {
         Args: { p_attempt_id: string; p_candidate_id: string }
         Returns: Json

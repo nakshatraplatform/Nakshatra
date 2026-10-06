@@ -32,6 +32,26 @@ function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
 describe("identity-verification worker", () => {
   afterEach(() => vi.unstubAllEnvs());
 
+  it("processes candidate liveness without a representative matching key", async () => {
+    vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "");
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    const candidate = { ...claim, verification_method: "candidate_liveness_only", provider_workflow_id: workflowId, provider_workflow_version: 1, provider_vendor_data: "iv:fixture:attempt" };
+    const { client, rpc } = workerClient([]);
+    rpc.mockImplementation(async name => ({ data: name === "claim_candidate_identity_verification_work" ? [candidate] : true, error: null }));
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({ session_id: candidate.provider_session_ref, workflow_id: workflowId, workflow_version: 1, vendor_data: candidate.provider_vendor_data, status: "Approved", liveness_checks: [{ status: "Approved" }] }));
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl, candidateWorkflowId: workflowId, candidateOnly: true }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
+    expect(rpc).toHaveBeenCalledWith("claim_candidate_identity_verification_work", { p_limit: 1 });
+    expect(rpc.mock.calls.some(([name]) => name === "claim_identity_verification_work")).toBe(false);
+  });
+
+  it("fails closed without provider requests if the candidate queue returns a representative", async () => {
+    const { client, rpc } = workerClient([]);
+    rpc.mockImplementation(async name => ({ data: name === "claim_candidate_identity_verification_work" ? [{ ...claim, subject_type: "organization_representative" }] : true, error: null }));
+    const fetchImpl = vi.fn();
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl, candidateOnly: true }).run(1)).rejects.toThrow("IDENTITY_VERIFICATION_WORK_SCOPE_INVALID");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("continues the batch when provider failure races with a retired candidate lease", async () => {
     const workflowId = "66666666-6666-4666-8666-666666666666";
     vi.stubEnv("DIDIT_WORKFLOW_ID", workflowId);

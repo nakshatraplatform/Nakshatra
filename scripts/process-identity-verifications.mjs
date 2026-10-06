@@ -13,7 +13,8 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const limit = Math.min(Math.max(Number.parseInt(process.env.IDENTITY_VERIFICATION_BATCH_SIZE || "10", 10) || 10, 1), 50);
-const result = await createIdentityVerificationWorker(supabase).run(limit);
+// The scheduled portfolio worker must never lease representative work.
+const result = await createIdentityVerificationWorker(supabase, { candidateOnly: true }).run(limit);
 console.log(
   `Identity verification run complete: ${result.completed} completed, ${result.pending} pending, ${result.deferred} deferred.`,
 );

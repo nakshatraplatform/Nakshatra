@@ -75,8 +75,10 @@ Application ID, Organization ID, and a separate Didit environment variable are
 not required. Choose Sandbox or Production by configuring its matching scoped
 API key, workflow ID, and destination
 signing secret together. Existing
-Nakshatra configuration (app URL, Supabase credentials, and the shared
-`IDENTITY_VERIFICATION_MATCH_HMAC_KEY`) is still required.
+Nakshatra configuration (app URL and Supabase credentials) is still required.
+The candidate-only scheduled worker does not require
+`IDENTITY_VERIFICATION_MATCH_HMAC_KEY`; that key belongs to separately enabled
+representative identity matching, not candidate liveness or cleanup.
 
 In App Settings, copy the API key from **API keys** and create a **Webhooks**
 destination with the final public HTTPS URL `/api/webhooks/didit`, version `v3`,
