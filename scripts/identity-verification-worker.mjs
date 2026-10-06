@@ -147,6 +147,7 @@ export function createIdentityVerificationWorker(supabase, {
   fetchImpl = fetch,
   identityMatchKey = process.env.IDENTITY_VERIFICATION_MATCH_HMAC_KEY,
   candidateWorkflowId = process.env.DIDIT_WORKFLOW_ID,
+  candidateOnly = false,
   now = () => new Date(),
   requestTimeoutMs = PROVIDER_REQUEST_TIMEOUT_MS,
 } = {}) {
@@ -350,8 +351,15 @@ export function createIdentityVerificationWorker(supabase, {
   async function run(limit) {
     const expiry = await supabase.rpc("expire_candidate_liveness_attempts", { p_limit: limit });
     if (expiry.error) throw workerError("IDENTITY_VERIFICATION_EXPIRY_FAILED");
-    const { data: claims, error } = await supabase.rpc("claim_identity_verification_work", { p_limit: limit });
+    const { data: claims, error } = await supabase.rpc(
+      candidateOnly ? "claim_candidate_identity_verification_work" : "claim_identity_verification_work",
+      { p_limit: limit }
+    );
     if (error) throw workerError("IDENTITY_VERIFICATION_CLAIM_FAILED");
+    // Fail closed before any provider I/O if the queue contract is violated.
+    if (candidateOnly && (claims ?? []).some(claim => claim.subject_type !== "candidate")) {
+      throw workerError("IDENTITY_VERIFICATION_WORK_SCOPE_INVALID");
+    }
 
     let completed = 0;
     let pending = 0;

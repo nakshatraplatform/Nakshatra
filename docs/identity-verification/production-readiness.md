@@ -39,9 +39,14 @@ Create an isolated GitHub environment named
 
 - `DIDIT_API_KEY`
 - `DIDIT_WORKFLOW_ID`
-- `IDENTITY_VERIFICATION_MATCH_HMAC_KEY` (independent app/worker key for representative birth-date comparison)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+
+The scheduled workflow processes candidate portfolio checks and candidate cleanup
+only. It does not claim BrokerDesk representative work or require a representative
+matching HMAC key. Representative verification is operationally paused; its stored
+records and authorization rules remain unchanged. Deploy migration
+`20261006195928_scope_candidate_verification_worker.sql` before the matching worker.
 
 Set the repository variable `DIDIT_ALERT_ASSIGNEE` to the GitHub username of
 the accountable on-call operator. Worker alerts use a bot-controlled
@@ -116,7 +121,7 @@ system.
 7. Enable the live Didit workflow only after the scheduler and external
    missing-run monitor are healthy.
 
-The application and worker must receive the same
+For any separately restored representative processor, the application and that worker must receive the same
 `IDENTITY_VERIFICATION_MATCH_HMAC_KEY`. Rotate it only with an explicit plan
 for in-progress representative attempts; Nakshatra stores only the keyed
 comparison value while a decision is pending, erases it after a terminal
