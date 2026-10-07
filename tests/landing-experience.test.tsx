@@ -25,6 +25,8 @@ describe("LandingExperience consent-led messaging", () => {
     expect(screen.getAllByRole("link", { name: /view.*sample introduction/i })[0]).toHaveAttribute("href", "/demo");
     for (const link of screen.getAllByRole("link", { name: /create your portfolio/i })) expect(link).toHaveAttribute("href", "/signup");
     for (const link of screen.getAllByRole("link", { name: /read the viewer guide/i })) expect(link).toHaveAttribute("href", "/received-a-link");
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).not.toHaveTextContent(/create your portfolio/i);
+    expect(document.querySelector("#beta")).not.toHaveTextContent(/create your portfolio/i);
   });
 
   it("shows the fictional example before the tour and keeps the viewer path", () => {
@@ -33,6 +35,7 @@ describe("LandingExperience consent-led messaging", () => {
     const tour = document.querySelector("#how");
     const viewer = document.querySelector("#viewer");
     expect(sample).toHaveTextContent(/fictional Introduction/i);
+    expect(document.querySelector("#top")).toHaveTextContent(/fictional example of the shared Introduction/i);
     expect(sample).toHaveTextContent(/Complete Portfolio is not shown/i);
     expect(sample?.compareDocumentPosition(tour!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(tour?.compareDocumentPosition(viewer!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);

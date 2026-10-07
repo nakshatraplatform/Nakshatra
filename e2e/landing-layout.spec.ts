@@ -161,6 +161,24 @@ test("hero callout does not cover the preview label", async ({ page }) => {
   }
 });
 
+test("mobile sample explanation and sharing cards have breathing room", async ({ page }) => {
+  for (const width of [320, 375, 414]) {
+    await page.setViewportSize({ width, height: 812 });
+    await page.goto("/");
+    const caption = page.getByText("A fictional example of the shared Introduction");
+    await expect(caption).toBeVisible();
+    const positions = await page.evaluate(() => {
+      const caption = document.querySelector('[class*="mobilePreviewLabel"]')!.getBoundingClientRect();
+      const callout = document.querySelector('[class*="floatingMessage"]')!.getBoundingClientRect();
+      const control = document.querySelector("#privacy")!.getBoundingClientRect();
+      return { captionBottom: caption.bottom, calloutTop: callout.top, controlLeft: control.left, controlRight: control.right };
+    });
+    expect(positions.captionBottom).toBeLessThan(positions.calloutTop);
+    expect(positions.controlLeft).toBeGreaterThanOrEqual(19);
+    expect(positions.controlRight).toBeLessThanOrEqual(width - 19);
+  }
+});
+
 test("frequent tour feedback is immediate and sample CTA opens the real demo", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Check, ChevronDown, FileText, Globe2, LockKeyhole, MessageCircle, RefreshCw, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, ChevronDown, Globe2, LockKeyhole, MessageCircle, RefreshCw, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { GuidedTour } from "./GuidedTour";
@@ -26,9 +26,9 @@ export const landingFaqs = [
 ] as const;
 
 const problems = [
-  { icon: FileText, title: "Different versions circulate", body: "A corrected detail means another file. Someone may still be reading the older one." },
-  { icon: MessageCircle, title: "Personal details travel too soon", body: "A phone number or horoscope can move through chats before either family has decided to continue." },
-  { icon: LockKeyhole, title: "The next step feels awkward", body: "Sharing more, waiting, or saying no can become a conversation before the person is ready for one." },
+  { title: "Different versions circulate", body: "A correction means another file, while the old one may still be read." },
+  { title: "Personal details travel too soon", body: "Phone numbers and horoscope files can spread before either family decides to continue." },
+  { title: "The next step feels awkward", body: "Sharing more, waiting, or saying no can be hard to handle in a group chat." },
 ] as const;
 
 const values = [
@@ -53,7 +53,7 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         <nav className={styles.navigation} aria-label="Main navigation">
           <ThemeSwitch />
           <div className={styles.navigationLinks}><a href="#how">How it works</a><a href="#privacy">Your privacy</a><Link href="/received-a-link">Received a link?</Link><a href="#questions">Questions</a></div>
-          <Link href="/login" className={styles.signIn}>Sign in</Link><Link href="/signup" className={styles.primaryButton}>Create your portfolio</Link>
+          <Link href="/login" className={styles.signIn}>Sign in</Link>
         </nav>
       </header>
 
@@ -73,7 +73,7 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
 
         <section id="why" className={styles.problemSection}>
           <div className={styles.sectionHeading}><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>A relative forwards a biodata. Someone asks for a newer photo or horoscope. Soon old files and personal details sit in different chats, with no clear next step.</p></div>
-          <div className={styles.problemGrid}>{problems.map(({ icon: Icon, title, body }) => <article key={title}><Icon aria-hidden="true" /><div><h3>{title}</h3><p>{body}</p></div></article>)}</div>
+          <div className={styles.problemGrid}>{problems.map(({ title, body }) => <article key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
         </section>
 
         <section id="privacy" className={styles.controlSection}>
@@ -101,8 +101,7 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
 
         <section id="beta" className={styles.betaSection}>
           <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered introduction</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
-          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family members can offer input, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Send your personal link through WhatsApp, email, relatives, or a matchmaker you choose.</span></div>
-          <div className={styles.betaActions}><Link href="/signup" className={styles.primaryButton}>Create your portfolio <ArrowRight aria-hidden="true" /></Link><Link href="/login" className={styles.secondaryButton}>Already have an account? Sign in</Link></div>
+          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family can help, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Share your link through WhatsApp, email, relatives, or a matchmaker you choose.</span></div>
         </section>
 
         <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><h2>Common questions</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
@@ -115,5 +114,5 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
 }
 
 function PortfolioPreview() {
-  return <div className={styles.visual} aria-label="Illustration of Ananya’s fictional VivIntro introduction"><div className={styles.visualGlow} aria-hidden="true" /><div className={styles.floatingMessage}><ShieldCheck aria-hidden="true" /><span><strong>Protected details</strong>Approval required</span></div><article className={styles.portfolioCard}><header><span><VivIntroBrand variant="full-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> Public Introduction</span></header><div className={styles.portfolioBody}><div className={styles.portrait}><span>AR</span></div><div className={styles.introduction}><span className={styles.verified}>Fictional example</span><p>A marriage introduction</p><h2>Ananya</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, optimistic, and happiest around family, books, and the outdoors.</p></div></div><footer><span>Overview</span><span>Family / Journey</span><span>Show interest</span></footer></article><div className={styles.previewLifecycle}><span><small>01 · Link shared</small><strong>Introduction</strong></span><ArrowRight aria-hidden="true" /><span><small>02 · Email confirmed</small><strong>Access request</strong></span><ArrowRight aria-hidden="true" /><span data-approved><small>03 · Owner decides</small><strong>Approve or set aside</strong></span></div></div>;
+  return <div className={styles.visual} aria-label="Illustration of Ananya’s fictional VivIntro introduction"><p className={styles.mobilePreviewLabel}>A fictional example of the shared Introduction</p><div className={styles.visualGlow} aria-hidden="true" /><div className={styles.floatingMessage}><ShieldCheck aria-hidden="true" /><span><strong>Protected details</strong>Approval required</span></div><article className={styles.portfolioCard}><header><span><VivIntroBrand variant="full-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> Public Introduction</span></header><div className={styles.portfolioBody}><div className={styles.portrait}><span>AR</span></div><div className={styles.introduction}><span className={styles.verified}>Fictional example</span><p>A marriage introduction</p><h2>Ananya</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, optimistic, and happiest around family, books, and the outdoors.</p></div></div><footer><span>Overview</span><span>Family / Journey</span><span>Show interest</span></footer></article><div className={styles.previewLifecycle}><span><small>01 · Link shared</small><strong>Introduction</strong></span><ArrowRight aria-hidden="true" /><span><small>02 · Email confirmed</small><strong>Access request</strong></span><ArrowRight aria-hidden="true" /><span data-approved><small>03 · Owner decides</small><strong>Approve or set aside</strong></span></div></div>;
 }
