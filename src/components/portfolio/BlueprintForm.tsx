@@ -70,7 +70,7 @@ export type PortfolioEditorSection =
   | "astrology"
   | "privacy";
 
-const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: boolean; time: string }> = [
+export const PORTFOLIO_EDITOR_SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: boolean; time: string }> = [
   { id: "foundation", label: "Basics", time: "3 min" },
   { id: "story", label: "Personal story & lifestyle", time: "4 min" },
   { id: "work", label: "Education & work", optional: true, time: "3 min" },
@@ -80,10 +80,37 @@ const SECTIONS: Array<{ id: PortfolioEditorSection; label: string; optional?: bo
   { id: "privacy", label: "Privacy & contact", time: "2 min" },
 ];
 
-function navigableSection(section: PortfolioEditorSection): PortfolioEditorSection {
+export function navigableSection(section: PortfolioEditorSection): PortfolioEditorSection {
   if (section === "lifestyle") return "story";
   if (section === "future") return "preferences";
-  return SECTIONS.some((item) => item.id === section) ? section : "foundation";
+  return PORTFOLIO_EDITOR_SECTIONS.some((item) => item.id === section) ? section : "foundation";
+}
+
+export function PortfolioMobileSectionNav({ activeSection, completedCount, totalCount, onSectionChange }: {
+  activeSection: PortfolioEditorSection;
+  completedCount: number;
+  totalCount: number;
+  onSectionChange: (section: PortfolioEditorSection) => void;
+}) {
+  const activeIndex = PORTFOLIO_EDITOR_SECTIONS.findIndex((section) => section.id === activeSection);
+  return <div className="biodata-editor-mobile-nav flex-none rounded-xl p-3 lg:hidden">
+    <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+      <strong className="text-[color:var(--workspace-ink)]">Section {activeIndex + 1} of {PORTFOLIO_EDITOR_SECTIONS.length}</strong>
+      <span className="text-[color:var(--workspace-ink-muted)]">{completedCount} of {totalCount} required</span>
+    </div>
+    <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--workspace-border)]" role="progressbar" aria-label="Current form section" aria-valuemin={1} aria-valuemax={PORTFOLIO_EDITOR_SECTIONS.length} aria-valuenow={activeIndex + 1} aria-valuetext={`Section ${activeIndex + 1} of ${PORTFOLIO_EDITOR_SECTIONS.length}`}>
+      <span className="block h-full rounded-full bg-[color:var(--workspace-teal)]" style={{ width: `${((activeIndex + 1) / PORTFOLIO_EDITOR_SECTIONS.length) * 100}%` }} />
+    </div>
+    <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2">
+      <button type="button" aria-label="Previous section" disabled={activeIndex === 0} onClick={() => onSectionChange(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></button>
+      <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]">Go to section
+        <select aria-label="Go to portfolio section" value={activeSection} onChange={(event) => onSectionChange(event.target.value as PortfolioEditorSection)} className="biodata-field min-h-11">
+          {PORTFOLIO_EDITOR_SECTIONS.map((section, index) => <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>)}
+        </select>
+      </label>
+      <button type="button" aria-label="Next section" disabled={activeIndex === PORTFOLIO_EDITOR_SECTIONS.length - 1} onClick={() => onSectionChange(PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].id)} className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"><ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+    </div>
+  </div>;
 }
 
 const RASHI_SELECT_OPTIONS: BlueprintOption[] = [
@@ -114,6 +141,7 @@ export function BlueprintForm({
   photoManager,
   horoscopeManager,
   hasShareablePrimaryPhoto = false,
+  activeSection: controlledSection,
   initialSection = "foundation",
   onSectionChange,
 }: {
@@ -122,11 +150,13 @@ export function BlueprintForm({
   photoManager?: ReactNode;
   horoscopeManager?: ReactNode;
   hasShareablePrimaryPhoto?: boolean;
+  activeSection?: PortfolioEditorSection;
   initialSection?: PortfolioEditorSection;
   onSectionChange?: (section: PortfolioEditorSection) => void;
 }) {
-  const [activeSection, setActiveSection] = useState<PortfolioEditorSection>(() => navigableSection(initialSection));
-  const activeIndex = SECTIONS.findIndex((section) => section.id === activeSection);
+  const [internalSection, setInternalSection] = useState<PortfolioEditorSection>(() => navigableSection(initialSection));
+  const activeSection = controlledSection ?? internalSection;
+  const activeIndex = PORTFOLIO_EDITOR_SECTIONS.findIndex((section) => section.id === activeSection);
   const nameParts = resolvePortfolioNameParts(data.personal);
   const completion = calculatePortfolioCompletion(data, hasShareablePrimaryPhoto);
   const contacts = data.contact?.contacts?.length
@@ -198,7 +228,7 @@ export function BlueprintForm({
   }
 
   function goTo(section: PortfolioEditorSection) {
-    setActiveSection(section);
+    setInternalSection(section);
     onSectionChange?.(section);
     const stage = document.getElementById("blueprint-stage");
     if (stage && typeof stage.scrollIntoView === "function") {
@@ -224,7 +254,7 @@ export function BlueprintForm({
             </p>
           </div>
           <nav aria-label="Portfolio form sections" className="space-y-1">
-            {SECTIONS.map((section, index) => {
+            {PORTFOLIO_EDITOR_SECTIONS.map((section, index) => {
               const selected = section.id === activeSection;
               return (
                 <button
@@ -251,59 +281,13 @@ export function BlueprintForm({
       </aside>
 
       <div id="blueprint-stage" className="min-w-0 scroll-mt-4">
-        <div className="biodata-editor-mobile-nav sticky top-0 z-30 mb-4 rounded-xl p-3 lg:hidden">
-          <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <strong className="text-[color:var(--workspace-ink)]">Section {activeIndex + 1} of {SECTIONS.length}</strong>
-            <span className="text-[color:var(--workspace-ink-muted)]">{completion.completedCount} of {completion.totalCount} required</span>
-          </div>
-          <div
-            className="mb-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--workspace-border)]"
-            role="progressbar"
-            aria-label="Portfolio completion steps"
-            aria-valuemin={1}
-            aria-valuemax={SECTIONS.length}
-            aria-valuenow={activeIndex + 1}
-          >
-            <span className="block h-full rounded-full bg-[color:var(--workspace-teal)]" style={{ width: `${((activeIndex + 1) / SECTIONS.length) * 100}%` }} />
-          </div>
-          <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2">
-            <button
-              type="button"
-              aria-label="Previous section"
-              disabled={activeIndex === 0}
-              onClick={() => goTo(SECTIONS[activeIndex - 1].id)}
-              className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]">
-              Go to section
-              <select
-                aria-label="Go to portfolio section"
-                value={activeSection}
-                onChange={(event) => goTo(event.target.value as PortfolioEditorSection)}
-                className="biodata-field min-h-11"
-              >
-                {SECTIONS.map((section, index) => (
-                  <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              aria-label="Next section"
-              disabled={activeIndex === SECTIONS.length - 1}
-              onClick={() => goTo(SECTIONS[activeIndex + 1].id)}
-              className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"
-            >
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
+        {controlledSection === undefined && <div className="mb-4 lg:hidden">
+          <PortfolioMobileSectionNav activeSection={activeSection} completedCount={completion.completedCount} totalCount={completion.totalCount} onSectionChange={goTo} />
+        </div>}
         <p className="mb-3 hidden text-sm font-semibold text-[color:var(--workspace-ink-muted)] lg:block">
-          Step {activeIndex + 1} of {SECTIONS.length} · {SECTIONS[activeIndex].label}
+          Step {activeIndex + 1} of {PORTFOLIO_EDITOR_SECTIONS.length} · {PORTFOLIO_EDITOR_SECTIONS[activeIndex].label}
         </p>
-        {SECTIONS[activeIndex].optional && (
+        {PORTFOLIO_EDITOR_SECTIONS[activeIndex].optional && (
           <p className="mb-3 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">
             Optional section · Answer only what feels useful. You can continue now and return at any time.
           </p>
@@ -496,11 +480,11 @@ export function BlueprintForm({
         )}
 
         <div className="mt-5 hidden items-center justify-between gap-3 border-t border-[color:var(--workspace-border)] pt-5 sm:flex">
-          <button type="button" disabled={activeIndex === 0} onClick={() => goTo(SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
+          <button type="button" disabled={activeIndex === 0} onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
           <p className="hidden text-sm text-[color:var(--workspace-ink-muted)] sm:block">You can change saved answers at any time.</p>
-          {activeIndex < SECTIONS.length - 1 ? (
-            <button type="button" onClick={() => goTo(SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-5">Continue: {SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
-          ) : <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--workspace-teal)]"><Check className="h-4 w-4" aria-hidden="true" /> Details saved automatically</span>}
+          {activeIndex < PORTFOLIO_EDITOR_SECTIONS.length - 1 ? (
+            <button type="button" onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-5">Continue: {PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+          ) : <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--workspace-teal)]"><Check className="h-4 w-4" aria-hidden="true" /> Last section — review both views next</span>}
         </div>
       </div>
     </div>

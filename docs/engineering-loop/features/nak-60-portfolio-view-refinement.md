@@ -44,3 +44,7 @@ The full portfolio viewer excluded the primary portrait from the Gallery count, 
 - `npx next build --webpack`: passed with placeholder build-time environment values.
 - Mobile browser check at 412 by 924 pixels: header navigation is visible and usable.
 - `npm run test:unit`: 827 of 828 passed. The remaining pre-existing Windows-only failure is `tests/didit-photo-match-sandbox.test.ts` asserting owner-only POSIX file permissions for the external sandbox journal (`DIDIT_SANDBOX_JOURNAL_INVALID`).
+
+## Gallery lightbox close follow-up (2026-10-05)
+
+The owner identified the wide, white “Close” pill in the photo lightbox as visually intrusive on mobile and desktop. Replace it with a compact 44-pixel X control at the safe-area-aware upper-right edge of the dark overlay, with an accessible label and restrained hover/press/focus states. Keep Escape, backdrop close, arrow-key navigation, focus return to the opening photo, and the existing Dashboard link outside the lightbox. Closing a photo returns to the gallery; navigation to the dashboard remains a separate action in the preview header. This is a local UI change, not a media-authorization change.

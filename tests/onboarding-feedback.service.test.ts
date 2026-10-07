@@ -9,7 +9,8 @@ import {
 
 const feedback = {
   easeRating: 4,
-  hardestStep: "photos",
+  hardestSteps: ["photos", "details"],
+  likedAspects: ["privacy"],
   comment: "A clearer photo example would help.",
   submittedAt: "2026-10-04T12:00:00Z",
 };
@@ -20,9 +21,13 @@ function client(data: unknown, error: unknown = null) {
 
 describe("onboarding feedback service", () => {
   it("accepts only bounded feedback commands", () => {
-    expect(feedbackCommandSchema.parse({ easeRating: 4, hardestStep: "photos", comment: "  helpful  " }).comment).toBe("helpful");
-    expect(feedbackCommandSchema.safeParse({ easeRating: 6, hardestStep: "photos" }).success).toBe(false);
-    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestStep: "photos", contact: "private" }).success).toBe(false);
+    expect(feedbackCommandSchema.parse({ easeRating: 4, hardestSteps: ["photos"], likedAspects: [], comment: "  helpful  " }).comment).toBe("helpful");
+    expect(feedbackCommandSchema.safeParse({ easeRating: 6, hardestSteps: ["photos"], likedAspects: [] }).success).toBe(false);
+    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestSteps: [], likedAspects: [] }).success).toBe(false);
+    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestSteps: ["none", "photos"], likedAspects: [] }).success).toBe(false);
+    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestSteps: ["photos", "photos"], likedAspects: [] }).success).toBe(false);
+    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestSteps: ["photos"], likedAspects: ["privacy", "privacy"] }).success).toBe(false);
+    expect(feedbackCommandSchema.safeParse({ easeRating: 4, hardestSteps: ["photos"], likedAspects: [], contact: "private" }).success).toBe(false);
   });
 
   it("returns the owner's feedback or null and rejects malformed database responses", async () => {
@@ -37,19 +42,19 @@ describe("onboarding feedback service", () => {
 
   it("submits only the intended RPC arguments and requires a saved acknowledgement", async () => {
     const success = client({ status: "saved" });
-    await expect(submitOnboardingFeedback(success as never, { easeRating: 4, hardestStep: "photos", comment: "  Useful  " })).resolves.toBeUndefined();
-    expect(success.rpc).toHaveBeenCalledWith("submit_creator_onboarding_feedback", {
-      p_ease_rating: 4, p_hardest_step: "photos", p_comment: "  Useful  ",
+    await expect(submitOnboardingFeedback(success as never, { easeRating: 4, hardestSteps: ["photos", "details"], likedAspects: ["privacy"], comment: "  Useful  " })).resolves.toBeUndefined();
+    expect(success.rpc).toHaveBeenCalledWith("submit_creator_onboarding_feedback_v2", {
+      p_ease_rating: 4, p_hardest_steps: ["photos", "details"], p_liked_aspects: ["privacy"], p_comment: "  Useful  ",
     });
     const noComment = client({ status: "saved" });
-    await submitOnboardingFeedback(noComment as never, { easeRating: 5, hardestStep: "none" });
-    expect(noComment.rpc).toHaveBeenCalledWith("submit_creator_onboarding_feedback", {
-      p_ease_rating: 5, p_hardest_step: "none", p_comment: null,
+    await submitOnboardingFeedback(noComment as never, { easeRating: 5, hardestSteps: ["none"], likedAspects: [] });
+    expect(noComment.rpc).toHaveBeenCalledWith("submit_creator_onboarding_feedback_v2", {
+      p_ease_rating: 5, p_hardest_steps: ["none"], p_liked_aspects: [], p_comment: null,
     });
     const dbError = { code: "42501" };
-    await expect(submitOnboardingFeedback(client(null, dbError) as never, { easeRating: 2, hardestStep: "details" })).rejects.toBe(dbError);
+    await expect(submitOnboardingFeedback(client(null, dbError) as never, { easeRating: 2, hardestSteps: ["details"], likedAspects: [] })).rejects.toBe(dbError);
     for (const response of [null, "saved", { status: "queued" }]) {
-      await expect(submitOnboardingFeedback(client(response) as never, { easeRating: 2, hardestStep: "details" }))
+      await expect(submitOnboardingFeedback(client(response) as never, { easeRating: 2, hardestSteps: ["details"], likedAspects: [] }))
         .rejects.toThrow("Feedback persistence failed");
     }
   });

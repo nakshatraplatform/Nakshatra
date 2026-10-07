@@ -28,6 +28,9 @@ import {
 } from "@/features/media/portfolio-photo";
 import {
   BlueprintForm,
+  PortfolioMobileSectionNav,
+  PORTFOLIO_EDITOR_SECTIONS,
+  navigableSection,
   type PortfolioEditorSection,
 } from "@/components/portfolio/BlueprintForm";
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
@@ -126,6 +129,8 @@ export default function DashboardClient({
   const [draftSaveState, setDraftSaveState] = useState<"saved" | "unsaved" | "saving">("saved");
   const [publishing, setPublishing] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewPreviewsOpened, setReviewPreviewsOpened] = useState({ public: false, complete: false });
+  const [reviewPreviewSaving, setReviewPreviewSaving] = useState(false);
   const [sensitiveDisclosureAccepted, setSensitiveDisclosureAccepted] = useState(false);
   const [rotatingLink, setRotatingLink] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
@@ -136,6 +141,7 @@ export default function DashboardClient({
   const [portfolioHoroscope, setPortfolioHoroscope] = useState(horoscope);
   const [uploadingHoroscope, setUploadingHoroscope] = useState(false);
   const [activePortfolioId, setActivePortfolioId] = useState(portfolio?.id ?? null);
+  const [savedCandidateId, setSavedCandidateId] = useState<string | null>(null);
   const [interestItems, setInterestItems] = useState(interests);
   const [accessGrants, setAccessGrants] = useState(accessSummary.grants);
   const [expandedRelationshipStages, setExpandedRelationshipStages] = useState<Record<RelationshipStage, boolean>>({
@@ -144,6 +150,12 @@ export default function DashboardClient({
     access: false,
   });
   const [readinessState, setReadinessState] = useState(publicationReadiness);
+  const [editorSection, setEditorSection] = useState<PortfolioEditorSection>(() => navigableSection(
+    (publicationReadiness.lastEditorSection || calculatePortfolioCompletion(
+      normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode),
+      media.some(isShareablePrimaryPhoto)
+    ).nextEditorSection) as PortfolioEditorSection
+  ));
   const accessEvents = accessSummary.events;
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
@@ -161,9 +173,17 @@ export default function DashboardClient({
     draftData,
     portfolioMedia.some(isShareablePrimaryPhoto)
   );
-  const initialEditorSection = (
-    readinessState.lastEditorSection || completion.nextEditorSection
-  ) as PortfolioEditorSection;
+  const nextRequiredSection = navigableSection(completion.nextEditorSection as PortfolioEditorSection);
+  const nextRequiredSectionLabel = PORTFOLIO_EDITOR_SECTIONS.find((section) => section.id === nextRequiredSection)?.label || "portfolio details";
+  const verificationComplete = canPublishWithVerificationStatus(readinessState.verificationStatus);
+  const activeCandidateId = portfolio?.candidate_id || savedCandidateId;
+  const readyForPublicationConsent = completion.readyToPublish
+    && draftData.privacy_mode !== "private"
+    && Boolean(readinessState.previewedAt)
+    && reviewPreviewsOpened.public
+    && reviewPreviewsOpened.complete
+    && verificationComplete
+    && readinessState.paymentActive;
   const selfCreatedPortfolio = draftData.personal.profile_for === "self"
     && portfolio?.published_data?.personal?.profile_for === "self";
   const publicShareReady = selfCreatedPortfolio
@@ -231,6 +251,24 @@ export default function DashboardClient({
       && !confirm("You have changes that are not saved. Close the form and keep them only on this screen?")
     ) return;
     setFormOpen(false);
+  }
+
+  function openEditorAtRequiredStep() {
+    setEditorSection(nextRequiredSection);
+    setFormOpen(true);
+  }
+
+  function focusLivenessCheck() {
+    const section = document.getElementById("liveness-check");
+    if (section && typeof section.scrollIntoView === "function") {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    section?.querySelector<HTMLElement>("h2")?.focus();
+  }
+
+  function goToLivenessCheck() {
+    setReviewOpen(false);
+    window.setTimeout(focusLivenessCheck, 0);
   }
 
   async function copyLink() {
@@ -388,6 +426,7 @@ export default function DashboardClient({
         return false;
       }
       setActivePortfolioId(result.data.portfolioId);
+      if (result.data.candidateId) setSavedCandidateId(result.data.candidateId);
       if (draftRevisionRef.current === savingRevision) setDraftSaveState("saved");
       if (refresh) router.refresh();
       return true;
@@ -413,10 +452,27 @@ export default function DashboardClient({
     }
     const saved = await persistDashboardDraft({ refresh: false });
     if (!saved) return;
-    await markPreviewed();
     setFormOpen(false);
     setSensitiveDisclosureAccepted(false);
+    setReviewPreviewsOpened({ public: false, complete: false });
+    setReviewPreviewSaving(false);
     setReviewOpen(true);
+  }
+
+  function openFinalReview() {
+    setSensitiveDisclosureAccepted(false);
+    setReviewPreviewsOpened({ public: false, complete: false });
+    setReviewPreviewSaving(false);
+    setReviewOpen(true);
+  }
+
+  function recordReviewPreview(view: "public" | "complete") {
+    const next = { ...reviewPreviewsOpened, [view]: true };
+    setReviewPreviewsOpened(next);
+    if (next.public && next.complete && !(reviewPreviewsOpened.public && reviewPreviewsOpened.complete)) {
+      setReviewPreviewSaving(true);
+      void markPreviewed().finally(() => setReviewPreviewSaving(false));
+    }
   }
 
   async function markPreviewed() {
@@ -436,6 +492,9 @@ export default function DashboardClient({
   }
 
   function rememberEditorSection(section: PortfolioEditorSection) {
+    setEditorSection(navigableSection(section));
+    const editorScroll = document.querySelector<HTMLElement>(".dashboard-editor-scroll");
+    if (editorScroll) editorScroll.scrollTop = 0;
     setReadinessState((current) => ({ ...current, lastEditorSection: section }));
     if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
     sectionSaveTimerRef.current = setTimeout(async () => {
@@ -614,13 +673,17 @@ export default function DashboardClient({
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#477b77,var(--app-dark-accent))]">
-                  Start your portfolio
+                  {portfolio ? "Continue your saved draft" : "Start your portfolio"}
                 </p>
                 <h2 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
-                  Let&apos;s build one clear introduction.
+                  {portfolio ? "Your portfolio is taking shape." : "Let’s build one clear introduction."}
                 </h2>
                 <p className="mx-auto mt-3 max-w-lg text-[light-dark(#475569,var(--app-dark-muted))]">
-                  Begin with the main details. Add photos, family information, and your horoscope when you are ready.
+                  {portfolio
+                    ? completion.readyToPublish
+                      ? "Your required details are ready. Review both views, complete liveness checks if needed, then confirm publication."
+                      : `${completion.completedCount} of ${completion.totalCount} required details complete. Next: ${completion.missing[0]?.label || completion.invalidAnswers[0]?.label || nextRequiredSectionLabel} in ${nextRequiredSectionLabel}. Your saved answers are waiting for you.`
+                    : "Begin with the main details. Add photos, family information, and your horoscope when you are ready."}
                 </p>
               </div>
               {canCreatePortfolio ? (
@@ -628,9 +691,9 @@ export default function DashboardClient({
                   type="button"
                   onClick={() => {
                     if (completion.readyToPublish && draftData.privacy_mode !== "private") {
-                      setSensitiveDisclosureAccepted(false);
-                      setReviewOpen(true);
-                    } else setFormOpen(true);
+                      openFinalReview();
+                    } else if (portfolio) openEditorAtRequiredStep();
+                    else setFormOpen(true);
                   }}
                   className="dashboard-primary-action"
                 >
@@ -638,7 +701,7 @@ export default function DashboardClient({
                   {completion.readyToPublish && draftData.privacy_mode !== "private"
                     ? "Review and publish"
                     : portfolio
-                      ? "Continue portfolio"
+                      ? `Continue: ${nextRequiredSectionLabel}`
                       : "Start with the basics"}
                 </button>
               ) : (
@@ -676,35 +739,6 @@ export default function DashboardClient({
 
           {(canCreatePortfolio || portfolio) && <>
           {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
-            {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
-              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
-                <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
-                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 requests" : "Requests received"}</span>
-              </div>
-              <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
-                <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
-                <p className="dashboard-stat-value">{pendingInterestCount}</p>
-                {pendingInterestCount > 0
-                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review requests</a>
-                  : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
-              </div>
-              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Current approvals</span></div>
-                <p className="dashboard-stat-value">{activeAccessCount}</p>
-                {activeAccessCount > 0
-                  ? viewerAccessAvailable
-                    ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
-                    : <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Viewing unavailable · Manage</a>
-                  : <span className="dashboard-stat-caption">No current grants</span>}
-              </div>
-              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Introduction views</span></div>
-                <p className="dashboard-stat-value">{viewCount}</p>
-                <span className="dashboard-stat-caption">All recorded opens</span>
-              </div>
-            </div>}
-
             {portfolio?.is_published && shareUrl && publicShareReady ? (
               <div className="dashboard-glass p-4">
                 <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Introduction link</p>
@@ -772,6 +806,34 @@ export default function DashboardClient({
                 Preview Complete Portfolio
               </Link>
             </div>}
+            {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
+                <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
+                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 requests" : "Requests received"}</span>
+              </div>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
+                <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
+                <p className="dashboard-stat-value">{pendingInterestCount}</p>
+                {pendingInterestCount > 0
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review requests</a>
+                  : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
+              </div>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Current approvals</span></div>
+                <p className="dashboard-stat-value">{activeAccessCount}</p>
+                {activeAccessCount > 0
+                  ? viewerAccessAvailable
+                    ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
+                    : <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Viewing unavailable · Manage</a>
+                  : <span className="dashboard-stat-caption">No current grants</span>}
+              </div>
+              <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
+                <div className="dashboard-stat-label"><Eye aria-hidden="true" /><span>Introduction views</span></div>
+                <p className="dashboard-stat-value">{viewCount}</p>
+                <span className="dashboard-stat-caption">All recorded opens</span>
+              </div>
+            </div>}
           </section>}
 
           {canCreatePortfolio && portfolio && !(readinessState.published && completion.readyToPublish) && (
@@ -780,6 +842,8 @@ export default function DashboardClient({
               readiness={readinessState}
               draftSaveState={draftSaveState}
               onPreview={openEarlyPreview}
+              onContinue={openEditorAtRequiredStep}
+              onReview={openFinalReview}
             />
           )}
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
@@ -813,9 +877,9 @@ export default function DashboardClient({
           />}
           </>}
           </div>
-          {canCreatePortfolio && portfolio?.candidate_id ? <div className="mt-6">
+          {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="mt-6 scroll-mt-6" tabIndex={-1}>
             {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Liveness checks are optional for public test publishing while this access remains active. Without them, your introduction will not show the Liveness checked badge.</p>}
-            <IdentityVerificationDashboard candidateId={portfolio.candidate_id} />
+            <IdentityVerificationDashboard candidateId={activeCandidateId} />
           </div> : null}
           {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
         </div>
@@ -854,7 +918,7 @@ export default function DashboardClient({
                 />
               ) : (
                 <>
-                  <div className="grid gap-4 lg:grid-cols-2">
+                  <div id="review-preview-links" className="grid gap-4 lg:grid-cols-2">
                     <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                       <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-3">
                         <h3 className="font-semibold">Public Introduction</h3>
@@ -862,7 +926,7 @@ export default function DashboardClient({
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
                         <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the public introduction, primary photo and the details visible before approval.</p>
-                        <a href="/preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                        <a id="review-public-preview" href="/preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("public")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Open public Introduction
                         </a>
@@ -875,7 +939,7 @@ export default function DashboardClient({
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-5 px-4 py-5">
                         <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check protected details and confirm that nothing appears in the Complete Portfolio unexpectedly.</p>
-                        <a href="/approved-preview" target="_blank" rel="noreferrer" className="dashboard-secondary-action w-full justify-center sm:w-fit">
+                        <a id="review-complete-preview" href="/approved-preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("complete")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Open Complete Portfolio
                         </a>
@@ -885,51 +949,61 @@ export default function DashboardClient({
 
                   <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-5">
                     <h3 id="publish-readiness-heading" className="font-semibold">What happens next</h3>
-                    <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Reviewing is always available. Publishing unlocks only after every required step below is complete.</p>
+                     <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Review both previews, then finish the next incomplete step. Nothing becomes public until you confirm publication.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Portfolio answers ready" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
+                      <ReviewRequirement complete={reviewPreviewsOpened.public && reviewPreviewsOpened.complete && Boolean(readinessState.previewedAt)} label="Both previews opened" pendingLabel="Open the public and Complete Portfolio previews" />
                       <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness checks complete"} pendingLabel="Complete the liveness checks" />
                       <ReviewRequirement complete={readinessState.paymentActive} label="Creator account active" pendingLabel="Creator account required" />
-                      <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirmed by the publish action below" />
+                      <ReviewRequirement complete={readinessState.disclosureConfirmed} label="Final disclosure confirmed" pendingLabel="Confirm when all other steps are ready" />
                     </div>
                   </section>
-                  <label className="mt-4 flex items-start gap-3 rounded-xl border border-[light-dark(#b7cbc6,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4 text-sm leading-6">
+                  {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-3 rounded-xl border border-[light-dark(#b7cbc6,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4 text-sm leading-6">
                     <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
                     <span>I reviewed the public Introduction and Complete Portfolio previews. My full name and Marital Status will be visible to anyone with my active link. Complete Portfolio details, protected contact information, and exact birth details require my approval. I consent to publish the information shown in these previews. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
-                  </label>
+                  </label> : <p className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f7f5ee,var(--app-dark-surface-soft))] p-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">The final publication agreement appears after the required details, account status, previews, and liveness check are complete. The liveness check asks for its own camera and device consent.</p>}
                 </>
               )}
             </div>
 
             <footer className="flex flex-none flex-col gap-3 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-sm font-semibold">Publishing creates or updates your public Introduction link.</p>
+                <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready for your final review and publication." : "Your draft remains private while you finish the next step."}</p>
                 <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Back to dashboard</button>
-                <button
+                {!completion.readyToPublish || draftData.privacy_mode === "private" ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); openEditorAtRequiredStep(); }}>
+                  <Edit3 className="h-4 w-4" /> Complete {nextRequiredSectionLabel}
+                </button> : !reviewPreviewsOpened.public || !reviewPreviewsOpened.complete ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => {
+                  const nextPreviewId = reviewPreviewsOpened.public ? "review-complete-preview" : "review-public-preview";
+                  document.getElementById(nextPreviewId)?.focus();
+                }}>
+                  <Eye className="h-4 w-4" /> Open both previews above
+                </button> : !readinessState.previewedAt ? <button type="button" ref={reviewPublishRef} disabled={reviewPreviewSaving} className="dashboard-primary-action" onClick={() => { void markPreviewed(); }}>
+                  <RefreshCw className="h-4 w-4" /> {reviewPreviewSaving ? "Saving preview progress..." : "Retry saving preview progress"}
+                </button> : !verificationComplete && !activeCandidateId ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); router.refresh(); }}>
+                  <RefreshCw className="h-4 w-4" /> Refresh verification setup
+                </button> : !verificationComplete ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={goToLivenessCheck}>
+                  <ShieldCheck className="h-4 w-4" /> Go to liveness check
+                </button> : !readinessState.paymentActive ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); router.refresh(); }}>
+                  <RefreshCw className="h-4 w-4" /> Refresh account status
+                </button> : <button
                   ref={reviewPublishRef}
                   type="button"
                   className="dashboard-primary-action"
                   disabled={
                     publishing
                     || !sensitiveDisclosureAccepted
-                    || !completion.readyToPublish
-                    || draftData.privacy_mode === "private"
-                    || !canPublishWithVerificationStatus(readinessState.verificationStatus)
+                    || !readyForPublicationConsent
                   }
                   onClick={publishPortfolio}
                 >
                   <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
                   {publishing
                     ? "Publishing..."
-                    : !completion.readyToPublish
-                      ? completion.missing.length ? "Complete required details" : "Review entered answers"
-                      : !canPublishWithVerificationStatus(readinessState.verificationStatus)
-                        ? "Verification required"
-                        : portfolio?.is_published
+                    : portfolio?.is_published
                           ? readinessState.disclosureConfirmed
                             ? "Publish reviewed changes"
                             : "Confirm & publish changes"
@@ -937,6 +1011,7 @@ export default function DashboardClient({
                             ? "Publish portfolio"
                             : "Confirm & publish portfolio"}
                 </button>
+                }
               </div>
             </footer>
           </section>
@@ -975,12 +1050,15 @@ export default function DashboardClient({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
+            <div className="dashboard-editor-mobile-step flex-none px-3 py-2 lg:hidden">
+              <PortfolioMobileSectionNav activeSection={editorSection} completedCount={completion.completedCount} totalCount={completion.totalCount} onSectionChange={rememberEditorSection} />
+            </div>
+            <div className="dashboard-editor-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 <BlueprintForm
                   data={draftData}
                   onUpdate={updateSection}
-                  initialSection={initialEditorSection}
+                  activeSection={editorSection}
                   onSectionChange={rememberEditorSection}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
                   photoManager={
@@ -1024,7 +1102,9 @@ export default function DashboardClient({
                 )}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="dashboard-editor-footer-copy text-sm leading-6 text-[light-dark(#64748b,var(--app-dark-muted))]">
-                    {portfolio?.is_published
+                    {editorSection === "privacy"
+                      ? "Last section: save your answers, then review both portfolio views. The review will guide you to any remaining steps."
+                      : portfolio?.is_published
                       ? "Changes autosave as a draft. Review and publish to update what people see."
                       : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
                   </p>
@@ -1060,7 +1140,7 @@ export default function DashboardClient({
                       className="dashboard-editor-review-action dashboard-primary-action flex-1 sm:flex-none"
                     >
                       <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
-                      <span className="sm:hidden">{savingDraft ? "Saving..." : "Review changes"}</span>
+                      <span className="sm:hidden">{savingDraft ? "Saving..." : editorSection === "privacy" ? "Review previews" : "Review changes"}</span>
                       <span className="hidden sm:inline">{savingDraft
                           ? "Saving..."
                           : portfolio?.is_published
@@ -1105,23 +1185,35 @@ function CreatorReadinessTracker({
   readiness,
   draftSaveState,
   onPreview,
+  onContinue,
+  onReview,
 }: {
   completion: ReturnType<typeof calculatePortfolioCompletion>;
   readiness: PublicationReadiness;
   draftSaveState: "saved" | "unsaved" | "saving";
   onPreview: () => void;
+  onContinue: () => void;
+  onReview: () => void;
 }) {
   const steps = [
     { label: "Basics", complete: completion.basicsComplete },
-    { label: "Portfolio details", complete: completion.detailsComplete },
-    { label: "Preview", complete: Boolean(readiness.previewedAt) },
-    { label: "Ready to publish", complete: completion.readyToPublish },
+    { label: "Required details", complete: completion.readyToPublish },
+    { label: "Preview started", complete: Boolean(readiness.previewedAt) },
     { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
     { label: "Creator account", complete: readiness.paymentActive },
-    { label: "Disclosure", complete: readiness.disclosureConfirmed },
+    { label: "Final publication consent", complete: readiness.disclosureConfirmed },
     { label: "Published", complete: readiness.published },
   ];
   const nextStep = steps.find((step) => !step.complete);
+  const nextAction = !completion.readyToPublish
+    ? { label: "Continue required details", onClick: onContinue }
+    : !readiness.previewedAt
+      ? { label: "Review both portfolio views", onClick: onReview }
+      : !canPublishWithVerificationStatus(readiness.verificationStatus)
+        ? { label: "Review views, then liveness", onClick: onReview }
+        : !readiness.paymentActive
+          ? null
+          : { label: "Return to final review", onClick: onReview };
 
   return (
     <section className="dashboard-glass p-4 sm:p-5" aria-labelledby="creator-readiness-heading">
@@ -1129,14 +1221,16 @@ function CreatorReadinessTracker({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#477b77,var(--app-dark-accent))]">Your publishing journey</p>
           <h2 id="creator-readiness-heading" className="mt-1 text-xl font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
-            {completion.percentage}% complete
+            {completion.percentage}% of required details complete
           </h2>
           <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
             {nextStep ? `Next: ${nextStep.label}` : "Your portfolio is published."}
             {draftSaveState === "saving" ? " · Saving changes…" : ""}
           </p>
+          {!completion.readyToPublish && <p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
         </div>
         <div className="flex flex-wrap gap-2">
+          {nextAction && <button type="button" onClick={nextAction.onClick} className="dashboard-primary-action">{nextAction.label}</button>}
           {completion.basicsComplete && (
             <button type="button" onClick={onPreview} className="dashboard-secondary-action">
               <Eye className="h-4 w-4" /> Preview

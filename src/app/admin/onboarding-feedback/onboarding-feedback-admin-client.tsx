@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { hardestStepLabels, likedAspectLabels } from "@/features/feedback/onboarding-feedback-options";
 
-type Feedback = { easeRating: number; hardestStep: string; comment: string | null; submittedAt: string };
+type Feedback = { easeRating: number; hardestSteps: string[]; likedAspects: string[]; comment: string | null; submittedAt: string };
+
+function labelsFor(values: string[], labels: Record<string, string>) {
+  return values.map((value) => labels[value] ?? value).join(", ");
+}
 
 export default function OnboardingFeedbackAdminClient() {
   const [items, setItems] = useState<Feedback[]>([]);
@@ -38,7 +43,7 @@ export default function OnboardingFeedbackAdminClient() {
       </header>
       <div className="mt-6 flex flex-wrap gap-3"><div className="dashboard-glass min-w-40 rounded-xl p-4"><p className="text-sm">Responses shown</p><strong className="text-2xl">{items.length}</strong></div><div className="dashboard-glass min-w-40 rounded-xl p-4"><p className="text-sm">Average ease, 1–5</p><strong className="text-2xl">{average}</strong></div></div>
       {error && <p role="alert" className="mt-5 text-sm text-[light-dark(#8c3027,var(--app-dark-danger))]">{error}</p>}
-      {loading ? <p role="status" className="mt-8">Loading feedback…</p> : items.length === 0 ? <p className="mt-8 text-sm">No feedback has been submitted yet.</p> : <div className="mt-6 grid gap-3">{items.map((item, index) => <article key={`${item.submittedAt}-${index}`} className="dashboard-glass rounded-xl p-4 sm:p-5"><div className="flex flex-wrap justify-between gap-2 text-sm"><strong>Ease {item.easeRating}/5 · Hardest: {item.hardestStep.replaceAll("_", " ")}</strong><time dateTime={item.submittedAt}>{new Date(item.submittedAt).toLocaleDateString()}</time></div>{item.comment && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{item.comment}</p>}</article>)}</div>}
+      {loading ? <p role="status" className="mt-8">Loading feedback…</p> : items.length === 0 ? <p className="mt-8 text-sm">No feedback has been submitted yet.</p> : <div className="mt-6 grid gap-3">{items.map((item, index) => <article key={`${item.submittedAt}-${index}`} className="dashboard-glass rounded-xl p-4 sm:p-5"><div className="flex flex-wrap justify-between gap-2 text-sm"><strong>Ease {item.easeRating}/5</strong><time dateTime={item.submittedAt}>{new Date(item.submittedAt).toLocaleDateString()}</time></div><p className="mt-2 text-sm"><span className="font-semibold">Hardest:</span> {labelsFor(item.hardestSteps, hardestStepLabels)}</p><p className="mt-1 text-sm"><span className="font-semibold">Liked:</span> {item.likedAspects.length ? labelsFor(item.likedAspects, likedAspectLabels) : "No choices selected"}</p>{item.comment && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{item.comment}</p>}</article>)}</div>}
     </div>
   </main>;
 }

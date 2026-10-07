@@ -332,9 +332,8 @@ export function AdaptivePortfolioGallery({
           const target = event.target;
           if (target instanceof Element && !target.closest("button, img, figcaption")) setLightboxPhotoId(null);
         }}>
-          <button ref={lightboxCloseRef} type="button" className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close full-screen photo">
+          <button ref={lightboxCloseRef} type="button" className="portfolio-lightbox-close" onClick={() => setLightboxPhotoId(null)} aria-label="Close photo and return to gallery">
             <X aria-hidden="true" />
-            <span>Close</span>
           </button>
           {clearPhotos.length > 1 && (
             <button type="button" className="portfolio-lightbox-previous" onClick={() => moveLightbox(-1)} aria-label="Show previous available photo">

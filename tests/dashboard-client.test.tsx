@@ -116,7 +116,10 @@ function goToFoundation() {
   fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
 }
 
-function acceptPublicationDisclosure() {
+async function acceptPublicationDisclosure() {
+  fireEvent.click(screen.getByRole("link", { name: /open public introduction/i }));
+  fireEvent.click(screen.getByRole("link", { name: /open complete portfolio/i }));
+  await waitFor(() => expect(screen.getByRole("checkbox", { name: /I reviewed the public/i })).toBeInTheDocument());
   fireEvent.click(screen.getByRole("checkbox", { name: /I reviewed the public/i }));
 }
 
@@ -199,7 +202,7 @@ describe("dashboard client", () => {
     renderDashboard({ initialEditorOpen: true });
     expect(screen.getByRole("heading", { name: "Portfolio details" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Portfolio completion steps" })).toHaveAttribute("aria-valuenow", "1");
+    expect(screen.getByRole("progressbar", { name: "Current form section" })).toHaveAttribute("aria-valuetext", "Section 1 of 7");
     goToFoundation();
     expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     expect(screen.queryByText("Rashi palette")).not.toBeInTheDocument();
@@ -246,7 +249,8 @@ describe("dashboard client", () => {
     expect(screen.getByRole("link", { name: /open complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Complete required details" })).toBeDisabled();
+    expect(screen.queryByRole("checkbox", { name: /I reviewed the public/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Complete Basics" })).toBeEnabled();
     expect(mocks.publish).not.toHaveBeenCalled();
   }, 10_000);
 
@@ -260,7 +264,9 @@ describe("dashboard client", () => {
     expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
     expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
-    expect(document.querySelector(".dashboard-share-url")).toHaveTextContent("https://nakshatra.test/p/token");
+    const shareLink = document.querySelector(".dashboard-share-url") as HTMLElement;
+    expect(shareLink).toHaveTextContent("https://nakshatra.test/p/token");
+    expect(shareLink.compareDocumentPosition(metrics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole("link", { name: /preview complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
@@ -326,6 +332,50 @@ describe("dashboard client", () => {
     expect(screen.getByRole("button", { name: "Review and publish" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
+  });
+
+  it("resumes a saved draft at its next required section and keeps mobile navigation outside the scrolling form", () => {
+    renderDashboard({ portfolio: { ...portfolio, is_published: false, published_data: null } });
+    expect(screen.getByText(/required details complete\. Next:/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Continue: Basics/i }));
+    const mobileNavigation = screen.getByRole("progressbar", { name: "Current form section" }).closest(".dashboard-editor-mobile-step");
+    expect(mobileNavigation).toBeInTheDocument();
+    expect(mobileNavigation?.nextElementSibling).toHaveClass("overflow-y-auto");
+    expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
+    const formScroller = mobileNavigation?.nextElementSibling as HTMLElement;
+    formScroller.scrollTop = 400;
+    fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
+    expect(formScroller.scrollTop).toBe(0);
+    expect(screen.getByRole("heading", { name: /privacy/i })).toBeInTheDocument();
+  });
+
+  it("makes liveness available in the same visit as a first draft save", async () => {
+    mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1", candidateId: "candidate-1" } });
+    renderDashboard({ portfolio: null, media: [], shareUrl: null });
+    fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    expect(await screen.findByRole("heading", { name: "Liveness check" })).toBeInTheDocument();
+  });
+
+  it("guides a complete draft to liveness without showing publication consent early", async () => {
+    const unverified = { ...readyPublicationReadiness, verificationStatus: "required" as const, published: false };
+    mocks.updateProgress.mockResolvedValue({ ok: true, data: { readiness: unverified } });
+    renderDashboard({
+      portfolio: { ...portfolio, candidate_id: "candidate-1", draft_data: readyData, published_data: null, is_published: false },
+      media: [{ ...media, media_type: "hero" }],
+      publicationReadiness: unverified,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
+    expect(within(review).queryByRole("checkbox", { name: /I reviewed the public/i })).not.toBeInTheDocument();
+    expect(within(review).getByRole("button", { name: "Open both previews above" })).toBeInTheDocument();
+    fireEvent.click(within(review).getByRole("link", { name: /open public introduction/i }));
+    fireEvent.click(within(review).getByRole("link", { name: /open complete portfolio/i }));
+    fireEvent.click(await within(review).findByRole("button", { name: "Go to liveness check" }));
+    expect(screen.queryByRole("dialog", { name: /check both views before publishing/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Liveness check" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Liveness check" })).toHaveFocus());
+    expect(mocks.publish).not.toHaveBeenCalled();
   });
 
   it("lets an owner approve a signed-in interest from the dashboard", async () => {
@@ -513,7 +563,7 @@ describe("dashboard client", () => {
     expect(screen.getByRole("link", { name: /open public introduction/i })).toHaveAttribute("href", "/preview");
     expect(screen.getByRole("link", { name: /open complete portfolio/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
-    acceptPublicationDisclosure();
+    await acceptPublicationDisclosure();
     fireEvent.click(screen.getByRole("button", { name: /publish reviewed changes/i }));
     expect(await screen.findByText(/complete required fields/i)).toBeInTheDocument();
   });
@@ -540,7 +590,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     expect(await screen.findByRole("dialog", { name: /check both views before publishing/i })).toBeInTheDocument();
-    acceptPublicationDisclosure();
+    await acceptPublicationDisclosure();
     fireEvent.click(screen.getByRole("button", { name: /confirm & publish changes/i }));
 
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({
@@ -565,7 +615,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
-    acceptPublicationDisclosure();
+    await acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
 
     const status = within(review).getByRole("status");
@@ -592,7 +642,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit portfolio/i }));
     fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
     const review = await screen.findByRole("dialog", { name: /check both views before publishing/i });
-    acceptPublicationDisclosure();
+    await acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /publish reviewed changes/i }));
     expect(within(review).getByRole("status")).toHaveTextContent("Publishing your changes");
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledOnce());
