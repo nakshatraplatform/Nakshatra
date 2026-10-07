@@ -552,8 +552,8 @@ describe("adaptive portfolio media", () => {
     fireEvent.click(opener);
     const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByText("Close")).toBeVisible();
-    expect(within(dialog).getByRole("button", { name: "Close full-screen photo" })).toHaveFocus();
+    expect(within(dialog).getByRole("button", { name: "Close photo and return to gallery" })).toHaveFocus();
+    expect(within(dialog).queryByText("Close")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByAltText("Landscape"));
     expect(dialog).toBeInTheDocument();
     fireEvent.click(dialog.querySelector("figure")!);
@@ -561,7 +561,7 @@ describe("adaptive portfolio media", () => {
     expect(opener).toHaveFocus();
     fireEvent.click(opener);
     expect(screen.getByRole("dialog", { name: "Gallery photo viewer" })).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Gallery photo viewer" })).getByRole("button", { name: "Close full-screen photo" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Gallery photo viewer" })).getByRole("button", { name: "Close photo and return to gallery" }));
     expect(screen.queryByRole("dialog", { name: "Gallery photo viewer" })).not.toBeInTheDocument();
   });
 

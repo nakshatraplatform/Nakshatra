@@ -121,7 +121,7 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
     <section className="dashboard-glass p-5" aria-labelledby="identity-verification-heading">
       <div className="dashboard-section-heading">
         <div>
-          <h2 id="identity-verification-heading">Liveness check</h2>
+          <h2 id="identity-verification-heading" tabIndex={-1}>Liveness check</h2>
           <p>Verification is required before this profile can be publicly published.</p>
         </div>
       </div>
