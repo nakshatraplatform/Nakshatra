@@ -289,7 +289,7 @@ test("gallery photo viewer closes from the backdrop on touch and restores the op
   await opener.click();
   const dialog = page.getByRole("dialog", { name: "Gallery photo viewer" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Close full-screen photo" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Close photo and return to gallery" })).toBeFocused();
   const bounds = await dialog.boundingBox();
   expect(bounds).not.toBeNull();
   if (page.context().browser()?.browserType().name() === "chromium" && page.viewportSize()!.width <= 720) {
