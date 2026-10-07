@@ -9,6 +9,13 @@ reports are incompatible with this workflow. Existing `candidate_liveness_ip`
 attempts/proofs remain distinct and retain their stricter dual-check requirement.
 Representative document verification is unchanged.
 
+NAK-73 follow-up (2026-10-07): candidate retrieval now requests `include=events`
+to obtain the documented workflow version, normalizes expanded feature objects,
+and permits null terminal session URLs. Invalid metadata is an integration
+deferral, never a biometric decline. See [recovery contract repair](candidate-liveness-recovery.md)
+for current implementation evidence and release gates; historical validations
+below do not establish real provider recovery for this follow-up.
+
 `DIDIT_API_KEY` and a UUID `DIDIT_WORKFLOW_ID` configure session creation. No
 `DIDIT_WORKFLOW_VERSION` is required: Didit chooses the saved workflow version and
 returns it. Durable registration records the workflow/correlation before POST;

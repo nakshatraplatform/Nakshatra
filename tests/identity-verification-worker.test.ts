@@ -32,6 +32,16 @@ function workerClient(claims: Array<Record<string, unknown>> = [claim]) {
 describe("identity-verification worker", () => {
   afterEach(() => vi.unstubAllEnvs());
 
+  it("defers missing candidate workflow metadata instead of recording a biometric decline", async () => {
+    const workflowId = "66666666-6666-4666-8666-666666666666";
+    const candidate = { ...claim, verification_method: "candidate_liveness_only", provider_workflow_id: workflowId, provider_workflow_version: 1, provider_vendor_data: "iv:fixture:attempt" };
+    const { client, rpc } = workerClient([candidate]);
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({ session_id: candidate.provider_session_ref, workflow_id: workflowId, vendor_data: candidate.provider_vendor_data, status: "Approved", liveness_checks: [{ status: "Approved" }] }));
+    await expect(createIdentityVerificationWorker(client, { apiKey: "test-api-key", fetchImpl, candidateWorkflowId: workflowId }).run(1)).resolves.toMatchObject({ deferred: 1, completed: 0 });
+    expect(rpc.mock.calls.some(([name]) => name === "complete_identity_verification_reconciliation")).toBe(false);
+    expect(fetchImpl.mock.calls[0][0]).toContain("?include=events");
+  });
+
   it("processes candidate liveness without a representative matching key", async () => {
     vi.stubEnv("IDENTITY_VERIFICATION_MATCH_HMAC_KEY", "");
     const workflowId = "66666666-6666-4666-8666-666666666666";
@@ -235,9 +245,13 @@ describe("identity-verification worker", () => {
       verification_method: "portfolio_photo_liveness",
       provider_workflow_id: "66666666-6666-4666-8666-666666666666",
       provider_workflow_version: 3,
+      provider_vendor_data: "iv:legacy-photo:attempt",
     };
     const rotated = workerClient([oldPhotoRedaction]);
-    const rotatedDelete = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const rotatedDelete = vi.fn().mockResolvedValueOnce(Response.json({
+      session_id: claim.provider_session_ref, workflow_id: oldPhotoRedaction.provider_workflow_id,
+      workflow_version: 3, vendor_data: oldPhotoRedaction.provider_vendor_data, status: "Expired",
+    })).mockResolvedValueOnce(new Response(JSON.stringify({
       session_id: claim.provider_session_ref,
       face_retention_outcome: "deleted",
       biometric_template_uuid: null,
@@ -248,7 +262,7 @@ describe("identity-verification worker", () => {
       candidateWorkflowId: "88888888-8888-4888-8888-888888888888",
 
     }).run(1)).resolves.toMatchObject({ completed: 1, deferred: 0 });
-    expect(rotatedDelete).toHaveBeenCalledTimes(1);
+    expect(rotatedDelete).toHaveBeenCalledTimes(2);
   });
 
   it("recovers and deletes an unattached photo session by exact vendor correlation", async () => {
@@ -273,6 +287,7 @@ describe("identity-verification worker", () => {
       }] }), { status: 200 }))
       .mockResolvedValueOnce(Response.json({
         session_id: orphanSessionId,
+        status: "Not Started",
         vendor_data: recoveryClaim.provider_vendor_data,
         workflow_id: recoveryClaim.provider_workflow_id,
         workflow_version: 3,

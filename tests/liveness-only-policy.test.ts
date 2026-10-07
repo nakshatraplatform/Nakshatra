@@ -22,13 +22,18 @@ describe("candidate liveness-only policy", () => {
     });
   });
   it.each([
-    { liveness_checks: [] }, { liveness_checks: [{ status: "Declined" }] },
-    { liveness_checks: [{ status: "In Review" }] }, { workflow_version: 8 },
+    { liveness_checks: [{ status: "Declined" }] },
+    { liveness_checks: [{ status: "In Review" }] },
+  ])("does not approve an unsuccessful liveness result: %j", (patch) => {
+    expect(evaluateDiditDecision({ ...decision, ...patch }, claim).outcome).toBe("declined");
+  });
+  it.each([
+    { liveness_checks: [] }, { workflow_version: 8 },
     { workflow_id: "wrong" }, { vendor_data: "wrong" },
     { id_verifications: [{ status: "Approved" }] }, { face_matches: [{ status: "Approved" }] },
     { ip_analyses: [{ status: "Approved" }] },
-  ])("rejects incompatible approval: %j", (patch) => {
-    expect(evaluateDiditDecision({ ...decision, ...patch }, claim).outcome).toBe("declined");
+  ])("defers incompatible provider data rather than manufacturing a decline: %j", (patch) => {
+    expect(() => evaluateDiditDecision({ ...decision, ...patch }, claim)).toThrow(/DIDIT_DECISION_/);
   });
   it("reconciles using the session's returned version, without a version environment variable", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: true, error: null });

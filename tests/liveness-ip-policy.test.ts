@@ -25,15 +25,21 @@ describe("candidate liveness and IP policy", () => {
   });
 
   it.each([
-    { ip_analyses: undefined }, { ip_analyses: [] }, { ip_analyses: [{ status: "Declined" }] },
+    { ip_analyses: [{ status: "Declined" }] },
     { ip_analyses: [{ status: "Approved" }, { status: "In Review" }] },
-    { liveness_checks: [] }, { liveness_checks: [{ status: "Declined" }] },
+    { liveness_checks: [{ status: "Declined" }] },
     { liveness_checks: [{ status: "In Review" }] },
+  ])("rejects an overall approval with unsuccessful checks: %j", (patch) => {
+    expect(evaluateDiditDecision({ ...decision, ...patch }, claim).outcome).toBe("declined");
+  });
+  it.each([
+    { ip_analyses: undefined }, { ip_analyses: [] },
+    { liveness_checks: [] },
     { workflow_version: 2 }, { workflow_id: "wrong" }, { vendor_data: "wrong" },
     { id_verifications: [{ status: "Approved" }] }, { face_matches: [{ status: "Approved" }] },
     { id_verifications: {} }, { face_matches: "malformed" },
-  ])("rejects an overall approval with incomplete or incompatible checks: %j", (patch) => {
-    expect(evaluateDiditDecision({ ...decision, ...patch }, claim).outcome).toBe("declined");
+  ])("defers incompatible provider contracts without a biometric outcome: %j", (patch) => {
+    expect(() => evaluateDiditDecision({ ...decision, ...patch }, claim)).toThrow(/DIDIT_DECISION_/);
   });
 
   it("keeps review pending and handles expiry without manufacturing a pass", () => {
