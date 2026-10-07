@@ -1,4 +1,5 @@
 import { matchesIdentityBirthDate } from "../src/features/identity-verification/server/identity-match.mjs";
+import { candidateDiditRequest, DiditCandidateError, DIDIT_SESSION_ABSENT, fetchCandidateDecision, parseCandidateDecision } from "../src/features/identity-verification/server/didit-candidate-contract.mjs";
 
 const DIDIT_BASE_URL = "https://verification.didit.me/v3/session";
 const DIDIT_SESSION_LIST_URL = "https://verification.didit.me/v3/sessions/";
@@ -50,18 +51,25 @@ export function evaluateDiditDecision(
 
   if (["candidate_liveness_only", "candidate_liveness_ip"].includes(claim.verification_method)) {
     if (claim.subject_type !== "candidate") throw workerError("IDENTITY_VERIFICATION_METHOD_INVALID");
+    decision = parseCandidateDecision(decision, {
+      sessionId: claim.provider_session_ref, workflowId: claim.provider_workflow_id,
+      workflowVersion: claim.provider_workflow_version, vendorData: claim.provider_vendor_data,
+    });
     const absent = (field) => decision[field] == null
       || (Array.isArray(decision[field]) && decision[field].length === 0);
-    const workflowMatches = decision.workflow_id === claim.provider_workflow_id
-      && Number.isSafeInteger(decision.workflow_version)
-      && decision.workflow_version === Number(claim.provider_workflow_version)
-      && decision.vendor_data === claim.provider_vendor_data;
     const livenessVerified = allApproved(decision, "liveness_checks");
     const livenessOnly = claim.verification_method === "candidate_liveness_only";
     const ipVerified = !livenessOnly && allApproved(decision, "ip_analyses");
-    const checksPass = workflowMatches && livenessVerified && (livenessOnly ? absent("ip_analyses") : ipVerified)
+    const checksPass = livenessVerified && (livenessOnly ? absent("ip_analyses") : ipVerified)
       && absent("id_verifications") && absent("face_matches");
     const status = normalizeStatus(decision.status);
+    // Missing results or a different workflow are integration failures, not
+    // evidence that the user's camera check declined.
+    if (status === "APPROVED" && (!Array.isArray(decision.liveness_checks) || decision.liveness_checks.length === 0
+      || (!livenessOnly && (!Array.isArray(decision.ip_analyses) || decision.ip_analyses.length === 0))
+      || !absent("id_verifications") || !absent("face_matches") || (livenessOnly && !absent("ip_analyses")))) {
+      throw workerError("DIDIT_DECISION_POLICY_INVALID");
+    }
     let outcome = "pending";
     if (status === "APPROVED") outcome = checksPass ? "verified" : "declined";
     else if (status === "DECLINED") outcome = "declined";
@@ -182,19 +190,15 @@ export function createIdentityVerificationWorker(supabase, {
   }
 
   async function deleteSession(providerSessionRef) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
-      const response = await fetchImpl(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/delete/`, {
+      const deletion = await candidateDiditRequest(`${DIDIT_BASE_URL}/${encodeURIComponent(providerSessionRef)}/delete/`, {
+        apiKey, fetchImpl, timeoutMs: requestTimeoutMs, allowMissing: true, expectedStatus: 200,
         method: "DELETE",
-        headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ retain_face_embeddings: false }),
         cache: "no-store",
-        signal: controller.signal,
       });
-      if (response.status === 404) return "absent";
-      if (response.status !== 200) throw workerError("DIDIT_SESSION_PURGE_FAILED");
-      const deletion = await response.json();
+      if (deletion === DIDIT_SESSION_ABSENT) return "absent";
       if (deletion?.session_id !== providerSessionRef
         || !["deleted", "none"].includes(deletion?.face_retention_outcome)
         || deletion?.biometric_template_uuid != null) {
@@ -203,8 +207,6 @@ export function createIdentityVerificationWorker(supabase, {
       return "deleted";
     } catch {
       throw workerError("DIDIT_SESSION_PURGE_FAILED");
-    } finally {
-      clearTimeout(timeout);
     }
   }
 
@@ -217,20 +219,7 @@ export function createIdentityVerificationWorker(supabase, {
     const matches = [];
     try {
       for (let page = 0; page < 5; page += 1) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
-        let payload;
-        try {
-          const response = await fetchImpl(url, {
-            headers: { Accept: "application/json", "x-api-key": apiKey },
-            cache: "no-store",
-            signal: controller.signal,
-          });
-          if (!response.ok) throw workerError("DIDIT_SESSION_RECOVERY_FAILED");
-          payload = await response.json();
-        } finally {
-          clearTimeout(timeout);
-        }
+        const payload = await candidateDiditRequest(url, { apiKey, fetchImpl, timeoutMs: requestTimeoutMs });
 
         let candidates;
         let next = null;
@@ -249,6 +238,7 @@ export function createIdentityVerificationWorker(supabase, {
         if (typeof next !== "string") throw workerError("DIDIT_SESSION_RECOVERY_INVALID");
         const nextUrl = new URL(next, DIDIT_SESSION_LIST_URL);
         if (nextUrl.origin !== "https://verification.didit.me"
+          || nextUrl.username || nextUrl.password
           || nextUrl.pathname !== "/v3/sessions/") {
           throw workerError("DIDIT_SESSION_RECOVERY_INVALID");
         }
@@ -270,7 +260,7 @@ export function createIdentityVerificationWorker(supabase, {
     }, "IDENTITY_VERIFICATION_DEFERRAL_FAILED", claim.task_type === "reconcile" && claim.verification_method === "candidate_liveness_only");
   }
 
-  async function process(claim) {
+  async function process(claim, onDeferred = () => {}) {
     try {
       if (claim.task_type === "reconcile"
         && ["portfolio_photo_liveness", "candidate_liveness_ip", "candidate_liveness_only"].includes(claim.verification_method)
@@ -288,15 +278,9 @@ export function createIdentityVerificationWorker(supabase, {
             }
             // An uncertain POST has no returned version yet. Recover exact correlation
             // through the decision endpoint, not optional fields in list summaries.
-            const recovered = await fetchDecision(session.session_id);
-            if (recovered?.session_id !== session.session_id
-              || recovered?.vendor_data !== claim.provider_vendor_data
-              || recovered?.workflow_id !== claim.provider_workflow_id
-              || !Number.isSafeInteger(recovered?.workflow_version) || recovered.workflow_version < 1
-              || (claim.provider_workflow_version != null
-                && recovered.workflow_version !== claim.provider_workflow_version)) {
-              throw workerError("DIDIT_SESSION_RECOVERY_MISMATCH");
-            }
+            await fetchCandidateDecision({ sessionId: session.session_id,
+              workflowId: claim.provider_workflow_id, workflowVersion: claim.provider_workflow_version,
+              vendorData: claim.provider_vendor_data }, { apiKey, fetchImpl, timeoutMs: requestTimeoutMs });
             await deleteSession(session.session_id);
           }
           if (sessions.length === 0 && Number(claim.work_attempts) < 3) {
@@ -311,7 +295,19 @@ export function createIdentityVerificationWorker(supabase, {
       }
       if (!claim.provider_session_ref) throw workerError("DIDIT_SESSION_REFERENCE_MISSING");
       if (claim.task_type === "provider_redaction") {
-        const outcome = await deleteSession(claim.provider_session_ref);
+        // Owner authorization binds the local attempt, not an externally supplied
+        // session reference. Correlate before privileged candidate deletion too.
+        let absent = false;
+        if (claim.subject_type === "candidate" && ["candidate_liveness_only", "candidate_liveness_ip", "portfolio_photo_liveness"].includes(claim.verification_method)) {
+          try {
+            await fetchCandidateDecision({ sessionId: claim.provider_session_ref, workflowId: claim.provider_workflow_id,
+              workflowVersion: claim.provider_workflow_version, vendorData: claim.provider_vendor_data }, { apiKey, fetchImpl, timeoutMs: requestTimeoutMs });
+          } catch (error) {
+            if (error instanceof DiditCandidateError && error.message === "DIDIT_SESSION_MISSING") absent = true;
+            else throw error;
+          }
+        }
+        const outcome = absent ? "absent" : await deleteSession(claim.provider_session_ref);
         await rpcBoolean(outcome === "absent" ? "complete_identity_verification_provider_absence" : "complete_identity_verification_provider_redaction", {
           p_attempt_id: claim.attempt_id,
           p_claim_token: claim.claim_token,
@@ -320,7 +316,10 @@ export function createIdentityVerificationWorker(supabase, {
       }
       if (claim.task_type !== "reconcile") throw workerError("IDENTITY_VERIFICATION_WORK_TYPE_INVALID");
 
-      const decision = await fetchDecision(claim.provider_session_ref);
+      const decision = ["candidate_liveness_only", "candidate_liveness_ip"].includes(claim.verification_method)
+        ? await fetchCandidateDecision({ sessionId: claim.provider_session_ref, workflowId: claim.provider_workflow_id,
+          workflowVersion: claim.provider_workflow_version, vendorData: claim.provider_vendor_data }, { apiKey, fetchImpl, timeoutMs: requestTimeoutMs })
+        : await fetchDecision(claim.provider_session_ref);
       const result = evaluateDiditDecision(decision, claim, identityMatchKey);
       const applied = await rpcBoolean("complete_identity_verification_reconciliation", {
         p_attempt_id: claim.attempt_id,
@@ -342,6 +341,7 @@ export function createIdentityVerificationWorker(supabase, {
         ? error.message
         : "IDENTITY_VERIFICATION_PROCESSING_FAILED";
       const deferred = await defer(claim, code);
+      if (deferred) onDeferred(code);
       // Retired leases are harmless even when the outstanding provider call failed.
       return { status: deferred ? "deferred" : "completed" };
     }
@@ -364,13 +364,22 @@ export function createIdentityVerificationWorker(supabase, {
     let completed = 0;
     let pending = 0;
     let deferred = 0;
+    const failureCounts = {};
     for (const claim of claims ?? []) {
-      const result = await process(claim);
+      const result = await process(claim, code => {
+        const category = code === "DIDIT_SESSION_RECOVERY_PENDING" ? "recovery_pending"
+          : code.startsWith("DIDIT_DECISION_") || code === "DIDIT_RESPONSE_TOO_LARGE" ? "provider_contract"
+          : code === "DIDIT_WORKFLOW_MISMATCH" ? "configuration"
+          : code === "DIDIT_SESSION_PURGE_FAILED" ? "cleanup"
+          : code.startsWith("DIDIT_") ? "provider"
+          : code.startsWith("IDENTITY_VERIFICATION_") ? "database_or_lifecycle" : "unknown";
+        failureCounts[category] = (failureCounts[category] ?? 0) + 1;
+      });
       if (result.status === "completed") completed += 1;
       else if (result.status === "pending") pending += 1;
       else deferred += 1;
     }
-    return { claimed: claims?.length ?? 0, completed, pending, deferred, completedAt: now().toISOString() };
+    return { claimed: claims?.length ?? 0, completed, pending, deferred, failureCounts, completedAt: now().toISOString() };
   }
 
   return { evaluateDiditDecision, process, run };

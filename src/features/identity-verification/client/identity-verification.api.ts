@@ -4,6 +4,15 @@ export type IdentityVerificationApiFailure = { ok: false; code: string; message:
 export type IdentityVerificationApiResult<T> = { ok: true; data: T } | IdentityVerificationApiFailure;
 export type HostedIdentityVerification = { url: string; managementUrl: string };
 
+/** Same-tab handoff after server attachment/authorization; fallback link remains visible. */
+export function navigateToDiditVerification(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.origin !== "https://verify.didit.me" || url.username || url.password) return;
+    window.location.assign(url.href);
+  } catch { /* Leave the explicit fallback link available if navigation is blocked. */ }
+}
+
 export async function identityVerificationRequest<T>(url: string, init: RequestInit): Promise<IdentityVerificationApiResult<T>> {
   try {
     const response = await fetch(url, init);
@@ -12,10 +21,12 @@ export async function identityVerificationRequest<T>(url: string, init: RequestI
       const header = response.headers.get("Retry-After");
       const duration = header && /^\d+$/.test(header) ? Number(header) : header ? Math.ceil((Date.parse(header) - Date.now()) / 1000) : 0;
       const retryAfter = Number.isFinite(duration) && duration > 0 ? Math.min(86400, duration) : undefined;
+      const reference = response.headers.get("X-Request-Id");
+      const supportReference = reference && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reference) ? ` Reference: ${reference}.` : "";
       return {
         ok: false,
         code: body?.code || "IDENTITY_VERIFICATION_REQUEST_FAILED",
-        message: body?.error || "We could not complete identity verification.",
+        message: (body?.error || "We could not complete identity verification.") + supportReference,
         status: response.status,
         ...(body?.managementUrl ? { managementUrl: body.managementUrl } : {}),
         ...(retryAfter ? { retryAfter } : {}),

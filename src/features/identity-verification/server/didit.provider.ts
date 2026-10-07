@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod/v4";
+import { candidateResumeResult, fetchCandidateDecision, DiditCandidateError, candidateDiditRequest, candidateHostedUrl } from "./didit-candidate-contract.mjs";
 
 const diditConfigSchema = z.object({
   DIDIT_API_KEY: z.string().min(1, "DIDIT_API_KEY is required"),
@@ -132,15 +133,18 @@ export async function createDiditLivenessSession(input: {
   callbackUrl: string;
 }) {
   const config = getCandidateVerificationConfig();
-  const raw = await postSession({
+  const raw = await candidateDiditRequest("https://verification.didit.me/v3/session/", { apiKey: config.apiKey,
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
     workflow_id: config.workflowId,
     vendor_data: `iv:${input.providerSubjectRef}:${input.attemptId}`,
     callback: input.callbackUrl,
     callback_method: "both",
     language: "en",
-  }, DIDIT_TIMEOUT_MS);
+    }),
+  }).catch(error => { throw candidateProviderError(error); });
   const parsed = candidateSessionSchema.safeParse(raw);
-  const hostedOrigin = parsed.success ? new URL(parsed.data.url).origin : null;
+  let hostedOrigin: string | null = null;
+  try { if (parsed.success) hostedOrigin = new URL(candidateHostedUrl(parsed.data.url)).origin; } catch { /* rejected below; cleanup retains the known session */ }
   if (!parsed.success || parsed.data.workflow_id !== config.workflowId
     || hostedOrigin !== diditHostedOrigin) {
     const sessionId = z.uuid().safeParse((raw as { session_id?: unknown } | null)?.session_id);
@@ -159,43 +163,31 @@ export async function createDiditLivenessSession(input: {
 export async function retrieveDiditLivenessSession(input: {
   sessionId: string; workflowId: string; workflowVersion: number; vendorData: string;
 }) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DIDIT_TIMEOUT_MS);
   try {
-    const response = await fetch(`https://verification.didit.me/v3/session/${encodeURIComponent(input.sessionId)}/decision/`, {
-      headers: { "x-api-key": getDiditConfigForKey().apiKey },
-      cache: "no-store", redirect: "error", signal: controller.signal,
-    });
-    if (!response.ok) throw new DiditProviderError(response.status === 429
-      ? "IDENTITY_VERIFICATION_PROVIDER_RATE_LIMITED" : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
-    const reader = response.body?.getReader();
-    if (!reader) throw new DiditProviderError();
-    let text = ""; let bytes = 0;
-    const decoder = new TextDecoder();
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        bytes += value.byteLength;
-        if (bytes > 262144) throw new DiditProviderError();
-        text += decoder.decode(value, { stream: true });
-      }
-      text += decoder.decode();
-    } finally { await reader.cancel(); }
-    const decision = z.object({ session_id: z.uuid(), workflow_id: z.uuid(), workflow_version: z.number().int().positive(),
-      vendor_data: z.string(), status: z.string(), session_url: z.string().optional() }).parse(JSON.parse(text));
-    if (decision.session_id !== input.sessionId || decision.workflow_id !== input.workflowId
-      || decision.workflow_version !== input.workflowVersion || decision.vendor_data !== input.vendorData) throw new DiditProviderError();
-    const status = decision.status.trim().toUpperCase().replace(/[\s-]+/g, "_");
-    if (["APPROVED", "DECLINED", "EXPIRED", "ABANDONED", "KYC_EXPIRED", "IN_REVIEW"].includes(status)) return { awaitingResult: true as const };
-    if (!["NOT_STARTED", "IN_PROGRESS", "CREATED"].includes(status)) throw new DiditProviderError();
-    const url = new URL(decision.session_url ?? "");
-    if (url.origin !== diditHostedOrigin || url.username || url.password) throw new DiditProviderError();
-    return { awaitingResult: false as const, url: url.href };
+    const decision = await fetchCandidateDecision(input, { apiKey: getDiditConfigForKey().apiKey });
+    return candidateResumeResult(decision);
   } catch (error) {
-    if (error instanceof DiditProviderError) throw error;
-    throw new DiditProviderError(controller.signal.aborted ? "IDENTITY_VERIFICATION_PROVIDER_TIMEOUT" : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
-  } finally { clearTimeout(timeout); }
+    throw candidateProviderError(error);
+  }
+}
+
+function candidateProviderError(error: unknown) {
+  if (error instanceof DiditProviderError) return error;
+  const codes: Record<string, string> = {
+    DIDIT_RATE_LIMITED: "IDENTITY_VERIFICATION_PROVIDER_RATE_LIMITED",
+    DIDIT_REQUEST_TIMEOUT: "IDENTITY_VERIFICATION_PROVIDER_TIMEOUT",
+    DIDIT_CREDENTIALS_INVALID: "IDENTITY_VERIFICATION_PROVIDER_CREDENTIALS",
+    DIDIT_CREDITS_UNAVAILABLE: "IDENTITY_VERIFICATION_PROVIDER_CREDITS",
+    DIDIT_PROVIDER_REJECTED: "IDENTITY_VERIFICATION_PROVIDER_REJECTED",
+    DIDIT_SESSION_MISSING: "IDENTITY_VERIFICATION_PROVIDER_SESSION_MISSING",
+    DIDIT_DECISION_MISMATCH: "IDENTITY_VERIFICATION_PROVIDER_CORRELATION_INVALID",
+    DIDIT_DECISION_INVALID: "IDENTITY_VERIFICATION_PROVIDER_CONTRACT_INVALID",
+    DIDIT_DECISION_STATUS_INVALID: "IDENTITY_VERIFICATION_PROVIDER_CONTRACT_INVALID",
+    DIDIT_HOSTED_URL_INVALID: "IDENTITY_VERIFICATION_PROVIDER_CONTRACT_INVALID",
+    DIDIT_RESPONSE_TOO_LARGE: "IDENTITY_VERIFICATION_PROVIDER_CONTRACT_INVALID",
+  };
+  return new DiditProviderError(error instanceof DiditCandidateError
+    ? codes[error.message] ?? "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE" : "IDENTITY_VERIFICATION_PROVIDER_UNAVAILABLE");
 }
 
 /** Creates a Didit hosted session without retaining its session token or provider evidence. */

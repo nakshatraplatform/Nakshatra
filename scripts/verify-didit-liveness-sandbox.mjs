@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { readFile, realpath, stat, unlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { fetchCandidateDecision } from "../src/features/identity-verification/server/didit-candidate-contract.mjs";
+import { evaluateDiditDecision } from "./identity-verification-worker.mjs";
 
 const BASE = "https://verification.didit.me/v3/session";
 const TIMEOUT_MS = 10_000;
@@ -61,7 +63,7 @@ export function createSandboxRecoveryJournal(path) {
   };
 }
 
-/** Proves a sandbox liveness workflow creates a session without a reference; attempts purge of any issued session. */
+/** Probes creation/retrieval/evaluation, not camera completion; purges any issued session. */
 export async function verifyLivenessSandbox({ apiKey, workflowId, journal, fetchImpl = fetch }) {
   if (!apiKey || !UUID_PATTERN.test(workflowId ?? "")) {
     throw failure("DIDIT_SANDBOX_CONFIG_INVALID");
@@ -92,6 +94,18 @@ export async function verifyLivenessSandbox({ apiKey, workflowId, journal, fetch
       || !Number.isSafeInteger(body.workflow_version) || body.workflow_version < 1
       || typeof body.url !== "string" || new URL(body.url).origin !== "https://verify.didit.me") {
       throw failure("DIDIT_SANDBOX_RESPONSE_INVALID");
+    }
+    const decision = await fetchCandidateDecision({ sessionId, workflowId, workflowVersion: body.workflow_version, vendorData }, { apiKey, fetchImpl });
+    const result = evaluateDiditDecision(decision, {
+      subject_type: "candidate", verification_method: "candidate_liveness_only",
+      provider_session_ref: sessionId, provider_workflow_id: workflowId,
+      provider_workflow_version: body.workflow_version, provider_vendor_data: vendorData,
+    });
+    // Arming "approve" selects the eventual mocked result, not immediate
+    // completion. A fresh session is normally Not Started until hosted capture.
+    if (result.outcome !== "verified"
+      && !(decision.status === "NOT_STARTED" && result.outcome === "pending")) {
+      throw failure("DIDIT_SANDBOX_DECISION_UNEXPECTED");
     }
     return { workflowVersion: body.workflow_version };
   } finally {
@@ -145,6 +159,8 @@ export async function recoverLivenessSandbox({ apiKey, journal, fetchImpl = fetc
     if (session?.vendor_data !== entry.vendorData || !UUID_PATTERN.test(session?.session_id ?? "")) {
       throw failure("DIDIT_SANDBOX_RECOVERY_UNCONFIRMED");
     }
+    await fetchCandidateDecision({ sessionId: session.session_id, workflowId: entry.workflowId,
+      workflowVersion: undefined, vendorData: entry.vendorData }, { apiKey, fetchImpl });
     const deleted = await request(fetchImpl, `${BASE}/${encodeURIComponent(session.session_id)}/delete/`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
@@ -177,7 +193,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         workflowId: process.env.DIDIT_SANDBOX_WORKFLOW_ID,
         journal: createSandboxRecoveryJournal(firstArg),
       });
-      process.stdout.write("Liveness-only Didit Sandbox create-and-delete contract passed.\n");
+      process.stdout.write("Didit Sandbox create/retrieve/evaluate/delete probe passed; hosted camera completion was not tested.\n");
     }
   } catch (error) {
     const code = error instanceof Error && /^DIDIT_SANDBOX_[A-Z_]+$/.test(error.message)

@@ -17,6 +17,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-73 Didit recovery contract repair](features/candidate-liveness-recovery.md): shared candidate expanded-decision boundary, nullable terminal URL handling, exact metadata correlation, contract-error deferral, same-tab Start/Resume, privacy-safe support references and worker failure categories. Post-Start status outages now retain a created/checking-status recovery state without duplicate creation or fabricated link eligibility; local checks and fresh independent correction review pass, resolving NAK73-V1. No schema or env change. Matching app/worker rollout, clean hosted database CI and real application-backed Sandbox validation remain release gates.
+
 - [Candidate-only verification worker](features/candidate-only-verification-worker.md): removes representative matching-key dependencies from the scheduled portfolio worker and filters candidate jobs before leasing. Local checks and independent review pass; additive migration and matching worker deployment remain pending.
 
 - [Open creator onboarding and feedback](features/open-creator-onboarding.md): owner-approved replacement for the invite-only waitlist. A local one-time, multi-select feedback follow-up adds private difficulty/liked-answer arrays with a first-write-wins migration; hosted database verification and release are pending. Rahul's Production pilot-admin grant was soft-revoked, leaving only the platform account active. Publication safeguards remain separate.

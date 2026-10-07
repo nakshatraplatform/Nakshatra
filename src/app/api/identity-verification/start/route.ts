@@ -8,6 +8,7 @@ import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import { AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
+import { verificationResponse } from "@/features/identity-verification/server/verification-diagnostics";
 
 const tokenSchema = z.string().refine(isIdentityVerificationToken, "Invalid verification token");
 const startSchema = z.discriminatedUnion("authorization", [
@@ -22,6 +23,10 @@ function managementUrl(token: string, request: Request) {
 
 /** Records the standalone consent before creating a hosted session for a self-managed or invited candidate. */
 export async function POST(request: Request) {
+  return verificationResponse("start", () => handleStart(request));
+}
+
+async function handleStart(request: Request) {
   try {
     requireSameOrigin(request);
   } catch (error) {

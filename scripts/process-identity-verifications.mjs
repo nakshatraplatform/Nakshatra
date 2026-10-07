@@ -23,5 +23,6 @@ console.log(
 // A deferred item means a provider, network, or persistence operation failed;
 // fail the scheduled run so the operational alert job can notify an owner.
 if (result.deferred > 0) {
+  console.warn("Identity verification deferrals by safe category:", result.failureCounts);
   throw new Error("IDENTITY_VERIFICATION_WORK_DEFERRED");
 }

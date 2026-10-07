@@ -15,7 +15,46 @@ function journal() {
   };
 }
 
+async function decisionResponse(recovery: ReturnType<typeof journal>) {
+  return Response.json({ session_id: sessionId, workflow_id: workflowId, workflow_version: 2,
+    vendor_data: (await recovery.read())?.vendorData, status: "Approved", session_url: null,
+    features: [{ feature: "LIVENESS", node_id: "liveness-node" }], liveness_checks: [{ status: "Approved" }] });
+}
+
 describe("document-free Didit Sandbox contract", () => {
+  it("validates a newly created Not Started session without claiming camera completion", async () => {
+    const recovery = journal();
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(Response.json({ session_id: sessionId, workflow_id: workflowId,
+        workflow_version: 2, url: "https://verify.didit.me/session/private-token", status: "Not Started" }, { status: 201 }))
+      .mockImplementationOnce(async () => Response.json({ session_id: sessionId,
+        workflow_id: workflowId, workflow_version: 2, vendor_data: (await recovery.read())?.vendorData,
+        status: "Not Started", session_url: "https://verify.didit.me/session/private-token",
+        features: [{ feature: "LIVENESS" }], liveness_checks: null }))
+      .mockResolvedValueOnce(Response.json({ session_id: sessionId,
+        face_retention_outcome: "none", biometric_template_uuid: null }));
+    await expect(verifyLivenessSandbox({ apiKey: "sandbox-key", workflowId, journal: recovery, fetchImpl }))
+      .resolves.toEqual({ workflowVersion: 2 });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(recovery.complete).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an unexpectedly declined sandbox result but still cleans up", async () => {
+    const recovery = journal();
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(Response.json({ session_id: sessionId, workflow_id: workflowId,
+        workflow_version: 2, url: "https://verify.didit.me/session/private-token" }, { status: 201 }))
+      .mockImplementationOnce(async () => {
+        const body = await (await decisionResponse(recovery)).json();
+        return Response.json({ ...body, status: "Declined", liveness_checks: [{ status: "Declined" }] });
+      })
+      .mockResolvedValueOnce(Response.json({ session_id: sessionId,
+        face_retention_outcome: "deleted", biometric_template_uuid: null }));
+    await expect(verifyLivenessSandbox({ apiKey: "sandbox-key", workflowId, journal: recovery, fetchImpl }))
+      .rejects.toThrow("DIDIT_SANDBOX_DECISION_UNEXPECTED");
+    expect(recovery.complete).toHaveBeenCalledOnce();
+  });
+
   it("uses a sandbox-only scenario, validates workflow metadata and purges the session", async () => {
     const recovery = journal();
     const fetchImpl = vi.fn()
@@ -25,6 +64,7 @@ describe("document-free Didit Sandbox contract", () => {
         workflow_version: 2,
         url: "https://verify.didit.me/session/private-token",
       }), { status: 201 }))
+      .mockImplementationOnce(() => decisionResponse(recovery))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
         face_retention_outcome: "deleted",
@@ -41,9 +81,10 @@ describe("document-free Didit Sandbox contract", () => {
     }));
     expect(request).not.toHaveProperty("expected_details");
     expect(request).not.toHaveProperty("portrait_image");
-    expect(fetchImpl.mock.calls[1][0]).toBe(`https://verification.didit.me/v3/session/${sessionId}/delete/`);
-    expect(fetchImpl.mock.calls[1][1].method).toBe("DELETE");
-    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ retain_face_embeddings: false });
+    expect(fetchImpl.mock.calls[1][0]).toBe(`https://verification.didit.me/v3/session/${sessionId}/decision/?include=events`);
+    expect(fetchImpl.mock.calls[2][0]).toBe(`https://verification.didit.me/v3/session/${sessionId}/delete/`);
+    expect(fetchImpl.mock.calls[2][1].method).toBe("DELETE");
+    expect(JSON.parse(fetchImpl.mock.calls[2][1].body)).toEqual({ retain_face_embeddings: false });
     expect(recovery.record).toHaveBeenCalledTimes(1);
     expect(recovery.complete).toHaveBeenCalledTimes(1);
   });
@@ -78,6 +119,7 @@ describe("document-free Didit Sandbox contract", () => {
         workflow_version: 2,
         url: "https://verify.didit.me/session/private-token",
       }), { status: 201 }))
+      .mockImplementationOnce(() => decisionResponse(recovery))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId,
         face_retention_outcome: "retained_with_user",
@@ -96,6 +138,7 @@ describe("document-free Didit Sandbox contract", () => {
         session_id: sessionId, workflow_id: workflowId, workflow_version: 2,
         url: "https://verify.didit.me/session/private-token",
       }), { status: 201 }))
+      .mockImplementationOnce(() => decisionResponse(recovery))
       .mockResolvedValueOnce(new Response(null, { status: 503 }))
       .mockImplementationOnce(async (url) => {
         expect(new URL(url).searchParams.get("vendor_data")).toBe((await recovery.read())?.vendorData);
@@ -103,6 +146,7 @@ describe("document-free Didit Sandbox contract", () => {
           session_id: sessionId, vendor_data: (await recovery.read())?.vendorData,
         }] }), { status: 200 });
       })
+      .mockImplementationOnce(() => decisionResponse(recovery))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         session_id: sessionId, face_retention_outcome: "deleted", biometric_template_uuid: null,
       }), { status: 200 }));
