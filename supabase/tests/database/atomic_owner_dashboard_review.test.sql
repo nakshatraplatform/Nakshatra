@@ -10,7 +10,7 @@ insert into app_private.b2c_creator_entitlements(email_hash) values (app_private
 insert into public.candidates(id,primary_owner_user_id,display_name,created_by) values('88000000-0000-4000-8000-000000000001','86000000-0000-4000-8000-000000000001','Snapshot Person','86000000-0000-4000-8000-000000000001');
 insert into public.candidate_personal_details(candidate_id,profile_for) values('88000000-0000-4000-8000-000000000001','self');
 insert into public.portfolios(id,user_id,candidate_id,draft_data,is_published) values('89000000-0000-4000-8000-000000000001','86000000-0000-4000-8000-000000000001','88000000-0000-4000-8000-000000000001',pg_temp.complete_portfolio_draft(),false);
-insert into public.portfolio_media(id,portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order) values('90000000-0000-4000-8000-000000000001','89000000-0000-4000-8000-000000000001','88000000-0000-4000-8000-000000000001','hero','snapshot/hero.webp','public',0);
+insert into public.portfolio_media(id,portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order) values('90000000-0000-4000-8000-000000000001','89000000-0000-4000-8000-000000000001','88000000-0000-4000-8000-000000000001','hero','86000000-0000-4000-8000-000000000001/hero.webp','public',0);
 
 select ok(not has_function_privilege('anon','public.get_owner_dashboard_review_snapshot()','EXECUTE'),'anonymous viewers cannot read private owner snapshot');
 select is((select provolatile::text from pg_proc where oid='public.get_owner_dashboard_review_snapshot()'::regprocedure),'s','snapshot reads use one calling-statement snapshot');
@@ -19,7 +19,7 @@ select pg_temp.set_authenticated_claims('86000000-0000-4000-8000-000000000001','
 select is(public.get_owner_dashboard_review_snapshot()#>>'{portfolio,user_id}',auth.uid()::text,'snapshot contains only the current owner');
 select is(public.get_owner_dashboard_review_snapshot()#>'{portfolio,draft_data}',pg_temp.complete_portfolio_draft(),'snapshot carries saved answers');
 select is(public.get_owner_dashboard_review_snapshot()#>>'{readiness,reviewFingerprint}',public.get_portfolio_publication_readiness()->>'reviewFingerprint','review version agrees within the statement');
-select is(public.get_owner_dashboard_review_snapshot()#>>'{media,0,storage_path}','snapshot/hero.webp','snapshot carries the matching photo facts');
+select is(public.get_owner_dashboard_review_snapshot()#>>'{media,0,storage_path}','86000000-0000-4000-8000-000000000001/hero.webp','snapshot carries the matching photo facts');
 select ok(not ((public.get_owner_dashboard_review_snapshot()#>'{media,0}') ? 'candidate_id'),'photo projection excludes unrelated owner linkage');
 select is(public.get_owner_dashboard_review_snapshot()->'horoscope','null'::jsonb,'missing attachment is explicit');
 select is(public.get_owner_dashboard_review_snapshot()#>>'{readiness,disclosureConfirmed}','false','snapshot never grants disclosure consent');
