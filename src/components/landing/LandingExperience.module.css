@@ -374,7 +374,8 @@
 .guidedTourInner { display: grid; width: min(1240px, calc(100% - 3rem)); grid-template-columns: minmax(300px, 0.7fr) minmax(560px, 1.3fr); gap: clamp(3rem, 7vw, 7rem); margin-inline: auto; }
 .guidedTourIntro { position: sticky; top: 106px; align-self: start; padding-top: 0.4rem; }
 .guidedTourIntro h2 { max-width: 13ch; margin-top: 1rem; font-family: var(--font-portfolio-display), Georgia, serif; font-size: clamp(2.8rem, 4.5vw, 4.4rem); font-weight: 500; letter-spacing: -0.04em; line-height: 0.98; text-wrap: balance; }
-.guidedTourIntro > p:last-of-type { max-width: 48ch; margin-top: 1.15rem; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+.guidedTourIntro > p:not(.eyebrow) { max-width: 48ch; margin-top: 1.15rem; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+.guidedTourIntro > .tourExampleNote { margin-top: 0.65rem; font-size: 0.75rem; }
 .tourNavigation { display: grid; margin-top: 1.8rem; border-block: 1px solid light-dark(#cfcec6, var(--app-dark-border)); }
 .tourNavigation a { display: grid; min-height: 54px; grid-template-columns: 2.25rem 1fr; align-items: center; gap: 0.4rem; border-bottom: 1px solid light-dark(#cfcec6, var(--app-dark-border)); color: var(--muted); }
 .tourNavigation a:last-child { border-bottom: 0; }
@@ -414,11 +415,13 @@
 .tourWindowBar > span { width: 7px; height: 7px; border-radius: 50%; background: light-dark(#91aaa5, var(--app-dark-muted)); }
 .tourWindowBar small { margin-left: auto; color: light-dark(#57716f, var(--app-dark-muted)); font-size: 0.62rem; font-weight: 760; letter-spacing: 0.1em; text-transform: uppercase; }
 .tourFormRows { display: grid; gap: 0.75rem; margin-top: 2rem; }
-.tourFormRows span { height: 44px; border: 1px solid light-dark(#aac1bb, var(--app-dark-border)); border-radius: 0.5rem; background: light-dark(rgb(255 253 248 / 0.72), var(--app-dark-surface)); }
-.tourFormRows span:nth-child(3) { height: 74px; }
+.tourFormRows > div { display: grid; gap: 0.2rem; border: 1px solid light-dark(#aac1bb, var(--app-dark-border)); border-radius: 0.5rem; padding: 0.65rem 0.8rem; background: var(--surface); }
+.tourFormRows dt { color: var(--muted); font-size: 0.65rem; }
+.tourFormRows dd { margin: 0; color: var(--ink); font-size: 0.8rem; font-weight: 650; }
 .tourSaveState { display: inline-flex; justify-self: end; align-items: center; gap: 0.4rem; border-radius: 99px; padding: 0.5rem 0.7rem; background: var(--surface); color: light-dark(#286d63, var(--app-dark-accent)); font-size: 0.68rem; font-weight: 720; }
 .tourSaveState svg { width: 0.8rem; height: 0.8rem; }
 .tourPreviewTabs, .tourChannels, .tourDecision { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 2rem; }
+.tourPreviewTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tourPreviewTabs strong, .tourChannels span { border: 1px solid light-dark(#aac1bb, var(--app-dark-border)); border-radius: 0.5rem; padding: 0.7rem 0.5rem; background: light-dark(rgb(255 253 248 / 0.5), var(--app-dark-surface)); color: var(--muted); font-size: 0.67rem; text-align: center; }
 .tourPreviewTabs strong:nth-child(2) { border-color: light-dark(#4f8b83, var(--app-dark-accent)); background: var(--surface); color: var(--ink); }
 .tourPreviewCard, .tourLinkCard, .tourRequestCard { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.8rem; border: 1px solid light-dark(#aac1bb, var(--app-dark-border)); border-radius: 0.75rem; padding: 1rem; background: var(--surface); box-shadow: 0 16px 35px rgb(27 48 54 / 0.08); }

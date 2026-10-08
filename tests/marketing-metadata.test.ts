@@ -17,11 +17,14 @@ describe("marketing metadata", () => {
     expect(metadata.openGraph).toMatchObject({
       type: "website",
       title: "One Introduction. One Link. Always Current. | VivIntro",
+      description: metadata.description,
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
       title: "One Introduction. One Link. Always Current. | VivIntro",
+      description: metadata.description,
     });
+    expect(metadata.alternates?.canonical).toBe("/");
   });
 
   it("defines a large, accessible root social preview", () => {
