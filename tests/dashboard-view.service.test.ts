@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const repositories = vi.hoisted(() => ({
   dashboard: {
+    findDashboardReviewSnapshot: vi.fn(),
     findDashboardPortfolioForUser: vi.fn(),
     countPortfolioViews: vi.fn(),
   },
@@ -83,6 +84,7 @@ const projectedInterest = {
 describe("dashboard view service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
     canCreatePortfolio.mockResolvedValue(true);
     loadPilotAccessState.mockResolvedValue({
       canCreatePortfolio: true,
@@ -155,6 +157,9 @@ describe("dashboard view service", () => {
         portfolioExists: false,
         lastEditorSection: null,
         previewedAt: null,
+        reviewFingerprint: null,
+        publicPreviewReviewed: false,
+        completePreviewReviewed: false,
         selectedPlanCode: null,
         verificationStatus: "required",
         paymentStatus: "none",
@@ -238,5 +243,68 @@ describe("dashboard view service", () => {
       visibility_settings: {},
     });
     expect(mapDashboardPortfolio(null)).toBeNull();
+  });
+
+  it("uses one authoritative snapshot rather than mixing earlier answers with a later review hash", async () => {
+    const readiness = { ...await getPublicationReadiness(), reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: false };
+    getPublicationReadiness.mockResolvedValue({ ...readiness, reviewFingerprint: "b".repeat(64) });
+    repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue({ data: {
+      portfolio: row, media: [], horoscope: null, readiness,
+    }, error: null });
+    getPublicationReadiness.mockClear();
+    const result = await loadDashboardView({ supabase: {} as never, userId: "owner-1" });
+    expect(result.portfolio?.draft_data).toEqual(row.draft_data);
+    expect(result.publicationReadiness).toEqual(readiness);
+    expect(repositories.dashboard.findDashboardPortfolioForUser).not.toHaveBeenCalled();
+    expect(getPublicationReadiness).not.toHaveBeenCalled();
+    expect(repositories.media.findPortfolioPhotos).not.toHaveBeenCalled();
+    expect(repositories.horoscope.findByPortfolio).not.toHaveBeenCalled();
+  });
+
+  it("keeps legacy editing available but never adopts separately loaded review evidence", async () => {
+    getPublicationReadiness.mockResolvedValue({ ...await getPublicationReadiness(), reviewFingerprint: "b".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: true, disclosureConfirmed: true });
+    const result = await loadDashboardView({ supabase: {} as never, userId: "owner-1" });
+    expect(result.portfolio?.id).toBe(row.id);
+    expect(result.publicationReadiness).toMatchObject({ reviewFingerprint: null, publicPreviewReviewed: false, completePreviewReviewed: false, disclosureConfirmed: false });
+  });
+
+  it.each([
+    { data: {}, error: null },
+    { data: null, error: { code: "42501" } },
+    { data: { portfolio: { ...row, user_id: "other-owner" }, media: [], horoscope: null, readiness: { portfolioExists: true, lastEditorSection: null, previewedAt: null, reviewFingerprint: "a".repeat(64), selectedPlanCode: null, verificationStatus: "required", paymentStatus: "none", paymentExpiresAt: null, disclosureConfirmed: false, published: false, missingRequired: [] } }, error: null },
+  ])("rejects malformed, denied or foreign-owner snapshot responses without legacy fallback", async (result) => {
+    repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue(result);
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).rejects.toThrow(/safely/);
+    expect(repositories.dashboard.findDashboardPortfolioForUser).not.toHaveBeenCalled();
+    expect(getPublicationReadiness).not.toHaveBeenCalled();
+  });
+
+  it("returns an atomic empty-owner snapshot without separately fetching readiness", async () => {
+    const readiness = { ...await getPublicationReadiness(), portfolioExists: false, reviewFingerprint: null };
+    repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue({ data: { portfolio: null, media: [], horoscope: null, readiness }, error: null });
+    getPublicationReadiness.mockClear();
+    expect((await loadDashboardView({ supabase: {} as never, userId: "owner-1" })).portfolio).toBeNull();
+    expect(getPublicationReadiness).not.toHaveBeenCalled();
+    expect(repositories.dashboard.findDashboardPortfolioForUser).not.toHaveBeenCalled();
+  });
+
+  it("loads bound attachments but rejects attachments belonging to another portfolio", async () => {
+    const media = { id: "photo", portfolio_id: row.id, storage_path: "owner/photo.webp", thumbnail_path: null, media_type: "hero", visibility: "public", sort_order: 0, alt_text: null, metadata: {} };
+    const horoscope = { id: "horoscope", portfolio_id: row.id, storage_path: "owner/horoscope.webp", mime_type: "image/webp", file_extension: "webp", byte_size: 1000, language_label: null, page_count: null, published_at: null, created_at: row.created_at, updated_at: row.updated_at };
+    const readiness = { ...await getPublicationReadiness(), reviewFingerprint: "a".repeat(64) };
+    const snapshot = { portfolio: row, media: [media], horoscope, readiness };
+    repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue({ data: snapshot, error: null });
+    expect(await loadDashboardView({ supabase: {} as never, userId: "owner-1" })).toMatchObject({ media: [media], horoscope });
+    expect(repositories.media.findPortfolioPhotos).not.toHaveBeenCalled();
+    expect(repositories.horoscope.findByPortfolio).not.toHaveBeenCalled();
+    for (const data of [
+      { ...snapshot, media: [{ ...media, portfolio_id: "foreign" }] },
+      { ...snapshot, horoscope: { ...horoscope, portfolio_id: "foreign" } },
+      { ...snapshot, readiness: { ...readiness, portfolioExists: false } },
+      { ...snapshot, readiness: { ...readiness, reviewFingerprint: null } },
+    ]) {
+      repositories.dashboard.findDashboardReviewSnapshot.mockResolvedValue({ data, error: null });
+      await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).rejects.toThrow(/safely/);
+    }
   });
 });

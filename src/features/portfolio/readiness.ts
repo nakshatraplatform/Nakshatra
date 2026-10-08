@@ -46,11 +46,11 @@ export function calculatePortfolioCompletion(
     { key: "last_name", label: "Last name", editorSection: "foundation", group: "basics", complete: validNamePart(name.last_name) },
     { key: "date_of_birth", label: "Date of birth (18 or older)", editorSection: "foundation", group: "basics", complete: typeof data.personal.dob === "string" && validAdultBirthDate(data.personal.dob) },
     { key: "gender", label: "Gender", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.gender) },
+    { key: "marital_status", label: "Marital Status", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.marital_status) },
     { key: "height", label: "Height", editorSection: "foundation", group: "basics", complete: HEIGHT_OPTIONS.some((item) => item.value !== "" && item.value === data.vitals?.height) },
     { key: "current_country", label: "Current country", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.country) },
     { key: "current_city", label: "Current city", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.city) },
     { key: "career_title", label: "Current profession title", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
-    { key: "marital_status", label: "Marital Status", editorSection: "story", group: "basics", complete: hasValue(data.personal.marital_status) },
     {
       key: "introduction",
       label: "Short description",

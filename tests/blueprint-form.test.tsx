@@ -54,6 +54,19 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("keeps useful hints below controls and uses a shared protected-field legend", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    const dob = screen.getByLabelText("Date of birth", { exact: true });
+    const hint = screen.getByText(/You must be at least 18/);
+    expect(dob.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dob).toHaveAccessibleDescription(/You must be at least 18/);
+    expect(screen.queryByText("Required to publish and shown in your public Introduction.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Fields marked with a lock/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    const employer = screen.getByLabelText("Employer or organisation", { exact: true });
+    expect(employer).toHaveAccessibleDescription(/Shown after your approval/);
+    expect(screen.queryByText("Shown after approval", { exact: true })).not.toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
@@ -128,7 +141,6 @@ describe("blueprint form", () => {
 
   it("offers clear Marital Status choices while retaining a prior saved answer", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
     const maritalStatus = screen.getByLabelText("Marital Status");
     expect(within(maritalStatus).getByRole("option", { name: "Single" })).toBeInTheDocument();
     expect(within(maritalStatus).getByRole("option", { name: "Married" })).toBeInTheDocument();
@@ -136,6 +148,23 @@ describe("blueprint form", () => {
 
     rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, marital_status: "Never Married" } }} onUpdate={vi.fn()} />);
     expect(within(screen.getByLabelText("Marital Status")).getByRole("option", { name: "Never Married (previous answer)" })).toBeInTheDocument();
+  });
+
+  it("collects identity before location and separates education, work and residency", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    const before = (first: HTMLElement, next: HTMLElement) => expect(first.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    before(screen.getByLabelText("Last name"), screen.getByLabelText("Date of birth"));
+    before(screen.getByLabelText("Marital Status"), screen.getByLabelText("Current country"));
+    before(screen.getByLabelText("Current country"), screen.getByLabelText("Current city"));
+    before(screen.getByLabelText("Current city"), screen.getByLabelText("Current profession title"));
+    before(screen.getByLabelText("Current profession title"), screen.getByLabelText("Short description"));
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    expect(within(screen.getByRole("group", { name: "Education" })).getByLabelText("Institution")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Current work" })).getByLabelText("Work status")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Citizenship and residency" })).getByLabelText("Citizenship")).toBeInTheDocument();
+    before(screen.getByLabelText("Education location"), screen.getByLabelText("Work status"));
+    fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
+    before(screen.getByLabelText("Place of birth"), screen.getByLabelText("Time of birth"));
   });
 
   it("routes required profile, family, contact, appearance, and privacy changes", () => {
@@ -322,7 +351,7 @@ describe("blueprint form", () => {
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
     expect(screen.getByText("No guessing required")).toBeInTheDocument();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shown after your approval/);
   });
 
   it("labels protected contact visibility once at the section level", () => {

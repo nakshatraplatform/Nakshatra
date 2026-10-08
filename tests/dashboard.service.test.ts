@@ -23,6 +23,18 @@ const baseDraft: PortfolioData = {
 };
 
 describe("saveDashboardDraft", () => {
+  it("returns validated database-normalized geography with saved review state", async () => {
+    const draftData = { ...baseDraft, personal: { ...baseDraft.personal, country_code: "US", country: "United States", city: "Boston" } };
+    repository.saveDashboardDraftTransaction.mockResolvedValue({ data: {
+      status: "saved", portfolioId: "portfolio-id", candidateId: "candidate-id", draftData,
+      readiness: { portfolioExists: true, verificationStatus: "required", paymentStatus: "none", published: false,
+        previewedAt: null, selectedPlanCode: null, paymentExpiresAt: null,
+        disclosureConfirmed: false, missingRequired: [], reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: false },
+    }, error: null });
+    const result = await saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft });
+    expect(result.draftData?.personal).toMatchObject(draftData.personal);
+    expect(result.readiness).toMatchObject({ publicPreviewReviewed: true, completePreviewReviewed: false });
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     repository.saveDashboardDraftTransaction.mockResolvedValue({

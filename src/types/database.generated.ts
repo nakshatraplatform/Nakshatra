@@ -797,9 +797,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_city: string | null
+          current_city_geoname_id: number | null
           current_country: string | null
+          current_country_code: string | null
           current_organization_id: string | null
           current_region: string | null
+          current_region_code: string | null
           display_name: string
           gender: string | null
           id: string
@@ -815,9 +818,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_city?: string | null
+          current_city_geoname_id?: number | null
           current_country?: string | null
+          current_country_code?: string | null
           current_organization_id?: string | null
           current_region?: string | null
+          current_region_code?: string | null
           display_name: string
           gender?: string | null
           id?: string
@@ -833,9 +839,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_city?: string | null
+          current_city_geoname_id?: number | null
           current_country?: string | null
+          current_country_code?: string | null
           current_organization_id?: string | null
           current_region?: string | null
+          current_region_code?: string | null
           display_name?: string
           gender?: string | null
           id?: string
@@ -853,6 +862,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidates_current_country_code_fkey"
+            columns: ["current_country_code"]
+            isOneToOne: false
+            referencedRelation: "reference_countries"
+            referencedColumns: ["country_code"]
+          },
+          {
+            foreignKeyName: "candidates_region_country_fk"
+            columns: ["current_country_code", "current_region_code"]
+            isOneToOne: false
+            referencedRelation: "reference_regions"
+            referencedColumns: ["country_code", "region_code"]
+          },
+          {
+            foreignKeyName: "candidates_city_country_fk"
+            columns: ["current_country_code", "current_city_geoname_id"]
+            isOneToOne: false
+            referencedRelation: "reference_cities"
+            referencedColumns: ["country_code", "geoname_id"]
           },
         ]
       }
@@ -2016,6 +2046,7 @@ export type Database = {
           name: string
           population: number
           region_code: string | null
+          source_region_code: string | null
           updated_at: string
         }
         Insert: {
@@ -2029,6 +2060,7 @@ export type Database = {
           name: string
           population?: number
           region_code?: string | null
+          source_region_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -2042,6 +2074,7 @@ export type Database = {
           name?: string
           population?: number
           region_code?: string | null
+          source_region_code?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2051,6 +2084,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "reference_countries"
             referencedColumns: ["country_code"]
+          },
+          {
+            foreignKeyName: "reference_cities_region_fk"
+            columns: ["country_code", "region_code"]
+            isOneToOne: false
+            referencedRelation: "reference_regions"
+            referencedColumns: ["country_code", "region_code"]
           },
         ]
       }
@@ -2663,6 +2703,7 @@ export type Database = {
       }
       list_portfolio_access: { Args: never; Returns: Json }
       get_portfolio_publication_readiness: { Args: never; Returns: Json }
+      get_owner_dashboard_review_snapshot: { Args: never; Returns: Json }
       update_portfolio_onboarding_progress: {
         Args: { p_action: string; p_value?: string | null }
         Returns: Json

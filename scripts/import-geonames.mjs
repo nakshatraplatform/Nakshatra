@@ -92,6 +92,7 @@ const regions = dataLines(regionText).map((line) => {
   };
 });
 
+const regionKeys = new Set(regions.map((region) => `${region.country_code}.${region.region_code}`));
 const cities = dataLines(unzipFirstFile(cityZip)).map((line) => {
   const columns = line.split("\t");
   return {
@@ -102,7 +103,8 @@ const cities = dataLines(unzipFirstFile(cityZip)).map((line) => {
     latitude: Number(columns[4]) || null,
     longitude: Number(columns[5]) || null,
     country_code: columns[8],
-    region_code: columns[10] || null,
+    region_code: regionKeys.has(`${columns[8]}.${columns[10]}`) ? columns[10] : null,
+    source_region_code: columns[10] || null,
     population: Number(columns[14]) || 0,
     is_active: true,
   };

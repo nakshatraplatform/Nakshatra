@@ -38,6 +38,9 @@ export default async function DashboardPage({
 
   const dashboardRevision = [
     portfolio?.updated_at ?? "new",
+    dashboard.publicationReadiness?.verificationStatus ?? "required",
+    String(dashboard.publicationReadiness?.paymentActive ?? false),
+    dashboard.publicationReadiness?.reviewFingerprint ?? "unversioned",
     dashboard.interests[0]?.id ?? "no-interest",
     dashboard.accessSummary.events[0]?.id ?? "no-access-event",
     dashboard.receivedBrokerIntroductions?.[0]?.introductionRef ?? "no-broker-introduction",

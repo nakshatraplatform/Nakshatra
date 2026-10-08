@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
@@ -270,6 +270,7 @@ const server = createServer((request, response) => {
     if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
     if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) return sendJson(response, 200, publishedOwnerUser);
+    if (request.headers.authorization === `Bearer ${draftOwnerToken}`) return sendJson(response, 200, draftOwnerUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
     }
@@ -281,6 +282,9 @@ const server = createServer((request, response) => {
   // Theme browser coverage uses the real page components with loopback-only,
   // read-only projections. Production authorization code is never replaced.
   if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
+    // These older fixtures exercise additive-migration compatibility: editing
+    // remains available, but separately loaded review evidence is not trusted.
+    if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 404, { code: "PGRST202", message: "Fixture RPC unavailable" });
     if (request.headers.authorization === `Bearer ${recoveryTestToken}` && url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, {
       id: portfolioId, candidate_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", user_id: themeTestUser.id,
       draft_data: { personal: { profile_for: "self" } }, published_data: null, is_published: false,
@@ -306,9 +310,16 @@ const server = createServer((request, response) => {
     });
     if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests"].includes(url.pathname)) return sendJson(response, 200, null);
   }
-  if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) {
+  if ([publishedOwnerToken, draftOwnerToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
+    const draftOwner = request.headers.authorization === `Bearer ${draftOwnerToken}`;
+    const dashboardPortfolio = draftOwner ? {
+      ...ownerPortfolio, user_id: draftOwnerUser.id, candidate_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", is_published: false,
+      published_data: null, published_at: null, share_token: null, expires_at: null,
+    } : ownerPortfolio;
+    const readiness = { portfolioExists: true, lastEditorSection: "foundation", previewedAt: "2026-09-30T00:00:00Z", reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: true, selectedPlanCode: "launch_30", verificationStatus: draftOwner ? "required" : "test_exempt", paymentStatus: "paid", paymentExpiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), paymentActive: true, disclosureConfirmed: !draftOwner, published: !draftOwner, missingRequired: [] };
+    if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 200, { portfolio: dashboardPortfolio, media: [publicMedia[0]], horoscope: null, readiness });
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
-    if (url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, ownerPortfolio);
+    if (url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, dashboardPortfolio);
     if (url.pathname === "/rest/v1/portfolio_views") {
       response.writeHead(200, { "Content-Range": "0-11/12", "Access-Control-Allow-Origin": "*" });
       return response.end();
@@ -317,7 +328,7 @@ const server = createServer((request, response) => {
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
     if (url.pathname === "/rest/v1/rpc/list_portfolio_access") return sendJson(response, 200, ownerAccess);
-    if (url.pathname === "/rest/v1/rpc/get_portfolio_publication_readiness") return sendJson(response, 200, { portfolioExists: true, lastEditorSection: "future", previewedAt: "2026-09-30T00:00:00Z", selectedPlanCode: "launch_30", verificationStatus: "test_exempt", paymentStatus: "paid", paymentExpiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), paymentActive: true, disclosureConfirmed: true, published: true, missingRequired: [] });
+    if (url.pathname === "/rest/v1/rpc/get_portfolio_publication_readiness") return sendJson(response, 200, readiness);
   }
   if (url.pathname === "/rest/v1/public_portfolio_snapshots" || url.pathname === "/rest/v1/portfolio_media") {
     return sendJson(response, 403, { message: "Direct public table access is disabled" });
