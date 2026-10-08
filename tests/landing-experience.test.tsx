@@ -13,6 +13,7 @@ describe("LandingExperience consent-led messaging", () => {
     expect(document.body).toHaveTextContent(/public Introduction can be forwarded or captured/i);
     expect(screen.getByRole("heading", { name: /share the introduction.*decide on the rest/i })).toBeInTheDocument();
     expect(document.querySelector("#privacy")).toHaveTextContent(/a shared link can be forwarded/i);
+    expect(screen.getByText(/cannot erase copies they already made/i)).toBeInTheDocument();
     expect(document.querySelector("#privacy")).toHaveTextContent(/you decide who gets access/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Not searchable/i);
     expect(screen.getByRole("list", { name: /privacy assurances/i })).toHaveTextContent(/Liveness checks are clearly marked/i);
