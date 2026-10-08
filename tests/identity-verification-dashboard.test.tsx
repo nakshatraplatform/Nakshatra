@@ -10,6 +10,7 @@ const current = vi.hoisted(() => vi.fn());
 const resume = vi.hoisted(() => vi.fn());
 const cancel = vi.hoisted(() => vi.fn());
 const navigate = vi.hoisted(() => vi.fn());
+const checkResult = vi.hoisted(() => vi.fn());
 vi.mock("@/features/identity-verification/client/identity-verification.api", () => ({
   startSelfIdentityVerificationRequest: startSelf,
   createIdentityVerificationInvitationRequest: createInvitation,
@@ -17,11 +18,34 @@ vi.mock("@/features/identity-verification/client/identity-verification.api", () 
   resumeCandidateVerificationRequest: resume,
   cancelCandidateVerificationRequest: cancel,
   navigateToDiditVerification: navigate,
+  checkCandidateResultRequest: checkResult,
 }));
 
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
 
 describe("identity-verification dashboard controls", () => {
+  it("checks a returning attempt once without resuming or creating another session", async () => {
+    const active = { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    checkResult.mockResolvedValue({ ok: true, data: { ...active, state: "verified", canResume: false, canCancel: false, emailStatus: "queued" } });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" checkResultOnLoad />);
+    expect(await screen.findByText("Your liveness check is complete.")).toBeInTheDocument();
+    expect(checkResult).toHaveBeenCalledTimes(1);
+    expect(checkResult).toHaveBeenCalledWith("candidate-id", "attempt");
+    expect(startSelf).not.toHaveBeenCalled(); expect(resume).not.toHaveBeenCalled();
+    expect(screen.getByText(/confirmation email is queued/)).toBeInTheDocument();
+  });
+  it("announces an authoritative completion and offers status refresh while awaiting the result", async () => {
+    const onStatusChange = vi.fn();
+    current.mockResolvedValue({ ok: true, data: { state: "awaiting_result", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: false, canCancel: true } });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" onStatusChange={onStatusChange} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Refresh check status" }));
+    current.mockResolvedValue({ ok: true, data: { state: "verified", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: false, canCancel: false } });
+    await userEvent.click(screen.getByRole("button", { name: "Refresh check status" }));
+    expect(await screen.findByText("Your liveness check is complete.")).toBeInTheDocument();
+    expect(onStatusChange).toHaveBeenLastCalledWith("verified");
+    expect(startSelf).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     current.mockResolvedValue({ ok: true, data: { state: "not_started", attemptId: null, deadline: null, cleanupPending: false, canStart: true, canResume: false, canCancel: false } });

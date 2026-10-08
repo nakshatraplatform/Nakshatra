@@ -52,6 +52,11 @@ export function cancelCandidateVerificationRequest(candidateId: string, attemptI
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ candidateId, attemptId }),
   });
 }
+export function checkCandidateResultRequest(candidateId: string, attemptId: string) {
+  return identityVerificationRequest<CandidateRecovery>("/api/identity-verification/check-result", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ candidateId, attemptId }),
+  });
+}
 
 export type IdentityVerificationLink =
   | { kind: "invitation"; status: "ready" }

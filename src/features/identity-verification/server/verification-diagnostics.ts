@@ -14,7 +14,7 @@ const safeCodes = new Set([
 
 /** Correlates our safe error classes, never provider bodies or subject IDs. */
 export async function verificationResponse(
-  operation: "start" | "current" | "resume" | "cancel",
+  operation: "start" | "current" | "resume" | "cancel" | "check-result",
   handler: () => Promise<Response>,
 ) {
   const reference = randomUUID();

@@ -14,7 +14,7 @@ jobs:
     name: Process identity verification work
     if: ${{ github.ref == 'refs/heads/main' && vars.DIDIT_WORKER_ENABLED == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     environment: identity-verification-worker-production
     permissions:
       contents: read
@@ -64,6 +64,9 @@ jobs:
 
       - name: Process bounded verification batch
         env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          RESEND_REPLY_TO_EMAIL: ${{ secrets.RESEND_REPLY_TO_EMAIL }}
           DIDIT_API_KEY: ${{ secrets.DIDIT_API_KEY }}
           DIDIT_WORKFLOW_ID: ${{ secrets.DIDIT_WORKFLOW_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
