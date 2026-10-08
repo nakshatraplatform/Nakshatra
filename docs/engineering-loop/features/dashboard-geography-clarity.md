@@ -2,9 +2,38 @@
 
 ## Execution context
 
+Release continuation on 2026-10-08: the owner requested delivery to main and assigned
+NAK-105. Branch: `fix/nak-105-dashboard-geography-release`. Latest main `e7b0d74`
+adds NAK-73 liveness completion; integration preserves its server-authoritative
+verification refresh and completion callback on the single relocated liveness panel.
+Both dashboard test sets are retained with current action vocabulary. The earlier
+reviewed source remains historical evidence, not coverage of this new integration.
+An independent bounded integration review is required for these new merge paths,
+not a restart of the exhausted dashboard defect-correction cycle.
+
+Production rollout must remain schema-first because Vercel does not wait for CD.
+Prepare a database-only NAK-105 PR containing the three forward migrations and
+their pgTAP tests, validate/merge/apply it through protected CD, then merge the
+dependent application PR after its own checks. No production SQL is applied by
+local checks. The unrelated NAK-102 feature-record edit remains uncommitted.
+Pre-push cannot run the prior Windows-incompatible workflow tests: eight failures
+were reproduced. Normalize checkout CRLF and select installed Git for Windows
+Bash for these test subprocesses; all ten original deployment-safety assertions
+now run and pass without exclusions. Linux keeps `/bin/bash`; production workflow
+and secret handling are unchanged. Full integrated validation is pending below.
+
+Integrated local validation: 1162 tests / 162 files pass with no exclusions;
+global coverage and all 57 governed files pass. Lint/typecheck and production
+build (79 routes) pass. All ten workflow assertions pass after the Windows
+portability fix. Database fixture smoke passes; actual Supabase runtime remains
+unavailable locally. Security audit has no production high/critical findings,
+but retains the existing development-only exception expiring 2026-10-09 00:00
+New York; it is not a fix. Hosted CI and schema deployment remain release gates.
+
 Approved by the owner on 2026-10-07. Base: origin/main 59dcc0b. Full record,
 Critical tier because this includes additive migrations and owner-only state.
-No deployment, production writes, bypasses or landing changes are authorized.
+Original implementation authorization excluded deployment, production writes,
+bypasses and landing changes; the later main-release request is recorded above.
 Linear connection `linear_phoenix` is unavailable in this session; issue assignment
 and durable Linear synchronization remain pending. No issue number is invented.
 
