@@ -283,6 +283,14 @@ Application PR: https://github.com/nakshatraplatform/Nakshatra/pull/92
 Both are pushed; main merge and production application remain gated. No unrelated
 NAK-102 document edit is included.
 
+Hosted SQL validation of schema commit `999684f` replayed migrations but found
+NAK105-R002 (introduced test-fixture defect): two new photo fixtures used paths
+outside their owner's namespace and aborted before assertions. Paths now begin
+with their matching portfolio user's UUID; the expected snapshot path changes
+with the fixture. No trigger, grant, assertion count or access rule is relaxed.
+The canonical geography suite passed in that hosted run. Corrected full pgTAP
+and final independent structural return review remain pending before merge.
+
 Implementation is local and uncommitted. Current residence gets canonical IDs;
 birthplace, work/education location and family origins remain optional labels with
 their established visibility. No new private address data is collected. Browser

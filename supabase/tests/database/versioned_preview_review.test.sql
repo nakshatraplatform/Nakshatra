@@ -11,7 +11,7 @@ insert into app_private.b2c_creator_entitlements(email_hash) values
 insert into public.candidates(id,primary_owner_user_id,display_name,created_by) values('83000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001','Test Person','81000000-0000-4000-8000-000000000001');
 insert into public.candidate_personal_details(candidate_id,profile_for) values('83000000-0000-4000-8000-000000000001','self');
 insert into public.portfolios(id,user_id,candidate_id,draft_data,is_published) values('84000000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001','83000000-0000-4000-8000-000000000001',pg_temp.complete_portfolio_draft(),false);
-insert into public.portfolio_media(id,portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order) values('85000000-0000-4000-8000-000000000001','84000000-0000-4000-8000-000000000001','83000000-0000-4000-8000-000000000001','hero','review/hero.webp','public',0);
+insert into public.portfolio_media(id,portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order) values('85000000-0000-4000-8000-000000000001','84000000-0000-4000-8000-000000000001','83000000-0000-4000-8000-000000000001','hero','81000000-0000-4000-8000-000000000001/hero.webp','public',0);
 select ok(not has_function_privilege('authenticated','app_private.portfolio_review_fingerprint(uuid)','EXECUTE'),'hash function is not a cross-owner browser endpoint');
 set local role authenticated;
 select pg_temp.set_authenticated_claims('81000000-0000-4000-8000-000000000001','82000000-0000-4000-8000-000000000001');
