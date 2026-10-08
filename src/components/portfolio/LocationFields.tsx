@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   getLocationReferences,
   type CityReference,
@@ -49,6 +49,10 @@ export function LocationFields({
   requireCountryAndCity?: boolean;
 }) {
   const [countries, setCountries] = useState<CountryReference[]>(FALLBACK_COUNTRIES);
+  const listId = useId();
+  const [manualRegion, setManualRegion] = useState(false);
+  const [manualCountry, setManualCountry] = useState(false);
+  const [chooseCountryDirectory, setChooseCountryDirectory] = useState(false);
   const [regionResult, setRegionResult] = useState<{
     countryCode: string;
     options: RegionReference[];
@@ -62,9 +66,13 @@ export function LocationFields({
     () =>
       value.countryCode ||
       countries.find((item) => item.name === value.country)?.country_code ||
+      FALLBACK_COUNTRIES.find((item) => item.name === value.country)?.country_code ||
       "",
     [countries, value.country, value.countryCode]
   );
+  const unmatchedCountry = Boolean(value.country && !countryCode);
+  const countryHasLabel = Boolean(countryCode || value.country?.trim());
+  const showManualCountry = manualCountry || (unmatchedCountry && !chooseCountryDirectory);
   const regions =
     regionResult?.countryCode === countryCode ? regionResult.options : [];
   const regionsLoaded = regionResult?.countryCode === countryCode;
@@ -72,6 +80,7 @@ export function LocationFields({
     value.regionCode ||
     regions.find((item) => item.name === value.region)?.region_code ||
     "";
+  const listedRegion = regions.some((item) => item.region_code === regionCode);
   const citySearch = value.city || "";
   const cityQueryKey = [countryCode, regionCode, citySearch.trim()].join("|");
   const cities =
@@ -121,7 +130,11 @@ export function LocationFields({
   }, [citySearch, cityQueryKey, countryCode, regionCode]);
 
   function selectCountry(nextCode: string) {
-    const country = countries.find((item) => item.country_code === nextCode);
+    setManualCountry(false);
+    setChooseCountryDirectory(false);
+    setManualRegion(false);
+    const country = countries.find((item) => item.country_code === nextCode)
+      || FALLBACK_COUNTRIES.find((item) => item.country_code === nextCode);
     onChange({
       country: country?.name || "",
       countryCode: nextCode || undefined,
@@ -133,8 +146,10 @@ export function LocationFields({
   }
 
   function selectRegion(nextCode: string) {
+    setManualRegion(false);
     const region = regions.find((item) => item.region_code === nextCode);
     onChange({
+      countryCode: countryCode || undefined,
       region: region?.name || "",
       regionCode: nextCode || undefined,
       city: "",
@@ -143,17 +158,45 @@ export function LocationFields({
   }
 
   function enterCity(city: string) {
-    const match = cities.find((item) => item.name === city);
+    const matches = cities.filter((item) => cityOptionLabel(item) === city);
+    const match = matches.length === 1 ? matches[0] : undefined;
     onChange({
-      city,
+      city: match?.name || city,
       cityGeonameId: match?.geoname_id,
+      ...(match ? { countryCode: countryCode || undefined } : {}),
+      ...(match?.region_code ? {
+        regionCode: match.region_code,
+        region: regions.find((region) => region.region_code === match.region_code)?.name || value.region || "",
+      } : {}),
     });
+  }
+
+  function cityOptionLabel(city: CityReference) {
+    if (cities.filter((option) => option.name === city.name).length === 1) return city.name;
+    const region = regions.find((option) => option.region_code === city.region_code)?.name || city.region_code || "Region not listed";
+    return `${city.name} · ${region} · ${city.geoname_id}`;
   }
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
         <span>{labels.country}{requireCountryAndCity && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>
+        {showManualCountry ? <>
+          <input
+            aria-label={labels.country}
+            name="current_country"
+            autoComplete="country-name"
+            required={requireCountryAndCity}
+            value={value.country || ""}
+            onFocus={() => setManualCountry(true)}
+            onChange={(event) => {
+              setManualCountry(true);
+              onChange({ country: event.target.value, countryCode: undefined, region: "", regionCode: undefined, city: "", cityGeonameId: undefined });
+            }}
+            className="biodata-field min-h-12"
+          />
+          <button type="button" onClick={() => { setManualCountry(false); setChooseCountryDirectory(true); }} className="workspace-focus min-h-11 text-left text-sm font-normal underline underline-offset-4">Choose from the country directory</button>
+        </> : <>
         <select
           aria-label={labels.country}
           name="current_country"
@@ -169,27 +212,34 @@ export function LocationFields({
               {item.name}
             </option>
           ))}
+          {countryCode && !countries.some((item) => item.country_code === countryCode) &&
+            <option value={countryCode}>{value.country || countryCode} (saved)</option>}
         </select>
+        <button type="button" onClick={() => { setManualCountry(true); setChooseCountryDirectory(false); }} className="workspace-focus min-h-11 text-left text-sm font-normal underline underline-offset-4">Country not listed? Enter it manually</button>
+        </>}
       </label>
 
-      {regionsLoaded && regions.length > 0 ? (
+      {regionsLoaded && regions.length > 0 && !manualRegion ? (
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
           <span>{labels.region}</span>
           <select
             aria-label={labels.region}
             name="current_region"
             autoComplete="address-level1"
-            value={regionCode}
+            value={listedRegion ? regionCode : value.region ? "__saved_manual__" : ""}
+            disabled={!countryCode}
             onChange={(event) => selectRegion(event.target.value)}
             className="biodata-field min-h-12"
           >
             <option value="">Select state or region</option>
+            {value.region && !listedRegion && <option value="__saved_manual__" disabled>Saved: {value.region} (choose a match)</option>}
             {regions.map((item) => (
               <option key={item.region_code} value={item.region_code}>
                 {item.name}
               </option>
             ))}
           </select>
+          <button type="button" onClick={() => setManualRegion(true)} className="workspace-focus min-h-11 text-left text-sm font-normal underline underline-offset-4">Region not listed? Enter it manually</button>
         </label>
       ) : (
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
@@ -199,13 +249,14 @@ export function LocationFields({
             name="current_region"
             autoComplete="address-level1"
             value={value.region || ""}
-            disabled={!countryCode}
-            placeholder={countryCode ? "Enter state or region" : "Select a country first"}
+            disabled={!countryHasLabel}
+            placeholder={countryHasLabel ? "Enter state or region" : "Select a country first"}
             onChange={(event) =>
-              onChange({ region: event.target.value, regionCode: undefined })
+              onChange({ region: event.target.value, regionCode: undefined, city: "", cityGeonameId: undefined })
             }
             className="biodata-field min-h-12"
           />
+          {manualRegion && regions.length > 0 && <button type="button" onClick={() => setManualRegion(false)} className="workspace-focus min-h-11 text-left text-sm font-normal underline underline-offset-4">Choose from the region directory</button>}
         </label>
       )}
 
@@ -216,18 +267,21 @@ export function LocationFields({
           name="current_city"
           autoComplete="address-level2"
           required={requireCountryAndCity}
-          list={`cities-${labels.city.replaceAll(" ", "-").toLowerCase()}`}
+          list={listId}
           value={citySearch}
-          disabled={!countryCode}
-          placeholder={countryCode ? "Type at least 2 letters" : "Select a country first"}
+          disabled={!countryHasLabel}
+          placeholder={countryHasLabel ? "Type at least 2 letters" : "Select a country first"}
           onChange={(event) => enterCity(event.target.value)}
           className="biodata-field min-h-12"
         />
-        <datalist id={`cities-${labels.city.replaceAll(" ", "-").toLowerCase()}`}>
+        <datalist id={listId}>
           {cities.map((item) => (
-            <option key={item.geoname_id} value={item.name} />
+            <option key={item.geoname_id} value={cityOptionLabel(item)} />
           ))}
         </datalist>
+        <span className="text-sm font-normal text-[color:var(--workspace-ink-muted)]">
+          {value.cityGeonameId ? "City selected from the location directory." : "Choose a suggestion to standardize your city, or keep a manual entry if it is not listed."}
+        </span>
       </label>
     </div>
   );

@@ -68,7 +68,7 @@ export class DashboardRepository {
   async findPortfolioForUser(userId: string) {
     return this.supabase
       .from("portfolios")
-      .select("id, candidate_id, theme_color, is_published, share_token, expires_at")
+      .select("id, candidate_id, theme_color, is_published, share_token, expires_at, draft_data")
       .eq("user_id", userId)
       .maybeSingle();
   }
@@ -80,6 +80,11 @@ export class DashboardRepository {
       .select(DASHBOARD_PORTFOLIO_COLUMNS)
       .eq("user_id", userId)
       .maybeSingle();
+  }
+
+  /** Answers, attachment facts and review evidence share one owner-scoped SQL snapshot. */
+  async findDashboardReviewSnapshot() {
+    return this.supabase.rpc("get_owner_dashboard_review_snapshot");
   }
 
   /** Loads only the portfolio fields needed by owner preview pages. */

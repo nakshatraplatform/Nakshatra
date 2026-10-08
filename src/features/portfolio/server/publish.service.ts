@@ -25,6 +25,8 @@ import { resolvePublicationExpiry } from "./lifecycle-policy";
 import { getPublicationReadiness } from "./publication-readiness.service";
 import { canPublishWithVerificationStatus } from "./publication-readiness.contract";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { savedCanonicalGeography } from "../canonical-geography";
+import { portfolioDraftSchema } from "@/types/portfolio";
 
 const publishTransactionResultSchema = z.object({
   status: z.enum([
@@ -84,6 +86,13 @@ export async function publishPortfolio({
   const { data: portfolio, error: findError } = await repository.findPortfolioForUser(userId);
   if (findError || !portfolio) {
     throw new PortfolioPublishError("Save your portfolio before generating it.", "PORTFOLIO_DRAFT_MISSING", 400);
+  }
+  // Browser labels are not authoritative once reference IDs are selected.
+  try {
+    const saved = portfolioDraftSchema.safeParse(portfolio.draft_data);
+    data = { ...data, personal: savedCanonicalGeography(data.personal, saved.success ? saved.data.personal : undefined) };
+  } catch {
+    throw new PortfolioPublishError("Save your location before reviewing and publishing it.", "PORTFOLIO_LOCATION_SAVE_REQUIRED", 409);
   }
 
   const { data: shareablePrimaryPhoto, error: shareablePrimaryPhotoError } =

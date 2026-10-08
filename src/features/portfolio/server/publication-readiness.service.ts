@@ -45,6 +45,9 @@ export async function updatePublicationProgress(
   if (result?.status === "content_required") {
     throw new PublicationProgressError("Complete all required portfolio details before confirming disclosure.", "PORTFOLIO_NOT_READY", 409);
   }
+  if (result?.status === "review_changed") {
+    throw new PublicationProgressError("Your saved portfolio changed. Close this review and reopen it to check the latest previews.", "PORTFOLIO_REVIEW_CHANGED", 409);
+  }
   const parsed = publicationReadinessSchema.safeParse(result?.readiness);
   if (result?.status !== "ok" || !parsed.success) {
     throw new PublicationProgressError("We could not confirm your publication progress.", "PUBLICATION_PROGRESS_FAILED", 500);

@@ -337,7 +337,35 @@
   .dashboard-editor-footer-copy { display: none; }
   .dashboard-editor-actions { width: 100%; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
   .dashboard-editor-actions > button { min-width: 0; min-height: 3rem; padding-inline: 0.7rem; }
+}
+
+/* Owner editor actions wrap before they can push outside a dialog or viewport. */
+.dashboard-editor-footer-layout { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; }
+.dashboard-editor-footer-notes { flex: 1 1 24rem; min-width: 0; }
+.dashboard-editor-footer-notes > p + p { margin-top: 0.25rem; }
+.dashboard-editor-actions { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 0.5rem; min-width: 0; }
+.dashboard-editor-actions > button { justify-content: center; min-width: 0; white-space: normal; }
+.dashboard-review-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+.dashboard-review-footer > div:first-child { flex: 1 1 20rem; min-width: 0; }
+.dashboard-review-footer > div:last-child { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; }
+.dashboard-review-footer button { min-width: 0; justify-content: center; white-space: normal; }
+.dashboard-editor .biodata-field { width: 100%; min-width: 0; }
+@media (max-width: 639px) {
+  .dashboard-editor-header-layout { flex-wrap: wrap; gap: 0.5rem; }
+  .dashboard-editor-header-layout > div:first-child { width: 100%; min-width: 0; }
+  .dashboard-editor-header-layout > div:first-child > p { display: none; }
+  .dashboard-editor-header-layout .app-header-actions { margin-left: auto; }
+  .dashboard-editor-footer { padding-block: 0.6rem; padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)); }
+  .dashboard-editor-footer-notes { flex-basis: 100%; }
+  .dashboard-editor-footer-copy { display: none; }
+  .dashboard-editor-actions { width: 100%; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
   .dashboard-editor-save-action { display: none; }
+  .dashboard-review-footer > div:last-child { width: 100%; }
+  .dashboard-review-footer button { width: 100%; }
+}
+@media (max-height: 540px) {
+  .dashboard-editor-footer-copy { display: none; }
+  .dashboard-editor-footer { padding-block: 0.5rem; }
 }
 
 /* --- Account privacy workspace --- */
@@ -1061,10 +1089,10 @@
   --workspace-surface: light-dark(#fffdf8, var(--app-dark-surface));
   --workspace-surface-muted: light-dark(#f1f4f0, var(--app-dark-canvas));
   --workspace-ink: light-dark(#243443, var(--app-dark-ink));
-  --workspace-ink-muted: light-dark(#5f7180, var(--app-dark-muted));
+  --workspace-ink-muted: light-dark(#526273, var(--app-dark-muted));
   --workspace-navy: light-dark(#234b68, var(--app-dark-ink));
   --workspace-action: #234b68;
-  --workspace-teal: light-dark(#477b77, var(--app-dark-accent));
+  --workspace-teal: light-dark(#356863, var(--app-dark-accent));
   --workspace-teal-soft: light-dark(#dfeeea, var(--app-dark-surface-soft));
   --workspace-gold: light-dark(#8f6628, var(--app-dark-gold));
   --workspace-border: light-dark(#d8ddd8, var(--app-dark-border));

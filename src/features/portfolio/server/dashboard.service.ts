@@ -12,6 +12,8 @@ import {
   mapPortfolioDraft,
 } from "./dashboard.mapper";
 import { DashboardRepository } from "./dashboard.repository";
+import { publicationReadinessSchema } from "./publication-readiness.contract";
+import { portfolioEditorDraftSchema } from "../form-contract";
 
 export type DashboardSaveErrorCode =
   | "DASHBOARD_DATABASE_UPDATE_REQUIRED"
@@ -146,5 +148,10 @@ export async function saveDashboardDraft({
     );
   }
 
-  return { portfolioId: result.portfolioId, candidateId: result.candidateId };
+  const readiness = publicationReadinessSchema.safeParse((result as Record<string, unknown>).readiness);
+  const draft = portfolioEditorDraftSchema.safeParse((result as Record<string, unknown>).draftData);
+  return { portfolioId: result.portfolioId, candidateId: result.candidateId,
+    ...(readiness.success ? { readiness: readiness.data } : {}),
+    ...(draft.success ? { draftData: draft.data } : {}),
+  };
 }

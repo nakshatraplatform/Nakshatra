@@ -191,7 +191,7 @@ export async function processRelationshipNotifications(supabase: Client, limit =
       p_notification_ref: job.notification_ref,
       p_attempt_count: job.attempt_count,
       p_succeeded: succeeded,
-      p_error_code: errorCode,
+      ...(errorCode === null ? {} : { p_error_code: errorCode }),
       p_retryable: retryable,
     });
     if (completionError) throw completionError;
