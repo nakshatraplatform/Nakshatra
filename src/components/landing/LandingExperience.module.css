@@ -170,11 +170,11 @@
 
 .hero {
   display: grid;
-  min-height: 670px;
+  min-height: 620px;
   grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
   align-items: center;
   gap: clamp(3rem, 7vw, 6.5rem);
-  padding-block: clamp(4rem, 7vw, 6.5rem);
+  padding-block: clamp(3rem, 5vw, 5rem);
 }
 
 .heroCopy { max-width: 620px; }
@@ -241,6 +241,7 @@
 .heroAssurances small { color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
 
 .visual { position: relative; min-width: 0; padding: 5rem 0.65rem 0; }
+.mobilePreviewLabel { display: none; }
 .visualGlow { position: absolute; inset: 12% 5%; border-radius: 50%; background: light-dark(#dce5df, var(--app-dark-surface-soft)); filter: blur(54px); opacity: 0.8; }
 
 .portfolioCard {
@@ -353,12 +354,11 @@
 .finalCta h2:first-child { margin-top: 0; }
 
 .sectionHeading > p:last-child { max-width: 65ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
-.problemGrid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 3rem; border-block: 1px solid var(--line); }
-.problemGrid article { min-height: 180px; border-right: 1px solid var(--line); padding: 1.5rem; }
+.problemGrid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 2.4rem; border-block: 1px solid var(--line); }
+.problemGrid article { min-height: 145px; border-right: 1px solid var(--line); padding: 1.5rem; }
 .problemGrid article:first-child { padding-left: 0; }
 .problemGrid article:last-child { border: 0; }
-.problemGrid svg { width: 1.25rem; height: 1.25rem; color: var(--gold); }
-.problemGrid h3 { margin-top: 2rem; font-size: 0.98rem; }
+.problemGrid h3 { font-size: 0.98rem; }
 .problemGrid p { max-width: 34ch; margin-top: 0.35rem; color: var(--muted); font-size: 0.84rem; line-height: 1.55; }
 
 .stepsSection { padding-block: clamp(4.5rem, 7vw, 6rem); background: light-dark(#efede5, var(--app-dark-surface-soft)); }
@@ -370,7 +370,7 @@
 .stepsGrid h3 { margin-top: 2.3rem; font-family: var(--font-portfolio-display), Georgia, serif; font-size: 2rem; font-weight: 500; }
 .stepsGrid p { max-width: 34ch; margin-top: 0.7rem; color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 
-.guidedTour { padding-block: clamp(4.5rem, 7vw, 7rem); background: light-dark(#efede5, var(--app-dark-surface-soft)); }
+.guidedTour { padding-block: clamp(2.75rem, 4vw, 4rem); background: light-dark(#efede5, var(--app-dark-surface-soft)); }
 .guidedTourInner { display: grid; width: min(1240px, calc(100% - 3rem)); grid-template-columns: minmax(300px, 0.7fr) minmax(560px, 1.3fr); gap: clamp(3rem, 7vw, 7rem); margin-inline: auto; }
 .guidedTourIntro { position: sticky; top: 106px; align-self: start; padding-top: 0.4rem; }
 .guidedTourIntro h2 { max-width: 13ch; margin-top: 1rem; font-family: var(--font-portfolio-display), Georgia, serif; font-size: clamp(2.8rem, 4.5vw, 4.4rem); font-weight: 500; letter-spacing: -0.04em; line-height: 0.98; text-wrap: balance; }
@@ -440,7 +440,7 @@
 .accessFlow svg { width: 0.85rem; height: 0.85rem; }
 .controlIntro > .sharingBoundary { max-width: 58ch; margin-top: 1.3rem; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
 .controlGrid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-.controlGrid article { position: relative; min-height: 140px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 1.25rem 1.5rem 1.25rem 4rem; }
+.controlGrid article { position: relative; min-height: 140px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 1.35rem 1.6rem 1.35rem 4.3rem; }
 .controlGrid svg { width: 1.35rem; height: 1.35rem; color: light-dark(#21717a, var(--app-dark-accent)); }
 .controlGrid article > svg { position: absolute; top: 1.35rem; left: 1.4rem; }
 .controlGrid article > span { color: var(--gold); font-size: 0.65rem; font-weight: 780; letter-spacing: 0.16em; text-transform: uppercase; }
@@ -455,7 +455,7 @@
 .familyGrid h3 { margin-top: 2rem; font-size: 0.95rem; }
 .familyGrid p { max-width: 32ch; margin-top: 0.55rem; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
 
-.samplesSection { padding-block: clamp(4.5rem, 7vw, 6rem); background: light-dark(#efede5, var(--app-dark-surface-soft)); }
+.samplesSection { padding-block: clamp(2.75rem, 4vw, 3.5rem); background: light-dark(#efede5, var(--app-dark-surface-soft)); }
 .samplesSection { width: 100%; padding-inline: max(1.5rem, calc((100% - 1240px) / 2)); }
 .samplesHeading { max-width: 850px; }
 .samplesHeading > p { max-width: 65ch; margin-top: 1rem; color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
@@ -531,6 +531,7 @@
 
 @media (max-width: 1080px) {
   .navigationLinks { display: none; }
+  .guidedTourInner { grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr); gap: 2rem; }
   .hero { grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr); gap: 2rem; }
   .hero h1 { font-size: clamp(3.15rem, 6vw, 4.4rem); }
   .heroAssurances span { grid-template-columns: 1fr; gap: 0.2rem; }
@@ -578,7 +579,6 @@
 
 @media (max-width: 620px) {
   .header { min-height: 68px; }
-  .header .primaryButton { display: none; }
   .signIn { display: inline-flex; }
   .brand { font-size: 0.74rem; }
   .navigation { gap: 0.65rem; }
@@ -588,11 +588,13 @@
   .heroLead { margin-top: 1.25rem !important; font-size: 0.98rem; line-height: 1.6; }
   .heroActions { flex-direction: column; align-items: stretch; margin-top: 1.5rem; }
   .heroActions a { width: 100%; }
-  .visual { padding: 5rem 0 1.5rem; }
-  .floatingMessage { top: 0.5rem; right: 0.6rem; }
+  .visual { padding: 7rem 0 1.5rem; }
+  .mobilePreviewLabel { position: absolute; top: 0; left: 0; display: block; max-width: 24ch; color: var(--muted); font-size: 0.84rem; font-weight: 650; line-height: 1.45; }
+  .floatingMessage { top: 3rem; right: 0; }
   .floatingNote { right: 0.5rem; bottom: 0; }
   .heroAssurances { margin-top: 1.35rem; }
   .heroAssurances span { grid-template-columns: 1fr; gap: 0.15rem; }
+  .controlSection { width: calc(100% - 2.5rem); }
   .portfolioBody { min-height: 420px; grid-template-columns: 1fr; grid-template-rows: 180px 1fr; }
   .portrait::before { width: 160px; height: 160px; }
   .portrait::after { width: 180px; height: 180px; }
@@ -611,7 +613,7 @@
   .problemGrid, .stepsGrid, .familyGrid, .betaDetails { grid-template-columns: 1fr; }
   .problemGrid article, .problemGrid article:first-child { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 1.35rem 0; }
   .problemGrid article:last-child { border-bottom: 0; }
-  .problemGrid h3 { margin-top: 1rem; }
+  .problemGrid h3 { margin-top: 0; }
   .stepsGrid article, .stepsGrid article:first-child { min-height: auto; padding: 1.4rem 0; border-right: 0; border-bottom: 1px solid light-dark(#cfcec6, var(--app-dark-border)); }
   .stepsGrid article:last-child { border-bottom: 0; }
   .stepsGrid h3 { margin-top: 1rem; }

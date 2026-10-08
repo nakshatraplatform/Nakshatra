@@ -346,6 +346,15 @@ describe("complete portfolio access landing", () => {
 });
 
 describe("static app surfaces", () => {
+  it("explains the limit of ending access after a viewer has saved a copy", () => {
+    const { rerender } = render(<PrivacyPage />);
+    expect(screen.getByText(/cannot erase copies someone already made/i)).toBeInTheDocument();
+    rerender(<TermsPage />);
+    expect(screen.getByText(/cannot remove copies already made outside the service/i)).toBeInTheDocument();
+    rerender(<TrustPage />);
+    expect(screen.getByText(/Ending access cannot erase those copies/i)).toBeInTheDocument();
+  });
+
   it("renders the public trust, legal, viewer, and demo routes", () => {
     const pages = [
       <AboutPage key="about" />,

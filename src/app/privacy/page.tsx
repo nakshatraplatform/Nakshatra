@@ -21,6 +21,7 @@ export default function PrivacyPage() {
       <PolicySection title="Public, approved, and private information">
         <p>Your draft is private until you publish. A public introduction can be opened by anyone who receives its link, and recipients may forward that link.</p>
         <p>When you publish or update under the current pilot setup, the public Introduction shows your full name and Marital Status. It may also show the story, work, family, lifestyle, and selected astrology you entered. Older published links keep their previously reviewed snapshot until you publish an update. Exact birth details, direct contact information, income, and original horoscope documents are kept outside the public Introduction. Light or Dark changes appearance, not who can see your information.</p>
+        <p>Someone can save or photograph information they can see, including protected details after you approve access. Ending access stops future viewing in VivIntro, but it cannot erase copies someone already made.</p>
       </PolicySection>
 
       <PolicySection title="Storage and service providers">
@@ -46,7 +47,7 @@ export default function PrivacyPage() {
         <p>VivIntro is intended for adults aged 18 and over. Do not upload another person&apos;s private information or documents unless you have their permission and are authorized to manage the introduction.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 4, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 7, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }

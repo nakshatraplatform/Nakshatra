@@ -20,6 +20,7 @@ export default function TermsPage() {
 
       <PolicySection title="Publishing and sharing">
         <p>You decide when to publish. Anyone who receives an active public link may open or forward it, so review the public preview before sharing. You can unpublish or replace the link from the dashboard.</p>
+        <p>People may save or photograph information they can view, including protected details you approve for them. Unpublishing or ending access stops future viewing in VivIntro; it cannot remove copies already made outside the service.</p>
       </PolicySection>
 
       <PolicySection title="Acceptable use">
@@ -38,7 +39,7 @@ export default function TermsPage() {
         <p>For questions about these terms, contact <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 3, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 7, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }
