@@ -54,6 +54,8 @@ describe("relationship notification delivery", () => {
       p_succeeded: true,
       p_retryable: false,
     }));
+    // Omitting the optional argument uses the SQL default null on success.
+    expect(rpc.mock.calls.at(-1)?.[1]).not.toHaveProperty("p_error_code");
   });
 
   it("does nothing when no relationship notifications are due", async () => {

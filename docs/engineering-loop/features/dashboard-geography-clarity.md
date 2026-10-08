@@ -15,6 +15,19 @@ Schema #91 is merged; owner-authorized CD #31 on `b9e5afe` applied the four
 previewed migrations and verified 90 applied versions with none pending. App #92
 is still unmerged. Linear synchronization remains unavailable.
 
+Hosted run `37818237586` replayed the migrations, passed pgTAP and generated
+types successfully; the new comparison correctly rejected the stale committed
+baseline. Replaced that baseline with its exact clean local public-schema artifact
+(`database-types-37818237586.zip`, SHA-256
+`7dbf1d6531f7736076cc230a4530b9240a17a75ff4326d4fabe12907147db918`).
+The resulting typecheck identified one caller compatibility correction: omit the
+optional relationship-notification `p_error_code` on success, preserving the SQL
+default null; failed delivery still supplies its error code. Regression coverage
+asserts omission on success and retains failure-code checks. No generated types
+were manually weakened and no database behavior or permissions were changed.
+Round 2 must independently review this baseline/caller correction; a fresh hosted
+clean comparison is still required before app merge.
+
 Release continuation on 2026-10-08: the owner requested delivery to main and assigned
 NAK-105. Branch: `fix/nak-105-dashboard-geography-release`. Latest main `e7b0d74`
 adds NAK-73 liveness completion; integration preserves its server-authoritative
