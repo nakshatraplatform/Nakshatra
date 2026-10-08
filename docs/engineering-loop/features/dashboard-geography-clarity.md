@@ -2,6 +2,19 @@
 
 ## Execution context
 
+Release safeguard extension approved on 2026-10-08: add a fail-closed generated
+public-type comparison to the existing isolated CI database job. Replay migrations
+and pgTAP first; generate with `--local --schema public`, compare with committed
+types (only CRLF/final newlines ignored), retain generated schema as a diagnostic
+artifact, and always stop the local stack. No production credentials, linked
+database access, workflow permission expansion, or migration changes. Acceptance:
+meaningful column/type/nullability drift and invalid output fail the command;
+matching schema passes; actual hosted generation/comparison must pass before merge.
+Use a fresh independent review for this bounded extension (up to three rounds).
+Schema #91 is merged; owner-authorized CD #31 on `b9e5afe` applied the four
+previewed migrations and verified 90 applied versions with none pending. App #92
+is still unmerged. Linear synchronization remains unavailable.
+
 Release continuation on 2026-10-08: the owner requested delivery to main and assigned
 NAK-105. Branch: `fix/nak-105-dashboard-geography-release`. Latest main `e7b0d74`
 adds NAK-73 liveness completion; integration preserves its server-authoritative

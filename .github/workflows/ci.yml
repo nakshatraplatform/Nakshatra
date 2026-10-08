@@ -120,6 +120,22 @@ jobs:
       - name: Run database tests
         run: npm run test:db
 
+      - name: Generate public database types from the clean local database
+        id: database_types
+        run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"
+
+      - name: Check committed database types for drift
+        run: node scripts/check-database-types.mjs "$RUNNER_TEMP/database.generated.ts"
+
+      - name: Upload generated database types for drift diagnosis
+        if: ${{ always() && steps.database_types.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types-${{ github.run_id }}
+          path: ${{ runner.temp }}/database.generated.ts
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Diagnose failed Supabase startup or database verification
         if: failure()
         run: npm run ci:db:diagnose
