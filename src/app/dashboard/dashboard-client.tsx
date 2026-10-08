@@ -5,7 +5,7 @@ import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardi
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -156,7 +156,10 @@ export default function DashboardClient({
     "set-aside": false,
     access: false,
   });
-  const [readinessState, setReadinessState] = useState(publicationReadiness);
+  const [journeyReadiness, setReadinessState] = useState(publicationReadiness);
+  // Refresh the authoritative server projection, retaining local editor progress.
+  // A browser/provider return is never itself publication authorization.
+  const readinessState = { ...journeyReadiness, verificationStatus: publicationReadiness.verificationStatus };
   const [editorSection, setEditorSection] = useState<PortfolioEditorSection>(() => navigableSection(
     (publicationReadiness.lastEditorSection || calculatePortfolioCompletion(
       normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode),
@@ -176,6 +179,7 @@ export default function DashboardClient({
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewRequestQueue = useRef(Promise.resolve());
   const router = useRouter();
+  const onVerificationStatusChange = useCallback(() => router.refresh(), [router]);
   const disclosedCategories = fullViewDisclosureCategories(
     draftData,
     portfolioMedia,
@@ -877,7 +881,7 @@ export default function DashboardClient({
               openingReview={openingReview} onVerification={focusLivenessCheck} />
           )}
           {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="scroll-mt-28" tabIndex={-1}>
-            <IdentityVerificationDashboard candidateId={activeCandidateId} />
+            <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} />
           </div> : null}
           {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
             {viewerAccessAvailable ? (

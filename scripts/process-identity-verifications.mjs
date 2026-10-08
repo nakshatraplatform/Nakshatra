@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createIdentityVerificationWorker } from "./identity-verification-worker.mjs";
+import { processCandidateLivenessEmails } from "./candidate-liveness-email-worker.mjs";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -18,6 +19,10 @@ const result = await createIdentityVerificationWorker(supabase, { candidateOnly:
 console.log(
   `Identity verification run complete: ${result.completed} completed, ${result.pending} pending, ${result.deferred} deferred.`,
 );
+// Email failures never roll back a proof or prevent the next provider batch.
+// Dispatch even when this batch contains a deferred provider request.
+const emails = await processCandidateLivenessEmails(supabase);
+console.log(`Liveness confirmation email run: ${emails.accepted} accepted, ${emails.failed} failed.`);
 
 // A pending provider decision is normal and is rescheduled by the database.
 // A deferred item means a provider, network, or persistence operation failed;
@@ -26,3 +31,4 @@ if (result.deferred > 0) {
   console.warn("Identity verification deferrals by safe category:", result.failureCounts);
   throw new Error("IDENTITY_VERIFICATION_WORK_DEFERRED");
 }
+if (emails.failed > 0) throw new Error("LIVENESS_EMAIL_DELIVERY_DEFERRED");

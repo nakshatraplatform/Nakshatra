@@ -68,7 +68,9 @@ export function evaluateDiditDecision(
     if (status === "APPROVED" && (!Array.isArray(decision.liveness_checks) || decision.liveness_checks.length === 0
       || (!livenessOnly && (!Array.isArray(decision.ip_analyses) || decision.ip_analyses.length === 0))
       || !absent("id_verifications") || !absent("face_matches") || (livenessOnly && !absent("ip_analyses")))) {
-      throw workerError("DIDIT_DECISION_POLICY_INVALID");
+      const reason = !absent("id_verifications") || !absent("face_matches") || (livenessOnly && !absent("ip_analyses"))
+        ? "DIDIT_DECISION_UNEXPECTED_CHECKS" : "DIDIT_DECISION_REQUIRED_CHECK_MISSING";
+      throw workerError(reason);
     }
     let outcome = "pending";
     if (status === "APPROVED") outcome = checksPass ? "verified" : "declined";

@@ -2512,6 +2512,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_candidate_liveness_result: {
+        Args: { p_candidate_id: string; p_attempt_id: string; p_owner_user_id: string; p_owner_session_id: string }
+        Returns: Json
+      }
+      claim_candidate_liveness_emails: {
+        Args: { p_limit?: number }
+        Returns: { delivery_id: string; claim_token: string; recipient_email: string }[]
+      }
+      complete_candidate_liveness_email: {
+        Args: { p_delivery_id: string; p_claim_token: string; p_provider_message_id?: string; p_error_code?: string; p_retryable?: boolean }
+        Returns: boolean
+      }
       claim_candidate_identity_verification_work: {
         Args: { p_limit?: number }
         Returns: {

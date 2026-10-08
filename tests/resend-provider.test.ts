@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sendResendEmail } from "@/features/notifications/server/resend.provider";
+import { emailMessageSchema } from "@/features/notifications/server/email.contract";
 
 const input = {
   deliveryId: "91000000-0000-4000-8000-000000000001",
@@ -18,6 +19,11 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("server-only Resend API connection", () => {
+  it("shares strict message validation with the isolated worker", () => {
+    expect(emailMessageSchema.safeParse(input).success).toBe(true);
+    expect(emailMessageSchema.safeParse({ ...input, subject: "Injected\nheader" }).success).toBe(false);
+    expect(emailMessageSchema.safeParse({ ...input, extra: "untrusted" }).success).toBe(false);
+  });
   it("sends a bounded request with configured sender and stable idempotency", async () => {
     const transport = vi.fn<typeof fetch>().mockResolvedValue(success());
     expect(await sendResendEmail(input, transport)).toEqual({ status: "accepted", providerMessageId: providerId });
