@@ -259,7 +259,16 @@ unsaved answers. Remove only that non-content revision input; retain saved-conte
 and review-fingerprint invalidation. A maintained regression renders the actual
 server page, edits an answer before autosave, and refreshes verification props.
 It failed before correction and passes afterward; 90 focused tests and typecheck
-pass on this correction. Independent return review remains pending.
+pass on this correction. Independent return review 1 resolves NAK105-R001 on
+snapshot `48d5d601cb32e366c07733a7235507a62a82a1fe46c5fbc7c855361e05d5c973`:
+102 maintained tests plus an independent actual-page regression pass, including
+explicit checks that saved-content/fingerprint changes still change the key.
+Reviewer identity `/root/nak105_release_integration_review`; model unknown,
+fresh-context initial review, same-context return (not cross-model). Report:
+`C:/Users/Lenovo/AppData/Local/Temp/nak-105-release-return-report.md`. Final
+pre-push validates 1,163 tests / 162 files, typecheck and fixture smoke without
+exclusions. This subsequent documentation-only update does not relabel historical
+coverage/build/browser runs as fresh; hosted CI validates the final PR revision.
 
 The two NAK-105 migrations have not been applied by this task. Their versions are
 now 20261008100000 and 20261008101000, following main's 20261008050441 and preceding
@@ -268,6 +277,11 @@ inserting older migration versions behind main and does not broaden CD flags.
 Schema-first release remains mandatory: schema-only PR and hosted SQL checks,
 merge, protected production CD preview/history inspection and authorized apply,
 then application PR. No production migration or deployment has been verified.
+
+Schema PR: https://github.com/nakshatraplatform/Nakshatra/pull/91
+Application PR: https://github.com/nakshatraplatform/Nakshatra/pull/92
+Both are pushed; main merge and production application remain gated. No unrelated
+NAK-102 document edit is included.
 
 Implementation is local and uncommitted. Current residence gets canonical IDs;
 birthplace, work/education location and family origins remain optional labels with
