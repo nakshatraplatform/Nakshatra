@@ -38,7 +38,8 @@ export default async function DashboardPage({
 
   const dashboardRevision = [
     portfolio?.updated_at ?? "new",
-    dashboard.publicationReadiness?.verificationStatus ?? "required",
+    // Verification refreshes update props, not portfolio content. Remounting
+    // here would discard edits still waiting for autosave after Didit returns.
     String(dashboard.publicationReadiness?.paymentActive ?? false),
     dashboard.publicationReadiness?.reviewFingerprint ?? "unversioned",
     dashboard.interests[0]?.id ?? "no-interest",

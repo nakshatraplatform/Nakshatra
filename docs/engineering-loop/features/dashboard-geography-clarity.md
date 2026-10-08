@@ -248,6 +248,27 @@ full checks and fresh-context review must be recorded before release readiness.
 
 ## Progress
 
+### NAK-105 integration correction (2026-10-08)
+
+The integrated main branch passed 1,162 unit tests without exclusions, coverage,
+lint, typecheck, production build, database fixture smoke, and ten mocked Chromium
+scenarios. These establish local behavior, not live provider or SQL execution.
+Independent integration review found NAK105-R001: including verification status
+in the server page key remounted the editor on Didit completion and discarded
+unsaved answers. Remove only that non-content revision input; retain saved-content
+and review-fingerprint invalidation. A maintained regression renders the actual
+server page, edits an answer before autosave, and refreshes verification props.
+It failed before correction and passes afterward; 90 focused tests and typecheck
+pass on this correction. Independent return review remains pending.
+
+The two NAK-105 migrations have not been applied by this task. Their versions are
+now 20261008100000 and 20261008101000, following main's 20261008050441 and preceding
+the atomic snapshot migration 20261008120000. Bodies are unchanged. This avoids
+inserting older migration versions behind main and does not broaden CD flags.
+Schema-first release remains mandatory: schema-only PR and hosted SQL checks,
+merge, protected production CD preview/history inspection and authorized apply,
+then application PR. No production migration or deployment has been verified.
+
 Implementation is local and uncommitted. Current residence gets canonical IDs;
 birthplace, work/education location and family origins remain optional labels with
 their established visibility. No new private address data is collected. Browser

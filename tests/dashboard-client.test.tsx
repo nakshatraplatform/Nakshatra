@@ -20,6 +20,15 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   remove: vi.fn(),
   updateProgress: vi.fn(),
+  loadDashboardView: vi.fn(),
+}));
+
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "localhost" }) }));
+vi.mock("@/lib/auth", () => ({
+  getAuthenticatedUser: async () => ({ supabase: {}, user: { id: "user-1", email: "owner@example.test" } }),
+}));
+vi.mock("@/features/portfolio/server/dashboard-view.service", () => ({
+  loadDashboardView: mocks.loadDashboardView,
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
@@ -45,6 +54,7 @@ vi.mock("thinking-orbs", () => ({
 }));
 
 import DashboardClient from "../src/app/dashboard/dashboard-client";
+import DashboardPage from "../src/app/dashboard/page";
 
 const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", profile_for: "self" },
@@ -1259,6 +1269,28 @@ describe("dashboard client", () => {
       "bg-[light-dark(#dcebe580,var(--app-dark-success-surface))]",
       "text-[light-dark(#315f57,var(--app-dark-accent))]",
     );
+  });
+
+  it("preserves unsaved answers across the real server page verification refresh", async () => {
+    const dashboard = {
+      portfolio: { ...portfolio, draft_data: readyData },
+      canCreatePortfolio: true, viewCount: 0, media: [], mediaUrls: {}, horoscope: null,
+      interests: [], accessSummary: { grants: [], events: [] },
+      brokerIntroductionResponses: [], receivedBrokerIntroductions: [],
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required", reviewFingerprint: "a".repeat(64) },
+    };
+    mocks.loadDashboardView.mockResolvedValue(dashboard);
+    const view = render(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
+    expect(mocks.save).not.toHaveBeenCalled();
+    mocks.loadDashboardView.mockResolvedValue({
+      ...dashboard,
+      publicationReadiness: { ...dashboard.publicationReadiness, verificationStatus: "verified" },
+    });
+    view.rerender(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
+    expect(mocks.save).not.toHaveBeenCalled();
   });
 
   it("fails safely when account setup has not become available", () => {
