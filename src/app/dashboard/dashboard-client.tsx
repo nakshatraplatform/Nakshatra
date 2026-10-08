@@ -5,7 +5,7 @@ import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardi
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -149,7 +149,10 @@ export default function DashboardClient({
     "set-aside": false,
     access: false,
   });
-  const [readinessState, setReadinessState] = useState(publicationReadiness);
+  const [journeyReadiness, setReadinessState] = useState(publicationReadiness);
+  // Refresh the authoritative server projection, retaining local editor progress.
+  // A browser/provider return is never itself publication authorization.
+  const readinessState = { ...journeyReadiness, verificationStatus: publicationReadiness.verificationStatus };
   const [editorSection, setEditorSection] = useState<PortfolioEditorSection>(() => navigableSection(
     (publicationReadiness.lastEditorSection || calculatePortfolioCompletion(
       normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode),
@@ -164,6 +167,7 @@ export default function DashboardClient({
   const lastAutosaveAttemptRevisionRef = useRef(-1);
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const onVerificationStatusChange = useCallback(() => router.refresh(), [router]);
   const disclosedCategories = fullViewDisclosureCategories(
     draftData,
     portfolioMedia,
@@ -879,7 +883,7 @@ export default function DashboardClient({
           </div>
           {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="mt-6 scroll-mt-6" tabIndex={-1}>
             {readinessState.verificationStatus === "test_exempt" && <p className="mb-3 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Liveness checks are optional for public test publishing while this access remains active. Without them, your introduction will not show the Liveness checked badge.</p>}
-            <IdentityVerificationDashboard candidateId={activeCandidateId} />
+            <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} />
           </div> : null}
           {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
         </div>

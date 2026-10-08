@@ -9,5 +9,8 @@ export const candidateRecoverySchema = z.object({
   canStart: z.boolean(),
   canResume: z.boolean(),
   canCancel: z.boolean(),
+  processingIssue: z.enum(["policy_error", "retrying", "delayed"]).nullable().optional(),
+  nextRetryAt: z.iso.datetime({ offset: true }).nullable().optional(),
+  emailStatus: z.enum(["queued", "processing", "accepted", "failed", "skipped"]).nullable().optional(),
 });
 export type CandidateRecovery = z.infer<typeof candidateRecoverySchema>;

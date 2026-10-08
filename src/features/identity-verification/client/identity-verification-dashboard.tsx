@@ -1,17 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cancelCandidateVerificationRequest, getCurrentCandidateVerificationRequest, navigateToDiditVerification, resumeCandidateVerificationRequest, startSelfIdentityVerificationRequest, type IdentityVerificationApiFailure } from "./identity-verification.api";
+import { cancelCandidateVerificationRequest, checkCandidateResultRequest, getCurrentCandidateVerificationRequest, navigateToDiditVerification, resumeCandidateVerificationRequest, startSelfIdentityVerificationRequest, type IdentityVerificationApiFailure } from "./identity-verification.api";
 import type { CandidateRecovery } from "../candidate-recovery.types";
 
-type PendingAction = "self" | "resume" | "cancel" | null;
+type PendingAction = "self" | "resume" | "cancel" | "result" | null;
 
 /** Provides explicit consent for a candidate verifying their own portfolio. */
-export function IdentityVerificationDashboard({ candidateId }: { candidateId: string }) {
-  return <CandidateRecoveryControls key={candidateId} candidateId={candidateId} />;
+type RecoveryProps = { candidateId: string; onStatusChange?: (state: CandidateRecovery["state"]) => void; checkResultOnLoad?: boolean };
+export function IdentityVerificationDashboard(props: RecoveryProps) {
+  return <CandidateRecoveryControls key={props.candidateId} {...props} />;
 }
 
-function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
+function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnLoad = false }: RecoveryProps) {
   const [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,12 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
   const [now, setNow] = useState(0);
   const requestVersion = useRef(0);
   const busy = useRef(false);
+  const returnedAttempt = useRef<string | null>(null);
   const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+  const currentState = current?.state;
+  useEffect(() => {
+    if (currentState) onStatusChange?.(currentState);
+  }, [currentState, onStatusChange]);
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (busy.current || (cooldownScope === "interaction" && Date.now() < cooldownUntil)) return;
@@ -57,7 +63,8 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
     return () => { clearTimeout(timer); controller.abort(); document.removeEventListener("visibilitychange", update); };
   }, [refresh]);
 
-  const unfinished = awaitingStartStatus || (current && (["creating", "active", "awaiting_result", "cleanup_pending"].includes(current.state) || current.cleanupPending || current.canCancel));
+  const unfinished = awaitingStartStatus || (current && (["creating", "active", "awaiting_result", "cleanup_pending"].includes(current.state) || current.cleanupPending || current.canCancel
+    || (current.state === "verified" && ["queued", "processing"].includes(current.emailStatus ?? ""))));
   useEffect(() => {
     if (!unfinished) return;
     const controller = new AbortController();
@@ -72,10 +79,10 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
     return () => clearInterval(timer);
   }, [cooldownUntil]);
 
-  function failure(result: IdentityVerificationApiFailure) {
+  const failure = useCallback((result: IdentityVerificationApiFailure) => {
     setError(result.message);
     if (result.retryAfter) { const timestamp = Date.now(); setNow(timestamp); setCooldownUntil(timestamp + result.retryAfter * 1000); setCooldownScope(result.retryScope ?? "creation"); }
-  }
+  }, []);
 
   async function startSelfVerification() {
     if (busy.current || awaitingStartStatus) return;
@@ -100,12 +107,13 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
     if (result.ok && refreshed?.attemptId === result.data.attemptId && refreshed.canResume) navigateToDiditVerification(result.data.url);
   }
 
-  async function recover(action: "resume" | "cancel") {
+  const recover = useCallback(async (action: "resume" | "cancel" | "result") => {
     if (!current?.attemptId || busy.current) return;
     busy.current = true; requestVersion.current++; setPending(action); setError(null);
     setStatusError(null);
     if (action === "cancel") setProviderLink(null);
     const result = action === "cancel" ? await cancelCandidateVerificationRequest(candidateId, current.attemptId)
+      : action === "result" ? await checkCandidateResultRequest(candidateId, current.attemptId)
       : await resumeCandidateVerificationRequest(candidateId, current.attemptId);
     if (!result.ok) {
       failure(result);
@@ -117,7 +125,18 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
     setConfirmCancel(false); busy.current = false; setPending(null);
     // A provider completion stays in awaiting-result UI until background polling.
     if (!result.ok || action === "cancel") await refresh();
-  }
+  }, [candidateId, current, failure, refresh]);
+
+  useEffect(() => {
+    if (!checkResultOnLoad || !current?.attemptId || !["active", "awaiting_result"].includes(current.state)) return;
+    const attemptId = current.attemptId;
+    const timer = setTimeout(() => {
+      if (returnedAttempt.current === attemptId) return;
+      returnedAttempt.current = attemptId;
+      void recover("result");
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [checkResultOnLoad, current?.attemptId, current?.state, recover]);
 
   const statusText = awaitingStartStatus
     ? "Your check was created. We are confirming its current status before opening Didit. Refresh check status to continue; do not start another check."
@@ -146,12 +165,23 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
         Didit checks that a live person is present. No ID document or portfolio-photo comparison is required. VivIntro stores your consent and check results, not camera evidence. This does not verify your identity or profile details.
       </p>
       <p className="dashboard-action-note mt-4" role="status">{statusText}</p>
+      {current?.processingIssue ? <p className="dashboard-action-error" role="alert">{current.processingIssue === "policy_error"
+        ? "Didit returned a result that does not match this check's verification policy. Contact support; repeating the camera check will not fix this attempt."
+        : current.processingIssue === "delayed" ? "Result processing is delayed. Your result is not confirmed yet. Refresh status or contact support if this continues."
+        : "We could not finish processing this check. Recovery will retry automatically; you do not need to run a migration or reset it."}</p> : null}
+      {current?.nextRetryAt && current.processingIssue === "retrying" ? <p className="dashboard-action-note">Next processing attempt is eligible after <time dateTime={current.nextRetryAt}>{new Date(current.nextRetryAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>. Scheduling can take longer.</p> : null}
+      {current?.state === "verified" && current.emailStatus ? <p className="dashboard-action-note">{current.emailStatus === "accepted"
+        ? "Your confirmation email was accepted by our email provider. Inbox delivery may take longer."
+        : current.emailStatus === "failed" || current.emailStatus === "skipped"
+          ? "Your check is confirmed, but we could not send the confirmation email. You can continue from your dashboard."
+          : "Your check is confirmed. A confirmation email is queued; you do not need to wait for it to continue."}</p> : null}
       {current?.deadline && current.canResume ? <p className="dashboard-action-note">Resume before <time dateTime={current.deadline}>{new Date(current.deadline).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>. The 30-minute window does not reset.</p> : null}
       {!awaitingStartStatus && (current?.canStart || !current) ? <label className="mt-4 flex gap-3 text-sm text-[light-dark(#334155,var(--app-dark-ink))]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
         <span>I consent to Didit processing my live camera capture for liveness checks.</span>
       </label> : null}
       <div className="mt-4 flex flex-wrap gap-3">
+        {current && ["active", "awaiting_result"].includes(current.state) ? <button type="button" className="dashboard-secondary-action" disabled={pending !== null || (cooldownScope === "interaction" && cooldown > 0)} onClick={() => void recover("result")}>{pending === "result" ? "Checking result…" : "Check final result"}</button> : null}
         {!awaitingStartStatus && (current?.canStart || !current) ? <button type="button" className="dashboard-primary-action" disabled={!current?.canStart || !consent || pending !== null || cooldown > 0} onClick={() => void startSelfVerification()}>
           {pending === "self" ? "Starting liveness check…" : "Start liveness check"}
         </button> : null}
@@ -169,7 +199,7 @@ function CandidateRecoveryControls({ candidateId }: { candidateId: string }) {
       <div className="mt-4" aria-live="polite" aria-atomic="true">
         {error || statusError ? <p className="dashboard-action-error" role="alert">{error || statusError}</p> : null}
         {cooldown > 0 ? <p className="dashboard-action-note">{cooldownScope === "creation" ? "New-check" : "Recovery"} cooldown: {Math.ceil(cooldown / 60)} minute(s). {cooldownScope === "creation" ? "You can still recover an existing check." : "Wait before checking status, resuming or cancelling."}</p> : null}
-        {(error || statusError || awaitingStartStatus) && !pending ? <button type="button" className="dashboard-secondary-action" onClick={() => void refresh()}>Refresh check status</button> : null}
+        {(error || statusError || unfinished) && !pending ? <button type="button" disabled={cooldownScope === "interaction" && cooldown > 0} className="dashboard-secondary-action" onClick={() => void refresh()}>Refresh check status</button> : null}
         {managementLink && managementLink.attemptId === current?.attemptId ? <p className="dashboard-action-note">Save your private <a href={managementLink.url}>verification-management link</a>.</p> : null}
         {providerLink && providerLink.attemptId === current?.attemptId && current.canResume ? <a className="dashboard-primary-action mt-3" href={providerLink.url}>Continue to Didit verification</a> : null}
       </div>

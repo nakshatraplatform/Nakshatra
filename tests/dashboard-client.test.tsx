@@ -152,6 +152,20 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("uses refreshed server verification without resetting an unsaved editor draft", () => {
+    const props = { portfolio, viewCount: 12, userEmail: "aditi@example.com", canCreatePortfolio: true,
+      shareUrl: "https://nakshatra.test/p/token", isExpired: false, daysLeft: 20, media: [media],
+      mediaUrls: { "media-1": "https://signed.test/one-thumb.webp" } };
+    const { rerender } = render(<DashboardClient {...props} publicationReadiness={{ ...readyPublicationReadiness, verificationStatus: "required" }} />);
+    expect(screen.queryByRole("button", { name: "Share Introduction" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit portfolio" }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
+    rerender(<DashboardClient {...props} publicationReadiness={readyPublicationReadiness} />);
+    expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    expect(screen.getByRole("button", { name: "Share Introduction" })).toBeInTheDocument();
+  });
   it("starts a new creator with one clear action instead of empty activity metrics", () => {
     renderDashboard({ portfolio: null, shareUrl: null, viewCount: 0, media: [] });
     expect(screen.getByRole("button", { name: "Start with the basics" })).toBeInTheDocument();

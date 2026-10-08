@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 import { recoveryTestCookie } from "./support/recovery-session.mjs";
+test("authenticated return checks the authoritative result without starting or resuming", async ({ page, context }) => {
+  await context.addCookies([recoveryTestCookie]);
+  const attemptId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  let checks = 0;
+  let state = { state: "active", attemptId, deadline: "2099-10-06T08:00:00Z", cleanupPending: false, canResume: true, canCancel: true, canStart: false, emailStatus: null as string | null };
+  await context.route("**/api/identity-verification/**", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    expect(["current", "check-result"]).toContain(action);
+    if (action === "check-result") {
+      checks++;
+      state = { ...state, state: "verified", canResume: false, canCancel: false, emailStatus: "accepted" };
+    }
+    await route.fulfill({ json: state });
+  });
+  await page.goto("/verification/result?status=Declined");
+  await expect(page.getByText("Your liveness check is complete.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/accepted by our email provider/i)).toBeVisible();
+  expect(checks).toBe(1);
+});
+
+test("a forged approved callback cannot confirm a signed-out visitor", async ({ page }) => {
+  await page.goto("/verification/result?status=Approved");
+  await expect(page.getByRole("link", { name: /sign in/i })).toBeVisible();
+  await expect(page.getByText("Your liveness check is complete.", { exact: true })).toHaveCount(0);
+});
 test("refresh and a second tab recover the same check; cancellation requires confirmation", async ({ page, context }, testInfo) => {
   await context.addCookies([recoveryTestCookie]);
   const candidateId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
