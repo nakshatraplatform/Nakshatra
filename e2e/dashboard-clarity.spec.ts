@@ -97,6 +97,7 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     expect(await edit.evaluate((element) => Boolean(element.nextElementSibling?.textContent?.includes("Review and publish")))).toBe(true);
     await edit.click();
     const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+    const savedFirstName = await editor.getByLabel("First name", { exact: true }).inputValue();
     for (const action of ["Preview", "Review and publish", ...(width >= 640 ? ["Save draft"] : [])]) {
       const button = editor.getByRole("button", { name: action, exact: true });
       await expect(button).toBeVisible();
@@ -117,7 +118,7 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     await publishReview.click();
     const review = page.getByRole("dialog", { name: "Review both views before publishing", exact: true });
     await expect(review).toBeVisible();
-    await expect(review.getByRole("button", { name: "Back to editing" })).toHaveCount(0);
+    await expect(review.getByRole("button", { name: "Back to editing" })).toBeVisible();
     const next = review.getByRole("button", { name: "Review both views before publishing", exact: true });
     const box = await next.boundingBox();
     expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
@@ -126,7 +127,10 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     await expect(review.getByRole("link", { name: "Review public Introduction", exact: true })).toBeFocused();
     expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`review-fit-${width}-${height}.png`), animations: "disabled" });
-    await review.getByRole("button", { name: "Back to dashboard", exact: true }).click();
+    await review.getByRole("button", { name: "Back to editing", exact: true }).click();
+    await expect(editor).toBeVisible();
+    await expect(editor.getByLabel("First name", { exact: true })).toHaveValue(savedFirstName);
+    await editor.getByRole("button", { name: /^(Back to dashboard|Dashboard)$/ }).click();
   }
 });
 

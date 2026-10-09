@@ -350,13 +350,29 @@
 .dashboard-review-footer > div:last-child { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; }
 .dashboard-review-footer button { min-width: 0; justify-content: center; white-space: normal; }
 .dashboard-editor .biodata-field { width: 100%; min-width: 0; }
+.dashboard-editor-surface { overflow: clip; }
+.dashboard-editor-mobile-legal { display: none; }
+/* The phone group's legend remains accessible; its input labels align with Email. */
+.dashboard-editor .split-phone-field legend { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dashboard-editor .split-phone-inputs { grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr); }
+.dashboard-editor .split-phone-inputs label { grid-template-rows: auto 48px; align-content: start; gap: 0.5rem; font-size: 15px; line-height: 1.5; }
 @media (max-width: 639px) {
-  .dashboard-editor-header-layout { flex-wrap: wrap; gap: 0.5rem; }
-  .dashboard-editor-header-layout > div:first-child { width: 100%; min-width: 0; }
+  .dashboard-editor-header { padding: 0.5rem 0.75rem; }
+  .dashboard-editor-header-layout { flex-wrap: nowrap; gap: 0.5rem; }
+  .dashboard-editor-header-layout > div:first-child { flex: 1; min-width: 0; }
+  .dashboard-editor-header-layout > div:first-child > div { flex-wrap: nowrap; gap: 0.4rem; }
+  .dashboard-editor-header-layout h2 { font-size: 0.875rem; white-space: nowrap; }
+  .dashboard-editor-header-layout .dashboard-save-state { display: block; min-width: 0; max-width: 4rem; overflow: hidden; padding-inline: 0.35rem; font-size: 0.75rem; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
   .dashboard-editor-header-layout > div:first-child > p { display: none; }
-  .dashboard-editor-header-layout .app-header-actions { margin-left: auto; }
+  .dashboard-editor-header-layout .app-header-actions { flex: none; gap: 0.25rem; }
+  .dashboard-editor-header-layout .app-header-actions > button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
+  .dashboard-editor-header-layout .app-header-actions > button > span { display: none; }
+  .dashboard-editor-mobile-step { padding-block: 0.4rem; }
+  .dashboard-editor-mobile-step .biodata-editor-mobile-nav { padding: 0.5rem; }
+  .dashboard-editor-mobile-step [role="progressbar"] { margin-bottom: 0.5rem; }
   .dashboard-editor-footer { padding-block: 0.6rem; padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px)); }
-  .dashboard-editor-footer-notes { flex-basis: 100%; }
+  .dashboard-editor-footer-notes { display: none; }
+  .dashboard-editor-mobile-legal { display: block; }
   .dashboard-editor-footer-copy { display: none; }
   .dashboard-editor-actions { width: 100%; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
   .dashboard-editor-save-action { display: none; }
@@ -379,6 +395,14 @@
 .account-control-row button svg,
 .account-confirm-dialog button svg { width: 1rem; height: 1rem; }
 .account-settings-group { margin-top: 2.25rem; }
+.account-profile-form { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.account-profile-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.account-profile-fields label { display: flex; min-width: 0; flex-direction: column; gap: 0.5rem; font-weight: 600; }
+.account-profile-form > button { justify-self: start; }
+.account-sign-in-details { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.account-sign-in-details dt { font-weight: 600; }
+.account-sign-in-details dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
+@media (max-width: 639px) { .account-profile-fields { grid-template-columns: minmax(0, 1fr); } }
 .account-settings-group > h2 { margin-bottom: 0.85rem; color: light-dark(#243940, var(--app-dark-ink)); font-family: var(--font-portfolio-display), Georgia, serif; font-size: 1.5rem; font-weight: 500; }
 .account-control-row { display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-top: 1px solid light-dark(#d8d8d2, var(--app-dark-border)); padding: 1.6rem 0.2rem; }
 .account-control-row h3 { color: light-dark(#243940, var(--app-dark-ink)); font-size: 1rem; font-weight: 750; }

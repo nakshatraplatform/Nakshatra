@@ -2,6 +2,62 @@
 
 ## Execution context
 
+### 2026-10-09 review return path restored
+
+The owner supersedes the earlier request to remove editing from review. Restore
+Back to editing in the review header, disabled during publication. Reopen the
+existing editor and preserve its section and draft; do not reset review evidence
+merely for navigating back. Existing fingerprint invalidation still requires a
+new review after actual changes. Standard-risk local navigation only. Browser
+acceptance: at narrow, tablet, desktop and zoom-equivalent widths the action is
+visible, returns to the editor and preserves saved answers. PDF export remains
+a product decision: distinguish a shareable portfolio snapshot from a complete
+private account-data export; do not silently replace or narrow the latter.
+Verified locally: the revised browser regression passed across seven viewport
+sizes (320px through 1440px, including short zoom-equivalent viewport), checking
+return-to-editor and answer preservation. Focused lint, typecheck and diff checks
+passed; AST graph updated. First test attempt used an incorrect fixture-name
+expectation; replaced it with the actual pre-navigation value and reran passing.
+No PDF generation or export changes implemented yet; no push or deployment.
+
+### 2026-10-09 editor layout regression follow-up
+
+Compact, Standard-risk presentation-only correction on main `e286757`, branch
+`fix/nak-105-portfolio-editor-layout`. Saving, remembered review evidence,
+liveness, publication, required fields and privacy rules remain unchanged.
+The owner reports growing blank footer space after desktop section navigation,
+insufficient mobile form space, a wrapping mobile header, and misaligned contact
+email/phone controls. Reuse the editor's internal scroll owner; do not introduce
+viewport measurements or change shared phone entry behavior outside the editor.
+
+Planned behavioral checks in `e2e/portfolio-editor-layout.spec.ts`:
+- L1: repeated section changes leave dialog scrollTop zero, its heading on screen,
+  and footer at the viewport bottom (reject outer `scrollIntoView` scrolling).
+- L2: 320/390px headers keep title and actions on one row; a 667px-tall viewport
+  retains more than 400px of form scrolling area (reject wrapped chrome/large fixed notes).
+- L3: desktop/tablet email and phone inputs share a baseline; narrow layouts have
+  no horizontal overflow. Legal guidance remains available inside mobile scroll content.
+- Preserve keyboard focus/trapping, error recovery and existing editor/review tests.
+Implementation uses internal scroll ownership plus a non-scrollable clipped dialog
+surface, a single-row icon-action mobile header (44px targets), compact section
+navigation, and mobile legal guidance within scrolling content. Email and the
+split phone controls share label/control spacing; the accessible phone legend is
+visually hidden only in this editor. No new dependency, API or schema change.
+
+Validation on the uncommitted 2026-10-09 follow-up: the original mobile-header
+regression failed (44px row-centre difference), then passed after correction.
+The phone alignment check also failed (11.25px offset) until the country-code label
+was given sufficient width and shared row sizing. Desktop accumulation was not
+reproduced in local Chromium before changes; the implicated ancestor-scrolling
+path is removed and protected by a controlled-form unit regression, repeated
+navigation geometry checks and a clipped surface.
+75 existing focused unit cases passed, then the form suite passed with its new
+case (17 cases, 76 distinct focused cases total). All 21 desktop/tablet/mobile
+Chromium editor/dashboard cases passed; lint, typecheck and the production build
+(79 routes) passed. Final compact-header polish passed a fresh two-case browser
+rerun and production rebuild. No production
+write or deployment. Browser emulation does not certify physical iOS Safari behavior.
+
 Release safeguard extension approved on 2026-10-08: add a fail-closed generated
 public-type comparison to the existing isolated CI database job. Replay migrations
 and pgTAP first; generate with `--local --schema public`, compare with committed

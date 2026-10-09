@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   deletion: vi.fn(),
   cancel: vi.fn(),
   reauth: vi.fn(),
+  profile: vi.fn(),
 }));
 
 vi.mock("@/features/account/client/account.api", () => ({
@@ -20,6 +21,7 @@ vi.mock("@/features/account/client/account.api", () => ({
   requestAccountDeletionRequest: mocks.deletion,
   cancelAccountDeletionRequest: mocks.cancel,
   startAccountDeletionReauthRequest: mocks.reauth,
+  saveAccountProfileRequest: mocks.profile,
 }));
 
 import AccountClient from "../src/app/account/account-client";
@@ -42,6 +44,19 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("account privacy screen", () => {
+  it("saves separate account names with an optional middle name and shows linked methods", async () => {
+    const profile = { firstName: "Rahul", middleName: "", lastName: "Ranganatha" };
+    mocks.profile.mockResolvedValue({ ok: true, data: profile });
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} signInMethods={["Google"]} />);
+    expect(screen.getByLabelText("Middle name (optional)")).not.toBeRequired();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: profile.firstName } });
+    fireEvent.change(screen.getByLabelText("Last name"), { target: { value: profile.lastName } });
+    fireEvent.click(screen.getByRole("button", { name: "Save names" }));
+    await waitFor(() => expect(mocks.profile).toHaveBeenCalledWith(profile));
+    expect(await screen.findByText("Your account names have been saved. Your portfolio has not changed.")).toBeInTheDocument();
+    expect(screen.getByText("Google")).toBeInTheDocument();
+    expect(screen.queryByText("Payment method")).not.toBeInTheDocument();
+  });
   it("downloads the account export and revokes other sessions", async () => {
     render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
     expect(screen.getByRole("heading", { name: "Account settings" })).toBeInTheDocument();

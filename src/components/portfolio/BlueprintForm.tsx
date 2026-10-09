@@ -75,9 +75,9 @@ export const PORTFOLIO_EDITOR_SECTIONS: Array<{ id: PortfolioEditorSection; labe
   { id: "story", label: "Personal story & lifestyle", optional: true, time: "4 min" },
   { id: "work", label: "Education & work", optional: true, time: "3 min" },
   { id: "family", label: "Family", optional: true, time: "4 min" },
-  { id: "astrology", label: "Astrology & traditions", optional: true, time: "3 min" },
+  { id: "astrology", label: "Astrology & horoscope", optional: true, time: "3 min" },
   { id: "preferences", label: "Match & future", optional: true, time: "4 min" },
-  { id: "privacy", label: "Privacy & contact", time: "2 min" },
+  { id: "privacy", label: "Appearance & contact", time: "2 min" },
 ];
 
 export function navigableSection(section: PortfolioEditorSection): PortfolioEditorSection {
@@ -103,7 +103,7 @@ export function PortfolioMobileSectionNav({ activeSection, completedCount, total
     </div>
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2">
       <button type="button" aria-label="Previous section" disabled={activeIndex === 0} onClick={() => onSectionChange(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></button>
-      <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]">Go to section
+      <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]"><span className="sr-only">Go to section</span>
         <select aria-label="Go to portfolio section" value={activeSection} onChange={(event) => onSectionChange(event.target.value as PortfolioEditorSection)} className="biodata-field min-h-11">
           {PORTFOLIO_EDITOR_SECTIONS.map((section, index) => <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>)}
         </select>
@@ -230,6 +230,9 @@ export function BlueprintForm({
   function goTo(section: PortfolioEditorSection) {
     setInternalSection(section);
     onSectionChange?.(section);
+    // Controlled editors own their scroll container. scrollIntoView can also
+    // scroll hidden dialog ancestors, moving the header/footer off screen.
+    if (onSectionChange) return;
     const stage = document.getElementById("blueprint-stage");
     if (stage && typeof stage.scrollIntoView === "function") {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -434,7 +437,7 @@ export function BlueprintForm({
         )}
 
         {activeSection === "astrology" && (
-          <FormSection eyebrow="Cultural alignment" title="Astrology and traditions" description="This entire section is optional and never blocks publishing. Add only the details you know and want to share.">
+          <FormSection eyebrow="Astrology" title="Astrology and horoscope" description="This entire section is optional and never blocks publishing. Add only the details you know and want to share.">
             <InfoCard title="No guessing required" audience="Optional" text="Leave unknown details blank. Exact birth time, place, Manglik status, and the horoscope remain in the Complete Portfolio only." />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <TextInput label="Place of birth" value={data.personal.place_of_birth || ""} onChange={(value) => updatePersonal({ place_of_birth: value })} requirement="Optional" audience="Complete Portfolio" />
@@ -452,7 +455,7 @@ export function BlueprintForm({
         )}
 
         {activeSection === "privacy" && (
-          <FormSection eyebrow="You stay in control" title="Privacy and contact" description="Review what the public Introduction reveals and optionally add protected contact details.">
+          <FormSection eyebrow="You stay in control" title="Appearance and contact" description="Choose your portfolio appearance and optionally add protected contact details. Contact details are shared only after your approval.">
             <InfoCard title="Sensitive details stay protected" audience="Never public" text="Exact birth details, contact information, income, and the horoscope are not shown in the public introduction." />
             <div>
               <p className="mb-1 text-base font-semibold text-[color:var(--workspace-ink)]">Portfolio appearance</p>
@@ -524,7 +527,7 @@ function approvalOnlyAudience(audience?: string) {
 }
 
 function FieldLabel({ label, required, audience }: { label: string; hint?: string; required?: boolean; requirement?: string; audience?: string }) {
-  return <span className="inline-flex flex-wrap items-center gap-1.5"><span>{label}{required && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>{approvalOnlyAudience(audience) && <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" />}</span>;
+  return <span className="inline-flex items-start gap-1.5">{approvalOnlyAudience(audience) && <LockKeyhole className="mt-1 h-3.5 w-3.5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" />}<span className="min-w-0">{label}{required && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span></span>;
 }
 
 function FieldHelp({ id, hint, audience }: { id: string; hint?: string; audience?: string }) {

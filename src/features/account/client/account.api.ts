@@ -1,4 +1,14 @@
+import { accountProfileSchema, type AccountProfile } from "@/features/account/profile";
+
 export type AccountApiFailure = { ok: false; code: string; message: string; status: number };
+
+/** Saves only account-holder names, without changing portfolio or sign-in credentials. */
+export async function saveAccountProfileRequest(profile: AccountProfile): Promise<AccountApiResult<AccountProfile>> {
+  const result = await accountRequest<unknown>("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profile) });
+  if (!result.ok) return result;
+  const parsed = accountProfileSchema.safeParse(result.data);
+  return parsed.success ? { ok: true, data: parsed.data } : { ok: false, code: "PROFILE_RESPONSE_INVALID", message: "We could not confirm that your names were saved. Please reload and check.", status: 502 };
+}
 export type AccountApiResult<T> = { ok: true; data: T } | AccountApiFailure;
 
 async function accountRequest<T>(url: string, init: RequestInit): Promise<AccountApiResult<T>> {

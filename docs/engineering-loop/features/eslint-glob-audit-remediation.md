@@ -108,3 +108,95 @@ pending. The fix is prepared on `fix/nak-60-liveness-only-verification`.
 Acceptance: only the intended package changes, clean installation resolves 1.2.2,
 the unchanged production audit passes, and unit tests/build remain compatible.
 Evidence: https://github.com/advisories/GHSA-68fv-2mgg-jv7q.
+
+## PR 93 dependency re-audit (2026-10-09)
+
+Reproduced the expired-exception failure on the current PR branch. A fresh
+production-only npm audit reports zero findings. The full audit reports five
+high findings, all inherited from GHSA-vfj7-8cjw-p6xm. The installed chain is
+eslint-config-next and @next/eslint-plugin-next 16.3.4 -> fast-glob 3.3.1 ->
+micromatch 4.0.8 -> braces 3.0.3.
+
+Current npm registry evidence: braces latest remains 3.0.3, micromatch latest
+remains 4.0.8 and requires braces ^3.0.3, and fast-glob latest 3.3.3 still
+requires micromatch ^4.0.8. The latest stable Next ESLint plugin 16.4.0 and
+canary 16.5.0-canary.6 both still require fast-glob 3.3.1. The GitHub advisory
+still lists no patched release. A routine supported upgrade therefore does
+not remove this vulnerability. npm's proposed major downgrade to
+eslint-config-next 14.2.35 is not a compatible Next 16 repair.
+
+Status: blocked, not fixed. No dependencies, lockfile, exception expiry or CI
+enforcement were changed. The previously rejected tinyglobby substitution is
+not revived: its symlink/numeric-range lint regressions remain relevant.
+Next options require an explicit scope decision: a separately reviewed
+lint-toolchain replacement preserving current rules, or renewed short-lived
+risk acceptance after a fresh exposure review. Neither is established by
+this dependency inventory. PR 93 remains unmergeable under the current gate.
+
+## Authorized replacement contract (2026-10-09)
+
+User approved investigating and implementing a replacement. Risk: Critical
+(security CI gate and lint execution boundary); full evidence record retained
+here with independent fresh review required. Current candidate: pin
+eslint-config-next 16.3.4 and override only its matching Next plugin's fast-glob
+dependency with tools/next-root-glob, a private local package backed by glob
+13.0.6 with brace-expansion 5.0.12. This is not a general fast-glob implementation: only the string pattern
+and onlyDirectories=true call observed in get-root-dirs is supported. Changed
+API options fail visibly. Large/deep patterns are rejected before expansion.
+All existing Next/React/TypeScript rule configurations remain untouched.
+
+Acceptance and evaluations:
+
+- Clean npm ci must reproduce a valid dependency tree with no braces or
+  micromatch and a clean complete audit, not just production scope.
+- Literal roots must not implicitly include descendants. Numeric brace ranges,
+  alternatives, wildcards, dot handling, symlink directories and missing roots
+  have independent expected-result tests in next-root-glob.test.ts.
+- The actual Next no-html-link-for-pages rule must report invalid internal
+  anchors for literal, numeric-range and symlink roots. Adapter-only tests
+  cannot prove lint discovery.
+- Audit no longer accepts any high/critical finding. Keep report/exit-status
+  validation and bounded subprocess execution; test formerly exempt findings,
+  production findings, severity understatement, malformed/failed reports and
+  both CLI scopes under NODE_ENV=production in security-audit.test.ts.
+- Lint, typecheck, full coverage and build must pass before publishing; fresh
+  reviewer must inspect the real installed dependency resolution and tests.
+
+Expired exception is removed rather than extended. Historical acceptance tests
+are replaced with stricter no-exception regression tests; captured vulnerable
+report stays as the negative fixture. No app, auth, database or production
+mutation. Compatibility is pinned to the observed plugin API and Node 24/26
+ESM interop; any Next tooling upgrade requires rerunning these regressions.
+Rollback restores the blocking old dependency graph, not a renewed exception.
+Local validation and independent review completed; hosted Linux/Node 26 CI
+remains pending. No merge, deployment or release success claimed.
+
+Dependency-resolution lesson: changing a local linked package's manifest can
+leave a stale nested lock entry and installed node_modules inside that package.
+The initial direct brace-expansion 5.0.8 pin was rejected by audit; its patched
+5.0.12 replacement must be verified with clean install, npm ls, and both audits.
+Obsolete generated nested dependencies were moved to temporary storage, not
+committed. Official patch evidence: https://github.com/advisories/GHSA-q2hr-2g5m-vwhr.
+
+### Completed replacement evidence
+
+- Clean npm ci --ignore-scripts installed 514 packages and reported zero
+  vulnerabilities. npm ls verified the real Next dependency reaches the local
+  adapter; both production and complete security audits report zero findings.
+- All 31 focused audit/adapter tests pass, including actual Next rule detection
+  and filesystem-root preservation. Lint, typecheck and production build pass.
+- Full coverage: 165 test files / 1,186 tests passed; statements 85.70%, branches
+  79.42%, functions 84.91%, lines 89.23%. All 57 feature coverage checks and
+  database fixture smoke checks pass. No migrations changed. Application browser
+  regressions were not rerun for this tooling-only increment; hosted E2E pending.
+- Fresh-context read-only reviewer pr93_dependency_replacement_review (Codex,
+  exact model unavailable) returned no_material_findings at snapshot
+  9133669c4ab50023ea2fa8ef64409195544e008aa103ce2db1827c750613deeb,
+  base 10e2435daeece2290f253d93e9838d1d380e4aee. Start/end freshness passed.
+  Reviewer independently reproduced offline clean installation and valid full
+  npm tree, 31 focused tests, lint, and real-rule probes for literal, symlink,
+  wildcard, array and numeric roots with an exclusive app10 route. Adversarial
+  expansion/depth/length probes also passed. Live audits/full test execution/
+  build/typecheck are coordinator-observed results, not independent reruns.
+- Only result documentation is updated after that reviewed source snapshot.
+  Unrelated nak-102 test-publication-access edits are excluded from this change.

@@ -636,8 +636,11 @@ describe("dashboard client", () => {
     expect(screen.getByRole("button", { name: "Edit details" }).compareDocumentPosition(screen.getByRole("button", { name: "Review and publish" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
     expect(await screen.findByRole("dialog", { name: /review both views before publishing/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Back to editing" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to editing" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Back to dashboard" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Back to editing" }));
+    expect(screen.queryByRole("dialog", { name: /review both views before publishing/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Portfolio details" })).toBeInTheDocument();
   });
 
   it("resumes a saved draft at its next required section and keeps mobile navigation outside the scrolling form", () => {
@@ -652,7 +655,7 @@ describe("dashboard client", () => {
     formScroller.scrollTop = 400;
     fireEvent.change(screen.getByLabelText("Go to portfolio section"), { target: { value: "privacy" } });
     expect(formScroller.scrollTop).toBe(0);
-    expect(screen.getByRole("heading", { name: /privacy/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /appearance and contact/i })).toBeInTheDocument();
   });
 
   it("makes liveness available in the same visit as a first draft save", async () => {
