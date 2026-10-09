@@ -56,6 +56,11 @@
     "thinking-orbs": "^0.3.2",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "@next/eslint-plugin-next@16.3.4": {
+      "fast-glob": "$fast-glob"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -69,7 +74,8 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.3.4",
+    "eslint-config-next": "16.3.4",
+    "fast-glob": "file:tools/next-root-glob",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "lint-staged": "^17.0.8",

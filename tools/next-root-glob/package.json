@@ -1,0 +1,7 @@
+{
+  "name": "@nakshatra/next-root-glob",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.mjs",
+  "dependencies": { "glob": "13.0.6", "brace-expansion": "5.0.12" }
+}
