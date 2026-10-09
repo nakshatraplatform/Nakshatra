@@ -54,6 +54,15 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("lets the controlled editor own scrolling when changing sections", () => {
+    const onSectionChange = vi.fn();
+    const scrollIntoView = vi.fn();
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={onSectionChange} />);
+    document.getElementById("blueprint-stage")!.scrollIntoView = scrollIntoView;
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    expect(onSectionChange).toHaveBeenCalledWith("work");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
   it("keeps useful hints below controls and uses a shared protected-field legend", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     const dob = screen.getByLabelText("Date of birth", { exact: true });
@@ -177,7 +186,7 @@ describe("blueprint form", () => {
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
     fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "2" } });
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     fireEvent.change(screen.getAllByLabelText("Name of contact")[0], { target: { value: "Updated Contact" } });
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
 
@@ -217,7 +226,7 @@ describe("blueprint form", () => {
     rerender(<BlueprintForm data={{ ...minimal, personal: { ...minimal.personal, dob: "2020-01-01" } }} onUpdate={onUpdate} />);
     fireEvent.blur(screen.getByLabelText("Date of birth"));
     expect(screen.getByText("You must be 18 or older.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     expect(screen.getByRole("button", { name: "Update sharing setup" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
@@ -231,7 +240,7 @@ describe("blueprint form", () => {
       sibling_count: 1,
       siblings: [{}],
     }));
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     fireEvent.click(screen.getByRole("button", { name: "Add a protected contact" }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({
       contacts: [expect.objectContaining({ relationship: "self" })],
@@ -250,9 +259,9 @@ describe("blueprint form", () => {
       expect.stringContaining("Personal story & lifestyle"),
       expect.stringContaining("Education & work"),
       expect.stringContaining("Family"),
-      expect.stringContaining("Astrology & traditions"),
+      expect.stringContaining("Astrology & horoscope"),
       expect.stringContaining("Match & future"),
-      expect.stringContaining("Privacy & contact"),
+      expect.stringContaining("Appearance & contact"),
     ]);
     expect(screen.queryByText("Optional")).not.toBeInTheDocument();
 
@@ -294,7 +303,7 @@ describe("blueprint form", () => {
   it("offers one public Introduction and an explicit upgrade for a legacy draft", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     expect(screen.getByText("Public Introduction")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Brief Introduction|Detailed Introduction/ })).not.toBeInTheDocument();
     rerender(<BlueprintForm data={{ ...completeBlueprint, privacy_mode: "private" }} onUpdate={onUpdate} />);
@@ -334,7 +343,7 @@ describe("blueprint form", () => {
 
   it("marks publishing requirements and uses clear astrology terminology", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Astrology & traditions/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Astrology & horoscope/ }));
 
     for (const label of [
       "Time of birth",
@@ -356,7 +365,7 @@ describe("blueprint form", () => {
 
   it("labels protected contact visibility once at the section level", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
 
     const sectionNotice = screen.getByText("Protected contact").parentElement;
     expect(sectionNotice).toHaveTextContent("Shown after approval");

@@ -124,7 +124,7 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await page.screenshot({ path: testInfo.outputPath("editor-dark.png"), fullPage: true, animations: "disabled" });
   const sectionSelect = editor.getByRole("combobox", { name: "Go to portfolio section" });
   if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
-  else await editor.getByRole("button", { name: /Astrology & traditions/ }).click();
+  else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();
   const attachment = editor.getByRole("button", { name: "Attach horoscope", exact: true });
   await expect(attachment).toHaveCSS("color", "rgb(237, 242, 239)");
   await expect(attachment).toHaveCSS("background-color", "rgb(38, 54, 64)");

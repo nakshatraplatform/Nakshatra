@@ -229,7 +229,7 @@ export default function DashboardClient({
     const previousOverflow = document.body.style.overflow;
     const heading = document.getElementById("portfolio-editor-heading");
     document.body.style.overflow = "hidden";
-    heading?.focus();
+    heading?.focus({ preventScroll: true });
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setFormOpen(false);
@@ -511,7 +511,7 @@ export default function DashboardClient({
 
   async function reviewPortfolio() {
     if (draftData.privacy_mode === "private") {
-      setDraftError("Update the saved sharing setup in Privacy & contact, then review the public Introduction before publishing.");
+      setDraftError("Update the saved sharing setup in Appearance & contact, then review the public Introduction before publishing.");
       return;
     }
     const needsSave = draftSaveState !== "saved" || !activePortfolioId;
@@ -1043,7 +1043,10 @@ export default function DashboardClient({
                     : "Check what is public and what needs your approval. Previews open in new tabs; return here to continue. Your saved review progress is remembered until you change your portfolio."}
                 </p>
               </div>
-              <div className="app-header-actions"><ThemeSwitch /></div>
+              <div className="app-header-actions">
+                <ThemeSwitch />
+                <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>Back to editing</button>
+              </div>
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -1159,7 +1162,7 @@ export default function DashboardClient({
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[#18272e]/45 backdrop-blur-sm">
           <div role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden shadow-2xl">
-            <div className="flex-none border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="dashboard-editor-header flex-none border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
@@ -1178,6 +1181,7 @@ export default function DashboardClient({
                 </div>
                 <div className="app-header-actions"><ThemeSwitch /><button
                   type="button"
+                  aria-label="Back to dashboard"
                   onClick={closePortfolioEditor}
                   className="dashboard-secondary-action flex-none"
                 >
@@ -1221,6 +1225,7 @@ export default function DashboardClient({
                     />
                   }
                 />
+                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[light-dark(#526273,var(--app-dark-muted))]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
               </div>
             </div>
 
