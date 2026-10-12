@@ -176,17 +176,18 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   expect(accents).toEqual({
     background: "#f7f5ef",
     primary: "#213f59",
-    teal: "#477b77",
+    teal: "#42736f",
     gold: "#8f6628",
   });
 
-  const privacyControl = portfolio.locator(".portfolio-brand");
+  const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
   await expect(privacyControl).toBeVisible();
+  await expect(privacyControl).toHaveAttribute("href", "#main-content");
   await privacyControl.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(privacyControl).toBeFocused();
-  await expect(privacyControl).toHaveCSS("outline-width", "2px");
+  await expect(privacyControl).toHaveCSS("outline-width", "3px");
   await expect(page.locator(".portfolio-long-copy").first()).toHaveCSS("overflow-wrap", "anywhere");
 
   if ((page.viewportSize()?.width || 0) > 720) {
@@ -307,7 +308,7 @@ test("gallery photo viewer closes from the backdrop on touch and restores the op
 test("portfolio navigation, help links, and return-to-top work at each viewport", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   const footer = page.getByRole("navigation", { name: "Portfolio help and policies" });
-  await expect(page.locator(".portfolio-footer-identity")).toHaveCSS("display", "grid");
+  await expect(page.locator("footer > div").first()).toHaveCSS("display", "grid");
   const helpLinks = footer.getByRole("link");
   await expect(helpLinks).toHaveCount(4);
   await expect(footer.getByRole("link", { name: "Report or correct information" })).toBeVisible();
@@ -320,7 +321,7 @@ test("portfolio navigation, help links, and return-to-top work at each viewport"
   }
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const backToTop = page.getByRole("button", { name: "Back to top of introduction" });
+  const backToTop = page.getByRole("link", { name: "Back to top", exact: true });
   await expect(backToTop).toBeVisible();
   await backToTop.click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
@@ -342,7 +343,7 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(page.locator(".portfolio-mobile-interest")).toHaveCount(0);
   await expect(page.locator(".portfolio-hero-actions")).toHaveCount(0);
 
-  const headerAction = page.locator(".portfolio-header-action");
+  const headerAction = page.getByRole("banner").getByRole("link", { name: "Show interest", exact: true });
   await expect(headerAction).toBeVisible();
   await expect(headerAction).toHaveText("Show interest");
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");

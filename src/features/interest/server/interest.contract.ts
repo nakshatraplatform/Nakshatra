@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { isValidPhoneNumber } from "@/features/portfolio/phone-number";
 
 const optionalText = (maximum: number) => z.preprocess(
   (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
@@ -25,7 +26,7 @@ export type InterestRequestInput = z.infer<typeof interestRequestSchema>;
 
 const newViewerInterestSubmissionSchema = interestRequestSchema.extend({
   useExistingProfile: z.literal(false),
-  phone: z.string().trim().min(7).max(40),
+  phone: z.string().trim().max(40).refine(isValidPhoneNumber, "Enter a valid phone number."),
 });
 
 const existingViewerInterestSubmissionSchema = interestRequestBaseSchema.extend({

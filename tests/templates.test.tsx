@@ -98,6 +98,26 @@ const photos: PortfolioPhoto[] = [
 ];
 
 describe("celestial union portfolio", () => {
+  it("offers only rendered navigation targets across public, private and owner projections", () => {
+    for (const accessMode of ["public", "owner", "approved"] as const) {
+      for (const privacy_mode of ["private", "balanced"] as const) {
+        const view = render(<CelestialUnion data={{ ...complete, privacy_mode }} sunSign="kanya" accessMode={accessMode} />);
+        for (const link of within(view.getByRole("navigation", { name: "Introduction quick actions" })).getAllByRole("link")) {
+          expect(view.container.querySelector(link.getAttribute("href")!)).not.toBeNull();
+        }
+        view.unmount();
+      }
+    }
+  });
+  it("keeps policy destinations and visible liveness limitations in the compact footer", () => {
+    render(<CelestialUnion data={complete} sunSign="kanya" identityVerified />);
+    const footer = screen.getByRole("contentinfo");
+    expect(within(footer).getByRole("link", { name: "Viewer guide" })).toHaveAttribute("href", "/received-a-link");
+    expect(within(footer).getByRole("link", { name: "Terms & data accuracy" })).toHaveAttribute("href", "/terms#data-accuracy");
+    expect(within(footer).getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
+    expect(within(footer).getByRole("link", { name: "Report or correct information" })).toHaveAttribute("href", "/privacy#corrections");
+    expect(within(footer).getByText(/It does not verify identity, photos or profile details/)).toBeInTheDocument();
+  });
   it("uses the canonical template for legacy and unknown template IDs", () => {
     const { container, rerender } = render(
       <BiodataTemplate templateId={3} data={complete} sunSign="kanya" photos={photos} />
@@ -171,7 +191,9 @@ describe("celestial union portfolio", () => {
     expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Astrology" })).toHaveAttribute("href", "#astrology");
-    expect(within(quickActions).getByRole("link", { name: "Family / Journey" })).toHaveAttribute("href", "#journey");
+    expect(within(quickActions).getByRole("link", { name: "Education & work" })).toHaveAttribute("href", "#journey");
+    expect(within(quickActions).getByRole("link", { name: /^Family$/ })).toHaveAttribute("href", "#family");
+    expect(within(quickActions).queryByRole("link", { name: "Family / Journey" })).not.toBeInTheDocument();
     const quickFacts = screen.getByLabelText("At a glance");
     expect(within(quickFacts).getByText("Marital Status")).toBeInTheDocument();
     expect(within(quickFacts).queryByText("Lives in")).not.toBeInTheDocument();
@@ -520,6 +542,17 @@ describe("celestial union portfolio", () => {
 
 describe("adaptive portfolio media", () => {
   afterEach(() => vi.useRealTimers());
+
+  it("exposes an accessible no-photo placeholder", () => {
+    render(<AdaptivePortfolioHero photos={[]} />);
+    expect(screen.getByRole("img", { name: "Portfolio photo has not been added" })).toBeInTheDocument();
+  });
+
+  it("prioritizes the visible hero image without prioritizing gallery images", () => {
+    render(<><AdaptivePortfolioHero photos={[photos[0]]} /><AdaptivePortfolioGallery photos={[photos[1]]} /></>);
+    expect(screen.getByAltText(photos[0].alt)).toHaveAttribute("fetchpriority", "high");
+    expect(screen.getByAltText(photos[1].alt)).not.toHaveAttribute("fetchpriority", "high");
+  });
 
   it("keeps orientation metadata on hero and gallery elements", () => {
     const { container } = render(

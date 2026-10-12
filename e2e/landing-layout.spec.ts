@@ -131,17 +131,17 @@ test("laptop tour cards remain readable and scroll-pinned", async ({ page }, tes
   }
 });
 
-test("sample portfolio footer links stay clear of the back-to-top control", async ({ page }, testInfo) => {
+test("sample portfolio footer uses an in-flow back-to-top link without a floating overlap", async ({ page }, testInfo) => {
   for (const width of [375, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/demo");
     if (width === 1440) await page.locator(".portfolio-hero").screenshot({ path: testInfo.outputPath("sample-portfolio-hero-1440.png"), animations: "disabled" });
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    const topButton = page.getByRole("button", { name: "Back to top of introduction" });
+    const topButton = page.getByRole("link", { name: "Back to top", exact: true });
     await expect(topButton).toBeVisible();
     const overlap = await page.evaluate(() => {
-      const button = document.querySelector(".portfolio-back-to-top")!.getBoundingClientRect();
-      return Array.from(document.querySelectorAll(".portfolio-footer-links a")).some((link) => {
+      const button = document.querySelector('footer a[href="#portfolio-top"]')!.getBoundingClientRect();
+      return Array.from(document.querySelectorAll('nav[aria-label="Portfolio help and policies"] a')).some((link) => {
         const target = link.getBoundingClientRect();
         return button.left < target.right && button.right > target.left && button.top < target.bottom && button.bottom > target.top;
       });

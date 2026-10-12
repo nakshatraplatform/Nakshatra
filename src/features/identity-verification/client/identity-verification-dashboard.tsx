@@ -7,12 +7,12 @@ import type { CandidateRecovery } from "../candidate-recovery.types";
 type PendingAction = "self" | "resume" | "cancel" | "result" | null;
 
 /** Provides explicit consent for a candidate verifying their own portfolio. */
-type RecoveryProps = { candidateId: string; onStatusChange?: (state: CandidateRecovery["state"]) => void; checkResultOnLoad?: boolean };
+type RecoveryProps = { candidateId: string; onStatusChange?: (state: CandidateRecovery["state"]) => void; checkResultOnLoad?: boolean; hideWhenVerified?: boolean; initiallyVerified?: boolean };
 export function IdentityVerificationDashboard(props: RecoveryProps) {
   return <CandidateRecoveryControls key={props.candidateId} {...props} />;
 }
 
-function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnLoad = false }: RecoveryProps) {
+function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnLoad = false, hideWhenVerified = false, initiallyVerified = false }: RecoveryProps) {
   const [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +152,10 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
     cancelled: "You cancelled this check. It cannot verify your profile.",
     verified: "Your liveness check is complete.",
   }[current.state] : "Loading your liveness check…";
+
+  // Presentation can disappear; the controller stays mounted for authoritative
+  // visibility refresh and polling. A later expiry/outage restores actionable UI.
+  if (hideWhenVerified && !error && !statusError && (current?.state === "verified" || (!current && initiallyVerified))) return null;
 
   return (
     <section className="dashboard-glass p-5" aria-labelledby="identity-verification-heading">

@@ -21,6 +21,22 @@ import {
 } from "../src/features/interest/server/interest.contract";
 
 describe("interest request flow", () => {
+  it.each(["abcdefg", "-------", "12", "+1 22222222222222222222"])("rejects invalid interest phone %s at the API contract", (phone) => {
+    const parsed = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", name: "Rohan Mehta", profileFor: "self", phone, email: "rohan@example.com" });
+    expect(parsed.success).toBe(false);
+  });
+  it("does not send an email code for an invalid phone entered in the modal", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
+    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 abcdefgh" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("valid phone number");
+    expect(startAuthentication).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     enforceRateLimit.mockResolvedValue(null);

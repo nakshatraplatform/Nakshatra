@@ -8,6 +8,7 @@ import {
 } from "@/features/portfolio/template";
 import { getCelestialBackground } from "@/features/portfolio/celestial-theme";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { formListValues } from "@/features/portfolio/form-contract";
 
 const EMPTY_VALUES = new Set(["", undefined, null]);
 
@@ -34,6 +35,9 @@ function commaSeparatedList(value: string | undefined) {
 
 /** Extracts a minimum and maximum age from free-form preference text. Input: age range text. Output: nullable numeric bounds. */
 function ageRange(value: string | undefined) {
+  const bounded = (value ?? "").trim().match(/^(\d*)\s*(?:–|—|-|to)\s*(\d*)$/i);
+  if (bounded) return { min: bounded[1] ? Number(bounded[1]) : null, max: bounded[2] ? Number(bounded[2]) : null };
+  // Retain the interpretation of older free-text answers.
   const matches = (value ?? "").match(/\d+/g)?.map(Number) ?? [];
   return { min: matches[0] ?? null, max: matches[1] ?? null };
 }
@@ -150,8 +154,8 @@ export function mapCandidateDetails(data: PortfolioData) {
       diet: nullable(data.lifestyle?.diet),
       smoking: nullable(data.lifestyle?.smoking),
       drinking: nullable(data.lifestyle?.drinking),
-      languages: commaSeparatedList(data.lifestyle?.languages),
-      hobbies: commaSeparatedList(data.lifestyle?.hobbies),
+      languages: formListValues(data.lifestyle?.languages),
+      hobbies: formListValues(data.lifestyle?.hobbies),
       // Retired from the product. Clear any legacy relational value on the next save.
       music: null,
       lifestyle_payload: {

@@ -5,13 +5,12 @@ import {
   GraduationCap,
   FileText,
   ExternalLink,
-  Heart,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { PortfolioNavigation, type PortfolioSectionLink } from "./PortfolioNavigation";
+import { PortfolioFooter } from "./PortfolioFooter";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
-import { PortfolioBackToTop } from "./PortfolioBackToTop";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   CELESTIAL_THEME_COLORS,
@@ -512,11 +511,16 @@ export default function CelestialUnion({
     || hobbies.length || values.length || clean(data.family?.public_summary)
     || clean(data.preferences?.narrative)
   );
-  const familyJourneyTarget = briefPublicView
-    ? briefOverviewAvailable ? "#portfolio-profile" : null
-    : numberedChapters.some((chapter) => chapter.id === "journey")
-      ? "#journey"
-      : numberedChapters.some((chapter) => chapter.id === "family") ? "#family" : null;
+  const navigationSections: PortfolioSectionLink[] = [{ href: "#main-content", label: "Overview" }];
+  if (galleryPhotos.length) navigationSections.push({ href: "#portfolio-gallery-title", label: "Gallery" });
+  if (astrologyChapter) navigationSections.push({ href: "#astrology", label: "Astrology" });
+  if (briefPublicView) {
+    if (briefOverviewAvailable) navigationSections.push({ href: "#portfolio-profile", label: "About" });
+  } else {
+    for (const [id, label] of [["journey", "Education & work"], ["lifestyle", "Lifestyle"], ["family", "Family"]]) {
+      if (numberedChapters.some(chapter => chapter.id === id)) navigationSections.push({ href: `#${id}`, label });
+    }
+  }
   const remainingFullChapters = numberedChapters.filter(
     (chapter) => chapter.id !== firstFullChapter?.id && chapter.id !== "astrology"
   );
@@ -558,21 +562,11 @@ export default function CelestialUnion({
       data-appearance={appearance}
       data-privacy-mode={privacyMode}
       data-access-mode={accessMode}
+      id="portfolio-top"
       className="portfolio-root"
       style={variables}
     >
-      <header className="portfolio-header">
-        <div className="portfolio-header-inner">
-          <VivIntroBrand href="#main-content" variant="horizontal" className="portfolio-brand" />
-          <nav aria-label="Introduction quick actions">
-            <a href="#main-content">Overview</a>
-            {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
-            {astrologyChapter && <a href="#astrology">Astrology</a>}
-            {familyJourneyTarget && <a href={familyJourneyTarget}>Family / Journey</a>}
-          </nav>
-          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest"><Heart aria-hidden="true" />Show interest</a>}
-        </div>
-      </header>
+      <PortfolioNavigation sections={navigationSections} showInterest={showInterestSection} />
 
       {approvedViewer && (
         <aside className="portfolio-access-context" aria-label="Protected access details">
@@ -586,7 +580,7 @@ export default function CelestialUnion({
           </div>
         </aside>
       )}
-      <main id="main-content" className="portfolio-main">
+      <main id="main-content" className="portfolio-main" tabIndex={-1}>
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
           <div className="portfolio-photo-stage">
             <span className="portfolio-orbit portfolio-orbit-one" aria-hidden="true" />
@@ -735,19 +729,7 @@ export default function CelestialUnion({
         )}
       </main>
 
-      <footer className="portfolio-footer">
-        <div className="portfolio-footer-identity">
-          <VivIntroBrand variant="full-symbol" decorative />
-          <p>One introduction, shared with care.</p>
-        </div>
-        <nav className="portfolio-footer-links" aria-label="Portfolio help and policies">
-          <a href="/received-a-link">Viewer guide</a>
-          <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/privacy#corrections">Report or correct information</a>
-        </nav>
-      </footer>
-      <PortfolioBackToTop />
+      <PortfolioFooter livenessChecked={identityVerified} />
     </div>
   );
 }
@@ -783,7 +765,7 @@ function BriefIntroduction({
   if (!facts.length && !tags.length && !familyIntroduction && !partnershipIntroduction) return null;
 
   return (
-    <section id="portfolio-profile" className="portfolio-short-overview" aria-labelledby="short-overview-title">
+    <section id="portfolio-profile" className="portfolio-short-overview" aria-labelledby="short-overview-title" tabIndex={-1}>
       <div className="portfolio-section-heading">
         <p>A quick introduction</p>
         <h2 id="short-overview-title">A little more about {firstName(name)}</h2>
@@ -802,7 +784,7 @@ function BriefIntroduction({
 
 function Chapter({ number, id, eyebrow, title, content }: ChapterDefinition & { number: number }) {
   return (
-    <section id={id} className="portfolio-chapter" aria-labelledby={`${id}-title`}>
+    <section id={id} className="portfolio-chapter" aria-labelledby={`${id}-title`} tabIndex={-1}>
       <span className="portfolio-chapter-number" aria-hidden="true">{String(number).padStart(2, "0")}</span>
       <div className="portfolio-section-heading">
         <p>{eyebrow}</p>

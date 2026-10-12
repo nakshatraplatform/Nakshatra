@@ -59,6 +59,10 @@ export function resolveOutputMode(vercel = process.env.VERCEL): NextConfig["outp
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: resolveOutputMode(),
+  // Keep unrelated page styles out of the first-load portfolio stylesheet.
+  experimental: {
+    cssChunking: { type: "graph", requestCost: 5000 },
+  },
   poweredByHeader: false,
   turbopack: {
     root: path.resolve(__dirname),

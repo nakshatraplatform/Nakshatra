@@ -10,7 +10,7 @@ export const CELESTIAL_THEME_COLORS = {
     ink: "#1c2936",
     muted: "#59636e",
     primary: "#213f59",
-    teal: "#477b77",
+    teal: "#42736f",
     gold: "#8f6628",
     border: "#d5d0c5",
   },

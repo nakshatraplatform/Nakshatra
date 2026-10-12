@@ -8,6 +8,15 @@ const COMMON_CALLING_CODES = [
   "66", "81", "82", "86", "90", "91", "92", "94",
 ].sort((left, right) => right.length - left.length);
 
+/** Contact syntax only, not proof that a number exists or belongs to its author.
+ * Keep the database's legacy 7–20 digit allowance; formatting counts separately.
+ */
+export function isValidPhoneNumber(value: string) {
+  const phone = value.trim();
+  const digits = phone.replace(/\D/g, "").length;
+  return phone.length <= 40 && /^\+?[\d ()-]+$/.test(phone) && digits >= 7 && digits <= 20;
+}
+
 export function splitPhoneNumber(value: string, defaultCallingCode = "") {
   const phone = value.trim();
   if (!phone) return { callingCode: defaultCallingCode.replace(/\D/g, "").slice(0, 3), nationalNumber: "" };

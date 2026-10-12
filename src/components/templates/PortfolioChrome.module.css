@@ -1,0 +1,125 @@
+/* Chrome uses portfolio-owned appearance tokens, never the viewer's app theme.
+   Layer 30: sticky navigation; existing gallery/dialog layers remain above it. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid var(--portfolio-border);
+  background: var(--portfolio-surface);
+}
+.headerInner {
+  width: min(1180px, calc(100% - 40px));
+  min-height: 72px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.brand { flex: none; min-height: 44px; }
+.headerInner .brand > span { width: 156px; }
+.sections {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+.sections a, .policies a, .footerNote a {
+  color: var(--portfolio-primary);
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.sections a {
+  padding: 0 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.sections a[aria-current="location"] { background: var(--portfolio-surface-soft); }
+.interest, .menuButton {
+  min-height: 44px;
+  border: 1px solid var(--portfolio-border);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+.interest {
+  margin-left: auto;
+  padding: 0 16px;
+  white-space: nowrap;
+  background: var(--portfolio-primary);
+  color: var(--portfolio-background);
+  text-decoration: none;
+}
+.interest svg, .menuButton svg { width: 18px; height: 18px; flex: none; }
+.menuButton { display: none; background: transparent; color: var(--portfolio-primary); width: 44px; cursor: pointer; }
+.header a:focus-visible, .menuButton:focus-visible, .footer a:focus-visible {
+  outline: 3px solid var(--portfolio-primary);
+  outline-offset: 3px;
+}
+.header a, .menuButton { transition: background-color 160ms ease, color 160ms ease; }
+.footer {
+  width: min(1180px, calc(100% - 40px));
+  margin-inline: auto;
+  padding: 28px 0 max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr);
+  gap: 20px 32px;
+  border-top: 1px solid var(--portfolio-border);
+}
+.footerIdentity { display: grid; justify-items: start; gap: 8px; align-content: start; }
+.footerIdentity p, .footerNote p { margin: 0; color: var(--portfolio-muted); font-size: 14px; line-height: 1.6; }
+.policies { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 24px; align-content: start; }
+.policies a { text-underline-offset: 4px; }
+.footerNote { grid-column: 1 / -1; display: flex; align-items: center; gap: 24px; padding-top: 16px; border-top: 1px solid var(--portfolio-border); }
+.footerNote p { max-width: 80ch; }
+.footerNote a { margin-left: auto; white-space: nowrap; }
+@media print {
+  .header { display: none; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sections a:hover, .menuButton:hover { background: var(--portfolio-surface-soft); }
+  .interest:hover { background: color-mix(in srgb, var(--portfolio-primary) 88%, var(--portfolio-foreground)); }
+  .policies a:hover, .footerNote a:hover { text-decoration: underline; }
+}
+@media (max-width: 1099px) {
+  .headerInner { min-height: 64px; gap: 12px; }
+  .headerInner .brand > span { width: 132px; }
+  .menuButton { display: inline-flex; margin-left: auto; order: 3; }
+  .interest { margin-left: 0; }
+  .sections {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 12px max(16px, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--portfolio-border);
+    background: var(--portfolio-surface);
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .sections[data-open="true"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: stretch; }
+  .sections a { white-space: normal; }
+}
+@media (max-width: 600px) {
+  .headerInner { width: calc(100% - 24px); gap: 8px; }
+  .headerInner .brand > span { width: 96px; }
+  .interest { padding: 0 10px; gap: 6px; font-size: 13px; }
+  .footer { width: calc(100% - 32px); grid-template-columns: 1fr; gap: 16px; }
+  .policies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
+  .policies a { line-height: 1.5; }
+  .footerNote { display: grid; gap: 8px; }
+  .footerNote a { margin: 0; justify-self: end; }
+}

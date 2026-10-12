@@ -122,6 +122,9 @@ describe("portfolio media service", () => {
   });
 
   it("rejects oversized and unsupported files before storage access", async () => {
+    await expect(uploadPortfolioPhoto({
+      supabase: {} as never, userId, portfolioId, file: photo({ size: 0 }), visibility: "interest_required",
+    })).rejects.toMatchObject({ status: 400 });
     await expect(
       uploadPortfolioPhoto({
         supabase: {} as never,

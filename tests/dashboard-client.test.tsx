@@ -615,6 +615,17 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.renew).toHaveBeenCalled());
   });
 
+  it("groups the active URL and routine actions without a redundant active badge", () => {
+    renderDashboard({ isExpired: false, publicationReadiness: readyPublicationReadiness });
+    const sharing = screen.getByRole("region", { name: "Introduction link" });
+    expect(sharing).toHaveTextContent("https://nakshatra.test/p/token");
+    for (const name of ["Edit details", "Copy link", "Share on WhatsApp"]) {
+      expect(within(sharing).getByRole("button", { name })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name })).toHaveLength(1);
+    }
+    expect(screen.queryByText("Introduction link active")).not.toBeInTheDocument();
+  });
+
   it("opens final review from a complete unpublished draft without duplicating editor actions", async () => {
     renderDashboard({
       portfolio: {
@@ -1118,7 +1129,8 @@ describe("dashboard client", () => {
     });
 
     expect(screen.queryByText("Your publishing journey")).not.toBeInTheDocument();
-    expect(screen.getByText("Introduction link active")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Introduction link" })).toBeInTheDocument();
+    expect(screen.queryByText("Introduction link active")).not.toBeInTheDocument();
   });
 
   it("cancels publication review without changing the public portfolio", async () => {
