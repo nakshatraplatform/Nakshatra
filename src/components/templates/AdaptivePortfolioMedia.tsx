@@ -1,5 +1,7 @@
 "use client";
 
+import { PortfolioImage } from "@/components/loading/PortfolioImage";
+
 import { ChevronLeft, ChevronRight, LockKeyhole, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -74,8 +76,7 @@ export function AdaptivePortfolioHero({
       data-orientation={activeOrientation}
       data-presentation={activePhoto.presentation || "clear"}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <PortfolioImage key={activePhoto.src}
         src={activePhoto.src}
         alt={activePhoto.alt}
         width={activePhoto.width}
@@ -380,8 +381,7 @@ function GalleryImage({
     : photo.orientation;
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <PortfolioImage key={photo.src} showLoading={!decorative}
       src={photo.src}
       alt={decorative ? "" : photo.alt}
       width={photo.width}

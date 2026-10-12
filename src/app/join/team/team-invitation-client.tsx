@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -64,10 +66,11 @@ export function TeamInvitationClient() {
   return <div className={styles.shell}>
     <header><VivIntroBrand href="/" variant="horizontal" /><span>BrokerDesk invitation</span><ThemeSwitch /></header>
     <main>
-      <section className={styles.card} aria-live="polite">
+      <section className={styles.card}>
+        <p className="sr-only" role="status" aria-atomic="true">{stage === "sign_in" ? "Sign in to continue with this invitation." : stage === "accepted" ? "Invitation accepted. Open BrokerDesk to continue." : stage === "unavailable" ? "Invitation unavailable. Ask the sender for a new invitation." : ""}</p>
         <VivIntroBrand variant="stacked" decorative displayWidth={138} />
         <div className={styles.icon}>{stage === "accepted" ? <ShieldCheck /> : <Building2 />}</div>
-        {stage === "working" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><p>Please wait while we safely confirm this invitation.</p></>}
+        {stage === "working" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><LoadingStatus title="Confirming your private invitation" state="connecting" /></>}
         {stage === "sign_in" && <><p className={styles.eyebrow}>Your account protects access</p><h1>Sign in to continue</h1><p>Use the VivIntro account with the email address that received this invitation.</p><Link className={styles.button} href="/login?next=/join/team">Sign in securely</Link></>}
         {stage === "accepted" && accepted && <><p className={styles.eyebrow}>Invitation accepted</p><h1>Welcome to {accepted.workspaceName}</h1><p>Your team role is <strong>{accepted.rolePreset}</strong>. Customer access remains private until an owner or admin assigns it.</p><Link className={styles.button} href="/brokerdesk">Open BrokerDesk</Link></>}
         {stage === "unavailable" && <><p className={styles.eyebrow}>Invitation unavailable</p><h1>Ask the sender for a new invitation</h1><p>This link may have expired, already been used, or belong to a different account. We do not reveal which condition applies.</p><Link className={styles.button} href="/brokerdesk">Go to BrokerDesk</Link></>}

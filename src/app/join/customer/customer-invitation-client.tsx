@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -71,12 +73,13 @@ export function CustomerInvitationClient() {
   return <div className={styles.shell}>
     <header><VivIntroBrand href="/" variant="horizontal" /><span>Private broker invitation</span><ThemeSwitch /></header>
     <main>
-      <section className={styles.card} aria-live="polite">
+      <section className={styles.card}>
+        <p className="sr-only" role="status" aria-atomic="true">{stage === "review" ? "Invitation ready. Review the broker relationship and choose whether to consent." : stage === "sign_in" ? "Sign in to continue with this invitation." : stage === "portfolio_required" ? "Broker relationship recorded. Complete your portfolio to continue." : stage === "active" ? "Broker relationship connected. View your brokers to continue." : stage === "unavailable" ? "Invitation unavailable. Ask your broker for a new link." : ""}</p>
         <VivIntroBrand variant="stacked" decorative displayWidth={138} />
         <div className={styles.icon}>{stage === "active" ? <ShieldCheck /> : <Building2 />}</div>
-        {stage === "exchanging" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><p>Please wait while VivIntro safely prepares this invitation.</p></>}
+        {stage === "exchanging" && <><p className={styles.eyebrow}>Private invitation</p><h1>Checking your invitation…</h1><LoadingStatus title="Preparing your private invitation" state="connecting" /></>}
         {stage === "review" && <><p className={styles.eyebrow}>You remain the owner</p><h1>Connect your portfolio to this broker</h1><p>Your broker cannot create, edit, publish or unpublish your portfolio. You keep control of your VivIntro account and can end this relationship later.</p><div className={styles.consentSummary}><strong><Check /> What you authorize</strong><ul><li>Review your published Complete Portfolio.</li><li>Share that published portfolio in time-limited broker-mediated introductions.</li><li>Work only within this broker&apos;s private customer relationship for up to one year.</li></ul><p>This standing mandate does not require the broker to ask you for approval before each introduction.</p></div><label className={styles.consent}><input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} /><span>I understand and authorize this broker relationship.</span></label><button className={styles.button} type="button" onClick={claim} disabled={!consented}>Accept and continue</button></>}
-        {stage === "claiming" && <><p className={styles.eyebrow}>Recording your choice</p><h1>Joining securely…</h1><p>Please keep this page open.</p></>}
+        {stage === "claiming" && <><p className={styles.eyebrow}>Recording your choice</p><h1>Joining securely…</h1><LoadingStatus title="Recording your consent" detail="Please keep this page open." /></>}
         {stage === "sign_in" && <><p className={styles.eyebrow}>Your account protects this invitation</p><h1>Sign in to continue</h1><p>Use the VivIntro account with the verified email address that received this invitation.</p><Link className={styles.button} href="/login?next=/join/customer">Sign in securely</Link></>}
         {stage === "portfolio_required" && claimed && <><p className={styles.eyebrow}>Broker joined</p><h1>Complete your one VivIntro portfolio</h1><p>Your relationship with <strong>{claimed.workspaceName}</strong> is recorded. Complete your customer-owned portfolio and VivIntro will activate it for this broker automatically.</p><Link className={styles.button} href="/dashboard">Complete my portfolio</Link></>}
         {stage === "active" && claimed && <><p className={styles.eyebrow}>Broker joined</p><h1>You are connected to {claimed.workspaceName}</h1><p>This agency can now work from the shared layer of your existing portfolio. Your other broker relationships remain private from them.</p><Link className={styles.button} href="/brokers">View my brokers</Link></>}

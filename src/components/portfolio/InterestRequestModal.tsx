@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { PhoneNumberField } from "@/components/portfolio/PhoneNumberField";
 import { useEffect, useId, useRef, useState } from "react";
@@ -265,6 +267,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
 
+            {pending && <LoadingStatus compact appearance={appearance} className="mx-5 my-3" state="connecting" title={step === "choice" ? "Connecting to Google" : verificationAction === "verifying" ? "Confirming your email" : verificationAction === "sending" || sessionEmail ? "Sending your interest request" : "Sending your verification code"} />}
             {step === "choice" && (
               <div className="interest-account-choice">
                 <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with Google to reuse the profile details connected to your account.</p></div>

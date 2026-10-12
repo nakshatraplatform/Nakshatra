@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { BrokerDeskHeader } from "@/components/brokerdesk/BrokerDeskHeader";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -97,6 +99,7 @@ export function TeamSettingsClient({ team, reauthPurpose }: { team: BrokerdeskTe
     </BrokerDeskHeader>
     <main>
       <div className={styles.heading}><div><p>Settings · Team</p><h1>People who work with you</h1><span>Employees see only the customers and work their role allows.</span></div>{mode === "list" && <button onClick={() => begin("team_invite")}><UserPlus /> Invite employee</button>}</div>
+      {pending && <LoadingStatus compact className="my-4" state="connecting" title={mode === "security" ? "Preparing your security check" : mode === "invite" ? "Creating the employee invitation" : mode === "access" ? "Saving the team role" : "Suspending workspace access"} />}
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
       {mode === "security" && <section className={styles.panel}><ShieldCheck /><h2>Confirm it is you</h2><p>This action changes who can use your business workspace. Complete a quick security check first.</p><div className={styles.actions}><button onClick={() => security("google")} disabled={pending}>Continue with Google</button><button onClick={() => security("email")} disabled={pending}>Email me a sign-in link</button><button className={styles.textButton} onClick={() => setMode("list")}>Cancel</button></div></section>}
       {mode === "invite" && <section className={styles.panel}><UserPlus /><h2>Invite an employee</h2><p>Use their work email. They must sign in with that same verified email address.</p><form onSubmit={invite}><label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label><label>Role<select name="rolePreset" defaultValue="advisor"><option value="advisor">Broker — assigned customers only</option><option value="coordinator">Coordinator — assigned customers only</option><option value="viewer">View only — assigned customers only</option>{currentRole === "owner" && <option value="admin">Admin — all customers and settings</option>}</select></label><button type="submit" disabled={pending}>{pending ? "Creating invitation…" : "Create private invitation"}</button></form>{invitationUrl && <div className={styles.invitation}><Check /><strong>Private invitation ready</strong><p>Send this link only to the employee. It works once and only for their email address.</p><code>{invitationUrl}</code><button onClick={() => navigator.clipboard.writeText(invitationUrl)}><Copy /> Copy invitation link</button></div>}</section>}

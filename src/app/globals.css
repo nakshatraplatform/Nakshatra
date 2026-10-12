@@ -4514,3 +4514,7 @@ body {
     gap: 12px;
   }
 }
+
+/* Visible gallery/image waits share the existing image geometry. */
+[data-template="celestial-union"] .portfolio-gallery-open,
+[data-template="celestial-union"] .portfolio-lightbox figure { position: relative; }

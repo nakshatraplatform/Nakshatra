@@ -14,6 +14,10 @@ afterEach(() => {
 });
 
 if (typeof window !== "undefined") {
+  // jsdom has no canvas renderer; real Thinking Orb pixels/motion are verified in Playwright.
+  Object.defineProperty(window.HTMLCanvasElement.prototype, "getContext", {
+    configurable: true, value: () => null,
+  });
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({

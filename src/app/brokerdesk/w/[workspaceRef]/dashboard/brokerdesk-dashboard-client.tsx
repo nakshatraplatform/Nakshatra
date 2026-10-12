@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useState } from "react";
 import Link from "next/link";
 import { BellRing, CheckCircle2, Clock3, Link2, MessageCircleQuestion, Users } from "lucide-react";
@@ -44,7 +46,7 @@ export function BrokerdeskDashboardClient({ dashboard }: { dashboard: AvailableD
       <div><p>Action queue</p><h2>What needs attention</h2></div>
       {message && <p className={styles.message} role="status">{message}</p>}
       {actions.length === 0 ? <div className={styles.empty}><CheckCircle2 /><h3>You are caught up</h3><p>New customer updates and recipient responses will appear here.</p></div> : <div className={styles.actions}>{actions.map((action, index) => {
-        const key = action.introductionRef || action.noticeRef || `${action.type}-${index}`;
+        const key = action.introductionRef || action.noticeRef || String(index);
         const isResponse = action.type === "response";
         const canComplete = action.type !== "expiring";
         return <article key={key}>
@@ -54,7 +56,7 @@ export function BrokerdeskDashboardClient({ dashboard }: { dashboard: AvailableD
             <span>{action.customerName} · {new Date(action.occurredAt).toLocaleString()}</span>
             {action.responseComment && <p>“{action.responseComment}”</p>}
           </div>
-          <div className={styles.buttons}><Link href={`/brokerdesk/w/${dashboard.workspaceRef}/customers/${action.relationshipRef}`}>View customer</Link>{canComplete && <button disabled={pendingKey === key} type="button" onClick={() => complete(index)}>{pendingKey === key ? "Saving…" : "Mark complete"}</button>}</div>
+          <div className={styles.buttons}>{pendingKey === key && <LoadingStatus compact title="Saving this follow-up" />}<Link href={`/brokerdesk/w/${dashboard.workspaceRef}/customers/${action.relationshipRef}`}>View customer</Link>{canComplete && <button disabled={Boolean(pendingKey)} type="button" onClick={() => complete(index)}>{pendingKey === key ? "Saving…" : "Mark complete"}</button>}</div>
         </article>;
       })}</div>}
     </section>
