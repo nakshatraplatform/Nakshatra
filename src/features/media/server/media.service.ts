@@ -66,6 +66,7 @@ function blurPathFor(storagePath: string) {
 
 /** Validates a user-selected upload before any database or storage access. Input: File. Output: nothing or PortfolioMediaError. */
 function requireSupportedPhoto(file: File) {
+  if (!file.size) throw new PortfolioMediaError("Choose a non-empty photo", 400);
   if (file.size > MAX_PHOTO_BYTES) {
     throw new PortfolioMediaError("Use an image up to 10MB", 413);
   }

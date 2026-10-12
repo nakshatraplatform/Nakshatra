@@ -186,6 +186,7 @@ export function LocationFields({
             aria-label={labels.country}
             name="current_country"
             autoComplete="country-name"
+            maxLength={100}
             required={requireCountryAndCity}
             value={value.country || ""}
             onFocus={() => setManualCountry(true)}
@@ -248,6 +249,7 @@ export function LocationFields({
             aria-label={labels.region}
             name="current_region"
             autoComplete="address-level1"
+            maxLength={100}
             value={value.region || ""}
             disabled={!countryHasLabel}
             placeholder={countryHasLabel ? "Enter state or region" : "Select a country first"}
@@ -266,6 +268,7 @@ export function LocationFields({
           aria-label={labels.city}
           name="current_city"
           autoComplete="address-level2"
+          maxLength={120}
           required={requireCountryAndCity}
           list={listId}
           value={citySearch}

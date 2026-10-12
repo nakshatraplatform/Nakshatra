@@ -62,6 +62,7 @@ export function AdaptivePortfolioHero({
       <div
         className="portfolio-hero-empty"
         style={{ backgroundColor: fallbackColor }}
+        role="img"
         aria-label="Portfolio photo has not been added"
       />
     );
@@ -80,6 +81,7 @@ export function AdaptivePortfolioHero({
         width={activePhoto.width}
         height={activePhoto.height}
         className="portfolio-hero-photo"
+        fetchPriority="high"
         onLoad={(event) => {
           if (activePhoto.orientation === "unknown") {
             detectLegacyOrientation(
@@ -247,7 +249,7 @@ export function AdaptivePortfolioGallery({
     <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
       <div className="portfolio-section-heading">
         <p>Captured moments</p>
-        <h2 id="portfolio-gallery-title">Gallery</h2>
+        <h2 id="portfolio-gallery-title" tabIndex={-1}>Gallery</h2>
       </div>
       <div className="portfolio-gallery-meta">
         <p>A simple collection of everyday moments.</p>

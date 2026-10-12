@@ -34,6 +34,9 @@ function commaSeparatedList(value: string | undefined) {
 
 /** Extracts a minimum and maximum age from free-form preference text. Input: age range text. Output: nullable numeric bounds. */
 function ageRange(value: string | undefined) {
+  const bounded = (value ?? "").trim().match(/^(\d*)\s*(?:–|—|-|to)\s*(\d*)$/i);
+  if (bounded) return { min: bounded[1] ? Number(bounded[1]) : null, max: bounded[2] ? Number(bounded[2]) : null };
+  // Retain the interpretation of older free-text answers.
   const matches = (value ?? "").match(/\d+/g)?.map(Number) ?? [];
   return { min: matches[0] ?? null, max: matches[1] ?? null };
 }

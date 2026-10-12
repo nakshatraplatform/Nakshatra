@@ -54,6 +54,16 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("bounds typed answers to the accepted field lengths", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Current profession title", { exact: true })).toHaveAttribute("maxlength", "200");
+    expect(screen.getByLabelText("Current city", { exact: true })).toHaveAttribute("maxlength", "120");
+    expect(screen.getByLabelText("First name", { exact: true })).toHaveAttribute("pattern", expect.stringContaining("\\-"));
+    rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="astrology" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Lagnam", { exact: true })).toHaveAttribute("maxlength", "100");
+    rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="privacy" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Name of contact", { exact: true })).toHaveAttribute("maxlength", "100");
+  });
   it("lets the controlled editor own scrolling when changing sections", () => {
     const onSectionChange = vi.fn();
     const scrollIntoView = vi.fn();

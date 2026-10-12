@@ -850,12 +850,12 @@ export default function DashboardClient({
           ) : (
               <section className="dashboard-welcome">
                 <div>
-                  {publicShareReady && <span className={`dashboard-status ${isExpired ? "is-expired" : ""}`}>{isExpired ? "Introduction link expired" : "Introduction link active"}</span>}
+                  {publicShareReady && isExpired && <span className="dashboard-status is-expired">Introduction link expired</span>}
                   <h2>{publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h2>
                   <p>{publicShareReady ? isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Share your public Introduction, review new interests, or update your portfolio." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>
                   {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
-                <div className="dashboard-welcome-actions">
+                {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
                     <button type="button" onClick={() => setFormOpen(true)} className="dashboard-edit-action dashboard-secondary-action">
                       <Edit3 className="h-4 w-4" aria-hidden="true" /> <span>Edit details</span>
@@ -869,7 +869,7 @@ export default function DashboardClient({
                       </button>
                     )
                     : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>}
-                </div>
+                </div>}
               </section>
           )}
 
@@ -880,13 +880,14 @@ export default function DashboardClient({
               draftSaveState={draftSaveState} onContinue={openEditorAtRequiredStep}
               openingReview={openingReview} onVerification={focusLivenessCheck} />
           )}
-          {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="scroll-mt-28" tabIndex={-1}>
-            <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} />
+          {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="dashboard-liveness-slot scroll-mt-28" tabIndex={-1}>
+            <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} hideWhenVerified initiallyVerified={readinessState.verificationStatus === "verified"} />
           </div> : null}
           {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
             {viewerAccessAvailable ? (
-              <div className="dashboard-glass p-4">
-                <p className="mb-3 text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Introduction link</p>
+              <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
+                <h3 className="text-base font-semibold">Introduction link</h3>
+                <p className="dashboard-sharing-description">Share this link for your public Introduction. Protected details still need your approval.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-3 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
                     {shareUrl}
@@ -899,7 +900,14 @@ export default function DashboardClient({
                   </button>
                   <span role="status" className="sr-only">{copied ? "Introduction link copied." : ""}</span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="dashboard-sharing-actions">
+                  {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
+                  <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
+                </div>
+                <details className="dashboard-link-settings">
+                  <summary>Manage link</summary>
+                  <p>Rotating replaces the URL. Unpublishing turns off viewer access.</p>
+                  <div className="flex flex-wrap gap-2">
                   {canCreatePortfolio && (
                     <button
                       onClick={rotateLink}
@@ -918,8 +926,9 @@ export default function DashboardClient({
                     <LockKeyhole className="h-4 w-4" />
                     {unpublishing ? "Unpublishing..." : "Unpublish"}
                   </button>
-                </div>
-              </div>
+                  </div>
+                </details>
+              </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
                 <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>

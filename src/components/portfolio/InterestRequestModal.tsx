@@ -121,10 +121,25 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       message: formData.get("message"),
       useExistingProfile: Boolean(sessionEmail && existingViewerProfile),
     };
-    setRequestPayload(payload);
-    setEmail(payload.email);
     setError("");
     setPending(true);
+
+    // Load authoring validation only when needed, not on the portfolio's first paint.
+    try {
+      const { interestSubmissionSchema, interestRequestValidationMessage } = await import("@/features/interest/server/interest.contract");
+      const parsed = interestSubmissionSchema.safeParse(payload);
+      if (!parsed.success) {
+        setError(interestRequestValidationMessage(parsed.error));
+        setPending(false);
+        return;
+      }
+    } catch {
+      setError("We could not check your details. Please try again.");
+      setPending(false);
+      return;
+    }
+    setRequestPayload(payload);
+    setEmail(payload.email);
 
     if (sessionEmail) return void await sendInterest(payload);
 
@@ -348,7 +363,7 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
           <summary><span><strong>Add more details</strong><small>Location, family introduction, or message (optional)</small></span><ChevronDown aria-hidden="true" /></summary>
           <div className="interest-optional-content">
             <div className="interest-form-intro"><strong>Location</strong><span>Optional</span></div>
-            <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" defaultValue={fieldValue(draft?.country)} /><Field label="State or province" name="state" autoComplete="address-level1" defaultValue={fieldValue(draft?.state)} /><Field label="City" name="city" autoComplete="address-level2" defaultValue={fieldValue(draft?.city)} /></div>
+            <div className="interest-location-grid"><Field label="Country" name="country" maxLength={100} autoComplete="country-name" defaultValue={fieldValue(draft?.country)} /><Field label="State or province" name="state" maxLength={120} autoComplete="address-level1" defaultValue={fieldValue(draft?.state)} /><Field label="City" name="city" maxLength={120} autoComplete="address-level2" defaultValue={fieldValue(draft?.city)} /></div>
             <div className="interest-optional-copy-grid">
               <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={2} maxLength={600} defaultValue={fieldValue(draft?.familyContext)} placeholder="A few helpful details about your family" /></label>
               <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} defaultValue={fieldValue(draft?.message)} placeholder="Anything you would like the family to know" /></label>
@@ -368,12 +383,12 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
   );
 }
 
-function Field({ label, name, type = "text", required = false, autoComplete, inputMode, placeholder, pattern, title, defaultValue }: {
+function Field({ label, name, type = "text", required = false, autoComplete, inputMode, placeholder, pattern, title, defaultValue, maxLength = 180 }: {
   label: string; name: string; type?: string; required?: boolean; autoComplete?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]; placeholder?: string;
-  pattern?: string; title?: string; defaultValue?: string;
+  pattern?: string; title?: string; defaultValue?: string; maxLength?: number;
 }) {
-  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} defaultValue={defaultValue} maxLength={180} /></label>;
+  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} defaultValue={defaultValue} maxLength={maxLength} /></label>;
 }
 
 function fieldValue(value: FormDataEntryValue | null | undefined) {

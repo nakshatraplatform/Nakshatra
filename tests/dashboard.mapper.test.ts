@@ -37,6 +37,11 @@ const draft: PortfolioData = {
 };
 
 describe("dashboard portfolio mapping", () => {
+  it.each([
+    ["–40", null, 40], ["28–", 28, null], ["28–32", 28, 32], ["28-32", 28, 32], ["", null, null],
+  ])("preserves the intended bounds of age preference %s", (age_range, age_min, age_max) => {
+    expect(mapCandidateDetails({ ...draft, preferences: { age_range } }).preferences).toMatchObject({ age_min, age_max });
+  });
   it("preserves the dashboard draft while deriving relational details", () => {
     expect(mapPortfolioDraft(draft, "#123456")).toMatchObject({
       draft_data: expect.objectContaining({
