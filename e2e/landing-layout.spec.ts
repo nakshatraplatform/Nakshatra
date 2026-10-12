@@ -6,7 +6,11 @@ test("landing explains the family problem, disclosure boundary, and next step", 
   await expect(page.locator("#why")).toContainText("old files and personal details sit in different chats");
   await expect(page.locator("#privacy")).toContainText("Shared introduction");
   await expect(page.locator("#privacy")).toContainText("A shared link can be forwarded");
+  await expect(page.locator("#privacy").getByRole("heading", { name: "Complete Portfolio", exact: true })).toBeVisible();
+  await expect(page.locator("#privacy")).toContainText("Complete does not mean every field you have saved");
+  await page.locator("#privacy").screenshot({ path: testInfo.outputPath("disclosure-examples.png"), animations: "disabled" });
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
+  await page.locator("#tour-step-01").screenshot({ path: testInfo.outputPath("fictional-draft-example.png"), animations: "disabled" });
   await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
   await expect(page.locator("#samples").getByRole("link", { name: "View a sample introduction" })).toHaveAttribute("href", "/demo");
   expect(await page.locator("#samples").evaluate((element) => {

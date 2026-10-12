@@ -3,6 +3,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LandingExperience } from "../src/components/landing/LandingExperience";
+import Home from "../src/app/page";
 
 describe("LandingExperience consent-led messaging", () => {
   it("makes controlled disclosure and honest forwarding boundaries clear", () => {
@@ -49,10 +50,13 @@ describe("LandingExperience consent-led messaging", () => {
     expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Preview and prepare.*Share.*Approve/i);
     expect(screen.getByRole("heading", { name: /how vivintro works/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/create once, share carefully, and decide what comes next/i);
-    expect(document.body).toHaveTextContent(/protected access lasts up to 15 days/i);
+    expect(document.body).toHaveTextContent(/personal-link approvals last up to 15 days/i);
     expect(document.body).toHaveTextContent(/broker-sponsored actions have no separate VivIntro charge for customers/i);
     expect(document.body).toHaveTextContent(/no paid creator plan yet/i);
-    expect(document.body).toHaveTextContent(/unpublish it or rotate the link, which makes the previous link stop working/i);
+    const controls = screen.getByText("Can I change or stop sharing it?").closest("details");
+    expect(controls).toHaveTextContent(/unpublishing pauses access/i);
+    expect(controls).toHaveTextContent(/approvals that have not expired or been revoked can resume/i);
+    expect(controls).toHaveTextContent(/revoke an approval or replace the link to end that access/i);
     expect(document.body).toHaveTextContent(/confirm your email, and begin an unpublished portfolio draft/i);
   });
 
@@ -67,6 +71,36 @@ describe("LandingExperience consent-led messaging", () => {
     expect(trust).toHaveAttribute("open");
     expect(faq).toHaveAttribute("open");
     expect(faq).toHaveTextContent("original horoscope file");
+  });
+
+  it("keeps the audience boundaries and current liveness limits explicit", () => {
+    render(<LandingExperience />);
+    const publicView = screen.getByRole("heading", { name: "Public Introduction" }).closest("article");
+    const completeView = screen.getByRole("heading", { name: "Complete Portfolio" }).closest("article");
+    const ownerView = screen.getByRole("heading", { name: "Owner-only notes" }).closest("article");
+    expect(publicView).toHaveTextContent(/anyone with your personal link/i);
+    expect(completeView).toHaveTextContent(/after your approval/i);
+    expect(completeView).toHaveTextContent(/signs in, confirms their email, and requests access/i);
+    expect(ownerView).toHaveTextContent(/stay out of both views/i);
+    expect(document.querySelector("#privacy")).toHaveTextContent(/keep phone numbers or other private details out of your public story/i);
+    const liveness = screen.getByText("What does Liveness checked mean?").closest("details");
+    expect(liveness).toHaveTextContent(/does not compare your portfolio photo or verify legal identity, age, marital status/i);
+  });
+
+  it("serves the same FAQ answers to readers and structured-data consumers", () => {
+    const { container } = render(<Home />);
+    const schema = JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!);
+    const faq = schema["@graph"].find((entry: { "@type": string }) => entry["@type"] === "FAQPage");
+    const rendered = [...container.querySelectorAll("#questions details")].map((entry) => ({
+      question: entry.querySelector("summary")!.textContent,
+      answer: entry.querySelector("p")!.textContent,
+    }));
+    expect(rendered.length).toBeGreaterThan(0);
+    expect(faq.mainEntity.map((entry: { name: string; acceptedAnswer: { text: string } }) => ({
+      question: entry.name,
+      answer: entry.acceptedAnswer.text,
+    }))).toEqual(rendered);
+    expect(container.querySelectorAll("h1")).toHaveLength(1);
   });
 });
 

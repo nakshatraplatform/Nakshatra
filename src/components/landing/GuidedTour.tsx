@@ -18,7 +18,7 @@ const tourSteps = [
     number: "01",
     label: "Create",
     title: "Begin with a private draft.",
-    body: "Add your story, family background, photographs, and horoscope in a guided form. Save as you go and finish in your own time.",
+    body: "Start with your name, location, profession, and a short introduction. Add family, cultural details, and an optional horoscope as you work through the guided sections. Save and return when ready.",
     points: ["Guided sections", "Save as you go", "Private until publication"],
     icon: FilePenLine,
   },
@@ -80,6 +80,7 @@ export function GuidedTour() {
           <p className={styles.eyebrow}>A guided tour</p>
           <h2>How VivIntro works</h2>
           <p>Create once, share carefully, and decide what comes next—from a private draft to time-limited protected access.</p>
+          <p className={styles.tourExampleNote}>Illustrations below use fictional details.</p>
           <nav className={styles.tourNavigation} aria-label="Guided tour steps">
             {tourSteps.map((step) => (
               <a
@@ -127,7 +128,11 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="create" aria-label="Example private introduction draft">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Private draft</small></div>
-        <div className={styles.tourFormRows}><span /><span /><span /><span /></div>
+        <dl className={styles.tourFormRows}>
+          <div><dt>Name</dt><dd>Ananya Mehta</dd></div>
+          <div><dt>City</dt><dd>Bengaluru</dd></div>
+          <div><dt>Profession</dt><dd>Product designer</dd></div>
+        </dl>
         <div className={styles.tourSaveState}><Check aria-hidden="true" />Changes saved</div>
       </div>
     );
@@ -137,8 +142,8 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="preview" aria-label="Introduction preview choices">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Preview views</small></div>
-        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Protected</strong><strong>Owner</strong></div>
-        <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Identity status</small><strong>Ready for verification</strong></span></div>
+        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Complete Portfolio</strong></div>
+        <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Before publishing</small><strong>Review both views</strong></span></div>
       </div>
     );
   }
@@ -147,14 +152,14 @@ function TourVisual({ step }: { step: string }) {
     return (
       <div className={styles.tourVisual} data-visual="share" aria-label="Current introduction link">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Published link</small></div>
-        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>vivintro.com/p/</small><strong>3Gk7mP2xQ8vL5cN1</strong></span></div>
+        <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>Example share link</small><strong>vivintro.com/p/…</strong></span></div>
         <div className={styles.tourChannels}><span>WhatsApp</span><span>Email</span><span>Copy link</span></div>
       </div>
     );
   }
 
   return (
-    <div className={styles.tourVisual} data-visual="approve" aria-label="Verified interest request">
+    <div className={styles.tourVisual} data-visual="approve" aria-label="Illustrated email-confirmed interest request">
       <div className={styles.tourWindowBar}><span /><span /><span /><small>Interest request</small></div>
       <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Email confirmed</small><strong>Protected access requested</strong></span></div>
       <div className={styles.tourDecision}><span>Set aside</span><strong>Approve 15 days</strong></div>

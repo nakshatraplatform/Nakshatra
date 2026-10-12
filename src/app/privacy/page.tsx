@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <PolicySection title="Storage and service providers">
         <p>VivIntro currently uses Supabase for authentication, database and file storage; Vercel for hosting and privacy-focused, cookie-free traffic analytics on public marketing pages; Didit for hosted verification checks; Google when you choose Google sign-in; and Resend when transactional email delivery is enabled. Introduction links, account routes, and URL query strings are excluded from traffic analytics.</p>
         <p>The current self-created candidate flow uses Didit for camera liveness; it does not request an identity document, compare a portfolio photo, or verify legal identity. VivIntro stores consent and normalized results, not the live capture or IP reports. Separate broker verification may use different checks.</p>
-        <p>Public pages are marked not to be indexed by search engines, but this cannot prevent a person who has the link from saving or forwarding what they can view.</p>
+        <p>Personal Introduction pages are marked not to be indexed by search engines; public marketing pages can appear in search results. This indexing instruction cannot prevent a person who has an Introduction link from saving or forwarding what they can view.</p>
       </PolicySection>
 
       <PolicySection title="Retention">
@@ -36,6 +36,7 @@ export default function PrivacyPage() {
 
       <PolicySection id="corrections" title="Your choices and requests">
         <p>You can edit a draft, change appearance, unpublish an introduction, or replace its public link. Public introductions remain active until you unpublish them; approved access to protected details lasts 15 days and can be ended earlier.</p>
+        <p>Unpublishing pauses public and approved viewing but preserves requests and approvals. If you publish again, approvals that remain unexpired and unrevoked can resume. Revoke an approval or replace the public link to end that access; replacing the link also invalidates the old URL.</p>
         <p>To correct profile information, open Dashboard → Portfolio details, edit the original answer, save, then review and publish your changes. Signed-in users can download an account export or schedule account deletion from <a href="/account" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Account and Privacy</a> after a fresh sign-in. You can also request access, correction, deletion, consent withdrawal, or help with a privacy concern by emailing <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>.</p>
       </PolicySection>
 
@@ -47,7 +48,7 @@ export default function PrivacyPage() {
         <p>VivIntro is intended for adults aged 18 and over. Do not upload another person&apos;s private information or documents unless you have their permission and are authorized to manage the introduction.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 7, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 8, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }
