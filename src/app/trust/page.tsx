@@ -4,7 +4,7 @@ import { PolicyLayout } from "@/components/legal/PolicyLayout";
 import type { ReactNode } from "react";
 import styles from "./TrustPage.module.css";
 
-export const metadata: Metadata = { title: "Trust and safety", description: "How VivIntro handles identity checks, sharing, consent, and protected access.", alternates: { canonical: "/trust" } };
+export const metadata: Metadata = { title: "Trust and safety", description: "What VivIntro’s liveness check, owner approval, and sharing controls establish—and their limits.", alternates: { canonical: "/trust" } };
 
 export default function TrustPage() {
   return <PolicyLayout eyebrow="Trust and safety" title="What VivIntro can and cannot protect." summary="VivIntro limits access to protected details. It cannot stop someone from saving information they can already see.">
@@ -13,7 +13,7 @@ export default function TrustPage() {
       <p>This is not a legal-ID check, a check of profile statements, or an endorsement of a match. VivIntro records consent and result, not the live camera capture.</p>
     </TrustDisclosure>
     <TrustDisclosure title="Sharing boundary"><p>Anyone who receives or is forwarded a personal link can open its public Introduction. There is no public directory, and Introduction pages are marked not to appear in search results. Contact details and protected documents require the owner’s approval on a personal link. People can save or photograph information they can see, including details after approval. Ending access cannot erase those copies.</p></TrustDisclosure>
-    <TrustDisclosure title="Access and control"><p>Owners can unpublish or rotate a personal public link at any time. Approved access to protected details lasts up to 15 days and can be ended earlier. Owners can approve or set aside each personal-link request privately.</p></TrustDisclosure>
+    <TrustDisclosure title="Access and control"><p>Owners can unpublish or rotate a personal public link at any time. Approved access to protected details lasts up to 15 days and can be ended earlier. Owners can approve or set aside each personal-link request privately.</p><p>Unpublishing pauses access. If the owner publishes again, approvals that have not expired or been revoked can resume. Revoking an approval or replacing the link ends that access; replacing the link also stops the old URL from working. Owners can renew an approval for another 15 days.</p></TrustDisclosure>
     <TrustDisclosure title="Service providers"><p>VivIntro uses service providers for hosting, authentication, database and storage, identity checks, and transactional email. See the Privacy Policy for the current list and contact hello@vivintro.com with a privacy or grievance request.</p></TrustDisclosure></div>
   </PolicyLayout>;
 }

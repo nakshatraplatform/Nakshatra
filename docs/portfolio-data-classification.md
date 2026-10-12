@@ -45,9 +45,14 @@ snapshot builders, token-scoped database functions, RLS, and Storage policies.
    explicitly reopened before it can be approved later.
 3. Complete Portfolio grants expire after 15 days. Owners can renew an active or expired
    grant for another 15 days, or revoke it immediately.
-4. Rotating a link or unpublishing a portfolio revokes every active grant and
-   closes its approved requests. Republishing requires a fresh request and
-   approval; ordinary published-data updates preserve still-valid grants.
+4. Rotating a link revokes every active grant and closes its approved requests.
+   Unpublishing suspends portfolio resolution but preserves requests and grants;
+   republishing can restore grants that remain unrevoked and unexpired.
+   Ordinary published-data updates also preserve still-valid grants. This
+   follows the current unpublish transaction in
+   `20260911120000_b2c_pilot_launch_enforcement.sql` and persistent publication in
+   `20260921120000_persistent_public_introduction_links.sql`, retained by the
+   later server-owned publication transaction.
 5. Portfolio expiry blocks public and approved access. Renewing the portfolio
    link restores access only for grants that are themselves still active.
 6. The Complete Portfolio includes the approved identity, astrology, family, education,
