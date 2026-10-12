@@ -4,13 +4,14 @@
 
 - Linear: https://linear.app/phoenix-works/issue/NAK-72
 - Branch: `feat/nak-72-evidence-led-landing`.
-- Current base: `e7b0d74` (fetched `origin/main`, October 8, 2026).
+- Current base: `fdc948a` (fetched `origin/main`, October 12, 2026).
 - Mode: implement and review. Significant public trust/content contract.
 - Scope: homepage examples, public explanations and metadata. No changes to
   authorization, provider workflows, publication eligibility, billing, storage,
   database objects, deployment configuration or retention periods.
-- Status: October 8 reconciliation implemented and locally verified. Remote
-  push, PR and deployment remain separate actions.
+- Status: October 8 reconciliation rebased onto latest main on October 12;
+  integrated local verification and fresh review passed. User authorized the
+  branch push; PR, hosted CI, merge and deployment remain separate actions.
 - Original cc94 package/lint-test edits remain outside this worktree.
 
 ## Intent and reconciliation
@@ -150,3 +151,44 @@ October 8 results:
 Real Didit camera sessions, provider deletion, email delivery, deployed indexing,
 rankings, conversions, and production behavior are not tested by this content
 work. Existing deployment/release gates remain with their owning issues.
+
+## October 12 main integration
+
+- Rebased the local NAK-72 commit onto fetched main `fdc948a`. The sole conflict
+  was adjacent feature entries in PROJECT.md; retained both NAK-105 and NAK-72.
+  NAK-72 application and test files are byte-identical to the October 8 commit.
+- Main supplies the completed dependency remediation: deleted expired exception,
+  pinned ESLint root-discovery adapter, updated lockfile and exception-free audit.
+  No exception extension, dependency downgrade or new NAK-72 application behavior.
+- Clean `npm ci --ignore-scripts` passed. `npm run security:audit` passed with
+  zero affected packages, no high/critical findings and no exceptions. This closes
+  the expired-exception blocker through main's remediation, not renewed acceptance.
+- Passed: lint (two existing OpenGraph unused-disable warnings), typecheck,
+  database fixture smoke check and production Next.js 16.3.8 build (80 generated
+  pages) with synthetic loopback public configuration.
+- Passed: `npx vitest run --coverage --maxWorkers=2` (1,195 tests / 166 files) and
+  all 57 feature coverage gates. Statements 85.70%, branches 79.42%, functions
+  84.91%, lines 89.23%. An initial npm-script invocation was interrupted before
+  completion because its worker argument applied to the final coverage command;
+  the explicit bounded Vitest command above is the completed passing run.
+- Passed: `npm run test:e2e -- e2e/landing-layout.spec.ts
+  e2e/public-trust-clarity.spec.ts e2e/critical-paths.spec.ts --workers=1`:
+  82 cases across desktop/tablet/mobile; two existing duplicate-matrix skips.
+  No retries, assertion edits or timeout increases. Desktop/mobile disclosure
+  examples and 1366px laptop-tour screenshots were visually inspected.
+- Fresh-context reviewer `nak72_integration_review` returned
+  `no_material_findings` against snapshot
+  `5f703d322607e0731a9ad080a5a34c2a7cf845173259b75f7920258fd32db0ac`.
+  Start/end provenance passed; all 910 source files matched the isolated copy.
+  Reviewer independently passed 78 focused tests / eight files; coordinator
+  browser/coverage/build evidence remains separate. Exact model identifier is
+  unknown, so this is not a claimed cross-model review. Report:
+  `/tmp/nak72-oct12-integration-review-report.md`. Subsequent edits only record
+  final evidence here and in PROJECT.md; app/tests/dependencies remain unchanged.
+- Whitespace check passed. Graphify update is blocked because its executable is
+  unavailable; no graph exists in this worktree. Historical October 8 outcomes
+  above are separate from these integrated-run results.
+- No database migration is introduced by the NAK-72 diff. Existing main migrations
+  are retained unchanged; their hosted database/deployment gates remain separate.
+- User authorized pushing the compliant NAK-72 branch. No PR, main merge,
+  production configuration change or deployment is requested here.

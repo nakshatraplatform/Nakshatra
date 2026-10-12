@@ -20,6 +20,9 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [NAK-105 dashboard and geography clarity](features/dashboard-geography-clarity.md): direct unpublished-owner editing, explicit active-link sharing, one next-step journey, revision-bound remembered preview openings, canonical current-residence IDs and grouped field order. The authorized review extension resolved inspected stale-tab and manual-country findings. Latest-main integration retains NAK-73 authoritative liveness refresh on the single panel; bounded integration review and hosted database/CI checks are pending. Schema-first protected deployment precedes the dependent app merge. No bypass is added.
 
 - [NAK-72 product evidence on the landing page](features/nak-72-evidence-led-landing.md): reconciles the October 3 content draft with the merged open-signup, single-Introduction and liveness-only contracts; preserves NAK-102's approved hero/layout while making disclosure examples, FAQ/schema and access explanations concrete.
+  October 12 integration onto main `fdc948a` passes exception-free audit, 1,195
+  unit tests, 57 coverage gates, 82 browser cases, lint/typecheck/build and fresh
+  review. Hosted CI, PR/merge and deployment remain separate from local evidence.
 
 - [NAK-73 Didit recovery contract repair](features/candidate-liveness-recovery.md): shared candidate expanded-decision boundary, nullable terminal URL handling, exact metadata correlation, contract-error deferral, same-tab Start/Resume, privacy-safe support references and worker failure categories. Post-Start status outages now retain a created/checking-status recovery state without duplicate creation or fabricated link eligibility; local checks and fresh independent correction review pass, resolving NAK73-V1. No schema or env change. Matching app/worker rollout, clean hosted database CI and real application-backed Sandbox validation remain release gates.
 
