@@ -176,17 +176,18 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   expect(accents).toEqual({
     background: "#f7f5ef",
     primary: "#213f59",
-    teal: "#477b77",
+    teal: "#42736f",
     gold: "#8f6628",
   });
 
-  const privacyControl = portfolio.locator(".portfolio-brand");
+  const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
   await expect(privacyControl).toBeVisible();
+  await expect(privacyControl).toHaveAttribute("href", "#main-content");
   await privacyControl.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(privacyControl).toBeFocused();
-  await expect(privacyControl).toHaveCSS("outline-width", "2px");
+  await expect(privacyControl).toHaveCSS("outline-width", "3px");
   await expect(page.locator(".portfolio-long-copy").first()).toHaveCSS("overflow-wrap", "anywhere");
 
   if ((page.viewportSize()?.width || 0) > 720) {

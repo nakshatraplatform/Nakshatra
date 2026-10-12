@@ -8,6 +8,7 @@ import {
 } from "@/features/portfolio/template";
 import { getCelestialBackground } from "@/features/portfolio/celestial-theme";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { formListValues } from "@/features/portfolio/form-contract";
 
 const EMPTY_VALUES = new Set(["", undefined, null]);
 
@@ -153,8 +154,8 @@ export function mapCandidateDetails(data: PortfolioData) {
       diet: nullable(data.lifestyle?.diet),
       smoking: nullable(data.lifestyle?.smoking),
       drinking: nullable(data.lifestyle?.drinking),
-      languages: commaSeparatedList(data.lifestyle?.languages),
-      hobbies: commaSeparatedList(data.lifestyle?.hobbies),
+      languages: formListValues(data.lifestyle?.languages),
+      hobbies: formListValues(data.lifestyle?.hobbies),
       // Retired from the product. Clear any legacy relational value on the next save.
       music: null,
       lifestyle_payload: {
