@@ -159,12 +159,16 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","r
 select ok(not public.can_read_approved_photo('a1000000-0000-4000-8000-000000000001/interest-fixture/approved_only.webp'),'foreign viewer cannot read approved originals');
 
 reset role;
-update public.reveal_grants set expires_at=now()-interval '1 second' where viewer_user_id='a1000000-0000-4000-8000-000000000003';
+update public.reveal_grants
+set created_at=now()-interval '2 days', expires_at=now()-interval '1 day'
+where viewer_user_id='a1000000-0000-4000-8000-000000000003';
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
 select ok(not public.can_read_approved_photo('a1000000-0000-4000-8000-000000000001/interest-fixture/approved_only.webp'),'expired grant cannot read protected originals');
 reset role;
-update public.reveal_grants set expires_at=now()+interval '15 days' where viewer_user_id='a1000000-0000-4000-8000-000000000003';
+update public.reveal_grants
+set created_at=now(), expires_at=now()+interval '15 days'
+where viewer_user_id='a1000000-0000-4000-8000-000000000003';
 
 reset role;
 update public.portfolios set draft_data=draft_data || '{"career":{"title":"Engineer"},"lifestyle":{"values_statement":"Kindness and mutual respect"}}'::jsonb where user_id='a1000000-0000-4000-8000-000000000002';
