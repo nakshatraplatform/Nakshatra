@@ -1032,6 +1032,9 @@ isOneToOne: false
 "can_manage_portfolio":
 { Args: { "p_portfolio_id": string }; Returns: boolean
                            },
+"can_read_approved_photo":
+{ Args: { "p_path": string }; Returns: boolean
+                           },
 "can_read_organization_membership":
 { Args: { "p_member_user_id": string,"p_organization_id": string }; Returns: boolean
                            },
@@ -1182,6 +1185,9 @@ isOneToOne: false
 "get_identity_verification_link_status":
 { Args: { "p_token_hash": string }; Returns: Json
                            },
+"get_interest_details":
+{ Args: { "p_request_id": string }; Returns: Json
+                           },
 "get_owner_dashboard_review_snapshot":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -1220,12 +1226,12 @@ isOneToOne: false
 "list_dashboard_interests":
 { Args: { "p_limit"?: number }; Returns: Json
                            },
-"list_interest_location_options": { Args: { p_level: string; p_country?: string; p_region?: string; p_query?: string }; Returns: Json },
-"get_interest_details": { Args: { p_request_id: string }; Returns: Json },
-"list_interest_history": { Args: { p_offset?: number; p_limit?: number }; Returns: Json },
-"submit_interest_details": { Args: { p_details: Json }; Returns: boolean },
-"submit_existing_interest": { Args: { p_share_token: string; p_family_context?: string; p_message?: string }; Returns: boolean },
-"can_read_approved_photo": { Args: { p_path: string }; Returns: boolean },
+"list_interest_history":
+{ Args: { "p_limit"?: number,"p_offset"?: number }; Returns: Json
+                           },
+"list_interest_location_options":
+{ Args: { "p_country"?: string,"p_level": string,"p_query"?: string,"p_region"?: string }; Returns: Json
+                           },
 "list_pilot_access_requests":
 { Args: { "p_limit"?: number,"p_status"?: string }; Returns: {
               "display_name": string,"phone_e164": string,"request_ref": string,"review_note": string,"reviewed_at": string,"status": string,"submitted_at": string,"verified_email": string
@@ -1424,6 +1430,12 @@ isOneToOne: false
                            },
 "submit_creator_onboarding_feedback_v2":
 { Args: { "p_comment"?: string,"p_ease_rating": number,"p_hardest_steps": (string)[],"p_liked_aspects": (string)[] }; Returns: Json
+                           },
+"submit_existing_interest":
+{ Args: { "p_family_context"?: string,"p_message"?: string,"p_share_token": string }; Returns: boolean
+                           },
+"submit_interest_details":
+{ Args: { "p_details": Json }; Returns: boolean
                            },
 "submit_pilot_access_request":
 { Args: { "p_contact_consent_version": string,"p_display_name": string,"p_idempotency_key": string,"p_phone_e164": string }; Returns: Json
