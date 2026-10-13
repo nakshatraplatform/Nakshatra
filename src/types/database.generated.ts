@@ -1220,6 +1220,12 @@ isOneToOne: false
 "list_dashboard_interests":
 { Args: { "p_limit"?: number }; Returns: Json
                            },
+"list_interest_location_options": { Args: { p_level: string; p_country?: string; p_region?: string; p_query?: string }; Returns: Json },
+"get_interest_details": { Args: { p_request_id: string }; Returns: Json },
+"list_interest_history": { Args: { p_offset?: number; p_limit?: number }; Returns: Json },
+"submit_interest_details": { Args: { p_details: Json }; Returns: boolean },
+"submit_existing_interest": { Args: { p_share_token: string; p_family_context?: string; p_message?: string }; Returns: boolean },
+"can_read_approved_photo": { Args: { p_path: string }; Returns: boolean },
 "list_pilot_access_requests":
 { Args: { "p_limit"?: number,"p_status"?: string }; Returns: {
               "display_name": string,"phone_e164": string,"request_ref": string,"review_note": string,"reviewed_at": string,"status": string,"submitted_at": string,"verified_email": string

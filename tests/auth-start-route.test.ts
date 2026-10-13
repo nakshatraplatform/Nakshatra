@@ -75,6 +75,12 @@ describe("authentication start route", () => {
     });
     expect(consumeRateLimit).toHaveBeenCalledWith(expect.anything(), expect.any(Request), "auth_google");
   });
+  it("uses a registered email only as an OAuth login hint, never an identity lookup", async () => {
+    expect((await POST(request({ method: "google", email: "Mira@Example.test", redirect: "/p/token#portfolio-interest" }))).status).toBe(200);
+    expect(signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ options: expect.objectContaining({ queryParams: {login_hint:"mira@example.test"} }) }));
+    expect((await POST(request({ method: "google", email: "invalid" }))).status).toBe(400);
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+  });
 
   it("starts bounded viewer email verification without assigning an exclusive role", async () => {
     const response = await POST(request({ method: "email_otp", email: "Reader@Example.com", redirect: "/p/token" }));

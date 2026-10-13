@@ -6,6 +6,10 @@ set search_path = public, extensions;
 
 select plan(30);
 
+-- Transaction-only access for legacy engine characterization, not a production
+-- grant. The new interest suite checks that real clients cannot use this RPC.
+grant execute on function public.submit_public_interest(text,text,text,text,text,text,text,text,text,text,text,text) to authenticated;
+
 select pg_temp.create_auth_actor('11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111112', 'owner@perimeter.test');
 select pg_temp.create_auth_actor('22222222-2222-4222-8222-222222222222', '22222222-2222-4222-8222-222222222223', 'viewer@perimeter.test');
 

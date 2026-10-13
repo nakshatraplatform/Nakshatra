@@ -5,6 +5,17 @@ import { PortfolioNavigation } from "../src/components/templates/PortfolioNaviga
 
 describe("portfolio section disclosure", () => {
   const sections = [{ href: "#main-content", label: "Overview" }, { href: "#family", label: "Family" }];
+  it("places the icon CTA before the menu with a readable, dismissible tooltip", () => {
+    render(<PortfolioNavigation sections={sections} showInterest />);
+    const interest = screen.getByRole("link", { name: "Show Interest" });
+    const trigger = screen.getByRole("button", { name: "Open portfolio sections" });
+    expect(interest.textContent).toBe("");
+    expect(interest.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(interest).toHaveAccessibleDescription("Show Interest");
+    fireEvent.focus(interest);
+    fireEvent.keyDown(interest,{key:"Escape"});
+    expect(interest.parentElement).toHaveAttribute("data-tip-dismissed","true");
+  });
   it("opens by keyboard, closes with Escape and returns focus to the trigger", () => {
     render(<PortfolioNavigation sections={sections} showInterest />);
     const trigger = screen.getByRole("button", { name: "Open portfolio sections" });

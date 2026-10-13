@@ -49,7 +49,7 @@ test("viewer chrome has predictable sections, compact header and readable polici
       await page.goto(`/p/${token}`);
       const header = page.getByRole("banner");
       const menu = header.getByRole("button");
-      const interest = header.getByRole("link", { name: "Show interest", exact: true });
+      const interest = header.getByRole("link", { name: "Show Interest", exact: true });
       await expect(interest).toBeVisible();
       const headerBox = (await header.boundingBox())!;
       expect(headerBox.height).toBeLessThanOrEqual(80);

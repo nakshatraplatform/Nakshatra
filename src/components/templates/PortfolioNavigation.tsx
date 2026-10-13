@@ -17,12 +17,15 @@ const initialHash = () => "#main-content";
 /** Presentation-only navigation: destinations come from already rendered chapters. */
 export function PortfolioNavigation({ sections, showInterest }: { sections: PortfolioSectionLink[]; showInterest: boolean }) {
   const [open, setOpen] = useState(false);
+  const [tipDismissed, setTipDismissed] = useState(false);
   const menuId = useId();
+  const interestTipId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const hash = useSyncExternalStore(subscribeToHash, currentHash, initialHash);
 
   return (
     <header className={styles.header} onKeyDown={event => {
+      if (event.key === "Escape") setTipDismissed(true);
       if (event.key === "Escape" && open) {
         event.preventDefault();
         setOpen(false);
@@ -33,6 +36,7 @@ export function PortfolioNavigation({ sections, showInterest }: { sections: Port
     }}>
       <div className={styles.headerInner}>
         <VivIntroBrand href="#main-content" variant="horizontal" className={styles.brand} />
+        {showInterest && <span className={styles.interestAction} data-tip-dismissed={tipDismissed} onMouseEnter={() => setTipDismissed(false)} onFocus={() => setTipDismissed(false)}><a className={styles.interest} href="#portfolio-interest" aria-label="Show Interest" aria-describedby={interestTipId} onClick={() => setOpen(false)}><Heart aria-hidden="true" /></a><span id={interestTipId} role="tooltip" className={styles.tooltip}>Show Interest</span></span>}
         <button ref={trigger} type="button" className={styles.menuButton} aria-label={open ? "Close portfolio sections" : "Open portfolio sections"} aria-expanded={open} aria-controls={menuId} onClick={() => setOpen(value => !value)}>
           {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
@@ -42,7 +46,6 @@ export function PortfolioNavigation({ sections, showInterest }: { sections: Port
             document.getElementById(section.href.slice(1))?.focus({ preventScroll: true });
           }}>{section.label}</a>)}
         </nav>
-        {showInterest && <a className={styles.interest} href="#portfolio-interest" onClick={() => setOpen(false)}><Heart aria-hidden="true" />Show interest</a>}
       </div>
     </header>
   );

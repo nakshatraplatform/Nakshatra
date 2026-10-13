@@ -9,6 +9,22 @@ import {
   requireSameOrigin,
 } from "@/lib/api/request-security";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
+import { interestDetailsSchema } from "@/features/interest/server/interest-dashboard.contract";
+
+/** Exact-ID owner-only read; no dependency on dashboard queue limits. */
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const auth = await getApiUser();
+  if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
+  const rateLimited = await enforceRateLimit(auth.supabase, request, "interest_decision");
+  if (rateLimited) return rateLimited;
+  const { id } = await context.params;
+  if (!z.uuid().safeParse(id).success) return NextResponse.json({ error: "Interest not found." }, { status: 404 });
+  const { data, error } = await Promise.resolve(auth.supabase.rpc("get_interest_details", { p_request_id: id })).catch(() => ({ data: null, error: { code: "NETWORK_FAILURE" } }));
+  const parsed = interestDetailsSchema.safeParse(data);
+  if (error) return NextResponse.json({ error: "We could not load these details. Try again." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+  if (!parsed.success) return NextResponse.json({ error: "Interest not found." }, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ details: parsed.data }, { headers: { "Cache-Control": "private, no-store" } });
+}
 
 const decisionSchema = z.object({
   decision: z.enum(["approved", "rejected", "reopened"]),

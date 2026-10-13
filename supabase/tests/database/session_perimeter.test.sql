@@ -95,6 +95,9 @@ select ok(
       and has_function_privilege('authenticated', function_record.oid, 'EXECUTE')
       and function_record.oid not in (
         'public.is_current_session_active()'::regprocedure,
+        -- Bounded public reference directory and boolean Storage capability.
+        'public.list_interest_location_options(text,text,text,text)'::regprocedure,
+        'public.can_read_approved_photo(text)'::regprocedure,
         'public.is_published_portfolio(uuid)'::regprocedure,
         'public.resolve_public_portfolio(text)'::regprocedure,
         'public.resolve_public_portfolio_status(text)'::regprocedure,

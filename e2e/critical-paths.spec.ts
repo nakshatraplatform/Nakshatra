@@ -234,7 +234,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   }
 });
 
-test("interest popup stays in view and keeps extra details optional", async ({ page }) => {
+test("interest popup stays in view and requires decision-making details", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   await page.getByRole("button", { name: "Show interest" }).click();
 
@@ -256,17 +256,9 @@ test("interest popup stays in view and keeps extra details optional", async ({ p
   expect(bounds.top).toBeGreaterThanOrEqual(0);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
-  await dialog.getByText("Add more details").click();
-  await expect(dialog.getByLabel("Country", { exact: true })).not.toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("State or province")).not.toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("City")).not.toHaveAttribute("required", "");
-  const optionalLayout = await dialog.locator(".interest-optional").evaluate((element) => ({
-    open: element.hasAttribute("open"),
-    clientHeight: element.clientHeight,
-    scrollHeight: element.scrollHeight,
-  }));
-  expect(optionalLayout.open).toBe(true);
-  expect(optionalLayout.scrollHeight).toBeLessThanOrEqual(optionalLayout.clientHeight + 1);
+  for (const name of ["Your location country", "Your location state", "Your location city", "Family context", "Message"]) await expect(dialog.getByLabel(name)).toHaveAttribute("required", "");
+  const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
+  expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);
   await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();
 });
 
@@ -343,9 +335,10 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(page.locator(".portfolio-mobile-interest")).toHaveCount(0);
   await expect(page.locator(".portfolio-hero-actions")).toHaveCount(0);
 
-  const headerAction = page.getByRole("banner").getByRole("link", { name: "Show interest", exact: true });
+  const headerAction = page.getByRole("banner").getByRole("link", { name: "Show Interest", exact: true });
   await expect(headerAction).toBeVisible();
-  await expect(headerAction).toHaveText("Show interest");
+  await expect(headerAction).toHaveAttribute("aria-label", "Show Interest");
+  await expect(headerAction).toHaveText("");
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
   expect((await headerAction.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();

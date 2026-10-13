@@ -3,7 +3,7 @@ import styles from "./PortfolioChrome.module.css";
 
 export function PortfolioFooter({ livenessChecked }: { livenessChecked: boolean }) {
   return (
-    <footer className={styles.footer}>
+    <footer className={styles.footer} data-portfolio-footer>
       <div className={styles.footerIdentity}>
         <VivIntroBrand variant="horizontal" decorative displayWidth={132} />
         <p>One introduction, shared with care.</p>

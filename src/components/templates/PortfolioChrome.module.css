@@ -54,13 +54,19 @@
   touch-action: manipulation;
 }
 .interest {
-  margin-left: auto;
-  padding: 0 16px;
+  width: 44px;
+  padding: 0;
   white-space: nowrap;
   background: var(--portfolio-primary);
   color: var(--portfolio-background);
   text-decoration: none;
 }
+.interestAction { position: relative; margin-left: auto; order: 2; flex: none; }
+.tooltip { position: absolute; top: calc(100% + 8px); right: 0; padding: 8px 12px; border-radius: 6px; background: var(--portfolio-primary); color: var(--portfolio-background); font-size: 13px; white-space: nowrap; visibility: hidden; }
+.interestAction:hover .tooltip, .interestAction:focus-within .tooltip { visibility: visible; }
+.interestAction[data-tip-dismissed="true"] .tooltip { visibility: hidden; }
+.menuButton { order: 3; }
+.sections { order: 1; }
 .interest svg, .menuButton svg { width: 18px; height: 18px; flex: none; }
 .menuButton { display: none; background: transparent; color: var(--portfolio-primary); width: 44px; cursor: pointer; }
 .header a:focus-visible, .menuButton:focus-visible, .footer a:focus-visible {
@@ -84,8 +90,12 @@
 .footerNote { grid-column: 1 / -1; display: flex; align-items: center; gap: 24px; padding-top: 16px; border-top: 1px solid var(--portfolio-border); }
 .footerNote p { max-width: 80ch; }
 .footerNote a { margin-left: auto; white-space: nowrap; }
+.backToTop { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 20; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--portfolio-border); border-radius: 999px; background: var(--portfolio-surface); color: var(--portfolio-primary); box-shadow: 0 4px 16px rgb(0 0 0 / .12); font-weight: 650; cursor: pointer; }
+.backToTop svg { width: 18px; height: 18px; }
+.backToTop:focus-visible { outline: 3px solid var(--portfolio-primary); outline-offset: 3px; }
 @media print {
   .header { display: none; }
+  .backToTop { display: none; }
 }
 @media (hover: hover) and (pointer: fine) {
   .sections a:hover, .menuButton:hover { background: var(--portfolio-surface-soft); }
@@ -95,7 +105,8 @@
 @media (max-width: 1099px) {
   .headerInner { min-height: 64px; gap: 12px; }
   .headerInner .brand > span { width: 132px; }
-  .menuButton { display: inline-flex; margin-left: auto; order: 3; }
+  .menuButton { display: inline-flex; margin-left: 0; order: 3; }
+  .brand { margin-right: auto; }
   .interest { margin-left: 0; }
   .sections {
     display: none;
@@ -116,7 +127,7 @@
 @media (max-width: 600px) {
   .headerInner { width: calc(100% - 24px); gap: 8px; }
   .headerInner .brand > span { width: 96px; }
-  .interest { padding: 0 10px; gap: 6px; font-size: 13px; }
+  .interest { padding: 0; }
   .footer { width: calc(100% - 32px); grid-template-columns: 1fr; gap: 16px; }
   .policies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
   .policies a { line-height: 1.5; }

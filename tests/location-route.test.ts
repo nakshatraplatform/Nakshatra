@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getApiUser = vi.hoisted(() => vi.fn());
 const enforceRateLimit = vi.hoisted(() => vi.fn());
+const createClient = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/supabase/server", () => ({ createClient }));
 vi.mock("../src/lib/auth", () => ({ getApiUser }));
 vi.mock("../src/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 
@@ -25,12 +27,15 @@ describe("location reference route", () => {
     enforceRateLimit.mockResolvedValue(null);
   });
 
-  it("requires authentication and validates query combinations", async () => {
+  it("offers bounded reference-only options to a new visitor and validates queries", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ country_code: "US", name: "United States" }], error: null });
+    createClient.mockResolvedValue({ rpc });
     getApiUser.mockResolvedValueOnce({ status: "missing_session" });
     expect(
       (await GET(new Request("http://local/api/reference/locations?level=countries")))
         .status
-    ).toBe(401);
+    ).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("list_interest_location_options", { p_level: "countries" });
 
     getApiUser.mockResolvedValueOnce({
       status: "authenticated",
