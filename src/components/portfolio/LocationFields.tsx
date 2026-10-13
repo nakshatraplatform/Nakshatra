@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useEffect, useId, useMemo, useState } from "react";
 import {
   getLocationReferences,
@@ -50,6 +52,7 @@ export function LocationFields({
 }) {
   const [countries, setCountries] = useState<CountryReference[]>(FALLBACK_COUNTRIES);
   const listId = useId();
+  const [countriesLoaded, setCountriesLoaded] = useState(false);
   const [manualRegion, setManualRegion] = useState(false);
   const [manualCountry, setManualCountry] = useState(false);
   const [chooseCountryDirectory, setChooseCountryDirectory] = useState(false);
@@ -92,7 +95,9 @@ export function LocationFields({
       new URLSearchParams({ level: "countries" }),
       controller.signal
     ).then((options) => {
+      if (controller.signal.aborted) return;
       if (options.length) setCountries(options);
+      setCountriesLoaded(true);
     });
     return () => controller.abort();
   }, []);
@@ -104,7 +109,7 @@ export function LocationFields({
       new URLSearchParams({ level: "regions", country: countryCode }),
       controller.signal
     ).then((options) => {
-      setRegionResult({ countryCode, options });
+      if (!controller.signal.aborted) setRegionResult({ countryCode, options });
     });
     return () => controller.abort();
   }, [countryCode]);
@@ -120,7 +125,7 @@ export function LocationFields({
       });
       if (regionCode) params.set("region", regionCode);
       void getLocationReferences<CityReference>(params, controller.signal).then(
-        (options) => setCityResult({ queryKey: cityQueryKey, options })
+        (options) => { if (!controller.signal.aborted) setCityResult({ queryKey: cityQueryKey, options }); }
       );
     }, 200);
     return () => {
@@ -179,6 +184,7 @@ export function LocationFields({
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
+      {(!countriesLoaded || (countryCode && !regionsLoaded) || (countryCode && citySearch.trim().length >= 2 && cityResult?.queryKey !== cityQueryKey)) && <LoadingStatus compact className="sm:col-span-3" state="searching" title={countryCode && citySearch.trim().length >= 2 ? "Finding city suggestions" : "Loading the location directory"} />}
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
         <span>{labels.country}{requireCountryAndCity && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>
         {showManualCountry ? <>

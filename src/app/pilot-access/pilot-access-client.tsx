@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -172,7 +174,7 @@ export default function PilotAccessClient({ initialStep = "loading", initialStat
         <section className="rounded-xl border border-[light-dark(#d0d3ce,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] p-6 shadow-[0_18px_50px_rgb(29_52_58/0.08)] sm:p-10">
           <div className="mb-7 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
           {step === "loading" ? (
-            <p role="status" className="py-16 text-center text-[light-dark(#475569,var(--app-dark-muted))]">Preparing your invitation request…</p>
+            <LoadingStatus title="Preparing your invitation request" detail="Checking your current access." className="py-12" state="connecting" />
           ) : step === "result" && resultCopy ? (
             <div className="text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] text-[light-dark(#315f57,var(--app-dark-accent))]"><ResultIcon aria-hidden className="h-6 w-6" /></span>
@@ -190,6 +192,7 @@ export default function PilotAccessClient({ initialStep = "loading", initialStat
               <h1 className="mt-2 font-[family-name:var(--font-portfolio-display)] text-4xl font-medium leading-tight sm:text-5xl">Request your VivIntro invitation.</h1>
               <p className="mt-4 max-w-xl leading-7 text-[light-dark(#475569,var(--app-dark-muted))]">We are inviting a small number of creators at a time. Confirm your email and tell us who you are; we will contact you when a pilot place is available.</p>
 
+              {busy && <LoadingStatus compact className="mt-5" state="connecting" title={step === "verify" ? "Confirming your email" : step === "details" ? "Sending your invitation request" : "Preparing secure sign-in"} />}
               {error ? <div role="alert" className="mt-6 border-l-4 border-[light-dark(#b7483e,var(--app-dark-border))] bg-[light-dark(#f8e6e2,var(--app-dark-danger-surface))] p-4 text-sm text-[light-dark(#7d302b,var(--app-dark-danger))]">{error}</div> : null}
 
               {step === "identify" ? (

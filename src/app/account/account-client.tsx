@@ -1,10 +1,12 @@
 "use client";
 
+import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useState } from "react";
-import { Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
+import { Download, KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
 import { emptyAccountProfile, type AccountProfile } from "@/features/account/profile";
 import {
@@ -162,6 +164,8 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
           {error ? <p className="account-notice is-error">{error}</p> : null}
         </div>
 
+        {action && !confirmationOpen && <LoadingStatus compact className="my-4" title={action === "profile" ? "Saving your account names" : action === "export" ? "Preparing your account download" : action === "sessions" ? "Signing out other devices" : action === "reauth" ? "Preparing secure sign-in" : action === "cancel" ? "Cancelling scheduled deletion" : "Scheduling account deletion"} />}
+
         <section className="account-settings-group" aria-labelledby="account-profile-heading">
           <h2 id="account-profile-heading">Your account profile</h2>
           <p>These names identify the account holder. Edit your portfolio separately from the dashboard.</p>
@@ -192,7 +196,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               <p>Export your profile, portfolio, media inventory, memberships, and your own activity as JSON.</p>
             </div>
             <button className="dashboard-secondary-action" onClick={downloadExport} disabled={action !== null}>
-              {action === "export" ? <LoaderCircle className="animate-spin" /> : <Download />}
+              {action === "export" ? <LoadingOrb size={20} /> : <Download />}
               Download
             </button>
           </section>
@@ -203,7 +207,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               <p>End every other active session. This browser stays signed in.</p>
             </div>
             <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={action !== null}>
-              {action === "sessions" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
+              {action === "sessions" ? <LoadingOrb size={20} /> : <KeyRound />}
               Sign out others
             </button>
           </section>
@@ -225,7 +229,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
             </div>
             {deletionPending ? (
               <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={action !== null}>
-                {action === "cancel" ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
+                {action === "cancel" ? <LoadingOrb size={20} /> : <ShieldCheck />}
                 Cancel deletion
               </button>
             ) : deletionProcessing ? (
@@ -248,6 +252,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
             </button>
             <p className="site-eyebrow">Permanent action</p>
             <h2 id="confirm-delete-heading">Schedule account deletion?</h2>
+            {action && <LoadingStatus compact className="my-4" title={action === "reauth" ? "Preparing secure sign-in" : "Scheduling account deletion"} />}
             <p>Your links and approved access stop working now. After 24 hours, your account and stored files are permanently removed.</p>
             <p>First complete a fresh sign-in. Your confirmation is submitted only after that sign-in succeeds.</p>
             <fieldset>
@@ -277,7 +282,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
                 onClick={startDeletionReauth}
                 disabled={!reauthMethod || action !== null}
               >
-                {action === "reauth" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
+                {action === "reauth" ? <LoadingOrb size={20} /> : <KeyRound />}
                 Continue to fresh sign-in
               </button>
             ) : (
@@ -296,7 +301,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               onClick={requestDeletion}
               disabled={!reauthComplete || confirmation !== "DELETE" || action !== null}
             >
-              {action === "delete" ? <LoaderCircle className="animate-spin" /> : <Trash2 />}
+              {action === "delete" ? <LoadingOrb size={20} /> : <Trash2 />}
               Schedule deletion
             </button>
           </section>

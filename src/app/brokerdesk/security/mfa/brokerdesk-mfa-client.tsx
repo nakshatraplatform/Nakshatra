@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -29,27 +31,34 @@ export function BrokerdeskMfaClient() {
   useEffect(() => {
     let active = true;
     async function inspect() {
-      const supabase = createClient();
-      const [assurance, factors] = await Promise.all([
-        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-        supabase.auth.mfa.listFactors(),
-      ]);
-      if (!active) return;
-      if (assurance.error || factors.error) {
-        setError("We could not load the security check. Please try again.");
-        setStage("ready");
-        return;
-      }
-      if (assurance.data.currentLevel === "aal2") {
-        setStage("complete");
-        return;
-      }
-      const verified = factors.data.totp.find((factor) => factor.status === "verified");
-      if (verified) {
-        setFactorId(verified.id);
-        setStage("verify");
-      } else {
-        setStage("ready");
+      try {
+        const supabase = createClient();
+        const [assurance, factors] = await Promise.all([
+          supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+          supabase.auth.mfa.listFactors(),
+        ]);
+        if (!active) return;
+        if (assurance.error || factors.error) {
+          setError("We could not load the security check. Please try again.");
+          setStage("ready");
+          return;
+        }
+        if (assurance.data.currentLevel === "aal2") {
+          setStage("complete");
+          return;
+        }
+        const verified = factors.data.totp.find((factor) => factor.status === "verified");
+        if (verified) {
+          setFactorId(verified.id);
+          setStage("verify");
+        } else {
+          setStage("ready");
+        }
+      } catch {
+        if (active) {
+          setError("We could not load the security check. Please try again.");
+          setStage("ready");
+        }
       }
     }
     void inspect();
@@ -124,7 +133,8 @@ export function BrokerdeskMfaClient() {
         <div className="app-header-actions"><span>BrokerDesk security</span><ThemeSwitch /></div>
       </header>
       <main className={styles.main}>
-        <section className={styles.card} aria-live="polite" aria-busy={pending || stage === "loading"}>
+        <section className={styles.card}>
+          <p className="sr-only" role="status" aria-atomic="true">{pending || stage === "loading" ? "" : stage === "setup" ? "Authenticator setup ready. Scan the code and enter your 6-digit code." : stage === "verify" ? "Enter your current 6-digit authenticator code to continue." : stage === "complete" ? "Security check complete. Continue to your workspace." : "Set up an authenticator to continue."}</p>
           <VivIntroBrand variant="stacked" decorative displayWidth={138} />
           <div className={styles.icon}><ShieldCheck aria-hidden="true" /></div>
           <p className={styles.eyebrow}>One more security check</p>
@@ -132,7 +142,8 @@ export function BrokerdeskMfaClient() {
           <p className={styles.lead}>Use an authenticator app before making sensitive BrokerDesk changes. This helps protect your workspace even if someone learns your password.</p>
 
           {error && <p className={styles.error} role="alert">{error}</p>}
-          {stage === "loading" && <p className={styles.status}>Checking your security settings…</p>}
+          {stage === "loading" && <LoadingStatus title="Checking your security settings" state="connecting" />}
+          {pending && <LoadingStatus compact className="my-4" state="connecting" title={stage === "ready" ? "Preparing authenticator setup" : stage === "complete" ? "Opening your workspace" : "Confirming your authenticator code"} />}
           {stage === "ready" && (
             <div className={styles.actionPanel}>
               <KeyRound aria-hidden="true" />

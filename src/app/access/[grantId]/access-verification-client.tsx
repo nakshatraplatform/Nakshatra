@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
@@ -74,6 +76,7 @@ export function AccessVerificationClient({ grantId }: { grantId: string }) {
           <button type="button" className="dashboard-secondary-action min-h-11" disabled={pending} onClick={() => { setStep("start"); setError(""); }}>Use another email</button>
         </form>
       )}
+      {pending && <LoadingStatus compact state="connecting" title={step === "verify" ? "Confirming access to this portfolio" : "Preparing secure sign-in"} />}
       {error && <p role="alert" className="rounded-lg bg-[light-dark(#f8e8e4,var(--app-dark-danger-surface))] p-3 text-sm text-[light-dark(#8e342e,var(--app-dark-danger))]">{error}</p>}
     </div>
   );

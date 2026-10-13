@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useEffect, useState } from "react";
 import { hardestStepLabels, hardestStepValues, likedAspectLabels, likedAspectValues } from "@/features/feedback/onboarding-feedback-options";
 
@@ -101,6 +103,7 @@ export function CreatorOnboardingFeedback() {
       <label className="grid gap-2 text-sm font-semibold">What would make it better? <span className="font-normal">(optional)</span>
         <textarea value={comment} onChange={(event) => { setComment(event.target.value); setMessage(""); }} disabled={busy} maxLength={1000} rows={3} className="rounded-lg border border-[light-dark(#b8c4c4,var(--app-dark-border))] bg-[light-dark(#fff,var(--app-dark-canvas))] p-3 text-sm font-normal" placeholder="Tell us where you paused or felt unsure." />
       </label>
+      {busy && <LoadingStatus compact title="Sending your feedback" />}
       <div className="flex flex-wrap items-center gap-3"><button type="submit" disabled={busy || rating === 0 || hardestSteps.length === 0} className="dashboard-primary-action">{busy ? "Sending…" : "Send feedback"}</button><span role="status" className="text-sm">{message}</span></div>
     </form>
   </section>;

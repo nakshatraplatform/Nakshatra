@@ -31,6 +31,8 @@ describe("BrokerDesk customer invitation client", () => {
     await userEvent.click(screen.getByRole("checkbox", { name: /authorize this broker relationship/i }));
     await userEvent.click(accept);
     expect(await screen.findByRole("heading", { name: "You are connected to Agency A" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Broker relationship connected. View your brokers to continue.");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/customer/broker-invitations/claim", expect.objectContaining({
       body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
     }));

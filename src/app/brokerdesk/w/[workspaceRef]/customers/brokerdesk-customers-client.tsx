@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { BrokerDeskHeader } from "@/components/brokerdesk/BrokerDeskHeader";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -61,7 +63,7 @@ export function BrokerdeskCustomersClient({ customers }: { customers: Brokerdesk
     <main>
       <div className={styles.heading}><div><p>Customers</p><h1>People you represent</h1><span>Invite customers and work from the portfolio each customer owns.</span></div><button onClick={() => setShowInvite((value) => !value)}><UserPlus /> Invite customer</button></div>
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice}>{notice}</p>}
-      {showInvite && <section className={styles.invitePanel}><Mail /><div><h2>Invite one customer</h2><p>Use the customer&apos;s own email. VivIntro emails a private setup link; no profile is created until that person signs in and consents.</p></div><form onSubmit={invite}><label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label><button type="submit" disabled={pending}>{pending ? "Sending…" : "Email portfolio invitation"}</button></form>{invitationUrl && <div className={styles.invitation}><Check /><strong>Invitation ready</strong><p>Keep this private link as a manual fallback if the customer cannot find the email.</p><code>{invitationUrl}</code><button onClick={() => navigator.clipboard.writeText(invitationUrl)}><Copy /> Copy backup link</button></div>}</section>}
+      {showInvite && <section className={styles.invitePanel}><Mail /><div><h2>Invite one customer</h2><p>Use the customer&apos;s own email. VivIntro emails a private setup link; no profile is created until that person signs in and consents.</p></div><form onSubmit={invite}><label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} /></label><button type="submit" disabled={pending}>{pending ? "Sending…" : "Email portfolio invitation"}</button></form>{pending && <LoadingStatus compact title="Creating and sending the customer invitation" state="connecting" />}{invitationUrl && <div className={styles.invitation}><Check /><strong>Invitation ready</strong><p>Keep this private link as a manual fallback if the customer cannot find the email.</p><code>{invitationUrl}</code><button onClick={() => navigator.clipboard.writeText(invitationUrl)}><Copy /> Copy backup link</button></div>}</section>}
       <section className={styles.summary}><article><Users /><span>Active customers</span><strong>{activeCount}</strong></article><article><Mail /><span>Invitations needing action</span><strong>{grouped.invitations.length}</strong></article></section>
       <CustomerGroup title="Men" items={grouped.men} workspaceRef={available.workspaceRef} />
       <CustomerGroup title="Women" items={grouped.women} workspaceRef={available.workspaceRef} />

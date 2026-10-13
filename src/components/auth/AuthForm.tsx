@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -222,8 +224,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <div className="account-context-assurance"><ShieldCheck aria-hidden="true" /><span><strong>Designed around consent</strong><small>No searchable public directory and no automatic access to protected details.</small></span></div>
           </aside>
         )}
-        <section className="account-panel" aria-labelledby="account-title" aria-busy={pendingAction !== null}>
+        <section className="account-panel" aria-labelledby="account-title">
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={mode === "login" ? 112 : 142} priority /></div>
+          {pendingAction && <LoadingStatus compact className="mb-4" state="connecting" title={pendingAction === "credentials" ? mode === "signup" ? "Creating your account" : "Signing you in" : pendingAction === "google" ? "Connecting to Google" : pendingAction === "verify" ? "Confirming your email" : pendingAction === "resend" ? "Sending a new code" : "Sending your recovery email"} />}
           {screen === "credentials" && (
             <>
               <p className="account-eyebrow">{copy.eyebrow}</p>

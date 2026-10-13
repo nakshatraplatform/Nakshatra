@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -44,6 +44,20 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("account privacy screen", () => {
+  it("keeps deletion loading feedback inside the confirmation dialog", async () => {
+    let resolve!: (value: { ok: false; error: { message: string; code: string; status: number } }) => void;
+    mocks.deletion.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete account" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Schedule deletion" }));
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Scheduling account deletion");
+    await act(async () => resolve({ ok: false, error: { message: "Please retry", code: "UNAVAILABLE", status: 503 } }));
+    expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
+  });
+
   it("saves separate account names with an optional middle name and shows linked methods", async () => {
     const profile = { firstName: "Rahul", middleName: "", lastName: "Ranganatha" };
     mocks.profile.mockResolvedValue({ ok: true, data: profile });

@@ -205,7 +205,8 @@ test("dashboard header stays available on scroll without covering the editor", a
     for (const route of ["/brokers", "/account"]) {
       await page.goto(route);
       // The empty broker fixture is short; extend only the test page to exercise sticky scrolling.
-      await page.locator("main").evaluate((main) => { main.style.minHeight = "1600px"; });
+      await expect(page.locator("main:visible")).toHaveCount(1);
+      await page.locator("main:visible").evaluate((main) => { main.style.minHeight = "1600px"; });
       await page.evaluate(() => window.scrollTo(0, 900));
       await expect.poll(() => page.locator(".dashboard-header").evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0);
     }

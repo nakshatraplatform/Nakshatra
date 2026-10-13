@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -58,6 +60,7 @@ export function ResetPasswordForm() {
           <p className="account-eyebrow">Account security</p>
           <h1 className="account-title">Choose a new password.</h1>
           <p className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account.</p>
+          {pending && <LoadingStatus compact title="Saving your new password" className="my-4" />}
           <form className="account-form" onSubmit={submit}>
             <PasswordField
               id="new-password"
