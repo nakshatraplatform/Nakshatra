@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { PortfolioNavigation, type PortfolioSectionLink } from "./PortfolioNavigation";
 import { PortfolioFooter } from "./PortfolioFooter";
+import { PortfolioBackToTop } from "./PortfolioBackToTop";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
@@ -517,7 +518,7 @@ export default function CelestialUnion({
   if (briefPublicView) {
     if (briefOverviewAvailable) navigationSections.push({ href: "#portfolio-profile", label: "About" });
   } else {
-    for (const [id, label] of [["journey", "Education & work"], ["lifestyle", "Lifestyle"], ["family", "Family"]]) {
+    for (const [id, label] of [["journey", "Education & work"], ["family", "Family"]]) {
       if (numberedChapters.some(chapter => chapter.id === id)) navigationSections.push({ href: `#${id}`, label });
     }
   }
@@ -730,6 +731,7 @@ export default function CelestialUnion({
       </main>
 
       <PortfolioFooter livenessChecked={identityVerified} />
+      <PortfolioBackToTop />
     </div>
   );
 }

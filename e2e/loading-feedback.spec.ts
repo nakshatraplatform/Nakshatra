@@ -82,6 +82,7 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
     await route.fulfill({ status: 503, json: { error: "Google unavailable" } });
   });
   const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Registered email").fill("viewer@example.test");
   await dialog.getByRole("button", { name: "Continue with Google" }).click();
   const status = dialog.locator("[data-loading-status]");
   await expect(status).toHaveText("Connecting to Google");

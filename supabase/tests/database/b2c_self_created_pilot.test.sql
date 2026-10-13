@@ -5,6 +5,10 @@ set search_path = public, extensions;
 \ir auth-fixtures.psql
 
 select plan(14);
+
+-- Transaction-only access to characterize the preserved pilot guard engine.
+-- Strict public entry points and legacy denial are tested in the new suite.
+grant execute on function public.submit_public_interest(text,text,text,text,text,text,text,text,text,text,text,text) to authenticated;
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000001', 'candidate@self.test');
 insert into public.candidates(id, primary_owner_user_id, display_name, created_by)
 values ('a3000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'Candidate', 'a1000000-0000-4000-8000-000000000001');

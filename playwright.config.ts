@@ -34,6 +34,8 @@ export default defineConfig({
         NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "e2e-publishable-key",
         NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
+        // This key is scoped to the loopback mock server used by Playwright.
+        RATE_LIMIT_SUBJECT_HMAC_KEY: "nakshatra-playwright-loopback-only-hmac-key-v1",
       },
       url: "http://127.0.0.1:3100",
       reuseExistingServer: false,

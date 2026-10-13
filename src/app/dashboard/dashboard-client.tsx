@@ -6,6 +6,8 @@ import { PortfolioImage } from "@/components/loading/PortfolioImage";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
+import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
 
 import { useCallback, useEffect, useId, useRef, useState, useTransition, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -956,10 +958,10 @@ export default function DashboardClient({
                   {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
                   <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
                 </div>
-                <details className="dashboard-link-settings">
-                  <summary>Manage link</summary>
+                <section className="dashboard-link-settings" aria-label="Manage link">
+                  <h3 className="text-sm font-semibold">Manage link</h3>
                   <p>Rotating replaces the URL. Unpublishing turns off viewer access.</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="dashboard-link-controls" role="group" aria-label="Manage introduction link">
                   {canCreatePortfolio && (
                     <button
                       onClick={rotateLink}
@@ -979,7 +981,7 @@ export default function DashboardClient({
                     {unpublishing ? "Unpublishing..." : "Unpublish"}
                   </button>
                   </div>
-                </details>
+                </section>
               </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
@@ -1869,6 +1871,7 @@ function RelationshipLifecycle({
         <History className="h-4 w-4" aria-hidden="true" />
         Access history
       </button>
+      <InterestHistoryPanel />
 
       {listModal && !recordDetail && (
         <DashboardModal titleId={listTitleId} title={listTitle} closeLabel="Close and return to dashboard" closeRef={closeListRef} onClose={() => setListModal(null)}>
@@ -1921,10 +1924,11 @@ function RelationshipLifecycle({
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
-            <GrantDetail grant={recordDetail.item} events={events} viewerAccessAvailable={viewerAccessAvailable} />
+            <GrantDetail grant={recordDetail.item} viewerAccessAvailable={viewerAccessAvailable} />
           ) : (
             <BrokerResponseDetail response={recordDetail.item} />
           )}
+          {recordDetail.kind !== "broker-response" && <InterestDetailsPanel requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
           <div className="dashboard-modal-sticky-actions">
             {workingId && !approvalCandidate && <LoadingStatus compact title="Updating protected access" />}
             {recordDetail.kind === "interest" ? (
@@ -2122,8 +2126,7 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
   );
 }
 
-function GrantDetail({ grant, events, viewerAccessAvailable }: { grant: AccessGrant; events: AccessAuditEvent[]; viewerAccessAvailable: boolean }) {
-  const relatedEvents = events.filter((event) => !event.viewerName || event.viewerName === grant.viewerName).slice(0, 8);
+function GrantDetail({ grant, viewerAccessAvailable }: { grant: AccessGrant; viewerAccessAvailable: boolean }) {
   return (
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
@@ -2134,7 +2137,7 @@ function GrantDetail({ grant, events, viewerAccessAvailable }: { grant: AccessGr
         <div><dt>Last opened</dt><dd>{grant.lastAccessedAt ? formatAccessDate(grant.lastAccessedAt) : "Not opened yet"}</dd></div>
         <div><dt>Last renewed</dt><dd>{grant.renewedAt ? formatAccessDate(grant.renewedAt) : "Not renewed"}</dd></div>
       </dl>
-      <section><h3>Access history</h3>{relatedEvents.length ? <ol className="dashboard-detail-history">{relatedEvents.map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol> : <p>No access activity has been recorded yet.</p>}</section>
+      <p>Open interest details below for this viewer’s submitted information and access history.</p>
     </div>
   );
 }

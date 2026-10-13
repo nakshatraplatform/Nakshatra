@@ -291,7 +291,7 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getByRole("link", { name: "Show Interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();

@@ -46,6 +46,17 @@ function client(outcomes: Record<string, { data: unknown; error?: unknown }>) {
 }
 
 describe("public portfolio service", () => {
+  it("maps the entire approved photo array without the public three-photo restriction", async () => {
+    const media = Array.from({ length: 8 }, (_, index) => ({ ...publicPayload.media[0], key: `approved-${index}`, accessPath: `owner/portfolio/approved-${index}.webp`, mediaType: index ? "gallery" : "hero", sortOrder: index }));
+    const fixture = client({ resolve_public_portfolio: { data: publicPayload }, resolve_approved_portfolio: { data: { ...publicPayload, media, accessExpiresAt: new Date(Date.now()+600_000).toISOString() } } });
+    const view = await resolvePortfolioView(fixture.supabase, "valid-token", true);
+    expect(view?.photos).toHaveLength(8);
+    expect(view?.photos.map(photo=>photo.id)).toEqual(media.map(item=>item.key));
+    expect(fixture.createSignedUrl).toHaveBeenCalledTimes(8);
+    const foreign = client({ resolve_public_portfolio: { data: publicPayload }, resolve_approved_portfolio: { data: null } });
+    expect((await resolvePortfolioView(foreign.supabase,"valid-token",true))?.photos).toHaveLength(1);
+    expect(foreign.createSignedUrl).not.toHaveBeenCalledWith("owner/portfolio/approved-7.webp",expect.anything());
+  });
   it("returns only valid token-resolver payloads", async () => {
     const valid = client({
       resolve_public_portfolio: { data: publicPayload },

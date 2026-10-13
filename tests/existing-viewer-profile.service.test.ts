@@ -18,6 +18,13 @@ function createSupabaseClient(data: unknown) {
 }
 
 describe("existing viewer profile resolver", () => {
+  it("reuses only valid owned profession and core values with published fallback", async () => {
+    const { client } = createSupabaseClient({
+      draft_data: { personal: { name: "Mira Rao" }, career: { title: "Engineer" }, lifestyle: { values_statement: 123 } },
+      published_data: { career: { title: "Older profession" }, lifestyle: { values_statement: "Kindness and mutual respect" } },
+    });
+    await expect(resolveExistingViewerProfile(client, "viewer-1")).resolves.toMatchObject({ profession: "Engineer", coreValues: "Kindness and mutual respect" });
+  });
   it("returns null when the viewer has no portfolio", async () => {
     const { client } = createSupabaseClient(null);
 

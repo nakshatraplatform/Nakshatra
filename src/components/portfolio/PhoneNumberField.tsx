@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { combinePhoneNumber, splitPhoneNumber } from "@/features/portfolio/phone-number";
 
 export function PhoneNumberField({
@@ -10,6 +10,8 @@ export function PhoneNumberField({
   required = false,
   defaultCallingCode = "",
   hint,
+  label = "Phone number",
+  error,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -17,7 +19,10 @@ export function PhoneNumberField({
   required?: boolean;
   defaultCallingCode?: string;
   hint?: string;
+  label?: string;
+  error?: string;
 }) {
+  const errorId = useId();
   const [emptyNumberCode, setEmptyNumberCode] = useState(defaultCallingCode.replace(/\D/g, "").slice(0, 3));
   const parts = splitPhoneNumber(value, emptyNumberCode);
   const callingCode = parts.callingCode;
@@ -25,7 +30,7 @@ export function PhoneNumberField({
 
   return (
     <fieldset className="split-phone-field">
-      <legend>Phone number{required ? " *" : ""}</legend>
+      <legend>{label}{required ? " *" : ""}</legend>
       <div className="split-phone-inputs">
         <label>
           <span>Country code</span>
@@ -35,7 +40,9 @@ export function PhoneNumberField({
               type="text"
               inputMode="numeric"
               autoComplete="tel-country-code"
-              aria-label="Country calling code"
+              aria-label={label === "Phone number" ? "Country calling code" : `${label} country calling code`}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? errorId : undefined}
               value={callingCode}
               onChange={(event) => {
                 const code = event.target.value.replace(/\D/g, "").slice(0, 3);
@@ -55,7 +62,9 @@ export function PhoneNumberField({
             type="tel"
             inputMode="tel"
             autoComplete="tel-national"
-            aria-label="Phone number"
+            aria-label={label}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? errorId : undefined}
             value={nationalNumber}
             onChange={(event) => {
               const entered = event.target.value;
@@ -80,6 +89,7 @@ export function PhoneNumberField({
         </label>
       </div>
       {hint && <small>{hint}</small>}
+      {error && <small id={errorId} className="interest-form-error">{error}</small>}
       {nationalNumber.startsWith("+") && <small role="alert">Enter the country calling code separately and remove it from the phone number to avoid a wrong number.</small>}
       {name && <input type="hidden" name={name} value={value} />}
     </fieldset>

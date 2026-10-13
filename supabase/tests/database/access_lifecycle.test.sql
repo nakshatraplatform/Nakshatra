@@ -6,6 +6,11 @@ set search_path = public, extensions;
 
 select plan(72);
 
+-- Characterize the retained lower-level lifecycle engine in this rolled-back
+-- transaction only. Production clients use the strict new entry points; their
+-- legacy permission denial is asserted by interest_details_and_photos.test.sql.
+grant execute on function public.submit_public_interest(text,text,text,text,text,text,text,text,text,text,text,text) to authenticated;
+
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a1100000-0000-4000-8000-000000000001', 'owner@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000002', 'a1100000-0000-4000-8000-000000000002', 'viewer@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000003', 'a1100000-0000-4000-8000-000000000003', 'stranger@access.test');

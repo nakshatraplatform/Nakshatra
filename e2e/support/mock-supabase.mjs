@@ -327,9 +327,32 @@ const server = createServer((request, response) => {
     if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMedia[0]]);
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
+    if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
+    if (url.pathname === "/rest/v1/rpc/get_interest_details") {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => {
+        const id = JSON.parse(body || "{}").p_request_id;
+        const item = ownerInterests.find(item => item.id===id);
+        const grant = ownerAccess.grants.find(grant => grant.interestRequestId===id);
+        if (!item && !grant) return sendJson(response,200,null);
+        return sendJson(response,200,{ id, name:item?.viewer_name || grant.viewerName, email:item?.viewer_email || grant.viewerEmail, phone:item?.viewer_phone || "+1 617 555 0123", familyContext:item?.viewer_family_context || "Our family values kindness, honesty and mutual respect.", message:item?.message || "We enjoyed your introduction and would like to connect.", metadata:item?.metadata || {location_details:{city:"Boston",state:"Massachusetts",country:"United States"}}, submittedAt:item?.created_at || "2026-10-01T10:00:00Z", verifiedAt:"2026-10-01T09:00:00Z", accessGrantedAt:grant ? "2026-10-01T12:00:00Z" : null, accessExpiresAt:grant?.expiresAt || null, accessStatus:grant?.status || "not_granted", requestStatus:item?.status || "approved" });
+      });
+    }
     if (url.pathname === "/rest/v1/rpc/list_portfolio_access") return sendJson(response, 200, ownerAccess);
     if (url.pathname === "/rest/v1/rpc/get_portfolio_publication_readiness") return sendJson(response, 200, readiness);
   }
+  if (url.pathname === "/rest/v1/rpc/list_interest_location_options") {
+    let body = "";
+    request.on("data",chunk=> { body+=chunk; });
+    return request.on("end",()=> {
+      const query=JSON.parse(body || "{}");
+      return sendJson(response,200,query.p_level==='countries' ? [{country_code:"US",name:"United States"}] : query.p_level==='regions' ? [{region_code:"MA",name:"Massachusetts"}] : [{geoname_id:4930956,name:"Boston",region_code:"MA"}]);
+    });
+  }
+  if (url.pathname === "/rest/v1/reference_countries") return sendJson(response,200,[{country_code:"US",name:"United States"}]);
+  if (url.pathname === "/rest/v1/reference_regions") return sendJson(response,200,[{region_code:"MA",name:"Massachusetts"}]);
+  if (url.pathname === "/rest/v1/reference_cities") return sendJson(response,200,[{geoname_id:4930956,name:"Boston",region_code:"MA"}]);
   if (url.pathname === "/rest/v1/public_portfolio_snapshots" || url.pathname === "/rest/v1/portfolio_media") {
     return sendJson(response, 403, { message: "Direct public table access is disabled" });
   }

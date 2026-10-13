@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { contactSchema, personalSchema, type ContactData, type PersonalData } from "@/types/portfolio";
+import { careerSchema, lifestyleSchema, contactSchema, personalSchema, type ContactData, type PersonalData } from "@/types/portfolio";
 
 export type ExistingViewerProfile = {
   name: string;
@@ -10,6 +10,8 @@ export type ExistingViewerProfile = {
   country?: string;
   state?: string;
   city?: string;
+  profession?: string;
+  coreValues?: string;
 };
 
 const supportedProfileFor = new Set<ExistingViewerProfile["profileFor"]>([
@@ -43,10 +45,16 @@ export async function resolveExistingViewerProfile(
   const sources = [data.draft_data, data.published_data];
   let personal: Partial<PersonalData> | null = null;
   let contact: Partial<ContactData> | null = null;
+  let profession: string | undefined;
+  let coreValues: string | undefined;
 
   for (const source of sources) {
     if (!source || typeof source !== "object" || Array.isArray(source)) continue;
     const record = source as Record<string, unknown>;
+    const career = careerSchema.pick({ title: true }).safeParse(record.career);
+    const lifestyle = lifestyleSchema.pick({ values_statement: true }).safeParse(record.lifestyle);
+    if (!profession && career.success) profession = career.data.title;
+    if (!coreValues && lifestyle.success) coreValues = lifestyle.data.values_statement;
     if (!personal) {
       const parsedPersonal = reusablePersonalSchema.safeParse(record.personal);
       if (parsedPersonal.success && parsedPersonal.data.name?.trim()) personal = parsedPersonal.data;
@@ -69,5 +77,7 @@ export async function resolveExistingViewerProfile(
     country: personal?.country,
     state: personal?.region,
     city: personal?.city,
+    profession,
+    coreValues,
   };
 }
