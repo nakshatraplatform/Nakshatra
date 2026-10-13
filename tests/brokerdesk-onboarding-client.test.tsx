@@ -86,6 +86,7 @@ describe("BrokerDesk onboarding interface", () => {
       primaryCountry: "IN",
     }), expect.stringMatching(/^create:/));
     expect(await screen.findByRole("heading", { name: "Who is responsible for this workspace?" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Setup step 2");
   });
 
   it("shows exact verification labels and keeps document upload fail closed", () => {
@@ -120,7 +121,9 @@ describe("BrokerDesk onboarding interface", () => {
       "email",
       "verification_manage"
     );
-    expect(await screen.findByText(/Check your email/)).toBeInTheDocument();
+    const notice = await screen.findByText(/Check your email/);
+    expect(notice).toHaveAttribute("role", "status");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
   });
 
   it("starts the hosted flow after security without exposing a document upload", async () => {
@@ -145,6 +148,7 @@ describe("BrokerDesk onboarding interface", () => {
     await user.click(screen.getByRole("checkbox", { name: /I consent/ }));
     await user.click(screen.getByRole("button", { name: "Prepare secure verification" }));
     expect(startRepresentativeVerification).toHaveBeenCalledWith(WORKSPACE_REF, "1985-05-12");
+    expect(screen.getByText(/Your secure verification is ready\. Save/)).toHaveAttribute("role", "status");
     expect(await screen.findByRole("link", { name: "Continue to Didit" })).toHaveAttribute(
       "href",
       "https://verify.didit.test/session/opaque"

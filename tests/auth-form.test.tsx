@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,6 +24,22 @@ vi.mock("../src/features/auth/client/auth.api", () => ({
 import { AuthForm } from "../src/components/auth/AuthForm";
 
 describe("AuthForm", () => {
+  it("shows real sign-in work and removes feedback on a failed request before retry", async () => {
+    let resolve!: (value: { ok: boolean; body: { error: string } }) => void;
+    startAuthentication.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(<AuthForm mode="login" />);
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "owner@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Example1234" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Signing you in");
+    expect(screen.getByRole("button", { name: "Please wait..." })).toBeDisabled();
+    expect(screen.getByRole("status").querySelector("canvas")).not.toBeNull();
+    await act(async () => resolve({ ok: false, body: { error: "Sign-in temporarily unavailable" } }));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in temporarily unavailable");
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     searchParams.get.mockReturnValue(null);

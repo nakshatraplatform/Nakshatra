@@ -163,6 +163,18 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("shows preview progress during the initial request and clears it after rejection", async () => {
+    let reject!: (error: Error) => void;
+    mocks.updateProgress.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+    renderDashboard({ portfolio: { ...portfolio, draft_data: readyData }, publicationReadiness: readyPublicationReadiness });
+    fireEvent.click(screen.getByRole("link", { name: /preview public introduction/i }));
+    await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({ action: "previewed" }));
+    expect(screen.getByText("Saving preview progress")).toBeInTheDocument();
+    await act(async () => reject(new Error("offline")));
+    expect(screen.queryByText("Saving preview progress")).not.toBeInTheDocument();
+    expect(screen.getByText(/Your preview progress could not be saved/)).toBeInTheDocument();
+  });
+
   it.each([
     [null, undefined, "Preview"],
     [null, undefined, "Review and publish"],
@@ -923,7 +935,7 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(expect.objectContaining({
       personal: expect.objectContaining({ first_name: "Aditi" }),
     })));
-    expect(mocks.refresh).toHaveBeenCalled();
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
   });
 
   it("shows truthful publish progress until the request succeeds", async () => {

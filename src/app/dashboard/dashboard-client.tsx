@@ -2,12 +2,14 @@
 
 import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardingFeedback";
+import { PortfolioImage } from "@/components/loading/PortfolioImage";
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
 
-import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -127,6 +129,10 @@ export default function DashboardClient({
   const [draftData, setDraftData] = useState<PortfolioData>(() =>
     normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode)
   );
+  const [preparingPreview, setPreparingPreview] = useState(false);
+  const [mediaMutations, setMediaMutations] = useState(0);
+  const [removingHoroscope, setRemovingHoroscope] = useState(false);
+  const [refreshing, startRefresh] = useTransition();
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaveState, setDraftSaveState] = useState<"saved" | "unsaved" | "saving">("saved");
   const [publishing, setPublishing] = useState(false);
@@ -181,7 +187,9 @@ export default function DashboardClient({
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewRequestQueue = useRef(Promise.resolve());
   const router = useRouter();
-  const onVerificationStatusChange = useCallback(() => router.refresh(), [router]);
+  const refreshDashboard = useCallback(() => startRefresh(() => router.refresh()), [router]);
+
+  const onVerificationStatusChange = useCallback(() => refreshDashboard(), [refreshDashboard]);
   const disclosedCategories = fullViewDisclosureCategories(
     draftData,
     portfolioMedia,
@@ -356,7 +364,7 @@ export default function DashboardClient({
       setReviewPreviewsOpened({ public: false, complete: false });
       setSensitiveDisclosureAccepted(false);
       setReviewOpen(false);
-      router.refresh();
+      refreshDashboard();
     }
     setDraftError(failure.error.message);
     return false;
@@ -376,7 +384,7 @@ export default function DashboardClient({
         handlePortfolioApiFailure(result);
         return;
       }
-      router.refresh();
+      refreshDashboard();
     } finally {
       setRenewing(false);
     }
@@ -407,7 +415,7 @@ export default function DashboardClient({
       if (!result.ok) return void handlePortfolioApiFailure(result);
       setFormOpen(false);
       setReviewOpen(false);
-      router.refresh();
+      refreshDashboard();
     } catch {
       setDraftError("We could not publish your portfolio. Please try again.");
     } finally {
@@ -426,7 +434,7 @@ export default function DashboardClient({
       );
       const result = await rotatePortfolioLinkRequest();
       if (!result.ok) return void handlePortfolioApiFailure(result);
-      router.refresh();
+      refreshDashboard();
     } finally {
       setRotatingLink(false);
     }
@@ -443,7 +451,7 @@ export default function DashboardClient({
       );
       const result = await unpublishPortfolioRequest();
       if (!result.ok) return void handlePortfolioApiFailure(result);
-      router.refresh();
+      refreshDashboard();
     } finally {
       setUnpublishing(false);
     }
@@ -494,7 +502,7 @@ export default function DashboardClient({
       }
       if (draftRevisionRef.current === savingRevision) savedReviewFingerprintRef.current = result.data.readiness?.reviewFingerprint;
       if (draftRevisionRef.current === savingRevision) setDraftSaveState("saved");
-      if (refresh) router.refresh();
+      if (refresh) refreshDashboard();
       return draftRevisionRef.current === savingRevision;
     } catch {
       setDraftSaveState("unsaved");
@@ -525,7 +533,7 @@ export default function DashboardClient({
   async function openFinalReview(justSaved = false) {
     if (openingReviewRef.current) return;
     if (reviewNeedsReloadRef.current) {
-      router.refresh();
+      refreshDashboard();
       return;
     }
     openingReviewRef.current = true;
@@ -581,8 +589,7 @@ export default function DashboardClient({
     const next = { ...reviewPreviewsOpened, [view]: true };
     setReviewPreviewsOpened(next);
     if (next.public && next.complete && !(reviewPreviewsOpened.public && reviewPreviewsOpened.complete)) {
-      setReviewPreviewSaving(true);
-      void markPreviewed().finally(() => setReviewPreviewSaving(false));
+      void markPreviewed();
     }
   }
 
@@ -597,39 +604,57 @@ export default function DashboardClient({
   }
 
   async function markPreviewed(allowRevisionChange = false) {
-    const revision = draftRevisionRef.current;
-    const { updatePublicationProgressRequest } = await import(
-      "@/features/portfolio/client/portfolio-dashboard.api"
-    );
-    const result = await updatePublicationProgressRequest({ action: "previewed" });
-    if (!result.ok) {
-      handlePortfolioApiFailure(result);
+    pendingPreviewRequests.current += 1;
+    setReviewPreviewSaving(true);
+    try {
+      const revision = draftRevisionRef.current;
+      const { updatePublicationProgressRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await updatePublicationProgressRequest({ action: "previewed" });
+      if (!result.ok) {
+        handlePortfolioApiFailure(result);
+        return null;
+      }
+      if (revision !== draftRevisionRef.current) return null;
+      const fresh = result.data.readiness;
+      // A media mutation clears the review hash, not the local answers. A progress
+      // response cannot prove those answers still match another tab's saved draft.
+      // Reload the authoritative page before adopting an unknown saved revision.
+      const expectedFingerprint = allowRevisionChange ? savedReviewFingerprintRef.current : readinessState.reviewFingerprint;
+      if ((versionedReviewRequiredRef.current && (!expectedFingerprint || fresh.reviewFingerprint !== expectedFingerprint))
+        || (!allowRevisionChange && expectedFingerprint === null)
+        || (fresh.reviewFingerprint && expectedFingerprint !== fresh.reviewFingerprint)) {
+        handlePortfolioApiFailure({ ok: false, error: { code: "PORTFOLIO_REVIEW_CHANGED", status: 409,
+          message: "We could not confirm your latest saved portfolio. Loading the latest details; reopen Review and publish when they appear." } });
+        return null;
+      }
+      setReadinessState(result.data.readiness);
+      return result.data.readiness;
+    } catch {
+      setDraftError("Your preview progress could not be saved. Reopen the preview to try again.");
       return null;
+    } finally {
+      pendingPreviewRequests.current -= 1;
+      setReviewPreviewSaving(pendingPreviewRequests.current > 0);
     }
-    if (revision !== draftRevisionRef.current) return null;
-    const fresh = result.data.readiness;
-    // A media mutation clears the review hash, not the local answers. A progress
-    // response cannot prove those answers still match another tab's saved draft.
-    // Reload the authoritative page before adopting an unknown saved revision.
-    const expectedFingerprint = allowRevisionChange ? savedReviewFingerprintRef.current : readinessState.reviewFingerprint;
-    if ((versionedReviewRequiredRef.current && (!expectedFingerprint || fresh.reviewFingerprint !== expectedFingerprint))
-      || (!allowRevisionChange && expectedFingerprint === null)
-      || (fresh.reviewFingerprint && expectedFingerprint !== fresh.reviewFingerprint)) {
-      handlePortfolioApiFailure({ ok: false, error: { code: "PORTFOLIO_REVIEW_CHANGED", status: 409,
-        message: "We could not confirm your latest saved portfolio. Loading the latest details; reopen Review and publish when they appear." } });
-      return null;
-    }
-    setReadinessState(result.data.readiness);
-    return result.data.readiness;
   }
 
   async function openEarlyPreview() {
-    const needsSave = draftSaveState !== "saved" || !activePortfolioId;
-    if (needsSave && !await persistDashboardDraft({ refresh: false })) return;
-    const readiness = await markPreviewed(needsSave);
-    if (!readiness) return;
-    recordReviewPreview("public", readiness);
-    window.open("/preview", "_blank", "noopener,noreferrer");
+    if (preparingPreview) return;
+    setPreparingPreview(true);
+    try {
+      const needsSave = draftSaveState !== "saved" || !activePortfolioId;
+      if (needsSave && !await persistDashboardDraft({ refresh: false })) return;
+      const readiness = await markPreviewed(needsSave);
+      if (!readiness) return;
+      recordReviewPreview("public", readiness);
+      window.open("/preview", "_blank", "noopener,noreferrer");
+    } catch {
+      setDraftError("We could not prepare your preview. Please try again.");
+    } finally {
+      setPreparingPreview(false);
+    }
   }
 
   function rememberEditorSection(section: PortfolioEditorSection) {
@@ -691,7 +716,7 @@ export default function DashboardClient({
       setPortfolioMedia((current) => [...current, ...uploaded]);
       setMediaUrls((current) => ({ ...current, ...uploadedUrls }));
       invalidatePreviewReview();
-      router.refresh();
+      refreshDashboard();
     } catch (error) {
       setDraftError(error instanceof Error ? error.message : "Photo upload failed.");
     } finally {
@@ -704,34 +729,50 @@ export default function DashboardClient({
     mediaId: string,
     changes: Partial<Pick<PortfolioMedia, "visibility" | "media_type" | "alt_text">>
   ) {
-    const { updatePortfolioPhotoRequest } = await import(
-      "@/features/portfolio/client/portfolio-dashboard.api"
-    );
-    const result = await updatePortfolioPhotoRequest(mediaId, changes);
-    if (!result.ok) return void handlePortfolioApiFailure(result);
-    setPortfolioMedia((current) =>
-      current.map((item) => {
-        if (item.id === result.data.media.id) return result.data.media;
-        if (changes.media_type === "hero" && item.media_type === "hero") {
-          return { ...item, media_type: "gallery" };
-        }
-        return item;
-      })
-    );
-    invalidatePreviewReview();
+    setMediaMutations((count) => count + 1);
+    setDraftError(null);
+    try {
+      const { updatePortfolioPhotoRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await updatePortfolioPhotoRequest(mediaId, changes);
+      if (!result.ok) return void handlePortfolioApiFailure(result);
+      setPortfolioMedia((current) =>
+        current.map((item) => {
+          if (item.id === result.data.media.id) return result.data.media;
+          if (changes.media_type === "hero" && item.media_type === "hero") {
+            return { ...item, media_type: "gallery" };
+          }
+          return item;
+        })
+      );
+      invalidatePreviewReview();
+    } catch {
+      setDraftError("We could not update your photos. Please try again.");
+    } finally {
+      setMediaMutations((count) => count - 1);
+    }
   }
 
   async function deletePhoto(mediaId: string) {
-    const { deletePortfolioPhotoRequest } = await import(
-      "@/features/portfolio/client/portfolio-dashboard.api"
-    );
-    const result = await deletePortfolioPhotoRequest(mediaId);
-    if (!result.ok) return void handlePortfolioApiFailure(result);
-    setPortfolioMedia((current) => current.filter((item) => item.id !== mediaId));
-    setMediaUrls((current) => Object.fromEntries(
-      Object.entries(current).filter(([id]) => id !== mediaId)
-    ));
-    invalidatePreviewReview();
+    setMediaMutations((count) => count + 1);
+    setDraftError(null);
+    try {
+      const { deletePortfolioPhotoRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await deletePortfolioPhotoRequest(mediaId);
+      if (!result.ok) return void handlePortfolioApiFailure(result);
+      setPortfolioMedia((current) => current.filter((item) => item.id !== mediaId));
+      setMediaUrls((current) => Object.fromEntries(
+        Object.entries(current).filter(([id]) => id !== mediaId)
+      ));
+      invalidatePreviewReview();
+    } catch {
+      setDraftError("We could not update your photos. Please try again.");
+    } finally {
+      setMediaMutations((count) => count - 1);
+    }
   }
 
   async function uploadHoroscopeFile(file: File | null, language: string) {
@@ -754,7 +795,9 @@ export default function DashboardClient({
       if (!result.ok) return void handlePortfolioApiFailure(result);
       setPortfolioHoroscope(result.data.horoscope);
       invalidatePreviewReview();
-      router.refresh();
+      refreshDashboard();
+    } catch {
+      setDraftError("We could not upload the attachment. Please try again.");
     } finally {
       setUploadingHoroscope(false);
       if (horoscopeInputRef.current) horoscopeInputRef.current.value = "";
@@ -768,14 +811,22 @@ export default function DashboardClient({
 
   async function removeHoroscope() {
     if (!portfolioHoroscope || !confirm("Remove this horoscope attachment? Approved viewers will lose access immediately.")) return;
-    const { deleteHoroscopeRequest } = await import(
-      "@/features/portfolio/client/portfolio-dashboard.api"
-    );
-    const result = await deleteHoroscopeRequest(portfolioHoroscope.id);
-    if (!result.ok) return void handlePortfolioApiFailure(result);
-    setPortfolioHoroscope(null);
-    invalidatePreviewReview();
-    router.refresh();
+    setRemovingHoroscope(true);
+    setDraftError(null);
+    try {
+      const { deleteHoroscopeRequest } = await import(
+        "@/features/portfolio/client/portfolio-dashboard.api"
+      );
+      const result = await deleteHoroscopeRequest(portfolioHoroscope.id);
+      if (!result.ok) return void handlePortfolioApiFailure(result);
+      setPortfolioHoroscope(null);
+      invalidatePreviewReview();
+      refreshDashboard();
+    } catch {
+      setDraftError("We could not remove the attachment. Please try again.");
+    } finally {
+      setRemovingHoroscope(false);
+    }
   }
 
   return (
@@ -789,6 +840,7 @@ export default function DashboardClient({
             <div><p className="font-semibold">Creator insights</p><p className="mt-1 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Review private onboarding feedback from portfolio creators.</p></div>
             <Link href="/admin/onboarding-feedback" className="dashboard-primary-action min-h-11 justify-center">View feedback</Link>
           </section> : null}
+          {!formOpen && !reviewOpen && (refreshing || openingReview || preparingPreview || renewing || rotatingLink || unpublishing || savingDraft || reviewPreviewSaving) && <LoadingStatus compact className="mb-4" title={renewing ? "Reactivating your Introduction link" : rotatingLink ? "Replacing your Introduction link" : unpublishing ? "Unpublishing your portfolio" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : savingDraft ? "Saving your private draft" : reviewPreviewSaving ? "Saving preview progress" : "Refreshing your dashboard"} />}
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
             <section className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
@@ -806,7 +858,7 @@ export default function DashboardClient({
                   Please refresh this page. If this continues, contact VivIntro support. Your existing account and shared-link access remain available.
                 </p>
               </div>
-              <button type="button" className="dashboard-primary-action" onClick={() => router.refresh()}>Refresh account status</button>
+              <button type="button" className="dashboard-primary-action" onClick={() => refreshDashboard()}>Refresh account status</button>
             </section>
           ) : !portfolio?.is_published ? (
             <section className="dashboard-glass flex flex-col items-start gap-4 p-5 sm:p-6" aria-label="Your portfolio">
@@ -1016,7 +1068,7 @@ export default function DashboardClient({
                   interest.id === id ? { ...interest, status } : interest
                 )
               );
-              router.refresh();
+              refreshDashboard();
             }}
             onGrantChange={(grantId, action, expiresAt) => {
               setAccessGrants((current) => current.map((grant) =>
@@ -1026,7 +1078,7 @@ export default function DashboardClient({
                     : { ...grant, status: "active", expiresAt: expiresAt || grant.expiresAt }
                   : grant
               ));
-              router.refresh();
+              refreshDashboard();
             }}
           />}
           </>}
@@ -1123,6 +1175,7 @@ export default function DashboardClient({
                 <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready to confirm publication." : "Your saved changes are not public yet."}</p>
                 <p className="mt-1 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
+                {reviewPreviewSaving && !publishing && <LoadingStatus compact title="Saving your preview progress" />}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Back to dashboard</button>
@@ -1135,11 +1188,11 @@ export default function DashboardClient({
                   <Eye className="h-4 w-4" aria-hidden="true" /> Review both views before publishing
                 </button> : !readinessState.previewedAt ? <button type="button" ref={reviewPublishRef} disabled={reviewPreviewSaving} className="dashboard-primary-action" onClick={() => { void markPreviewed(); }}>
                   <RefreshCw className="h-4 w-4" /> {reviewPreviewSaving ? "Saving preview progress..." : "Retry saving preview progress"}
-                </button> : !verificationComplete && !activeCandidateId ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); router.refresh(); }}>
+                </button> : !verificationComplete && !activeCandidateId ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
                   <RefreshCw className="h-4 w-4" /> Refresh verification setup
                 </button> : !verificationComplete ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={goToLivenessCheck}>
                   <ShieldCheck className="h-4 w-4" /> Go to liveness check
-                </button> : !readinessState.paymentActive ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); router.refresh(); }}>
+                </button> : !readinessState.paymentActive ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
                   <RefreshCw className="h-4 w-4" /> Refresh account status
                 </button> : <button
                   ref={reviewPublishRef}
@@ -1215,6 +1268,8 @@ export default function DashboardClient({
                   onSectionChange={rememberEditorSection}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
                   photoManager={
+                    <>
+                    {(uploadingMedia || mediaMutations > 0) && <LoadingStatus compact className="mb-3" title={uploadingMedia ? "Uploading your photos" : "Updating your photos"} />}
                     <PhotoManager
                       media={portfolioMedia}
                       urls={mediaUrls}
@@ -1224,8 +1279,11 @@ export default function DashboardClient({
                       onUpdate={updatePhoto}
                       onDelete={deletePhoto}
                     />
+                    </>
                   }
                   horoscopeManager={
+                    <>
+                    {(uploadingHoroscope || removingHoroscope) && <LoadingStatus compact className="mb-3" title={removingHoroscope ? "Removing your horoscope attachment" : "Uploading your horoscope attachment"} />}
                     <HoroscopeManager
                       horoscope={portfolioHoroscope}
                       uploading={uploadingHoroscope}
@@ -1234,6 +1292,7 @@ export default function DashboardClient({
                       onReview={reviewHoroscope}
                       onDelete={removeHoroscope}
                     />
+                    </>
                   }
                 />
                 <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[light-dark(#526273,var(--app-dark-muted))]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
@@ -1242,6 +1301,7 @@ export default function DashboardClient({
 
             <div className="dashboard-editor-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f3f0e8,var(--app-dark-surface-soft))] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
+                {(savingDraft || openingReview || preparingPreview || refreshing) && <LoadingStatus compact className="mb-3" title={savingDraft ? "Saving your private draft" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : "Refreshing your portfolio"} />}
                 {draftError && (
                   <div role="alert" className="mb-3 rounded-lg border border-[light-dark(#d8a7a1,var(--app-dark-border))] bg-[light-dark(#fff0ee,var(--app-dark-canvas))] px-4 py-3 text-sm text-[light-dark(#7f3535,var(--app-dark-danger))]">
                     <p className="font-semibold">We couldn&apos;t complete that action.</p>
@@ -1267,7 +1327,7 @@ export default function DashboardClient({
                     <button
                       type="button"
                       onClick={openEarlyPreview}
-                      disabled={savingDraft || !completion.basicsComplete}
+                      disabled={savingDraft || preparingPreview || !completion.basicsComplete}
                       className="dashboard-secondary-action flex-1 sm:flex-none"
                     >
                       <Eye className="h-4 w-4" />
@@ -1759,6 +1819,7 @@ function RelationshipLifecycle({
         </div>
         <span>{waitingInterests.length} waiting</span>
       </div>
+      {workingId && !recordDetail && !approvalCandidate && <LoadingStatus compact className="my-3" title="Updating this request" />}
       {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
 
       <CompactRelationshipStage
@@ -1869,6 +1930,7 @@ function RelationshipLifecycle({
           )}
           {recordDetail.kind !== "broker-response" && <InterestDetailsPanel requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
           <div className="dashboard-modal-sticky-actions">
+            {workingId && !approvalCandidate && <LoadingStatus compact title="Updating protected access" />}
             {recordDetail.kind === "interest" ? (
               <InterestActions
                 interest={recordDetail.item}
@@ -1915,6 +1977,7 @@ function RelationshipLifecycle({
                 You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
               </p>
               {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
+              {workingId && <LoadingStatus compact className="mt-4" title="Granting Complete Portfolio access" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-5">
               <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
@@ -2362,10 +2425,9 @@ function PhotoManager({
             <div className="relative h-36 bg-white/5 sm:h-40">
               {urls[item.id] ? (
                 // Signed URLs are created client-side for the portfolio owner only.
-                // eslint-disable-next-line @next/next/no-img-element -- Signed Supabase URLs cannot use Next's static optimizer.
-                <img src={urls[item.id]} alt={item.alt_text || "Profile photo"} className="h-full w-full object-cover" />
+                <PortfolioImage key={urls[item.id]} src={urls[item.id]} alt={item.alt_text || "Profile photo"} className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full items-center justify-center text-xs text-white/35">Loading...</div>
+                <div className="flex h-full items-center justify-center text-xs text-white/35">Preview unavailable</div>
               )}
               {item.media_type === "hero" && (
                 <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-[#f4d98f] px-2 py-1 text-xs font-semibold text-[light-dark(#17151c,var(--app-dark-ink))]">

@@ -1,3 +1,4 @@
+import { PageLoading } from "@/components/loading/PageLoading";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -21,7 +22,7 @@ export default async function LoginPage({
   if (auth.status === "authenticated") redirect(destination);
 
   return (
-    <Suspense>
+    <Suspense fallback={<PageLoading title="Preparing sign-in" />}>
       <AuthForm mode="login" />
     </Suspense>
   );

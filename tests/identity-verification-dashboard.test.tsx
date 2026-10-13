@@ -45,6 +45,34 @@ describe("identity-verification dashboard controls", () => {
     expect(onStatusChange).toHaveBeenLastCalledWith("expired");
     expect(startSelf).not.toHaveBeenCalled();
   });
+  it("ends initial status feedback on failure and leaves a usable refresh action", async () => {
+    let resolve!: (value: { ok: false; code: string; message: string; status: number }) => void;
+    current.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+    expect(screen.getByRole("status")).toHaveTextContent("Refreshing your liveness status");
+    await waitFor(() => expect(current).toHaveBeenCalled());
+    await act(async () => resolve({ ok: false, code: "NETWORK_UNAVAILABLE", message: "Status unavailable", status: 0 }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Status unavailable");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
+    expect(screen.getByRole("button", { name: "Refresh check status" })).toBeEnabled();
+  });
+
+  it("shows result processing but stops for an actionable processing delay and confirmed email queue", async () => {
+    const attempt = { state: "awaiting_result", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: false, canCancel: true };
+    current.mockResolvedValueOnce({ ok: true, data: attempt });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Waiting for the confirmed liveness result"));
+    current.mockResolvedValueOnce({ ok: true, data: { ...attempt, processingIssue: "delayed" } });
+    await userEvent.click(screen.getByRole("button", { name: "Refresh check status" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Result processing is delayed");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
+    current.mockResolvedValueOnce({ ok: true, data: { ...attempt, state: "verified", canCancel: false, emailStatus: "queued" } });
+    await userEvent.click(screen.getByRole("button", { name: "Refresh check status" }));
+    expect(await screen.findByText("Your liveness check is complete.")).toBeInTheDocument();
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
+    expect(screen.getByText(/you do not need to wait for it to continue/)).toBeInTheDocument();
+  });
+
   it("checks a returning attempt once without resuming or creating another session", async () => {
     const active = { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true };
     current.mockResolvedValue({ ok: true, data: active });

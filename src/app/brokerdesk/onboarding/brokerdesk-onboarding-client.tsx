@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -93,7 +95,8 @@ export function BrokerdeskOnboardingClient({
           </ol>
         </aside>
 
-        <section className="brokerdesk-onboarding-card" aria-live="polite" aria-busy={pending}>
+        <section className="brokerdesk-onboarding-card">
+          <p className="sr-only" role="status" aria-atomic="true">{pending ? "" : `Setup step ${currentIndex + 1}: ${STEPS[currentIndex]?.label || "Verification"}.`}</p>
           {error && <p className="brokerdesk-form-error" role="alert">{error}</p>}
           {step === "business" && (
             <BusinessStep
@@ -297,9 +300,11 @@ function VerificationStep({
   return <div className="brokerdesk-form">
     <StepHeading icon={<ShieldCheck />} eyebrow="Verification" title="Your details are ready for review" body="Your workspace remains private until the required checks are complete. We will never mark it verified from form submission alone." />
     {error && <p className="brokerdesk-form-error" role="alert">{error}</p>}
-    {notice && <p className="account-notice is-success">{notice}</p>}
+    <p className={notice ? "account-notice is-success" : "sr-only"} role="status" aria-atomic="true">{notice}</p>
+    <p className="sr-only" role="status" aria-atomic="true">{pending || !hosted ? "" : hosted.url ? "Your secure verification is ready. Save the private management link before opening Didit." : "Your private management link is ready. Didit is temporarily unavailable."}</p>
     <div className="brokerdesk-verification-list">{onboarding.verificationChecks.map((check) => <div key={check.type}><span><strong>{labels[check.type]}</strong><small>{check.attentionReason || "We will guide you if more information is needed."}</small></span><b className={`is-${check.status}`}>{statuses[check.status]}</b></div>)}</div>
     {canStart && !showSecurity && <div className="brokerdesk-hold-note"><ShieldCheck aria-hidden="true" /><p><strong>Verify the person responsible for this business</strong><span>This checks your identity only. It does not create a matrimonial profile or approve the business.</span></p><button type="button" className="brokerdesk-primary-button" onClick={() => setShowSecurity(true)}>Verify my identity</button></div>}
+    {pending && !showFormAfterReturn && <LoadingStatus compact title="Preparing your security check" state="connecting" />}
     {canStart && showSecurity && !showFormAfterReturn && <div className="brokerdesk-hold-note"><ShieldCheck aria-hidden="true" /><p><strong>Confirm it is you</strong><span>Complete a fresh sign-in and authenticator check before identity verification.</span></p><div className="brokerdesk-form-actions"><button type="button" disabled={pending} className="brokerdesk-primary-button" onClick={() => beginSecurity("google")}>Continue with Google</button><button type="button" disabled={pending} className="brokerdesk-back-button" onClick={() => beginSecurity("email")}>Email me a sign-in link</button></div></div>}
     {canStart && showFormAfterReturn && !hosted && <form onSubmit={startVerification} className="brokerdesk-field-grid"><Field label="Your date of birth" name="birthDate" type="date" required wide hint="Used only for the Didit identity check. It does not cross the database boundary; the keyed comparison value is erased after a final decision." /><label className="brokerdesk-check"><input type="checkbox" name="consent" required /><span>I consent to VivIntro sending my name and date of birth to Didit for this identity check. Identity evidence is not copied into my VivIntro workspace.</span></label><FormActions pending={pending} primary="Prepare secure verification" /></form>}
     {hosted && <div className="brokerdesk-hold-note"><Check aria-hidden="true" /><p><strong>{hosted.url ? "Your secure verification is ready" : "Your private management link is ready"}</strong><span>{hosted.url ? "Save the private management link before opening Didit. It lets you review status or withdraw consent." : "Didit is temporarily unavailable. Save this link to review status or withdraw consent."}</span><a href={hosted.managementUrl}>Open private management link</a></p>{hosted.url && <a className="brokerdesk-primary-button" href={hosted.url}>Continue to Didit</a>}</div>}
@@ -320,5 +325,6 @@ function SelectField({ label, name, options, ...select }: React.SelectHTMLAttrib
 }
 
 function FormActions({ pending, primary, onBack }: { pending: boolean; primary: string; onBack?: () => void }) {
-  return <div className="brokerdesk-form-actions">{onBack && <button type="button" onClick={onBack} disabled={pending} className="brokerdesk-back-button">Back</button>}<button type="submit" disabled={pending} className="brokerdesk-primary-button">{pending ? "Saving…" : primary}<ChevronRight aria-hidden="true" /></button></div>;
+  return <div className="brokerdesk-form-actions">
+    {pending && <LoadingStatus compact title="Saving your setup details" />}{onBack && <button type="button" onClick={onBack} disabled={pending} className="brokerdesk-back-button">Back</button>}<button type="submit" disabled={pending} className="brokerdesk-primary-button">{pending ? "Saving…" : primary}<ChevronRight aria-hidden="true" /></button></div>;
 }

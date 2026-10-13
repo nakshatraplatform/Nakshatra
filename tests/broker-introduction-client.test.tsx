@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 vi.mock("@/components/templates", () => ({
   BiodataTemplate: ({ accessMode, interestAction }: { accessMode: string; interestAction?: React.ReactNode }) => <div data-testid="template" data-mode={accessMode}>{interestAction}</div>,
@@ -24,6 +24,17 @@ const base = {
 };
 
 describe("broker introduction recipient client", () => {
+  it("ends a pending introduction load when the network rejects", async () => {
+    let reject!: (error: Error) => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise((_done, failed) => { reject = failed; })));
+    render(<BrokerIntroductionClient introductionRef={introductionRef} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Checking access");
+    await act(async () => reject(new Error("offline")));
+    expect(await screen.findByText("This introduction is unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("template")).not.toBeInTheDocument();
+  });
+
   beforeEach(() => window.history.replaceState(null, "", "/"));
   afterEach(() => vi.unstubAllGlobals());
 

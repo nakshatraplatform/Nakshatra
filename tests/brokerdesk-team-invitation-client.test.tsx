@@ -24,6 +24,8 @@ describe("BrokerDesk team invitation client", () => {
       }), { status: 200 }));
     render(<TeamInvitationClient />);
     expect(await screen.findByRole("heading", { name: "Welcome to Trusted Matchmakers" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Invitation accepted. Open BrokerDesk to continue.");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
     expect(window.location.hash).toBe("");
     expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/v1/brokerdesk/team-invitations/exchange", expect.anything());
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/brokerdesk/team-invitations/accept", expect.anything());
