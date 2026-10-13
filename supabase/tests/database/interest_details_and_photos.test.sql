@@ -4,11 +4,12 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(34);
+select plan(38);
 
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a1100000-0000-4000-8000-000000000001', 'owner@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000002', 'a1100000-0000-4000-8000-000000000002', 'viewer@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000003', 'a1100000-0000-4000-8000-000000000003', 'stranger@access.test');
+select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000004', 'a1100000-0000-4000-8000-000000000004', 'family@access.test');
 
 insert into app_private.b2c_creator_entitlements (email_hash)
 values (app_private.normalized_email_hash('owner@access.test'));
@@ -136,7 +137,16 @@ select throws_ok($$select public.submit_interest_details(pg_temp.interest_input(
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || '{"profileFor":"son"}'::jsonb)$$,'22023','invalid candidate details','someone-else branch requires candidate details');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('profileFor','son','candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123','relationship',E'\t\n','location',pg_temp.interest_input()->'location')))$$,'22023','invalid candidate details','relationship cannot consist only of whitespace');
 select ok(public.submit_interest_details(pg_temp.interest_input()),'complete verified new visitor request is accepted');
-select is(public.get_interest_details((select id from public.interest_requests where requester_user_id=auth.uid() limit 1)),null::jsonb,'viewer cannot read owner-only detail projection');
+reset role;
+-- Capture the real submitted ID outside requester RLS. A lookup performed by the
+-- viewer could return NULL and make the owner-only assertion pass vacuously.
+select id as submitted_request_id from public.interest_requests
+where requester_user_id='a1000000-0000-4000-8000-000000000003' \gset
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
+select is(public.get_interest_details(:'submitted_request_id'::uuid),null::jsonb,'viewer cannot read their own owner-only detail projection');
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
+select is(public.get_interest_details(:'submitted_request_id'::uuid),null::jsonb,'foreign signed-in viewer cannot read retained interest details');
 reset role;
 select is((select metadata#>>'{location_details,city}' from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003'),'Fixture city','stored location comes from canonical reference rows');
 
@@ -183,6 +193,29 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","r
 select ok(not public.can_read_approved_photo('a1000000-0000-4000-8000-000000000001/interest-fixture/approved_only.webp'),'revoked viewer loses protected-photo capability');
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
 select is(public.get_interest_details((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003')) ->> 'accessStatus','revoked','owner retains full submission after ending access');
+reset role;
+
+-- A separate verified visitor exercises the successful non-self path, rather
+-- than retrying the self request and observing duplicate-request behavior.
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000004","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000004"}';
+select ok(public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object(
+  'name','Leela Rao','email','family@access.test','profileFor','son',
+  'candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test',
+    'phone','+1 617 555 0123','relationship','My son','location',pg_temp.interest_input()->'location')
+)),'verified family member can submit complete non-self interest');
+reset role;
+select is((select metadata->'candidate' from public.interest_requests
+  where requester_user_id='a1000000-0000-4000-8000-000000000004'),
+  jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123',
+    'relationship','My son','location',jsonb_build_object('country','Fixture country','state','Fixture state',
+      'city','Fixture city','countryCode','ZZ','regionCode','ZZ','cityId',999000002)),
+  'candidate details persist with canonical location for a non-self request');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
+select is(public.get_interest_details((select id from public.interest_requests
+  where requester_user_id='a1000000-0000-4000-8000-000000000004'))#>>'{metadata,candidate,name}',
+  'Arun Rao','owner can reopen persisted candidate details after non-self submission');
 reset role;
 select * from finish();
 rollback;
