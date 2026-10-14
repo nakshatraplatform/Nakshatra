@@ -83,6 +83,7 @@ import {
 } from "@/features/portfolio/server/publication-readiness.contract";
 
 interface Props {
+  renderedAt?: number;
   portfolio: Portfolio | null;
   canCreatePortfolio: boolean;
   pilotAccessState?: PilotAccessState | null;
@@ -106,6 +107,7 @@ const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
 type RelationshipStage = "awaiting" | "set-aside" | "access";
 
 export default function DashboardClient({
+  renderedAt = 0,
   portfolio,
   canCreatePortfolio,
   pilotAccessState = null,
@@ -1094,6 +1096,7 @@ export default function DashboardClient({
 
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
           {showRelationshipDashboard && <RelationshipLifecycle
+            renderedAt={renderedAt}
             expandedStages={expandedRelationshipStages}
             onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
             interests={interestItems}
@@ -1657,7 +1660,7 @@ function ReceivedBrokerIntroductions({ introductions }: { introductions: Receive
       {introductions.map((introduction) => <article key={introduction.introductionRef} className="flex flex-col gap-4 rounded-xl border border-[light-dark(#d9d3c7,var(--app-dark-border))] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <strong className="text-sm text-[light-dark(#18272e,var(--app-dark-ink))]">{introduction.sourceName}</strong>
-          <p className="mt-2 text-xs text-[light-dark(#526273,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · {introduction.disclosureLevel === "complete" ? "Complete access" : "respond by"} {new Date(introduction.expiresAt).toLocaleDateString()}</p>
+          <p className="mt-2 text-xs text-[light-dark(#526273,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · {introduction.disclosureLevel === "complete" ? "Complete access" : "respond by"} {formatAccessDate(introduction.expiresAt)}</p>
         </div>
         <Link className="dashboard-secondary-action" href={`/introductions/${introduction.introductionRef}`}>
           View introduction
@@ -1668,6 +1671,7 @@ function ReceivedBrokerIntroductions({ introductions }: { introductions: Receive
 }
 
 function RelationshipLifecycle({
+  renderedAt,
   expandedStages,
   onToggleStage,
   interests,
@@ -1680,6 +1684,7 @@ function RelationshipLifecycle({
   onGrantChange,
 }: {
   expandedStages: Record<RelationshipStage, boolean>;
+  renderedAt: number;
   onToggleStage: (stage: RelationshipStage) => void;
   interests: DashboardInterest[];
   grants: AccessGrant[];
@@ -1908,7 +1913,7 @@ function RelationshipLifecycle({
         empty="No current approvals."
       >
         {activeGrants.slice(0, 3).map((grant) => (
-          <GrantSummaryCard key={grant.id} grant={grant} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
+          <GrantSummaryCard key={grant.id} grant={grant} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
         ))}
       </CompactRelationshipStage>
 
@@ -1943,7 +1948,7 @@ function RelationshipLifecycle({
             {visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
               <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
             ) : record.kind === "grant" ? (
-              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
+              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
             ) : (
               <BrokerResponseSummaryCard key={record.item.introductionRef} response={record.item} onPrimary={() => setRecordDetail(record)} />
             ))}
@@ -2100,8 +2105,8 @@ function InterestSummaryCard({ interest, statusLabel, primaryLabel, onPrimary, d
   );
 }
 
-function GrantSummaryCard({ grant, viewerAccessAvailable, onPrimary }: { grant: AccessGrant; viewerAccessAvailable: boolean; onPrimary: () => void }) {
-  const urgent = grant.status === "active" && daysUntil(grant.expiresAt) <= 3;
+function GrantSummaryCard({ grant, renderedAt, viewerAccessAvailable, onPrimary }: { grant: AccessGrant; renderedAt: number; viewerAccessAvailable: boolean; onPrimary: () => void }) {
+  const urgent = grant.status === "active" && daysUntil(grant.expiresAt, renderedAt) <= 3;
   const sourceType = grant.sourceType || "direct";
   return (
     <article className="dashboard-summary-item" data-record-state={urgent ? "expiring" : grant.status}>
@@ -2206,8 +2211,8 @@ function sortByNewest<T>(items: T[], dateFor: (item: T) => string | null | undef
   return [...items].sort((left, right) => new Date(dateFor(right) || 0).getTime() - new Date(dateFor(left) || 0).getTime());
 }
 
-function daysUntil(value: string) {
-  const difference = new Date(value).getTime() - Date.now();
+function daysUntil(value: string, referenceTime: number) {
+  const difference = new Date(value).getTime() - referenceTime;
   return Number.isFinite(difference) ? Math.ceil(difference / 86_400_000) : Number.POSITIVE_INFINITY;
 }
 
@@ -2222,6 +2227,7 @@ function formatAccessDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "recently";
   return new Intl.DateTimeFormat("en", {
+    timeZone: "UTC",
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -2248,7 +2254,7 @@ function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: stri
 function formatInterestDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Recently";
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en", { timeZone: "UTC", month: "short", day: "numeric" }).format(date);
 }
 
 function formatInterestLocation(metadata: Record<string, unknown> | null) {

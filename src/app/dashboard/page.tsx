@@ -17,6 +17,9 @@ export default async function DashboardPage({
   const { supabase, user } = await getAuthenticatedUser();
   const dashboard = await loadDashboardView({ supabase, userId: user.id });
   const { portfolio } = dashboard;
+  // One request clock keeps expiry labels identical during server rendering and hydration.
+  // eslint-disable-next-line react-hooks/purity -- evaluated once per server request
+  const renderedAt = Date.now();
 
   let shareUrl: string | null = null;
   if (portfolio?.share_token) {
@@ -30,10 +33,8 @@ export default async function DashboardPage({
   let daysLeft: number | null = null;
   if (portfolio?.expires_at) {
     const expiresAt = new Date(portfolio.expires_at).getTime();
-    // eslint-disable-next-line react-hooks/purity -- server component evaluated per request
-    const now = Date.now();
-    isExpired = expiresAt < now;
-    daysLeft = Math.max(0, Math.ceil((expiresAt - now) / 86_400_000));
+    isExpired = expiresAt < renderedAt;
+    daysLeft = Math.max(0, Math.ceil((expiresAt - renderedAt) / 86_400_000));
   }
 
   const dashboardRevision = [
@@ -49,6 +50,7 @@ export default async function DashboardPage({
 
   return (
     <DashboardClient
+      renderedAt={renderedAt}
       key={dashboardRevision}
       portfolio={portfolio}
       canCreatePortfolio={dashboard.canCreatePortfolio}

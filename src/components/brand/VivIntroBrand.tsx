@@ -63,8 +63,8 @@ export function VivIntroBrand({
     >
       {tone === "adaptive" ? (
         <>
-          <BrandImage metrics={metrics} tone="primary" priority={priority} className={styles.primaryArtwork} />
-          <BrandImage metrics={metrics} tone="reverse" priority={priority} className={styles.reverseArtwork} />
+          <BrandImage metrics={metrics} tone="primary" priority={priority} adaptive className={styles.primaryArtwork} />
+          <BrandImage metrics={metrics} tone="reverse" priority={priority} adaptive className={styles.reverseArtwork} />
         </>
       ) : (
         <BrandImage metrics={metrics} tone={tone} priority={priority} />
@@ -84,6 +84,7 @@ export function VivIntroBrand({
 }
 
 function BrandImage({
+  adaptive = false,
   metrics,
   tone,
   priority,
@@ -91,6 +92,7 @@ function BrandImage({
 }: {
   metrics: BrandMetrics;
   tone: Exclude<VivIntroBrandTone, "adaptive">;
+  adaptive?: boolean;
   priority: boolean;
   className?: string;
 }) {
@@ -101,7 +103,9 @@ function BrandImage({
       width={metrics.width}
       height={metrics.height}
       className={[styles.image, className].filter(Boolean).join(" ")}
-      loading={priority || metrics.assetName === "lockup-stacked" ? "eager" : "lazy"}
+      loading={priority ? "eager" : "lazy"}
+      // CSS chooses one adaptive artwork; React must not preload both alternatives.
+      fetchPriority={adaptive ? "low" : undefined}
     />
   );
 }
