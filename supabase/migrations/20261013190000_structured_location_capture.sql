@@ -307,8 +307,24 @@ declare
   mapped_subdivision_code text;
 begin
   if new.current_country_code is null then
-    -- Legacy locations can have display labels without a canonical country code.
-    -- Preserve them unless the caller explicitly clears those columns.
+    -- Legacy/manual locations can have labels without a canonical country code.
+    -- The caller must explicitly null labels to remove them; a manual replacement
+    -- may use the same text as the former canonical choice.
+    if tg_op = 'UPDATE' and old.current_country_code is not null then
+      new.current_region_code := null;
+      new.current_subdivision_code := null;
+      new.current_city_geoname_id := null;
+      new.current_postal_code := null;
+      new.location_source := null;
+      -- If a higher manual label changes, unchanged lower labels belong to the
+      -- former hierarchy and must not be carried into the new one.
+      if new.current_country is distinct from old.current_country then
+        if new.current_region is not distinct from old.current_region then new.current_region := null; end if;
+        if new.current_city is not distinct from old.current_city then new.current_city := null; end if;
+      elsif new.current_region is distinct from old.current_region then
+        if new.current_city is not distinct from old.current_city then new.current_city := null; end if;
+      end if;
+    end if;
     return new;
   end if;
 

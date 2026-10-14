@@ -106,6 +106,11 @@ reset role;
 insert into public.reference_countries(country_code,name) values ('ZZ','Fixture country') on conflict(country_code) do update set is_active=true;
 insert into public.reference_regions(geoname_id,country_code,region_code,name) values (999000001,'ZZ','ZZ','Fixture state');
 insert into public.reference_cities(geoname_id,country_code,region_code,name) values (999000002,'ZZ','ZZ','Fixture city');
+insert into public.reference_regions(geoname_id,country_code,region_code,name)
+values (999000004,'US','MA','Massachusetts')
+on conflict(country_code,region_code) do update set name=excluded.name,is_active=true;
+insert into public.reference_cities(geoname_id,country_code,region_code,name)
+values (999000003,'US','MA','Fixture city');
 insert into public.portfolio_media(portfolio_id,candidate_id,media_type,storage_path,visibility,sort_order)
 select 'a3000000-0000-4000-8000-000000000001','a2000000-0000-4000-8000-000000000001','gallery',
   'a1000000-0000-4000-8000-000000000001/interest-fixture/' || visibility || '.webp',visibility::public.visibility_level,row_number() over()::integer
@@ -117,7 +122,12 @@ select jsonb_build_object('portfolioToken','phase2_secure_token_1','name','Mira 
   'email','stranger@access.test','phone','+1 617 555 0123',
   'familyContext','Our family values kindness, honesty and mutual respect.',
   'message','I enjoyed reading your introduction and would like to learn more about your family, interests and plans for the future.',
-  'location',jsonb_build_object('countryCode','ZZ','regionCode','ZZ','cityId',999000002))
+  'location',jsonb_build_object('country','United States','countryCode','US',
+    'state','Massachusetts','subdivisionCode','US-MA','city','Fixture city',
+    'cityGeonameId',999000003,'postalCode','02108','locationSource','manual'))
+$$;
+create function pg_temp.legacy_candidate_location() returns jsonb language sql as $$
+  select jsonb_build_object('countryCode','ZZ','regionCode','ZZ','cityId',999000002)
 $$;
 select is(app_private.trim_interest_text(E' \t\n' || chr(160) || 'hello' || chr(65279) || E'\r\n'), 'hello', 'SQL trim matches authoring whitespace normalization');
 select ok(not has_function_privilege('anon','public.get_interest_details(uuid)','EXECUTE'),'anonymous users cannot inspect owner details');
@@ -133,9 +143,9 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","r
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('familyContext',repeat(E'\t',40)))$$,'22023','invalid interest request','tabs cannot satisfy family-context minimum');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('message',repeat(E'\n',80)))$$,'22023','invalid interest request','newlines cannot satisfy message minimum');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('familyContext',jsonb_build_object('details',repeat('x',40))))$$,'22023','invalid interest request','object payload cannot be coerced into family context');
-select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('location',jsonb_build_object('countryCode','US','regionCode','ZZ','cityId',999000002)))$$,'22023','invalid interest location','city must belong to selected country and state');
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('location',jsonb_build_object('country','United States','countryCode','US','state','Massachusetts','subdivisionCode','US-MA','city','Fixture city','cityGeonameId',999000002,'postalCode','02108','locationSource','manual')))$$,'22023','invalid interest location','city must belong to selected country and state');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || '{"profileFor":"son"}'::jsonb)$$,'22023','invalid candidate details','someone-else branch requires candidate details');
-select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('profileFor','son','candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123','relationship',E'\t\n','location',pg_temp.interest_input()->'location')))$$,'22023','invalid candidate details','relationship cannot consist only of whitespace');
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('profileFor','son','candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123','relationship',E'\t\n','location',pg_temp.legacy_candidate_location())))$$,'22023','invalid candidate details','relationship cannot consist only of whitespace');
 select ok(public.submit_interest_details(pg_temp.interest_input()),'complete verified new visitor request is accepted');
 reset role;
 -- Capture the real submitted ID outside requester RLS. A lookup performed by the
@@ -202,7 +212,7 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000004","r
 select ok(public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object(
   'name','Leela Rao','email','family@access.test','profileFor','son',
   'candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test',
-    'phone','+1 617 555 0123','relationship','My son','location',pg_temp.interest_input()->'location')
+    'phone','+1 617 555 0123','relationship','My son','location',pg_temp.legacy_candidate_location())
 )),'verified family member can submit complete non-self interest');
 reset role;
 select is((select metadata->'candidate' from public.interest_requests

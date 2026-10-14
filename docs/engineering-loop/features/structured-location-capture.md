@@ -187,5 +187,6 @@ Validation mode: behavioral change with regression-first tests.
 - Updated browser fixtures and assertions for search-first ZIP/PIN entry, manual fallback, and normalized owner location. The 15 previously failing cases now pass across desktop, tablet, and mobile.
 - Added focused contract/provider/publication tests; full Vitest and feature coverage gate pass (1,284 tests), as do lint, typecheck, static database fixtures, and a production build with process-local placeholder public Supabase values.
 - Full pgTAP remains unverified locally because Docker/Podman is unavailable; the next PR CI run must confirm the database suite. No production database writes were made.
+- The next CI run passed the previously failing publication suites and isolated three remaining fixture/behavior gaps: clearing a canonical candidate location left stale denormalized fields; a structured-interest fixture lacked pilot self/verification eligibility; and an older interest test still submitted a legacy-only country. The candidate trigger now clears dependent fields on canonical removal, while the interest/public-perimeter fixtures satisfy current pilot and ISO contracts without relaxing production checks. A further pgTAP run is pending.
 
 **Status:** Integrated on latest main and unit-verified; full pgTAP/CI verification pending

@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(36);
+select plan(37);
 
 select has_table('public', 'reference_subdivisions', 'ISO subdivision reference table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.reference_subdivisions'::regclass), 'subdivision references have RLS enabled');
@@ -94,7 +94,10 @@ update public.candidates
 set current_country_code = null,
     current_region_code = null,
     current_subdivision_code = null,
-    current_city_geoname_id = null
+    current_city_geoname_id = null,
+    current_country = null,
+    current_region = null,
+    current_city = null
 where id = '98765432-1000-4000-8000-000000000001';
 
 select ok(
@@ -113,6 +116,20 @@ select ok(
   ),
   'clearing a candidate location removes both ISO and legacy GeoNames hierarchy values'
 );
+
+update public.candidates
+set current_country_code = 'US', current_region_code = 'US-MA',
+    current_subdivision_code = 'US-MA', current_city_geoname_id = 9876543210,
+    current_postal_code = '02108', location_source = 'zippopotam'
+where id = '98765432-1000-4000-8000-000000000001';
+update public.candidates
+set current_country_code = null, current_country = 'Manual Country'
+where id = '98765432-1000-4000-8000-000000000001';
+select ok((
+  select current_country = 'Manual Country' and current_region is null and current_city is null
+    and current_subdivision_code is null and current_postal_code is null and location_source is null
+  from public.candidates where id = '98765432-1000-4000-8000-000000000001'
+), 'partial manual replacement clears stale lower-level labels and canonical fields');
 
 select ok(app_private.public_snapshot_has_forbidden_key('{"personal":{"address_line_1":"100 Main Street"}}'::jsonb), 'public snapshots reject exact street addresses');
 select ok(app_private.approved_snapshot_has_forbidden_key('{"personal":{"address_line_2":"Unit 12"}}'::jsonb), 'approved snapshots reject exact street addresses');
@@ -161,7 +178,6 @@ select pg_temp.create_auth_actor(
   'viewer@structured-location.test'
 );
 
-set local session_replication_role = replica;
 insert into public.candidates(id, primary_owner_user_id, display_name, created_by)
 values (
   '98765432-2200-4000-8000-000000000001',
@@ -169,6 +185,13 @@ values (
   'Structured location owner',
   '98765432-2000-4000-8000-000000000001'
 );
+insert into public.candidate_personal_details(candidate_id, profile_for)
+values ('98765432-2200-4000-8000-000000000001', 'self');
+update app_private.identity_verification_subjects
+set status = 'verified', verified_at = now() - interval '1 day', expires_at = now() + interval '365 days'
+where candidate_id = '98765432-2200-4000-8000-000000000001';
+
+set local session_replication_role = replica;
 insert into public.portfolios(
   id, user_id, candidate_id, share_token, draft_data, published_data,
   is_published, expires_at
@@ -188,6 +211,7 @@ insert into public.public_portfolio_snapshots(
   pg_catalog.now() + interval '30 days', true
 );
 set local session_replication_role = origin;
+select pg_temp.prime_photo_identity_verification('98765432-2300-4000-8000-000000000001');
 
 select pg_temp.set_authenticated_claims(
   '98765432-2000-4000-8000-000000000002',
