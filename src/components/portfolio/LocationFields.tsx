@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LocationSuggestion, StructuredLocation } from "@/features/location/location.contract";
 import { isValidPostalCode, locationDisplayValue, normalizePostalCode } from "@/features/location/location.contract";
 import { subdivisionsForCountry } from "@/features/location/subdivisions";
@@ -49,12 +49,29 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   );
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [message, setMessage] = useState("");
   const sessionToken = useRef(newSessionToken());
   const operationId = useRef(0);
-  const listboxId = useMemo(() => `location-options-${newSessionToken()}`, []);
+  const selectedViewRef = useRef<HTMLDivElement>(null);
+  const focusSelectedView = useRef(false);
+  const listboxId = useId();
+  const activeIndex = suggestions.findIndex(option => option.id === activeId);
+  const expanded = suggestionsOpen && suggestions.length > 0;
   const subdivisions = subdivisionsForCountry(countryCode);
+
+  useEffect(() => {
+    if (focusSelectedView.current && mode !== "search") {
+      selectedViewRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
+      focusSelectedView.current = false;
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (expanded && activeIndex >= 0) document.getElementById(`${listboxId}-option-${activeIndex}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, expanded, listboxId]);
 
   useEffect(() => {
     if (mode !== "search" || query.trim().length < 2) return;
@@ -72,10 +89,12 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   }, [countryCode, mode, portfolioToken, query]);
 
   function chooseCountry(nextCode: SupportedCountryCode) {
+    setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1; setCountryCode(nextCode); setQuery(""); setSuggestions([]); sessionToken.current = newSessionToken();
     onChange({ country: COUNTRIES.find((item) => item.code === nextCode)?.name, countryCode: nextCode, region: "", regionCode: undefined, city: "", cityGeonameId: undefined, postalCode: "", locationSource: undefined });
   }
   function beginSearch() {
+    setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1;
     const nextCountryCode = value.countryCode === "US" ? "US" : value.countryCode === "IN" ? "IN" : countryCode;
     setCountryCode(nextCountryCode);
@@ -93,6 +112,8 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
     });
   }
   function applyLocation(location: LocationValue) {
+    focusSelectedView.current = true;
+    setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1;
     onChange(location);
     setMode(requireCompleteHierarchy && !hasCompleteLocationHierarchy(location) ? "manual" : "confirmed");
@@ -114,22 +135,23 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
     applyLocation({ country: suggestion.country, countryCode: suggestion.countryCode, region: suggestion.state, regionCode: suggestion.subdivisionCode, city: suggestion.city, cityGeonameId: suggestion.cityGeonameId, postalCode: suggestion.postalCode, locationSource: suggestion.locationSource });
   }
   function beginManualEntry() {
+    setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1;
     if (!value.countryCode || !["IN", "US"].includes(value.countryCode)) chooseCountry(countryCode);
     setMode("manual"); setSuggestions([]); setMessage("");
   }
 
   if (mode === "confirmed") return (
-    <div className="rounded-2xl border border-[color:var(--workspace-line)] bg-white/70 p-4">
+    <div ref={selectedViewRef} className="rounded-2xl border border-[color:var(--workspace-line)] bg-[color:var(--workspace-surface)] p-4">
       <div className="flex items-start justify-between gap-4"><div>
         <p className="text-sm font-semibold text-[color:var(--workspace-ink)]">Selected location</p>
-        <p className="mt-1 text-sm text-[color:var(--workspace-muted)]">{locationDisplayValue({ country: value.country, state: value.region, city: value.city, postalCode: value.postalCode }) || "No location selected"}{value.postalCode ? ` · ${value.postalCode}` : ""}</p>
+        <p className="mt-2 text-sm text-[color:var(--workspace-muted)]">{locationDisplayValue({ country: value.country, state: value.region, city: value.city, postalCode: value.postalCode }) || "No location selected"}{value.postalCode ? ` · ${value.postalCode}` : ""}</p>
       </div><button type="button" className="text-sm font-semibold text-[color:var(--workspace-teal)]" onClick={beginSearch}>Change</button></div>
     </div>
   );
 
   if (mode === "manual") return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div ref={selectedViewRef} className="grid gap-4 sm:grid-cols-2">
       {message ? <p className="text-sm text-[color:var(--workspace-muted)] sm:col-span-2" role="status">{message}</p> : null}
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.country}{locationRequired ? " *" : ""}</span><select aria-label={labels.country} autoComplete="country" required={locationRequired} value={value.countryCode || countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.region}{requireCompleteHierarchy ? " *" : ""}</span><select aria-label={labels.region} autoComplete="address-level1" required={requireCompleteHierarchy} value={value.regionCode || ""} onChange={(event) => { const subdivision = subdivisions.find((item) => item.subdivisionCode === event.target.value); onChange({ region: subdivision?.name || "", regionCode: subdivision?.subdivisionCode, city: "", cityGeonameId: undefined, postalCode: "", locationSource: "manual" }); }} className="biodata-field min-h-12"><option value="">Select state</option>{subdivisions.map((item) => <option key={item.subdivisionCode} value={item.subdivisionCode}>{item.name}</option>)}</select></label>
@@ -140,11 +162,39 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   );
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[11rem_1fr]">
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-[11rem_1fr]">
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>Search country</span><select aria-label="Search country" value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
-        <label className="relative flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>ZIP or PIN code{locationRequired ? " *" : ""}</span><input aria-label="ZIP or PIN code" role="combobox" aria-autocomplete="list" aria-expanded={suggestions.length > 0} aria-controls={listboxId} required={locationRequired} value={query} onChange={(event) => { operationId.current += 1; setQuery(event.target.value); setSuggestions([]); setIsSearching(false); setMessage(""); }} placeholder={countryCode === "IN" ? "Try 560001" : "Try 02108"} className="biodata-field min-h-12" />
-          {suggestions.length > 0 ? <ul id={listboxId} role="listbox" className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[color:var(--workspace-line)] bg-white p-1 shadow-lg">{suggestions.map((suggestion) => <li key={suggestion.id} role="option" aria-selected="false"><button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-[color:var(--workspace-soft)]" onClick={() => void selectSuggestion(suggestion)}>{suggestion.label}</button></li>)}{suggestions.some((suggestion) => suggestion.provider === "zippopotam") ? <li role="presentation" className="px-3 py-1 text-right text-xs text-[color:var(--workspace-muted)]">ZIP data by Zippopotam.us</li> : null}{suggestions.some((suggestion) => suggestion.provider === "google_places") ? <li role="presentation" className="px-3 py-1 text-right text-xs text-[color:var(--workspace-muted)]">Powered by Google</li> : null}</ul> : null}
+        <label className="relative flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"
+          onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) { setSuggestionsOpen(false); setActiveId(null); } }}>
+          <span>ZIP or PIN code{locationRequired ? " *" : ""}</span>
+          <input aria-label="ZIP or PIN code" role="combobox" aria-autocomplete="list" aria-expanded={expanded}
+            aria-controls={expanded ? listboxId : undefined}
+            aria-activedescendant={expanded && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+            required={locationRequired} value={query}
+            onFocus={() => setSuggestionsOpen(true)}
+            onChange={event => { operationId.current += 1; setQuery(event.target.value); setSuggestions([]); setActiveId(null); setSuggestionsOpen(true); setIsSearching(false); setMessage(""); }}
+            onKeyDown={event => {
+              if (event.nativeEvent.isComposing) return;
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && suggestions.length) {
+                event.preventDefault(); setSuggestionsOpen(true);
+                const next = activeIndex < 0 ? event.key === "ArrowDown" ? 0 : suggestions.length - 1 : (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + suggestions.length) % suggestions.length;
+                setActiveId(suggestions[next].id);
+              } else if (event.key === "Enter" && expanded && activeIndex >= 0) {
+                event.preventDefault(); void selectSuggestion(suggestions[activeIndex]);
+              } else if (event.key === "Escape" && expanded) {
+                event.preventDefault(); event.stopPropagation(); setSuggestionsOpen(false); setActiveId(null);
+              } else if (event.key === "Tab") { setSuggestionsOpen(false); setActiveId(null); }
+            }}
+            placeholder={countryCode === "IN" ? "Try 560001" : "Try 02108"} className="biodata-field min-h-12" />
+          {expanded ? <ul id={listboxId} role="listbox" aria-label="Location suggestions" className="location-suggestions">
+            {suggestions.map((suggestion, index) => <li key={suggestion.id} role="presentation">
+              <button id={`${listboxId}-option-${index}`} type="button" role="option" aria-selected={index === activeIndex} tabIndex={-1}
+                className="location-suggestion" onMouseDown={event => event.preventDefault()} onClick={() => void selectSuggestion(suggestion)}>{suggestion.label}</button>
+            </li>)}
+            {suggestions.some(suggestion => suggestion.provider === "zippopotam") ? <li role="presentation" className="px-4 py-2 text-right text-xs text-[color:var(--workspace-muted)]">ZIP data by Zippopotam.us</li> : null}
+            {suggestions.some(suggestion => suggestion.provider === "google_places") ? <li role="presentation" className="px-4 py-2 text-right text-xs text-[color:var(--workspace-muted)]">Powered by Google</li> : null}
+          </ul> : null}
         </label>
       </div>
       <p aria-live="polite" className="min-h-5 text-sm text-[color:var(--workspace-muted)]">{isSearching ? "Searching locations…" : message}</p>

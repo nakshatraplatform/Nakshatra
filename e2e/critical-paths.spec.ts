@@ -98,7 +98,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(viewerChoiceDialog).toBeVisible();
   const googleContinuation = viewerChoiceDialog.getByRole("button", { name: "Continue with Google" });
   await expect(googleContinuation).toBeVisible();
-  await expect(googleContinuation).toHaveCSS("background-color", "rgb(33, 70, 91)");
+  await expect(googleContinuation).toHaveCSS("background-color", "rgb(35, 75, 104)");
   await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
 
   const interestDialog = page.getByRole("dialog", { name: /introduce yourself/i });

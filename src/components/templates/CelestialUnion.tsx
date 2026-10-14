@@ -12,6 +12,8 @@ import { PortfolioNavigation, type PortfolioSectionLink } from "./PortfolioNavig
 import { PortfolioFooter } from "./PortfolioFooter";
 import { PortfolioBackToTop } from "./PortfolioBackToTop";
 import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
+import { PortfolioNarrative } from "./PortfolioNarrative";
+import { PortfolioContactActions } from "./PortfolioContactActions";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   CELESTIAL_THEME_COLORS,
@@ -28,6 +30,7 @@ interface CelestialUnionProps {
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
+  viewingOwnPortfolio?: boolean;
 }
 
 interface ChapterDefinition {
@@ -61,6 +64,7 @@ export default function CelestialUnion({
   photos = [],
   horoscopeAttachment,
   interestAction,
+  viewingOwnPortfolio = false,
 }: CelestialUnionProps) {
   const appearance = getCelestialAppearance(data.style);
   const theme = CELESTIAL_THEME_COLORS[appearance];
@@ -209,7 +213,7 @@ export default function CelestialUnion({
       title: "Personal story",
       content: (
         <div className="portfolio-personal-content">
-          {profileSummary && <p className="portfolio-long-copy">{profileSummary}</p>}
+          {profileSummary && <PortfolioNarrative text={profileSummary} label="Personal story" />}
           {hasPersonalDetails && (
             <div className="portfolio-detail-grid portfolio-personal-details">
               <DataPair label="Gender" value={genderLabel(data.personal.gender)} />
@@ -322,7 +326,7 @@ export default function CelestialUnion({
       title: "Family",
       content: (
         <>
-          {clean(data.family?.public_summary) && <p className="portfolio-long-copy">{data.family?.public_summary}</p>}
+          {clean(data.family?.public_summary) && <PortfolioNarrative text={data.family?.public_summary || ""} label="Family introduction" />}
           <div className="portfolio-detail-grid">
             {hasApprovedAccess && <DataPair label="Father or guardian" value={familyMemberValue(data.family?.father)} />}
             {hasApprovedAccess && <DataPair label="Mother or guardian" value={familyMemberValue(data.family?.mother)} />}
@@ -422,7 +426,7 @@ export default function CelestialUnion({
       title: "Hopes for a partnership",
       content: (
         <>
-          {clean(data.preferences?.narrative) && <p className="portfolio-long-copy">{data.preferences?.narrative}</p>}
+          {clean(data.preferences?.narrative) && <PortfolioNarrative text={data.preferences?.narrative || ""} label="Hopes for a partnership" />}
           {hasApprovedAccess && (
             <div className="portfolio-detail-grid portfolio-preference-grid">
               <DataPair label="Preferred age" value={clean(data.preferences?.age_range)} />
@@ -466,11 +470,11 @@ export default function CelestialUnion({
       content: hasApprovedAccess && clean(data.personal.long_term_goals) && clean(data.personal.shared_life_plans)
         ? (
             <div className="portfolio-personal-content">
-              <div><h3>Life direction</h3><p className="portfolio-long-copy">{data.personal.long_term_goals}</p></div>
-              <div><h3>What I hope to share</h3><p className="portfolio-long-copy">{data.personal.shared_life_plans}</p></div>
+              <div><h3>Life direction</h3><PortfolioNarrative text={data.personal.long_term_goals || ""} label="Life direction" /></div>
+              <div><h3>What I hope to share</h3><PortfolioNarrative text={data.personal.shared_life_plans || ""} label="What I hope to share" /></div>
             </div>
           )
-        : <p className="portfolio-long-copy">{sharedLifeStatement}</p>,
+        : <PortfolioNarrative text={sharedLifeStatement} label="Shared future" />,
     });
   }
 
@@ -704,8 +708,7 @@ export default function CelestialUnion({
                 {contactEntries.map((contact, index) => (
                   <div key={`${contact.name}-${index}`}>
                     <strong>{contact.name}{contact.relationship ? ` · ${contact.relationship}` : ""}</strong>
-                    {contact.phone && <span>{contact.phone}</span>}
-                    {contact.email && <span>{contact.email}</span>}
+                    <PortfolioContactActions phone={contact.phone} email={contact.email} />
                   </div>
                 ))}
               </div>
@@ -715,7 +718,7 @@ export default function CelestialUnion({
           </section>
         )}
 
-        {!ownerPreview && (
+        {!ownerPreview && !viewingOwnPortfolio && (
           <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
@@ -778,8 +781,8 @@ function BriefIntroduction({
         </div>
       )}
       {tags.length > 0 && <div className="portfolio-tags">{tags.map((value) => <span key={value}>{value}</span>)}</div>}
-      {familyIntroduction && <div><h3>Family introduction</h3><p className="portfolio-long-copy">{familyIntroduction}</p></div>}
-      {partnershipIntroduction && <div><h3>Hopes for a partnership</h3><p className="portfolio-long-copy">{partnershipIntroduction}</p></div>}
+      {familyIntroduction && <div><h3>Family introduction</h3><PortfolioNarrative text={familyIntroduction} label="Family introduction" /></div>}
+      {partnershipIntroduction && <div><h3>Hopes for a partnership</h3><PortfolioNarrative text={partnershipIntroduction} label="Hopes for a partnership" /></div>}
     </section>
   );
 }
@@ -805,7 +808,7 @@ function TimelineItem({ icon, label, title, meta, detail }: { icon: ReactNode; l
         <span>{label}</span>
         <h3>{title}</h3>
         {meta && <p className="portfolio-timeline-meta">{meta}</p>}
-        {detail && <p className="portfolio-section-copy">{detail}</p>}
+        {detail && <PortfolioNarrative text={detail} label={label} className="portfolio-section-copy" />}
       </div>
     </article>
   );

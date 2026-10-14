@@ -98,6 +98,56 @@ const photos: PortfolioPhoto[] = [
 ];
 
 describe("celestial union portfolio", () => {
+  it("hides conversion for the signed-in public-link owner without widening disclosure", () => {
+    render(<BiodataTemplate templateId={3} data={complete} sunSign="kanya" accessMode="public" viewingOwnPortfolio />);
+    expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy phone" })).not.toBeInTheDocument();
+  });
+
+  it("lets viewers expand and collapse a lengthy authorized narrative", () => {
+    const narrative = "A thoughtful story about family, work and shared values. ".repeat(24);
+    render(<CelestialUnion data={{ ...complete, personal: { ...complete.personal, profile_summary: narrative } }} sunSign="kanya" accessMode="public" />);
+    const toggle = screen.getByRole("button", { name: "Read more: Personal story" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const text = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(text.textContent!.length).toBeLessThan(narrative.length);
+    fireEvent.click(toggle);
+    expect(text.textContent).toBe(narrative.trim());
+    fireEvent.click(screen.getByRole("button", { name: "Read less: Personal story" }));
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("copies only authorized contact values and supplies safe action URLs", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<CelestialUnion data={complete} sunSign="kanya" accessMode="approved" />);
+    expect(screen.getByRole("link", { name: "Call" })).toHaveAttribute("href", "tel:+919000000000");
+    expect(screen.getByRole("link", { name: "Email" })).toHaveAttribute("href", "mailto:family%40example.com");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Copy email" })); });
+    expect(writeText).toHaveBeenCalledWith("family@example.com");
+    expect(screen.getByRole("status")).toHaveTextContent("Email address copied.");
+  });
+  it("contains lightbox focus and restores existing inert state on close", () => {
+    const background = document.createElement("div");
+    background.setAttribute("inert", "");
+    document.body.append(background);
+    const view = render(<AdaptivePortfolioGallery photos={photos} />);
+    const opener = screen.getByRole("button", { name: "Open Portrait full screen" });
+    fireEvent.click(opener);
+    expect(view.container).toHaveAttribute("inert");
+    const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
+    const close = within(dialog).getByRole("button", { name: "Close photo and return to gallery" });
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(within(dialog).getByRole("button", { name: "Show next available photo" })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: "Tab" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "Escape" });
+    expect(opener).toHaveFocus();
+    expect(view.container).not.toHaveAttribute("inert");
+    expect(background).toHaveAttribute("inert");
+    background.remove();
+  });
   it("offers only rendered navigation targets across public, private and owner projections", () => {
     for (const accessMode of ["public", "owner", "approved"] as const) {
       for (const privacy_mode of ["private", "balanced"] as const) {

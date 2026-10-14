@@ -143,6 +143,7 @@ async function acceptPublicationDisclosure() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  for (const mock of Object.values(mocks)) mock.mockReset();
   vi.stubGlobal("confirm", vi.fn(() => true));
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
   vi.spyOn(window, "open").mockImplementation(() => null);
@@ -170,6 +171,40 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("separates the live Introduction from incomplete saved draft readiness", () => {
+    renderDashboard({ isExpired: false, publicationReadiness: readyPublicationReadiness });
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+    expect(screen.getByRole("heading", { level: 1, name: "Your Introduction is ready to share." })).toBeInTheDocument();
+    expect(screen.getByText("Saved draft readiness")).toBeInTheDocument();
+    expect(screen.getByText(/Your published Introduction stays live/)).toBeInTheDocument();
+  });
+
+  it("exposes keyboard focus and a generous delete target for owner photos", () => {
+    renderDashboard();
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit details" })[0]);
+    const privacy = screen.getByRole("combobox", { name: "Photo visibility" });
+    expect(privacy.className).toContain("focus-visible:ring-2");
+    expect(screen.getByRole("button", { name: "Delete photo" }).className).toContain("h-12 w-12");
+  });
+
+  it("renders request dates consistently across server and viewer timezones", () => {
+    const RealDateTimeFormat = Intl.DateTimeFormat;
+    const format = vi.spyOn(Intl, "DateTimeFormat");
+    for (const timeZone of ["UTC", "America/Los_Angeles"]) {
+      format.mockImplementation(function (locales, options) {
+        return new RealDateTimeFormat(locales, { timeZone, ...options });
+      });
+      const view = renderDashboard({ interests: [{
+        id: "interest-zone", viewer_name: "Rohan", viewer_email: "viewer@example.test",
+        viewer_phone: null, viewer_family_context: null, message: null, status: "new",
+        requester_user_id: null, metadata: null, created_at: "2026-09-20T00:30:00Z",
+        email_verified: true, source_type: "direct", broker_name: null,
+        broker_representative_name: null, requester_portfolio_token: null,
+      }] });
+      expect(screen.getByText("Sep 20 · Verified email")).toBeInTheDocument();
+      view.unmount();
+    }
+  });
   it("shows preview progress during the initial request and clears it after rejection", async () => {
     let reject!: (error: Error) => void;
     mocks.updateProgress.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
@@ -1269,7 +1304,7 @@ describe("dashboard client", () => {
       portfolio: { ...portfolio, draft_data: readyData },
       publicationReadiness: readyPublicationReadiness,
     });
-    const savedProgress = screen.getByRole("heading", { name: /required answers complete/ }).textContent;
+    const savedProgress = screen.getByRole("heading", { name: /required draft answers complete/ }).textContent;
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "" } });
@@ -1280,7 +1315,7 @@ describe("dashboard client", () => {
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Discard them"));
     expect(screen.queryByRole("heading", { name: "Portfolio details" })).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /required answers complete/ })).toHaveTextContent(savedProgress || "");
+    expect(screen.getByRole("heading", { name: /required draft answers complete/ })).toHaveTextContent(savedProgress || "");
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();

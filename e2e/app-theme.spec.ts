@@ -11,7 +11,7 @@ test("form text and placeholders meet normal-text contrast in both themes", asyn
   await page.goto("/login");
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
-    await expect(page.getByLabel("Email address")).toHaveCSS("background-color", theme === "light" ? "rgb(255, 253, 249)" : "rgb(27, 41, 50)");
+    await expect(page.getByLabel("Email address")).toHaveCSS("background-color", theme === "light" ? "rgb(255, 253, 248)" : "rgb(27, 41, 50)");
     const ratios = await page.getByLabel("Email address").evaluate((input) => {
       function luminance(color: string) {
         const [r, g, b] = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map((value) => {

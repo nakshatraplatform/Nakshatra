@@ -60,6 +60,21 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("navigates tag suggestions with virtual focus and selects with Enter", () => {
+    const onUpdate = vi.fn();
+    render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} activeSection="story" onSectionChange={vi.fn()} />);
+    const input = screen.getByRole("combobox", { name: "Values that matter to you" });
+    input.focus();
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const selected = screen.getAllByRole("option").find(option => option.getAttribute("aria-selected") === "true")!;
+    expect(selected).toBeDefined();
+    expect(input).toHaveAttribute("aria-activedescendant", selected.id);
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onUpdate).toHaveBeenCalledWith("lifestyle", expect.objectContaining({ values_statement: selected.textContent }));
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+  });
   it("bounds typed answers to the accepted field lengths", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={vi.fn()} />);
     expect(screen.getByLabelText("Current profession title", { exact: true })).toHaveAttribute("maxlength", "200");

@@ -10,7 +10,7 @@ test("an unpublished complete owner can edit or go directly to liveness", async 
     await page.setViewportSize({ width, height });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit details", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "100% of required answers complete" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "100% of required draft answers complete" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Copy link", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Share on WhatsApp", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Go to liveness check", exact: true }).click();
@@ -39,6 +39,29 @@ test("published link actions are explicit and reachable", async ({ page, context
   await expect(page.getByRole("button", { name: "Edit details", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Share on WhatsApp", exact: true })).toBeVisible();
+});
+
+test("dashboard landmarks and photo controls stay usable across themes", async ({ page, context }, testInfo) => {
+  await context.addCookies([publishedOwnerCookie]);
+  await page.goto("/dashboard");
+  await expect(page.locator("main#main-content")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await page.getByRole("button", { name: "Edit details", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+  for (const theme of ["light", "dark"]) {
+    if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+    const remove = editor.getByRole("button", { name: "Delete photo", exact: true }).first();
+    await remove.scrollIntoViewIfNeeded();
+    const target = await remove.boundingBox();
+    expect(target!.width).toBeGreaterThanOrEqual(44);
+    expect(target!.height).toBeGreaterThanOrEqual(44);
+    const privacy = editor.getByRole("combobox", { name: "Photo visibility", exact: true }).first();
+    await privacy.focus();
+    await expect(privacy).toBeFocused();
+    expect(await privacy.evaluate(element => getComputedStyle(element).boxShadow)).not.toBe("none");
+    expect(await editor.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`photo-controls-${theme}.png`), animations: "disabled" });
+  }
 });
 
 test("editor hints and footer notes meet normal-text contrast in both themes", async ({ page, context }) => {

@@ -35,10 +35,19 @@ describe("location reference client", () => {
     }
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("ZIP or PIN code"), { target: { value: "560001" } });
-    const result = await screen.findByRole("button", { name: /Bengaluru GPO/ }, { timeout: 1500 });
-    fireEvent.click(result);
+    const result = await screen.findByRole("option", { name: /Bengaluru GPO/ }, { timeout: 1500 });
+    const search = screen.getByRole("combobox", { name: "ZIP or PIN code" });
+    fireEvent.focus(search);
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(search).toHaveAttribute("aria-activedescendant", result.id);
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveAttribute("aria-expanded", "false");
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    expect(search).toHaveAttribute("aria-activedescendant", result.id);
+    fireEvent.keyDown(search, { key: "Enter" });
     expect(screen.getByText(/Bengaluru, Karnataka, India/)).toBeInTheDocument();
     expect(screen.getByText(/560001/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change" })).toHaveFocus();
   });
 
   it("applies a Zippopotam ZIP suggestion without an additional resolution request", async () => {
@@ -57,7 +66,7 @@ describe("location reference client", () => {
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("ZIP or PIN code"), { target: { value: "02108" } });
     expect(await screen.findByText("ZIP data by Zippopotam.us", {}, { timeout: 1500 })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Boston, Massachusetts 02108" }));
+    fireEvent.click(screen.getByRole("option", { name: "Boston, Massachusetts 02108" }));
 
     expect(screen.getByText(/Boston, Massachusetts, United States/)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -134,9 +143,9 @@ describe("location reference client", () => {
     fireEvent.change(screen.getByLabelText("ZIP or PIN code"), { target: { value: "Bos" } });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), { timeout: 1500 });
     await act(async () => resolveSecond(new Response(JSON.stringify({ options: [{ id: "new", label: "Boston, MA", provider: "google_places", requiresResolution: true }] }))));
-    expect(await screen.findByRole("button", { name: "Boston, MA" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Boston, MA" })).toBeInTheDocument();
     await act(async () => resolveFirst(new Response(JSON.stringify({ options: [{ id: "old", label: "Bogota", provider: "google_places", requiresResolution: true }] }))));
-    expect(screen.queryByRole("button", { name: "Bogota" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Boston, MA" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Bogota" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Boston, MA" })).toBeInTheDocument();
   });
 });

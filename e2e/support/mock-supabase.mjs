@@ -77,7 +77,7 @@ const ownerPortfolio = {
 };
 
 const ownerInterests = [
-  { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T12:00:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
+  { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "34343434-3434-4434-8434-343434343434", viewer_name: "A long family name for layout testing that should wrap without hiding the decision", viewer_phone: null, viewer_email: "family@example.test", viewer_family_context: null, message: "Would it be possible to talk first?", status: "new", requester_user_id: "abababab-abab-4bab-8bab-abababababab", metadata: { profile_for: "family" }, created_at: "2026-10-02T12:00:00Z", email_verified: false, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "56565656-5656-4656-8656-565656565656", viewer_name: "Samira", viewer_phone: null, viewer_email: "samira@example.test", viewer_family_context: null, message: null, status: "rejected", requester_user_id: null, metadata: {}, created_at: "2026-09-27T12:00:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
 ];
@@ -361,9 +361,12 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token"].includes(token)) return sendJson(response, 200, null);
+      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token"].includes(token)) return sendJson(response, 200, null);
       const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
       if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
+      if (token === "e2e-long-narrative-token") {
+        portfolio.data.personal.profile_summary = "I value curiosity, kindness and time with family. ".repeat(24);
+      }
       return sendJson(response, 200, portfolio);
     });
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type HTMLInputTypeAttribute, type ReactNode } from "react";
+import { useEffect, useId, useState, type HTMLInputTypeAttribute, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -93,17 +93,17 @@ export function PortfolioMobileSectionNav({ activeSection, completedCount, total
   onSectionChange: (section: PortfolioEditorSection) => void;
 }) {
   const activeIndex = PORTFOLIO_EDITOR_SECTIONS.findIndex((section) => section.id === activeSection);
-  return <div className="biodata-editor-mobile-nav flex-none rounded-xl p-3 lg:hidden">
-    <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+  return <div className="biodata-editor-mobile-nav flex-none rounded-xl p-4 lg:hidden">
+    <div className="mb-2 flex items-center justify-between gap-4 text-sm">
       <strong className="text-[color:var(--workspace-ink)]">Section {activeIndex + 1} of {PORTFOLIO_EDITOR_SECTIONS.length}</strong>
       <span className="text-[color:var(--workspace-ink-muted)]">{completedCount} of {totalCount} required</span>
     </div>
-    <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--workspace-border)]" role="progressbar" aria-label="Current form section" aria-valuemin={1} aria-valuemax={PORTFOLIO_EDITOR_SECTIONS.length} aria-valuenow={activeIndex + 1} aria-valuetext={`Section ${activeIndex + 1} of ${PORTFOLIO_EDITOR_SECTIONS.length}`}>
+    <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[color:var(--workspace-border)]" role="progressbar" aria-label="Current form section" aria-valuemin={1} aria-valuemax={PORTFOLIO_EDITOR_SECTIONS.length} aria-valuenow={activeIndex + 1} aria-valuetext={`Section ${activeIndex + 1} of ${PORTFOLIO_EDITOR_SECTIONS.length}`}>
       <span className="block h-full rounded-full bg-[color:var(--workspace-teal)]" style={{ width: `${((activeIndex + 1) / PORTFOLIO_EDITOR_SECTIONS.length) * 100}%` }} />
     </div>
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2">
       <button type="button" aria-label="Previous section" disabled={activeIndex === 0} onClick={() => onSectionChange(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus flex h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[color:var(--workspace-ink)] disabled:opacity-35"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></button>
-      <label className="grid gap-1.5 text-sm font-semibold text-[color:var(--workspace-ink)]"><span className="sr-only">Go to section</span>
+      <label className="grid gap-2 text-sm font-semibold text-[color:var(--workspace-ink)]"><span className="sr-only">Go to section</span>
         <select aria-label="Go to portfolio section" value={activeSection} onChange={(event) => onSectionChange(event.target.value as PortfolioEditorSection)} className="biodata-field min-h-11">
           {PORTFOLIO_EDITOR_SECTIONS.map((section, index) => <option key={section.id} value={section.id}>{index + 1}. {section.label}{section.optional ? " (optional)" : ""}</option>)}
         </select>
@@ -247,12 +247,12 @@ export function BlueprintForm({
   return (
     <div className="biodata-editor grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="hidden lg:sticky lg:top-0 lg:block lg:self-start">
-        <div className="biodata-editor-sidebar rounded-2xl p-3">
-          <div className="biodata-editor-progress mb-3 rounded-xl p-3">
+        <div className="biodata-editor-sidebar rounded-2xl p-4">
+          <div className="biodata-editor-progress mb-4 rounded-xl p-4">
             <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">
               {completion.readyToPublish ? "Ready to review" : completion.missing.length ? "Complete required details" : "Review entered answers"}
             </p>
-            <p className="mt-1 text-sm leading-5 text-[color:var(--workspace-ink-muted)]">
+            <p className="mt-2 text-sm leading-5 text-[color:var(--workspace-ink-muted)]">
               {completion.readyToPublish
                 ? "Recommended fields can be finished now or later."
                 : completion.missing.length
@@ -260,7 +260,7 @@ export function BlueprintForm({
                   : completion.invalidAnswers[0]?.label}
             </p>
           </div>
-          <nav aria-label="Portfolio form sections" className="space-y-1">
+          <nav aria-label="Portfolio form sections" className="space-y-2">
             {PORTFOLIO_EDITOR_SECTIONS.map((section, index) => {
               const selected = section.id === activeSection;
               return (
@@ -269,7 +269,7 @@ export function BlueprintForm({
                   type="button"
                   aria-current={selected ? "step" : undefined}
                   onClick={() => goTo(section.id)}
-                  className={`workspace-focus flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                  className={`workspace-focus flex min-h-12 w-full items-center gap-4 rounded-xl px-4 py-2 text-left transition-colors ${
                     selected ? "bg-[color:var(--workspace-teal-soft)] text-[color:var(--workspace-ink)]" : "text-[color:var(--workspace-ink-muted)] hover:bg-[color:var(--workspace-surface-muted)] hover:text-[color:var(--workspace-ink)]"
                   }`}
                 >
@@ -291,22 +291,22 @@ export function BlueprintForm({
         {controlledSection === undefined && <div className="mb-4 lg:hidden">
           <PortfolioMobileSectionNav activeSection={activeSection} completedCount={completion.completedCount} totalCount={completion.totalCount} onSectionChange={goTo} />
         </div>}
-        <p className="mb-3 hidden text-sm font-semibold text-[color:var(--workspace-ink-muted)] lg:block">
+        <p className="mb-4 hidden text-sm font-semibold text-[color:var(--workspace-ink-muted)] lg:block">
           Step {activeIndex + 1} of {PORTFOLIO_EDITOR_SECTIONS.length} · {PORTFOLIO_EDITOR_SECTIONS[activeIndex].label}
         </p>
         {PORTFOLIO_EDITOR_SECTIONS[activeIndex].optional && (
-          <p className="mb-3 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">
+          <p className="mb-4 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-4 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">
             Optional section · Answer only what feels useful. You can continue now and return at any time.
           </p>
         )}
         {activeSection === "foundation" && (
           <FormSection eyebrow="Quick start" title="The essentials" description="Start with your name and the details people need for a useful introduction. Your draft stays private until you review and publish it.">
               {data.personal.profile_for && data.personal.profile_for !== "self" ? (
-                <p role="alert" className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-sm leading-6 text-[color:var(--workspace-ink)]">
+                <p role="alert" className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-4 text-sm leading-6 text-[color:var(--workspace-ink)]">
                   This draft was started for someone else. The initial pilot supports only portfolios created by the person featured. Your draft remains private, but it cannot be saved or published during this pilot. Please contact VivIntro support if this is your own portfolio.
                 </p>
               ) : null}
-            <fieldset className="space-y-3">
+            <fieldset className="space-y-4">
               <legend className="text-[15px] font-semibold text-[color:var(--workspace-ink)]">Full name</legend>
               <p className="text-sm text-[color:var(--workspace-ink-muted)]">Your full name appears in the public Introduction and Complete Portfolio.</p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -351,7 +351,7 @@ export function BlueprintForm({
               <TextInput label="Education location" maxLength={200} value={data.education?.location || ""} onChange={(value) => onUpdate("education", { ...(data.education || {}), location: value })} requirement="Optional" audience="Public Introduction and Complete Portfolio" hint="City and country where you studied, if you want to share them." />
               </div>
             </fieldset>
-            <fieldset className="space-y-4 border-t border-[color:var(--workspace-border)] pt-5">
+            <fieldset className="space-y-4 border-t border-[color:var(--workspace-border)] pt-6">
               <legend className="text-lg font-semibold text-[color:var(--workspace-ink)]">Current work</legend>
               <div className="grid gap-4 sm:grid-cols-2">
               <SelectInput label="Work status" value={data.career?.job_type || ""} options={JOB_TYPE_OPTIONS} onChange={(value) => onUpdate("career", { ...(data.career || {}), job_type: value })} requirement="Optional" audience="Public Introduction and Complete Portfolio" />
@@ -362,7 +362,7 @@ export function BlueprintForm({
             </div>
             <TextArea label="Where would you like your career to grow?" value={data.career?.career_goals || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), career_goals: value })} maxLength={800} requirement="Optional" audience="Public Introduction and Complete Portfolio" hint="A sentence or two about the direction you hope to take is enough; avoid confidential work details." />
             </fieldset>
-            <fieldset className="space-y-4 border-t border-[color:var(--workspace-border)] pt-5">
+            <fieldset className="space-y-4 border-t border-[color:var(--workspace-border)] pt-6">
               <legend className="text-lg font-semibold text-[color:var(--workspace-ink)]">Citizenship and residency</legend>
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextInput label="Citizenship" maxLength={100} value={data.personal.citizenship || ""} onChange={(value) => updatePersonal({ citizenship: value })} requirement="Recommended" audience="Public Introduction and Complete Portfolio" />
@@ -391,7 +391,7 @@ export function BlueprintForm({
             </div>
             {(data.family?.siblings || []).map((sibling, index) => (
               <div key={index} className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4">
-                <p className="mb-3 text-base font-semibold text-[color:var(--workspace-ink)]">Sibling {index + 1} <span className="ml-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]">Optional details</span></p>
+                <p className="mb-4 text-base font-semibold text-[color:var(--workspace-ink)]">Sibling {index + 1} <span className="ml-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]">Optional details</span></p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextInput label="Name" maxLength={100} value={sibling.name || ""} onChange={(value) => updateSibling(index, { name: value })} audience="Complete Portfolio" />
                   <TextInput label="Occupation" maxLength={200} value={sibling.occupation || ""} onChange={(value) => updateSibling(index, { occupation: value })} audience="Complete Portfolio" />
@@ -466,29 +466,29 @@ export function BlueprintForm({
           <FormSection eyebrow="You stay in control" title="Appearance and contact" description="Choose your portfolio appearance and optionally add protected contact details. Contact details are shared only after your approval.">
             <InfoCard title="Sensitive details stay protected" audience="Never public" text="Exact birth details, contact information, income, and the horoscope are not shown in the public introduction." />
             <div>
-              <p className="mb-1 text-base font-semibold text-[color:var(--workspace-ink)]">Portfolio appearance</p>
-              <p className="mb-3 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">This changes the published portfolio only. Light is recommended for comfortable reading across generations. Use the header theme switch to change your workspace separately.</p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <p className="mb-2 text-base font-semibold text-[color:var(--workspace-ink)]">Portfolio appearance</p>
+              <p className="mb-4 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">This changes the published portfolio only. Light is recommended for comfortable reading across generations. Use the header theme switch to change your workspace separately.</p>
+              <div className="grid gap-4 sm:grid-cols-2">
                 {(["light", "dark"] as const).map((appearance) => {
                   const selected = (data.style?.appearance || "light") === appearance;
                   const Icon = appearance === "light" ? Sun : Moon;
-                  return <button key={appearance} type="button" aria-pressed={selected} onClick={() => setAppearance(appearance)} className={`workspace-focus min-h-20 rounded-xl border p-4 text-left transition-colors ${selected ? "border-[color:var(--workspace-teal)] bg-[color:var(--workspace-teal-soft)]" : "border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] hover:border-[light-dark(#9eaaa5,var(--app-dark-border))]"}`}><span className="flex items-center gap-3 text-base font-semibold text-[color:var(--workspace-ink)]"><Icon className="h-5 w-5 text-[color:var(--workspace-teal)]" aria-hidden="true" />{appearance === "light" ? "Light" : "Dark"}{selected && <Check className="ml-auto h-5 w-5 text-[color:var(--workspace-teal)]" aria-hidden="true" />}</span></button>;
+                  return <button key={appearance} type="button" aria-pressed={selected} onClick={() => setAppearance(appearance)} className={`workspace-focus min-h-20 rounded-xl border p-4 text-left transition-colors ${selected ? "border-[color:var(--workspace-teal)] bg-[color:var(--workspace-teal-soft)]" : "border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] hover:border-[light-dark(#9eaaa5,var(--app-dark-border))]"}`}><span className="flex items-center gap-4 text-base font-semibold text-[color:var(--workspace-ink)]"><Icon className="h-5 w-5 text-[color:var(--workspace-teal)]" aria-hidden="true" />{appearance === "light" ? "Light" : "Dark"}{selected && <Check className="ml-auto h-5 w-5 text-[color:var(--workspace-teal)]" aria-hidden="true" />}</span></button>;
                 })}
               </div>
             </div>
             <div>
-              <p className="mb-1 text-base font-semibold text-[color:var(--workspace-ink)]">Who can see what</p>
-              <p className="mb-3 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">You can review the public introduction before publishing. Contact, income, and exact birth details are never public.</p>
+              <p className="mb-2 text-base font-semibold text-[color:var(--workspace-ink)]">Who can see what</p>
+              <p className="mb-4 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">You can review the public introduction before publishing. Contact, income, and exact birth details are never public.</p>
               <InfoCard title="Public Introduction" audience="Public link" text="Anyone with your active link can see your full name, profession, location, story, interests, family introduction, and selected astrology. Review the public preview before publishing." />
-              {data.privacy_mode === "private" && <div className="mt-3 rounded-xl border border-[color:var(--workspace-border)] p-4"><p className="text-sm leading-6 text-[color:var(--workspace-ink)]">This saved draft uses an older sharing setup. Your current published link will not change until you review and publish again. To publish changes, update this draft to the current public Introduction and review its preview.</p><button type="button" className="workspace-focus mt-3 min-h-11 rounded-lg border border-[color:var(--workspace-teal)] px-4 text-sm font-semibold" onClick={() => onUpdate("privacy_mode", "balanced")}>Update sharing setup</button></div>}
+              {data.privacy_mode === "private" && <div className="mt-4 rounded-xl border border-[color:var(--workspace-border)] p-4"><p className="text-sm leading-6 text-[color:var(--workspace-ink)]">This saved draft uses an older sharing setup. Your current published link will not change until you review and publish again. To publish changes, update this draft to the current public Introduction and review its preview.</p><button type="button" className="workspace-focus mt-4 min-h-11 rounded-lg border border-[color:var(--workspace-teal)] px-4 text-sm font-semibold" onClick={() => onUpdate("privacy_mode", "balanced")}>Update sharing setup</button></div>}
             </div>
-            <div className="space-y-4 border-t border-[color:var(--workspace-border)] pt-5">
+            <div className="space-y-4 border-t border-[color:var(--workspace-border)] pt-6">
               <InfoCard title="Protected contact" audience="Optional · Complete Portfolio" text="These contacts stay out of the public Introduction and unlock only for a viewer you approve. Approved viewers may save the details they receive." />
               {contacts.map((contact, index) => (
                 <div key={index} className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="mb-4 flex items-center justify-between gap-4">
                     <p className="text-base font-semibold text-[color:var(--workspace-ink)]">Protected contact {index + 1}</p>
-                    <button type="button" onClick={() => updateContacts(contacts.filter((_, itemIndex) => itemIndex !== index))} className="workspace-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-[light-dark(#9f2f2f,var(--app-dark-danger))] hover:bg-[light-dark(#fff0ee,var(--app-dark-canvas))]"><Trash2 className="h-4 w-4" aria-hidden="true" /> Remove</button>
+                    <button type="button" onClick={() => updateContacts(contacts.filter((_, itemIndex) => itemIndex !== index))} className="workspace-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-[light-dark(#9f2f2f,var(--app-dark-danger))] hover:bg-[light-dark(#fff0ee,var(--app-dark-canvas))]"><Trash2 className="h-4 w-4" aria-hidden="true" /> Remove</button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <SelectInput label="Who is this?" value={contact.relationship || "self"} options={CONTACT_RELATIONSHIPS} onChange={(value) => updateContacts(contacts.map((item, itemIndex) => itemIndex === index ? { ...item, relationship: value } : item))} />
@@ -503,13 +503,13 @@ export function BlueprintForm({
           </FormSection>
         )}
 
-        <p className="mt-5 flex items-start gap-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" /><span>Fields marked with a lock stay out of your public Introduction and are shared only after your approval. Review both views before publishing.</span></p>
+        <p className="mt-6 flex items-start gap-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-2 h-4 w-4 shrink-0" aria-hidden="true" /><span>Fields marked with a lock stay out of your public Introduction and are shared only after your approval. Review both views before publishing.</span></p>
 
-        <div className="mt-5 hidden flex-wrap items-center justify-between gap-3 border-t border-[color:var(--workspace-border)] pt-5 sm:flex">
+        <div className="mt-6 hidden flex-wrap items-center justify-between gap-4 border-t border-[color:var(--workspace-border)] pt-6 sm:flex">
           <button type="button" disabled={activeIndex === 0} onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
           <p className="hidden text-sm text-[color:var(--workspace-ink-muted)] sm:block">You can change saved answers at any time.</p>
           {activeIndex < PORTFOLIO_EDITOR_SECTIONS.length - 1 ? (
-            <button type="button" onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-5">Continue: {PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+            <button type="button" onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].id)} className="dashboard-primary-action workspace-focus min-h-12 px-6">Continue: {PORTFOLIO_EDITOR_SECTIONS[activeIndex + 1].label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
           ) : <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--workspace-teal)]"><Check className="h-4 w-4" aria-hidden="true" /> Last section — review both views next</span>}
         </div>
       </div>
@@ -518,16 +518,16 @@ export function BlueprintForm({
 }
 
 function FormSection({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children: ReactNode }) {
-  return <section className="biodata-editor-card space-y-6 rounded-2xl p-5 sm:p-7"><div><p className="text-sm font-semibold text-[color:var(--workspace-teal)]">{eyebrow}</p><h3 className="mt-2 text-2xl font-semibold text-[color:var(--workspace-ink)]">{title}</h3><p className="mt-2 max-w-3xl text-base leading-7 text-[color:var(--workspace-ink-muted)]">{description}</p></div>{children}</section>;
+  return <section className="biodata-editor-card space-y-6 rounded-2xl p-6 sm:p-8"><div><p className="text-sm font-semibold text-[color:var(--workspace-teal)]">{eyebrow}</p><h3 className="mt-2 text-2xl font-semibold text-[color:var(--workspace-ink)]">{title}</h3><p className="mt-2 max-w-3xl text-base leading-7 text-[color:var(--workspace-ink-muted)]">{description}</p></div>{children}</section>;
 }
 
 function InfoCard({ title, text, audience }: { title: string; text: string; audience: string }) {
   const protectedAudience = audience === "Never public" || audience.includes("Complete Portfolio");
-  return <div className="rounded-xl border border-[light-dark(#bdd5d0,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4"><div className="flex items-start gap-3"><ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-1 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p>{protectedAudience && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />{audience === "Never public" ? "Never public" : "Shown after approval"}</span>}</div></div></div>;
+  return <div className="rounded-xl border border-[light-dark(#bdd5d0,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4"><div className="flex items-start gap-4"><ShieldCheck className="mt-2 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p>{protectedAudience && <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />{audience === "Never public" ? "Never public" : "Shown after approval"}</span>}</div></div></div>;
 }
 
 function EmbeddedPanel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <div className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4"><div className="mb-4"><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-1 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{description}</p></div>{children}</div>;
+  return <div className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4"><div className="mb-4"><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{description}</p></div>{children}</div>;
 }
 
 function approvalOnlyAudience(audience?: string) {
@@ -535,7 +535,7 @@ function approvalOnlyAudience(audience?: string) {
 }
 
 function FieldLabel({ label, required, audience }: { label: string; hint?: string; required?: boolean; requirement?: string; audience?: string }) {
-  return <span className="inline-flex items-start gap-1.5">{approvalOnlyAudience(audience) && <LockKeyhole className="mt-1 h-3.5 w-3.5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" />}<span className="min-w-0">{label}{required && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span></span>;
+  return <span className="inline-flex items-start gap-2">{approvalOnlyAudience(audience) && <LockKeyhole className="mt-2 h-3.5 w-3.5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" />}<span className="min-w-0">{label}{required && <><span className="ml-2 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span></span>;
 }
 
 function FieldHelp({ id, hint, audience }: { id: string; hint?: string; audience?: string }) {
@@ -565,7 +565,7 @@ function TextArea({ label, value, onChange, hint, required, maxLength, minLength
   const errorId = useId();
   const belowMinimum = Boolean(value.trim() && minLength && value.trim().length < minLength);
   const invalid = Boolean(touched && ((required && !value.trim()) || belowMinimum));
-  return <div className="min-w-0 flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><label htmlFor={id}><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /></label><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={fieldDescriptionIds(id, hint, audience, invalid ? errorId : undefined)} value={value} placeholder={placeholder} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-3 leading-7" /><FieldHelp id={id} hint={hint} audience={audience} />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[light-dark(#9f2f2f,var(--app-dark-danger))]">{belowMinimum ? `If you answer, write at least ${minLength} characters.` : "This field is required."}</span>}{maxLength && <span className={`self-end text-xs font-normal ${belowMinimum ? "text-[light-dark(#9f2f2f,var(--app-dark-danger))]" : "text-[color:var(--workspace-ink-muted)]"}`}>{value.trim().length}{minLength ? ` of at least ${minLength}` : ""} · maximum {maxLength} characters</span>}{example && <details className="rounded-lg border border-[color:var(--workspace-border)] px-3 py-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]"><summary className="workspace-focus cursor-pointer font-semibold text-[color:var(--workspace-teal)]">See a good example</summary><p className="mt-2 leading-6">{example}</p></details>}</div>;
+  return <div className="min-w-0 flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><label htmlFor={id}><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /></label><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={fieldDescriptionIds(id, hint, audience, invalid ? errorId : undefined)} value={value} placeholder={placeholder} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-4 leading-7" /><FieldHelp id={id} hint={hint} audience={audience} />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[light-dark(#9f2f2f,var(--app-dark-danger))]">{belowMinimum ? `If you answer, write at least ${minLength} characters.` : "This field is required."}</span>}{maxLength && <span className={`self-end text-xs font-normal ${belowMinimum ? "text-[light-dark(#9f2f2f,var(--app-dark-danger))]" : "text-[color:var(--workspace-ink-muted)]"}`}>{value.trim().length}{minLength ? ` of at least ${minLength}` : ""} · maximum {maxLength} characters</span>}{example && <details className="rounded-lg border border-[color:var(--workspace-border)] px-4 py-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]"><summary className="workspace-focus cursor-pointer font-semibold text-[color:var(--workspace-teal)]">See a good example</summary><p className="mt-2 leading-6">{example}</p></details>}</div>;
 }
 
 function SelectInput({ label, value, options, onChange, required, requirement, audience, hint }: { label: string; value: string; options: BlueprintOption[]; onChange: (value: string) => void; required?: boolean; requirement?: string; audience?: string; hint?: string }) {
@@ -588,9 +588,9 @@ function RangeSelectInput({ label, value, options, onChange, audience }: { label
   const minimumOptions = [{ value: "", label: "No minimum" }, ...selectable];
   const maximumOptions = [{ value: "", label: "No maximum" }, ...selectable];
   return (
-    <fieldset aria-describedby={fieldDescriptionIds(descriptionId, undefined, audience)} className="space-y-3 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4">
-      <legend className="px-1 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} audience={audience} /></legend>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <fieldset aria-describedby={fieldDescriptionIds(descriptionId, undefined, audience)} className="space-y-4 rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4">
+      <legend className="px-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} audience={audience} /></legend>
+      <div className="grid gap-4 sm:grid-cols-2">
         <SelectInput label={`Minimum ${subject}`} value={range.minimum} options={minimumOptions} onChange={(minimum) => onChange(updateRange(range, "minimum", minimum, selectable))} />
         <SelectInput label={`Maximum ${subject}`} value={range.maximum} options={maximumOptions} onChange={(maximum) => onChange(updateRange(range, "maximum", maximum, selectable))} />
       </div>
@@ -604,12 +604,21 @@ function RangeSelectInput({ label, value, options, onChange, audience }: { label
 function MultiSelectInput({ label, value, options, onChange, audience, hint, requirement, allowCustom = true, maxItems }: { label: string; value: string; options: BlueprintOption[]; onChange: (value: string) => void; audience?: string; hint?: string; requirement?: string; allowCustom?: boolean; maxItems?: number }) {
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
+  const [activeValue, setActiveValue] = useState<string | null>(null);
   const values = formListValues(value);
   const atLimit = maxItems !== undefined && values.length >= maxItems;
   const listId = useId();
   const query = draft.trim().toLowerCase();
   const available = options.filter((item) => item.value && !values.some((selected) => selected.toLowerCase() === item.value.toLowerCase()));
   const suggestions = available.filter((item) => !query || item.label.toLowerCase().includes(query)).slice(0, 12);
+  const expanded = open && !atLimit && suggestions.length > 0;
+  const activeIndex = suggestions.findIndex(item => item.value === activeValue);
+  const activeId = expanded && activeIndex >= 0 ? listId + "-option-" + activeIndex : undefined;
+
+  useEffect(() => {
+    if (activeId) document.getElementById(activeId)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeId]);
+
   function addValue(selectedValue?: string) {
     const match = available.find((item) => item.value.toLowerCase() === (selectedValue || draft.trim()).toLowerCase());
     const next = match?.value || (allowCustom ? (selectedValue || draft.trim()) : "");
@@ -617,8 +626,58 @@ function MultiSelectInput({ label, value, options, onChange, audience, hint, req
     onChange([...values, next].join(", "));
     setDraft("");
     setOpen(false);
+    setActiveValue(null);
   }
-  return <div className="space-y-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><label htmlFor={`${listId}-input`}><FieldLabel label={label} requirement={requirement} audience={audience} /></label><div className="flex flex-col gap-2 sm:flex-row"><div className="relative min-w-0 flex-1" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}><input id={`${listId}-input`} aria-describedby={fieldDescriptionIds(listId, hint, audience)} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} autoComplete="off" aria-label={label} role="combobox" aria-autocomplete="list" aria-expanded={open && !atLimit} aria-controls={listId} value={draft} disabled={atLimit} onFocus={() => setOpen(true)} onChange={(event) => { setDraft(event.target.value); setOpen(true); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addValue(); } else if (event.key === "Escape") { setOpen(false); } }} placeholder={atLimit ? "Selection limit reached" : "Search or type to add…"} className="biodata-field min-h-12 w-full" />{open && !atLimit && suggestions.length > 0 && <ul id={listId} role="listbox" aria-label={`${label} suggestions`} className="absolute inset-x-0 top-full z-40 mt-2 max-h-64 overflow-y-auto rounded-xl border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-1.5 shadow-2xl shadow-[#233443]/15">{suggestions.map((item) => <li key={item.value} role="none"><button type="button" role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => addValue(item.value)} className="workspace-focus min-h-11 w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-teal-soft)]">{item.label}</button></li>)}</ul>}</div><button type="button" disabled={atLimit} onClick={() => addValue()} className="workspace-focus min-h-12 rounded-lg border border-[color:var(--workspace-border)] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-5 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50">Add</button></div><FieldHelp id={listId} hint={hint} audience={audience} />{maxItems !== undefined && <p className="text-xs font-normal text-[color:var(--workspace-ink-muted)]" aria-live="polite">{values.length} of {maxItems} selected</p>}{values.length > 0 && <div className="flex flex-wrap gap-2" aria-label={`${label} selected`}>{values.map((item) => <button key={item} type="button" onClick={() => onChange(values.filter((valueItem) => valueItem !== item).join(", "))} className="workspace-focus inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[light-dark(#b7cbc6,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] px-3 text-sm font-medium text-[color:var(--workspace-ink)]" aria-label={`Remove ${item}`}>{item}<span aria-hidden="true">×</span></button>)}</div>}</div>;
+
+  return (
+    <div className="space-y-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
+      <label htmlFor={listId + "-input"}><FieldLabel label={label} requirement={requirement} audience={audience} /></label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1" onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) { setOpen(false); setActiveValue(null); }
+        }}>
+          <input id={listId + "-input"} aria-describedby={fieldDescriptionIds(listId, hint, audience)}
+            name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}
+            autoComplete="off" aria-label={label} role="combobox" aria-autocomplete="list"
+            aria-expanded={expanded} aria-controls={expanded ? listId : undefined} aria-activedescendant={activeId}
+            value={draft} disabled={atLimit}
+            onFocus={() => { setOpen(true); setActiveValue(null); }}
+            onChange={(event) => { setDraft(event.target.value); setOpen(true); setActiveValue(null); }}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) return;
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && suggestions.length) {
+                event.preventDefault();
+                const index = !expanded || activeIndex < 0
+                  ? event.key === "ArrowDown" ? 0 : suggestions.length - 1
+                  : (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + suggestions.length) % suggestions.length;
+                setOpen(true); setActiveValue(suggestions[index].value);
+              } else if (event.key === "Enter") {
+                event.preventDefault(); addValue(expanded && activeIndex >= 0 ? suggestions[activeIndex].value : undefined);
+              } else if (event.key === "Escape" && open) {
+                event.preventDefault(); event.stopPropagation(); setOpen(false); setActiveValue(null);
+              } else if (event.key === "Tab") { setOpen(false); setActiveValue(null); }
+            }}
+            placeholder={atLimit ? "Selection limit reached" : "Search or type to add…"} className="biodata-field min-h-12 w-full" />
+          {expanded && <ul id={listId} role="listbox" aria-label={label + " suggestions"} className="location-suggestions">
+            {suggestions.map((item, index) => <li key={item.value} role="none">
+              <button id={listId + "-option-" + index} type="button" role="option" tabIndex={-1}
+                aria-selected={index === activeIndex} onMouseDown={event => event.preventDefault()}
+                onMouseMove={() => setActiveValue(item.value)} onClick={() => addValue(item.value)}
+                className="location-suggestion">{item.label}</button>
+            </li>)}
+          </ul>}
+        </div>
+        <button type="button" disabled={atLimit} onClick={() => addValue()} className="workspace-focus min-h-12 rounded-lg border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-6 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50">Add</button>
+      </div>
+      <FieldHelp id={listId} hint={hint} audience={audience} />
+      {maxItems !== undefined && <p className="text-xs font-normal text-[color:var(--workspace-ink-muted)]" aria-live="polite">{values.length} of {maxItems} selected</p>}
+      {values.length > 0 && <div className="flex flex-wrap gap-2" aria-label={label + " selected"}>
+        {values.map(item => <button key={item} type="button" onClick={() => onChange(values.filter(valueItem => valueItem !== item).join(", "))}
+          className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-4 text-sm font-medium text-[var(--workspace-ink)]"
+          aria-label={"Remove " + item}>{item}<span aria-hidden="true">×</span></button>)}
+      </div>}
+    </div>
+  );
 }
 
 function parseRange(value: string, options: BlueprintOption[]) {
