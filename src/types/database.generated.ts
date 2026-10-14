@@ -370,13 +370,13 @@ isOneToOne: false
                   ]
                 },"interest_requests": {
                   Row: {
-                    "attribution_status": Database["public"]['Enums']["attribution_status"],"candidate_id": string | null,"city": string | null,"city_geoname_id": number | null,"country": string | null,"country_code": string | null,"created_at": string,"decided_at": string | null,"decided_by": string | null,"duplicate_of": string | null,"email_verified_at": string | null,"id": string,"message": string | null,"location_source": string | null,"postal_code": string | null,"state": string | null,"subdivision_code": string | null,"metadata": NonNullable<Json>,"portfolio_id": string,"portfolio_link_id": string | null,"prospect_key_hash": string | null,"referring_matchmaker_profile_id": string | null,"referring_organization_id": string | null,"request_reason": string | null,"requested_sections": (string)[],"requester_user_id": string | null,"status": Database["public"]['Enums']["interest_status"],"updated_at": string,"verification_channel": string | null,"viewer_email": string | null,"viewer_family_context": string | null,"viewer_name": string | null,"viewer_phone": string | null,"viewer_session_id": string | null
+                    "attribution_status": Database["public"]['Enums']["attribution_status"],"candidate_id": string | null,"city": string | null,"city_geoname_id": number | null,"country": string | null,"country_code": string | null,"created_at": string,"decided_at": string | null,"decided_by": string | null,"duplicate_of": string | null,"email_verified_at": string | null,"id": string,"location_source": string | null,"message": string | null,"metadata": NonNullable<Json>,"portfolio_id": string,"portfolio_link_id": string | null,"postal_code": string | null,"prospect_key_hash": string | null,"referring_matchmaker_profile_id": string | null,"referring_organization_id": string | null,"request_reason": string | null,"requested_sections": (string)[],"requester_user_id": string | null,"state": string | null,"status": Database["public"]['Enums']["interest_status"],"subdivision_code": string | null,"updated_at": string,"verification_channel": string | null,"viewer_email": string | null,"viewer_family_context": string | null,"viewer_name": string | null,"viewer_phone": string | null,"viewer_session_id": string | null
                   }
                   Insert: {
-                    "attribution_status"?: Database["public"]['Enums']["attribution_status"],"candidate_id"?: string | null,"city"?: string | null,"city_geoname_id"?: number | null,"country"?: string | null,"country_code"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"duplicate_of"?: string | null,"email_verified_at"?: string | null,"id"?: string,"message"?: string | null,"location_source"?: string | null,"postal_code"?: string | null,"state"?: string | null,"subdivision_code"?: string | null,"metadata"?: NonNullable<Json>,"portfolio_id": string,"portfolio_link_id"?: string | null,"prospect_key_hash"?: string | null,"referring_matchmaker_profile_id"?: string | null,"referring_organization_id"?: string | null,"request_reason"?: string | null,"requested_sections"?: (string)[],"requester_user_id"?: string | null,"status"?: Database["public"]['Enums']["interest_status"],"updated_at"?: string,"verification_channel"?: string | null,"viewer_email"?: string | null,"viewer_family_context"?: string | null,"viewer_name"?: string | null,"viewer_phone"?: string | null,"viewer_session_id"?: string | null
+                    "attribution_status"?: Database["public"]['Enums']["attribution_status"],"candidate_id"?: string | null,"city"?: string | null,"city_geoname_id"?: number | null,"country"?: string | null,"country_code"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"duplicate_of"?: string | null,"email_verified_at"?: string | null,"id"?: string,"location_source"?: string | null,"message"?: string | null,"metadata"?: NonNullable<Json>,"portfolio_id": string,"portfolio_link_id"?: string | null,"postal_code"?: string | null,"prospect_key_hash"?: string | null,"referring_matchmaker_profile_id"?: string | null,"referring_organization_id"?: string | null,"request_reason"?: string | null,"requested_sections"?: (string)[],"requester_user_id"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["interest_status"],"subdivision_code"?: string | null,"updated_at"?: string,"verification_channel"?: string | null,"viewer_email"?: string | null,"viewer_family_context"?: string | null,"viewer_name"?: string | null,"viewer_phone"?: string | null,"viewer_session_id"?: string | null
                   }
                   Update: {
-                    "attribution_status"?: Database["public"]['Enums']["attribution_status"],"candidate_id"?: string | null,"city"?: string | null,"city_geoname_id"?: number | null,"country"?: string | null,"country_code"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"duplicate_of"?: string | null,"email_verified_at"?: string | null,"id"?: string,"message"?: string | null,"location_source"?: string | null,"postal_code"?: string | null,"state"?: string | null,"subdivision_code"?: string | null,"metadata"?: NonNullable<Json>,"portfolio_id"?: string,"portfolio_link_id"?: string | null,"prospect_key_hash"?: string | null,"referring_matchmaker_profile_id"?: string | null,"referring_organization_id"?: string | null,"request_reason"?: string | null,"requested_sections"?: (string)[],"requester_user_id"?: string | null,"status"?: Database["public"]['Enums']["interest_status"],"updated_at"?: string,"verification_channel"?: string | null,"viewer_email"?: string | null,"viewer_family_context"?: string | null,"viewer_name"?: string | null,"viewer_phone"?: string | null,"viewer_session_id"?: string | null
+                    "attribution_status"?: Database["public"]['Enums']["attribution_status"],"candidate_id"?: string | null,"city"?: string | null,"city_geoname_id"?: number | null,"country"?: string | null,"country_code"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"duplicate_of"?: string | null,"email_verified_at"?: string | null,"id"?: string,"location_source"?: string | null,"message"?: string | null,"metadata"?: NonNullable<Json>,"portfolio_id"?: string,"portfolio_link_id"?: string | null,"postal_code"?: string | null,"prospect_key_hash"?: string | null,"referring_matchmaker_profile_id"?: string | null,"referring_organization_id"?: string | null,"request_reason"?: string | null,"requested_sections"?: (string)[],"requester_user_id"?: string | null,"state"?: string | null,"status"?: Database["public"]['Enums']["interest_status"],"subdivision_code"?: string | null,"updated_at"?: string,"verification_channel"?: string | null,"viewer_email"?: string | null,"viewer_family_context"?: string | null,"viewer_name"?: string | null,"viewer_phone"?: string | null,"viewer_session_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -397,12 +397,6 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "reference_countries"
       referencedColumns: ["country_code"]
-    },{
-      foreignKeyName: "interest_requests_subdivision_code_fkey"
-      columns: ["subdivision_code"]
-isOneToOne: false
-      referencedRelation: "reference_subdivisions"
-      referencedColumns: ["subdivision_code"]
     },{
       foreignKeyName: "interest_requests_duplicate_of_fkey"
       columns: ["duplicate_of"]
@@ -433,6 +427,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "interest_requests_subdivision_code_fkey"
+      columns: ["subdivision_code"]
+isOneToOne: false
+      referencedRelation: "reference_subdivisions"
+      referencedColumns: ["subdivision_code"]
     },{
       foreignKeyName: "interest_requests_viewer_session_id_fkey"
       columns: ["viewer_session_id"]
@@ -732,13 +732,13 @@ isOneToOne: false
                   ]
                 },"portfolios": {
                   Row: {
-                    "candidate_id": string | null,"country_code": string | null,"created_at": string,"district_city": string | null,"draft_data": NonNullable<Json>,"expires_at": string | null,"id": string,"is_active": boolean,"is_published": boolean,"last_renewed_at": string | null,"owner_organization_id": string | null,"pin_zip": string | null,"privacy_mode": Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug": string | null,"published_at": string | null,"published_data": Json | null,"share_token": string | null,"subdivision_code": string | null,"sun_sign": string | null,"template_id": number,"theme_color": string | null,"updated_at": string,"user_id": string,"visibility_settings": NonNullable<Json>
+                    "candidate_id": string | null,"country_code": string | null,"created_at": string,"district_city": string | null,"draft_data": NonNullable<Json>,"expires_at": string | null,"id": string,"is_active": boolean | null,"is_published": boolean,"last_renewed_at": string | null,"owner_organization_id": string | null,"pin_zip": string | null,"privacy_mode": Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug": string | null,"published_at": string | null,"published_data": Json | null,"share_token": string | null,"subdivision_code": string | null,"sun_sign": string | null,"template_id": number,"theme_color": string | null,"updated_at": string,"user_id": string,"visibility_settings": NonNullable<Json>
                   }
                   Insert: {
-                    "candidate_id"?: string | null,"country_code"?: string | null,"created_at"?: string,"district_city"?: string | null,"draft_data"?: NonNullable<Json>,"expires_at"?: string | null,"id"?: string,"is_published"?: boolean,"last_renewed_at"?: string | null,"owner_organization_id"?: string | null,"pin_zip"?: string | null,"privacy_mode"?: Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug"?: string | null,"published_at"?: string | null,"published_data"?: Json | null,"share_token"?: string | null,"subdivision_code"?: string | null,"sun_sign"?: string | null,"template_id"?: number,"theme_color"?: string | null,"updated_at"?: string,"user_id": string,"visibility_settings"?: NonNullable<Json>
+                    "candidate_id"?: string | null,"country_code"?: string | null,"created_at"?: string,"district_city"?: string | null,"draft_data"?: NonNullable<Json>,"expires_at"?: string | null,"id"?: string,"is_active"?: never,"is_published"?: boolean,"last_renewed_at"?: string | null,"owner_organization_id"?: string | null,"pin_zip"?: string | null,"privacy_mode"?: Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug"?: string | null,"published_at"?: string | null,"published_data"?: Json | null,"share_token"?: string | null,"subdivision_code"?: string | null,"sun_sign"?: string | null,"template_id"?: number,"theme_color"?: string | null,"updated_at"?: string,"user_id": string,"visibility_settings"?: NonNullable<Json>
                   }
                   Update: {
-                    "candidate_id"?: string | null,"country_code"?: string | null,"created_at"?: string,"district_city"?: string | null,"draft_data"?: NonNullable<Json>,"expires_at"?: string | null,"id"?: string,"is_published"?: boolean,"last_renewed_at"?: string | null,"owner_organization_id"?: string | null,"pin_zip"?: string | null,"privacy_mode"?: Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug"?: string | null,"published_at"?: string | null,"published_data"?: Json | null,"share_token"?: string | null,"subdivision_code"?: string | null,"sun_sign"?: string | null,"template_id"?: number,"theme_color"?: string | null,"updated_at"?: string,"user_id"?: string,"visibility_settings"?: NonNullable<Json>
+                    "candidate_id"?: string | null,"country_code"?: string | null,"created_at"?: string,"district_city"?: string | null,"draft_data"?: NonNullable<Json>,"expires_at"?: string | null,"id"?: string,"is_active"?: never,"is_published"?: boolean,"last_renewed_at"?: string | null,"owner_organization_id"?: string | null,"pin_zip"?: string | null,"privacy_mode"?: Database["public"]['Enums']["portfolio_privacy_mode"],"public_slug"?: string | null,"published_at"?: string | null,"published_data"?: Json | null,"share_token"?: string | null,"subdivision_code"?: string | null,"sun_sign"?: string | null,"template_id"?: number,"theme_color"?: string | null,"updated_at"?: string,"user_id"?: string,"visibility_settings"?: NonNullable<Json>
                   }
                   Relationships: [
                     {
@@ -837,23 +837,6 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"reference_subdivisions": {
-                  Row: {
-                    "aliases": string[],"country_code": string,"is_active": boolean,"name": string,"subdivision_code": string,"updated_at": string
-                  }
-                  Insert: {
-                    "aliases"?: string[],"country_code": string,"is_active"?: boolean,"name": string,"subdivision_code": string,"updated_at"?: string
-                  }
-                  Update: {
-                    "aliases"?: string[],"country_code"?: string,"is_active"?: boolean,"name"?: string,"subdivision_code"?: string,"updated_at"?: string
-                  }
-                  Relationships: [{
-                    foreignKeyName: "reference_subdivisions_country_code_fkey"
-                    columns: ["country_code"]
-                    isOneToOne: false
-                    referencedRelation: "reference_countries"
-                    referencedColumns: ["country_code"]
-                  }]
                 },"reference_regions": {
                   Row: {
                     "ascii_name": string | null,"country_code": string,"geoname_id": number,"is_active": boolean,"name": string,"region_code": string,"updated_at": string
@@ -867,6 +850,25 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "reference_regions_country_code_fkey"
+      columns: ["country_code"]
+isOneToOne: false
+      referencedRelation: "reference_countries"
+      referencedColumns: ["country_code"]
+    }
+                  ]
+                },"reference_subdivisions": {
+                  Row: {
+                    "aliases": (string)[],"country_code": string,"is_active": boolean,"name": string,"subdivision_code": string,"updated_at": string
+                  }
+                  Insert: {
+                    "aliases"?: (string)[],"country_code": string,"is_active"?: boolean,"name": string,"subdivision_code": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "aliases"?: (string)[],"country_code"?: string,"is_active"?: boolean,"name"?: string,"subdivision_code"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reference_subdivisions_country_code_fkey"
       columns: ["country_code"]
 isOneToOne: false
       referencedRelation: "reference_countries"
@@ -1224,7 +1226,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "get_hierarchical_matches":
-{ Args: { "source_portfolio_id": string,"limit_count"?: number }; Returns: (Database["public"]["Tables"]["portfolios"]["Row"] & { "proximity_tier": number })[]
+{ Args: { "limit_count"?: number,"source_portfolio_id": string }; Returns: {
+              "candidate_id": string,"country_code": string,"created_at": string,"district_city": string,"draft_data": Json,"expires_at": string,"id": string,"is_active": boolean,"is_published": boolean,"last_renewed_at": string,"owner_organization_id": string,"pin_zip": string,"privacy_mode": Database["public"]['Enums']["portfolio_privacy_mode"],"proximity_tier": number,"public_slug": string,"published_at": string,"published_data": Json,"share_token": string,"subdivision_code": string,"sun_sign": string,"template_id": number,"theme_color": string,"updated_at": string,"user_id": string,"visibility_settings": Json
+            }[]
                            },
 "get_identity_verification_link_status":
 { Args: { "p_token_hash": string }; Returns: Json
@@ -1476,7 +1480,9 @@ isOneToOne: false
 { Args: { "p_comment"?: string,"p_ease_rating": number,"p_hardest_steps": (string)[],"p_liked_aspects": (string)[] }; Returns: Json
                            },
 "submit_existing_interest":
-{ Args: { "p_family_context": string | null,"p_message": string | null,"p_share_token": string,"p_location": Json }; Returns: boolean
+{ Args: { "p_family_context"?: string,"p_message"?: string,"p_share_token": string }; Returns: boolean
+                           } |
+{ Args: { "p_family_context": string,"p_location": Json,"p_message": string,"p_share_token": string }; Returns: boolean
                            },
 "submit_interest_details":
 { Args: { "p_details": Json }; Returns: boolean

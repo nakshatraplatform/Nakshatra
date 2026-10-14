@@ -151,7 +151,7 @@ Validation mode: behavioral change with regression-first tests.
 ## Implementation Progress
 
 - Completed: shared search-first picker, PostalPincode and Zippopotam adapters, future optional Google adapter, protected route, required show-interest hierarchy, owner-only portfolio address lines, ISO reference data, queryable persistence, portfolio/candidate synchronization, a service-only hierarchical matcher, disclosure guards, generated types, and tests. Integration onto current `main` preserved its verified-email, candidate-details, self-created portfolio, and publication-review contracts.
-- Next incomplete step: execute complete migration and pgTAP suites on a Docker-capable machine or CI, inspect representative matching query plans, and regenerate Supabase types from the migrated schema.
+- Next incomplete step: confirm the final PR CI run after importing generated types, then inspect representative matching query plans before enabling the matching workflow.
 - Blockers: local PostgreSQL/Supabase replay cannot start because neither Docker nor Podman is installed. The latest main checkout now contains the previously missing migration history. Graphify update may still refuse its existing graph integrity guard.
 - Verification status on latest main: lint and typecheck passed; 1,274/1,274 unit tests passed; `npm run db:smoke` and production build passed; all three migration files and their PLpgSQL functions parsed. Full pgTAP remains to be confirmed.
 
@@ -191,4 +191,7 @@ Validation mode: behavioral change with regression-first tests.
 
 - CI on `82f5ab5` passes 49 of 51 database suites. The remaining fixtures called the retired three-argument existing-interest RPC and omitted the draft self-profile required by the pilot guard. Tests now use the location-bearing four-argument RPC and assert target eligibility before location submission; no production grants or guards were relaxed. Runtime confirmation remains pending in CI because local Docker/Podman is unavailable.
 
-**Status:** Integrated on latest main and unit-verified; full pgTAP/CI verification pending
+- CI run `38501304104` on `f4bff18` confirms clean migration replay and the complete pgTAP suite pass. Quality/coverage/build, browser tests, and secret scanning also pass. The database job's subsequent type-drift check identified differences in the hand-maintained type projection.
+- Imported `database.generated.ts` verbatim from that run's `database-types-38501304104` artifact. This restores generator ordering, generated-column read/write types, table-returning RPC projection, and overload signatures without modifying schema or runtime behavior. The unchanged strict drift checker passes against the artifact; TypeScript compilation passes. Future schema changes must regenerate this file rather than hand-editing its projection.
+
+**Status:** Migration replay, pgTAP, quality, and browser suites verified on `f4bff18`; final CI confirmation pending for the generated-type synchronization.
