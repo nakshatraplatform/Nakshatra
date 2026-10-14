@@ -123,9 +123,10 @@
 .dashboard-header { border-bottom: 1px solid light-dark(#d8d8d2, var(--app-dark-border)); background: light-dark(rgb(248 246 240 / 0.94), var(--app-dark-canvas)); color: light-dark(#1e3742, var(--app-dark-ink)); backdrop-filter: blur(14px); }
 
 .dashboard-onboarding { max-width: 760px; margin: 2rem auto; }
+/* Theme ink and surface switch together; only borders cross-fade. */
 .dashboard-primary-action,
 .dashboard-secondary-action,
-.dashboard-danger-action { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 9px; padding: 0.5rem 1rem; font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+.dashboard-danger-action { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 9px; padding: 0.5rem 1rem; font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: border-color 160ms ease; }
 .dashboard-primary-action:disabled,
 .dashboard-secondary-action:disabled,
 .dashboard-danger-action:disabled { cursor: wait; opacity: 0.58; }
