@@ -162,11 +162,11 @@
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
-.primaryButton { background: var(--teal); color: white !important; }
-.primaryButton:hover { background: #103d45; transform: translateY(-1px); }
+.primaryButton { background: var(--ui-action); color: white !important; }
+.primaryButton:hover { background: var(--ui-action-hover); transform: translateY(-1px); }
 .primaryButton svg, .lightButton svg { width: 1rem; height: 1rem; }
 .secondaryButton { border-color: light-dark(#bfc3bd, var(--app-dark-border)); background: transparent; }
-.secondaryButton:hover { border-color: var(--teal); background: var(--surface); }
+.secondaryButton:hover { border-color: var(--ui-action); background: var(--surface); }
 
 .hero {
   display: grid;

@@ -55,10 +55,19 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   const [message, setMessage] = useState("");
   const sessionToken = useRef(newSessionToken());
   const operationId = useRef(0);
+  const selectedViewRef = useRef<HTMLDivElement>(null);
+  const focusSelectedView = useRef(false);
   const listboxId = useId();
   const activeIndex = suggestions.findIndex(option => option.id === activeId);
   const expanded = suggestionsOpen && suggestions.length > 0;
   const subdivisions = subdivisionsForCountry(countryCode);
+
+  useEffect(() => {
+    if (focusSelectedView.current && mode !== "search") {
+      selectedViewRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
+      focusSelectedView.current = false;
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (expanded && activeIndex >= 0) document.getElementById(`${listboxId}-option-${activeIndex}`)?.scrollIntoView?.({ block: "nearest" });
@@ -103,6 +112,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
     });
   }
   function applyLocation(location: LocationValue) {
+    focusSelectedView.current = true;
     setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1;
     onChange(location);
@@ -132,7 +142,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   }
 
   if (mode === "confirmed") return (
-    <div className="rounded-2xl border border-[color:var(--workspace-line)] bg-[color:var(--workspace-surface)] p-4">
+    <div ref={selectedViewRef} className="rounded-2xl border border-[color:var(--workspace-line)] bg-[color:var(--workspace-surface)] p-4">
       <div className="flex items-start justify-between gap-4"><div>
         <p className="text-sm font-semibold text-[color:var(--workspace-ink)]">Selected location</p>
         <p className="mt-2 text-sm text-[color:var(--workspace-muted)]">{locationDisplayValue({ country: value.country, state: value.region, city: value.city, postalCode: value.postalCode }) || "No location selected"}{value.postalCode ? ` · ${value.postalCode}` : ""}</p>
@@ -141,7 +151,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   );
 
   if (mode === "manual") return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div ref={selectedViewRef} className="grid gap-4 sm:grid-cols-2">
       {message ? <p className="text-sm text-[color:var(--workspace-muted)] sm:col-span-2" role="status">{message}</p> : null}
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.country}{locationRequired ? " *" : ""}</span><select aria-label={labels.country} autoComplete="country" required={locationRequired} value={value.countryCode || countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.region}{requireCompleteHierarchy ? " *" : ""}</span><select aria-label={labels.region} autoComplete="address-level1" required={requireCompleteHierarchy} value={value.regionCode || ""} onChange={(event) => { const subdivision = subdivisions.find((item) => item.subdivisionCode === event.target.value); onChange({ region: subdivision?.name || "", regionCode: subdivision?.subdivisionCode, city: "", cityGeonameId: undefined, postalCode: "", locationSource: "manual" }); }} className="biodata-field min-h-12"><option value="">Select state</option>{subdivisions.map((item) => <option key={item.subdivisionCode} value={item.subdivisionCode}>{item.name}</option>)}</select></label>

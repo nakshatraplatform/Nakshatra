@@ -143,6 +143,7 @@ async function acceptPublicationDisclosure() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  for (const mock of Object.values(mocks)) mock.mockReset();
   vi.stubGlobal("confirm", vi.fn(() => true));
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
   vi.spyOn(window, "open").mockImplementation(() => null);
@@ -1303,7 +1304,7 @@ describe("dashboard client", () => {
       portfolio: { ...portfolio, draft_data: readyData },
       publicationReadiness: readyPublicationReadiness,
     });
-    const savedProgress = screen.getByRole("heading", { name: /required answers complete/ }).textContent;
+    const savedProgress = screen.getByRole("heading", { name: /required draft answers complete/ }).textContent;
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "" } });
@@ -1314,7 +1315,7 @@ describe("dashboard client", () => {
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Discard them"));
     expect(screen.queryByRole("heading", { name: "Portfolio details" })).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /required answers complete/ })).toHaveTextContent(savedProgress || "");
+    expect(screen.getByRole("heading", { name: /required draft answers complete/ })).toHaveTextContent(savedProgress || "");
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();

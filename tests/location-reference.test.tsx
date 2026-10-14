@@ -36,9 +36,18 @@ describe("location reference client", () => {
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("ZIP or PIN code"), { target: { value: "560001" } });
     const result = await screen.findByRole("option", { name: /Bengaluru GPO/ }, { timeout: 1500 });
-    fireEvent.click(result);
+    const search = screen.getByRole("combobox", { name: "ZIP or PIN code" });
+    fireEvent.focus(search);
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(search).toHaveAttribute("aria-activedescendant", result.id);
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveAttribute("aria-expanded", "false");
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    expect(search).toHaveAttribute("aria-activedescendant", result.id);
+    fireEvent.keyDown(search, { key: "Enter" });
     expect(screen.getByText(/Bengaluru, Karnataka, India/)).toBeInTheDocument();
     expect(screen.getByText(/560001/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change" })).toHaveFocus();
   });
 
   it("applies a Zippopotam ZIP suggestion without an additional resolution request", async () => {

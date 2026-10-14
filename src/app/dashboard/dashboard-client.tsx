@@ -1581,7 +1581,7 @@ function HoroscopeManager({
                 <p className="mt-2 text-xs text-[var(--workspace-ink-muted)]">
                   {[format, horoscope.language_label, formatBytes(horoscope.byte_size)].filter(Boolean).join(" · ")}
                 </p>
-                <p className={`mt-2 text-xs ${horoscope.published_at ? "text-emerald-300" : "text-[var(--workspace-teal)]"}`}>
+                <p className="mt-2 text-xs text-[var(--workspace-teal)]">
                   {horoscope.file_extension !== "webp"
                     ? "Legacy document — replace it with a scanned image before sharing"
                     : horoscope.published_at
@@ -1599,7 +1599,7 @@ function HoroscopeManager({
             <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--workspace-border)] px-4 text-xs font-medium text-[var(--workspace-ink)] hover:bg-[var(--workspace-surface-muted)] disabled:opacity-50">
               <Upload className={`h-3.5 w-3.5 ${uploading ? "animate-pulse" : ""}`} /> Replace
             </button>
-            <button type="button" onClick={onDelete} className="inline-flex h-9 items-center gap-2 rounded-lg border border-red-300/20 px-4 text-xs font-medium text-red-100 hover:bg-red-400/10">
+            <button type="button" onClick={onDelete} className="dashboard-danger-action focus-visible:ring-2 focus-visible:ring-[var(--workspace-teal)]">
               <Trash2 className="h-3.5 w-3.5" /> Remove
             </button>
           </div>

@@ -769,6 +769,7 @@
 }
 
 @media (max-height: 800px) and (min-width: 901px) {
+  .account-main[data-mode="login"] { padding-block: 0.5rem; }
   .account-main[data-mode="login"] .account-panel { padding: 1rem 1.5rem; }
   .account-main[data-mode="login"] .account-brand-lockup { margin-bottom: 1rem; }
   .account-main[data-mode="login"] .account-eyebrow { margin-bottom: 0.5rem; }
@@ -883,6 +884,10 @@
   font-size: 0.93rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+@media (max-height: 640px) {
+  .interest-modal[data-step="details"] .interest-modal-header { padding-block: 8px; }
 }
 .interest-form-footer .portfolio-button:hover,
 .interest-form-footer .portfolio-button:focus-visible { background: var(--ui-action-hover); box-shadow: 0 8px 22px rgb(18 53 69 / 0.14); }
