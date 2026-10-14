@@ -20,14 +20,12 @@ select has_column('public', 'candidates', 'current_postal_code', 'candidate post
 select has_column('public', 'interest_requests', 'country_code', 'interest country code is queryable');
 select has_column('public', 'interest_requests', 'subdivision_code', 'interest subdivision code is queryable');
 select has_function('public', 'submit_existing_interest', array['text','text','text','jsonb'], 'existing-viewer command accepts structured location fields');
-select like(
-  (select pg_catalog.pg_get_constraintdef(oid) from pg_catalog.pg_constraint where conname = 'candidates_location_source_check'),
-  '%zippopotam%',
+select ok(
+  (select pg_catalog.pg_get_constraintdef(oid) from pg_catalog.pg_constraint where conname = 'candidates_location_source_check') like '%zippopotam%',
   'candidate location provenance accepts Zippopotam'
 );
-select like(
-  (select pg_catalog.pg_get_constraintdef(oid) from pg_catalog.pg_constraint where conname = 'interest_location_source_check'),
-  '%zippopotam%',
+select ok(
+  (select pg_catalog.pg_get_constraintdef(oid) from pg_catalog.pg_constraint where conname = 'interest_location_source_check') like '%zippopotam%',
   'interest location provenance accepts Zippopotam'
 );
 

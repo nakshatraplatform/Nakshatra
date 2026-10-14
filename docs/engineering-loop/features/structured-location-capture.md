@@ -180,4 +180,12 @@ Validation mode: behavioral change with regression-first tests.
 - `npm run db:verify`: blocked before the complete repository migration/pgTAP execution because Docker/Podman is unavailable.
 - No production Supabase writes were performed. The branch is based on latest `origin/main`, which includes the previously missing historical migrations.
 
+## PR #98 CI follow-up
+
+- CI confirmed migration replay succeeds, then pgTAP fails because the shared completed-draft fixture predates required ISO geography and private address lines. The fixture and its affected readiness assertions now reflect the publication contract; public-perimeter test data no longer copies private address lines into `published_data`.
+- Replaced two unsupported pgTAP `like(...)` calls with `ok(... LIKE ...)` assertions.
+- Updated browser fixtures and assertions for search-first ZIP/PIN entry, manual fallback, and normalized owner location. The 15 previously failing cases now pass across desktop, tablet, and mobile.
+- Added focused contract/provider/publication tests; full Vitest and feature coverage gate pass (1,284 tests), as do lint, typecheck, static database fixtures, and a production build with process-local placeholder public Supabase values.
+- Full pgTAP remains unverified locally because Docker/Podman is unavailable; the next PR CI run must confirm the database suite. No production database writes were made.
+
 **Status:** Integrated on latest main and unit-verified; full pgTAP/CI verification pending

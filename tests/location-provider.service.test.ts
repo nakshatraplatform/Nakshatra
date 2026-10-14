@@ -151,4 +151,77 @@ describe("location provider normalization", () => {
     })));
     await expect(resolveGooglePlace("place_123", crypto.randomUUID())).rejects.toMatchObject({ reason: "unavailable" });
   });
+
+  it("falls back to Google when a postal provider fails and skips incomplete predictions", async () => {
+    process.env.GOOGLE_PLACES_API_KEY = "server-key";
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error("postal provider offline"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ suggestions: [
+        {},
+        { placePrediction: { placeId: "place_123", text: { text: "Bangalore, Karnataka" } } },
+      ] })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(searchLocationSuggestions({ query: "560001", countryCode: "IN", sessionToken: crypto.randomUUID() }))
+      .resolves.toEqual([{ id: "place_123", label: "Bangalore, Karnataka", provider: "google_places", requiresResolution: true }]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps ambiguous Indian localities distinct and falls back from an absent district", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify([{
+      Status: "Success", PostOffice: [
+        { Name: "First Office", District: "NA", Block: "North Block", State: "Karnataka", Pincode: "560001" },
+        { Name: "Second Office", District: null, Block: "NA", State: "Unknown State", Pincode: "560001" },
+      ],
+    }]))));
+    await expect(searchLocationSuggestions({ query: "560001", sessionToken: crypto.randomUUID() }))
+      .resolves.toEqual([
+        expect.objectContaining({ city: "North Block", subdivisionCode: "IN-KA" }),
+        expect.objectContaining({ city: "Second Office", state: "Unknown State", subdivisionCode: undefined }),
+      ]);
+  });
+
+  it("returns manual fallback for empty or malformed postal responses", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ Status: "Error", PostOffice: null }])))
+      .mockResolvedValueOnce(new Response("not json"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ unexpected: true })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(searchLocationSuggestions({ query: "560001", countryCode: "IN", sessionToken: crypto.randomUUID() })).resolves.toEqual([]);
+    await expect(searchLocationSuggestions({ query: "560001", countryCode: "IN", sessionToken: crypto.randomUUID() })).resolves.toEqual([]);
+    await expect(searchLocationSuggestions({ query: "02108", countryCode: "US", sessionToken: crypto.randomUUID() })).resolves.toEqual([]);
+  });
+
+  it("rejects missing and streamed oversized provider bodies", async () => {
+    process.env.GOOGLE_PLACES_API_KEY = "server-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null))
+      .mockResolvedValueOnce(new Response("x".repeat(128 * 1024 + 1)));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(resolveGooglePlace("missing_body", crypto.randomUUID())).rejects.toMatchObject({ reason: "unavailable" });
+    await expect(resolveGooglePlace("large_body", crypto.randomUUID())).rejects.toMatchObject({ reason: "unavailable" });
+  });
+
+  it("rejects unsupported and incomplete Google place resolutions", async () => {
+    process.env.GOOGLE_PLACES_API_KEY = "server-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ addressComponents: [
+        { longText: "Canada", shortText: "CA", types: ["country"] },
+      ] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ addressComponents: [
+        { longText: "United States", shortText: "US", types: ["country"] },
+        { longText: "Massachusetts", shortText: "MA", types: ["administrative_area_level_1"] },
+      ] })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(resolveGooglePlace("unsupported", crypto.randomUUID())).rejects.toMatchObject({ reason: "invalid" });
+    await expect(resolveGooglePlace("no_city", crypto.randomUUID())).rejects.toMatchObject({ reason: "invalid" });
+  });
+
+  it("preserves a provider state label when no ISO subdivision can be mapped", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      "post code": "02108", country: "United States", "country abbreviation": "US",
+      places: [{ "place name": "Boston", state: "Unknown State", "state abbreviation": "ZZ" }],
+    }))));
+    await expect(searchLocationSuggestions({ query: "02108", countryCode: "US", sessionToken: crypto.randomUUID() }))
+      .resolves.toEqual([expect.objectContaining({ state: "Unknown State", subdivisionCode: undefined })]);
+  });
 });

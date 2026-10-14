@@ -46,7 +46,7 @@ select pg_temp.prime_paid_publication(
 
 update public.portfolios
 set is_published = true,
-    published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"balanced"}'::jsonb),
+    published_data = '{"privacy_mode":"balanced","personal":{"name":"Aditi"}}'::jsonb,
     expires_at = now() + interval '90 days'
 where id = '33333333-3333-4333-8333-333333333333';
 
@@ -84,7 +84,7 @@ values
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/private-unpublished.webp');
 
 select throws_ok(
-  $$update public.portfolios set published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"private"}'::jsonb)
+  $$update public.portfolios set published_data = '{"privacy_mode":"private","personal":{"name":"Aditi"}}'::jsonb
     where id = '33333333-3333-4333-8333-333333333333'$$,
   '23514', 'publication_current_introduction_required',
   'a new publication cannot switch to the retired reduced-disclosure setup'

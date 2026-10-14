@@ -134,6 +134,15 @@ describe("portfolio lifecycle services", () => {
     expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
   });
 
+  it("rejects an old private-only portfolio before attempting publication", async () => {
+    await expect(publishPortfolio({
+      supabase: {} as never,
+      userId: "user-id",
+      data: { ...draft, privacy_mode: "private" },
+    })).rejects.toMatchObject({ code: "PUBLIC_INTRODUCTION_UPDATE_REQUIRED", status: 409 });
+    expect(repository.publishPortfolioTransaction).not.toHaveBeenCalled();
+  });
+
   it("publishes a saved draft with a durable share token and safe snapshot", async () => {
     const result = await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
     expect(repository.publishPortfolioTransaction).toHaveBeenCalledWith(

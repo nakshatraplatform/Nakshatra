@@ -35,7 +35,7 @@ select is((select current_region from public.candidates where primary_owner_user
 select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country_code":"ZZ","region_code":"02","city_geoname_id":990002002}'))#>>'{draftData,personal,city}','Twin Town','saved draft response carries canonical labels');
 select throws_ok($$select public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country_code":"ZZ","region_code":"01","city_geoname_id":990002003}'))$$,'22023','geography_city_hierarchy_invalid','invalid update fails atomically');
 select is((select current_city_geoname_id from public.candidates where primary_owner_user_id=auth.uid()),990002002::bigint,'failed save leaves prior candidate projection intact');
-select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country":"Unlisted Country","region":"Manual Region","city":"Manual City"}'))->>'status','saved','owner can replace canonical selection with manual labels');
+select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country":"Unlisted Country","country_code":null,"region":"Manual Region","region_code":null,"city":"Manual City"}'))->>'status','saved','owner can replace canonical selection with manual labels');
 select is((select current_city_geoname_id from public.candidates where primary_owner_user_id=auth.uid()),null::bigint,'manual update clears stale reference IDs');
 reset role;
 select * from finish();

@@ -38,11 +38,11 @@ insert into public.portfolios(
   'a1000000-0000-4000-8000-000000000001',
   'a3000000-0000-4000-8000-000000000001',
   'readiness_test_token_01',
-  '{
-    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","gender":"female","country":"United States","city":"Boston","current_location":"Boston, United States","marital_status":"Never Married","short_bio":"A thoughtful introduction.","profile_for":"self"},
+  pg_temp.complete_portfolio_draft('{
+    "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","gender":"female","country":"United States","city":"Boston","current_location":"Boston, Massachusetts, United States","marital_status":"Never Married","short_bio":"A thoughtful introduction.","profile_for":"self"},
     "career":{"title":"Engineer"},
     "vitals":{"height":"5''5\""}
-  }'::jsonb,
+  }'::jsonb),
   null,
   false
 );
@@ -59,7 +59,7 @@ insert into public.portfolio_media(
 select is(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft())::text, '{}'::text, 'complete pilot details satisfy the database publication contract');
 select ok('gender' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"gender":""}}'::jsonb))), 'missing gender is rejected');
 select ok('height' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"vitals":{"height":"8''2\""}}'::jsonb))), 'height outside offered range is rejected');
-select ok('current_city' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"city":""}}'::jsonb))), 'city is required independently of display location');
+select ok('structured_location' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"city":""}}'::jsonb))), 'city is required independently of display location');
 select ok('current_location' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"current_location":"Old City"}}'::jsonb))), 'stale headline location is rejected');
 select ok('date_of_birth' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"dob":"1919-12-31"}}'::jsonb))), 'birth year before 1920 is rejected');
 select ok('first_name' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"first_name":"Ana2"}}'::jsonb))), 'non-alphabetic first name is rejected');
