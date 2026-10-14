@@ -66,7 +66,7 @@ export function calculatePortfolioCompletion(
         && isValidPostalCode(countryCode, data.personal.postal_code)
         && hasValue(data.personal.location_source),
     },
-    { key: "private_address", label: "Address lines 1 and 2", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.address_line_1) && hasValue(data.personal.address_line_2) },
+    { key: "private_address", label: "Street address line 1", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.address_line_1) },
     { key: "career_title", label: "Current profession title", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
     {
       key: "introduction",
@@ -81,7 +81,7 @@ export function calculatePortfolioCompletion(
   const validation = portfolioEditorPublishSchema.safeParse(data);
   const requiredPaths = new Set([
     "personal.name", "personal.first_name", "personal.last_name", "personal.dob", "personal.gender",
-    "personal.country", "personal.country_code", "personal.region", "personal.region_code", "personal.city", "personal.postal_code", "personal.location_source", "personal.address_line_1", "personal.address_line_2", "personal.marital_status", "personal.short_bio", "vitals.height", "career.title",
+    "personal.country", "personal.country_code", "personal.region", "personal.region_code", "personal.city", "personal.postal_code", "personal.location_source", "personal.address_line_1", "personal.marital_status", "personal.short_bio", "vitals.height", "career.title",
   ]);
   const invalidAnswers = validation.success ? [] : validation.error.issues
     .map((issue) => ({ key: issue.path.join("."), label: issue.message, editorSection: editorSectionForPath(issue.path.join(".")) }))

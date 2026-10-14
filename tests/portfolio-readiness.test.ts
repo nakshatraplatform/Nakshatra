@@ -47,6 +47,22 @@ describe("portfolio completion", () => {
     });
   });
 
+  it("requires street address line 1 but not line 2", () => {
+    const withoutLine2 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_2: "" },
+    }, true);
+    expect(withoutLine2.readyToPublish).toBe(true);
+    expect(withoutLine2.missing).toEqual([]);
+
+    const withoutLine1 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_1: "", address_line_2: "Unit 2" },
+    }, true);
+    expect(withoutLine1.readyToPublish).toBe(false);
+    expect(withoutLine1.missing.map((item) => item.key)).toContain("private_address");
+  });
+
   it("identifies the first incomplete editor section and all missing labels", () => {
     const result = calculatePortfolioCompletion({
       ...completeDraft,

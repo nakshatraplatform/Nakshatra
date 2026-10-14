@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(38);
+select plan(40);
 
 select has_table('public', 'reference_subdivisions', 'ISO subdivision reference table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.reference_subdivisions'::regclass), 'subdivision references have RLS enabled');
@@ -142,7 +142,21 @@ select ok(
     extensions.gen_random_uuid(),
     '{"personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12"},"career":{"title":"Engineer"}}'::jsonb
   ),
-  'publication readiness requires the hierarchy and both private address lines'
+  'publication readiness requires the hierarchy and private street address line 1'
+);
+select ok(
+  not ('private_address' = any(app_private.portfolio_missing_required_details(
+    extensions.gen_random_uuid(),
+    '{"personal":{"address_line_1":"100 Main Street"}}'::jsonb
+  ))),
+  'publication readiness accepts a blank optional street address line 2'
+);
+select ok(
+  'private_address' = any(app_private.portfolio_missing_required_details(
+    extensions.gen_random_uuid(),
+    '{"personal":{"address_line_2":"Unit 12"}}'::jsonb
+  )),
+  'publication readiness still requires street address line 1'
 );
 select ok(
   not ('structured_location' = any(app_private.portfolio_missing_required_details(
