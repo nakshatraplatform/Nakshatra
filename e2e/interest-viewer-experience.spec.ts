@@ -34,10 +34,13 @@ test("new visitor fields have usable mobile space, required context and conditio
     const scroll=dialog.locator(".interest-form-scroll");
     expect((await scroll.boundingBox())!.height).toBeGreaterThan(height*.55);
     expect((await dialog.locator(".interest-form-footer").boundingBox())!.height).toBeLessThan(90);
-    await expect(dialog.getByLabel("Your location country")).toHaveAttribute("required","");
-    await dialog.getByLabel("Your location country").selectOption("US");
-    await dialog.getByLabel("Your location state").selectOption("MA");
-    await dialog.getByLabel("Your location city").selectOption("4930956");
+    await expect(dialog.getByRole("combobox",{name:"ZIP or PIN code"})).toHaveAttribute("required","");
+    await dialog.getByRole("button",{name:"Enter location manually"}).click();
+    await expect(dialog.getByLabel("Country",{exact:true})).toHaveAttribute("required","");
+    await dialog.getByLabel("Country",{exact:true}).selectOption("US");
+    await dialog.getByLabel("State",{exact:true}).selectOption("US-MA");
+    await dialog.getByLabel("City",{exact:true}).fill("Boston");
+    await dialog.getByLabel("ZIP or PIN code",{exact:true}).fill("02108");
     await dialog.getByLabel("Contacting for").selectOption("son");
     await expect(dialog.getByLabel("Candidate’s full name")).toHaveAttribute("required","");
     await dialog.getByLabel("Contacting for").selectOption("self");

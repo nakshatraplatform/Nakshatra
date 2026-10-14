@@ -256,7 +256,9 @@ test("interest popup stays in view and requires decision-making details", async 
   expect(bounds.top).toBeGreaterThanOrEqual(0);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
-  for (const name of ["Your location country", "Your location state", "Your location city", "Family context", "Message"]) await expect(dialog.getByLabel(name)).toHaveAttribute("required", "");
+  await expect(dialog.getByRole("combobox", { name: "ZIP or PIN code" })).toHaveAttribute("required", "");
+  await dialog.getByRole("button", { name: "Enter location manually" }).click();
+  for (const name of ["Country", "State", "City", "ZIP or PIN code", "Family context", "Message"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
   const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
   expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);
   await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();

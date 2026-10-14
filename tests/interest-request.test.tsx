@@ -12,6 +12,16 @@ const continueToAuthProvider = vi.hoisted(() => vi.fn());
 vi.mock("../src/components/portfolio/InterestLocationFields", () => ({
   InterestLocationFields: ({ prefix, label, initial }: { prefix: string; label: string; initial?: { countryCode: string; regionCode: string; cityId: number } }) => <fieldset><legend>{label}</legend>{[["CountryCode", "country", "US"], ["RegionCode", "state", "MA"], ["CityId", "city", "4930956"]].map(([suffix, name, value]) => <label key={suffix}>{label} {name}<select aria-label={`${label} ${name}`} name={`${prefix}${suffix}`} required defaultValue={initial ? String(initial[suffix === "CountryCode" ? "countryCode" : suffix === "RegionCode" ? "regionCode" : "cityId"]) : ""}><option value="">Choose one</option><option value={value}>{value}</option></select></label>)}</fieldset>,
 }));
+vi.mock("../src/components/portfolio/LocationFields", () => ({
+  hasCompleteLocationHierarchy: (value: { countryCode?: string; regionCode?: string; city?: string; postalCode?: string }) =>
+    value.countryCode === "US" && value.regionCode === "US-MA" && value.city === "Boston" && value.postalCode === "02108",
+  LocationFields: ({ onChange }: { onChange: (value: Record<string, unknown>) => void }) => <fieldset>
+    <legend>Your location</legend>
+    <label>Your location country<select aria-label="Your location country" required defaultValue=""><option value="">Choose</option><option value="US">US</option></select></label>
+    <label>Your location state<select aria-label="Your location state" required defaultValue=""><option value="">Choose</option><option value="MA">MA</option></select></label>
+    <label>Your location city<select aria-label="Your location city" required defaultValue="" onChange={() => onChange({ country: "United States", countryCode: "US", region: "Massachusetts", regionCode: "US-MA", city: "Boston", postalCode: "02108", locationSource: "manual" })}><option value="">Choose</option><option value="4930956">4930956</option></select></label>
+  </fieldset>,
+}));
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 vi.mock("@/features/auth/client/auth.api", () => ({ continueToAuthProvider, startAuthentication, verifyAuthenticationCode }));
@@ -23,10 +33,14 @@ import {
   interestRequestValidationMessage,
 } from "../src/features/interest/server/interest.contract";
 
+const requiredLocationPayload = {
+  country: "United States", state: "Massachusetts", city: "Boston", countryCode: "US",
+  subdivisionCode: "US-MA", postalCode: "02108", locationSource: "manual",
+};
 const decisionDetails = {
   familyContext: "Our family values honesty, kindness and mutual respect.",
   message: "I enjoyed reading your introduction and would like to learn more about your family, interests and plans for the future.",
-  location: { countryCode: "US", regionCode: "MA", cityId: 4930956 },
+  location: requiredLocationPayload,
 };
 function fillDecisionDetails() {
   fireEvent.change(screen.getByLabelText("Family context"), { target: { value: decisionDetails.familyContext } });
@@ -105,9 +119,7 @@ describe("interest request flow", () => {
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
-      country: null,
-      state: null,
-      city: null,
+      ...requiredLocationPayload,
       ...decisionDetails,
     });
   });
@@ -262,13 +274,14 @@ describe("interest request flow", () => {
   });
 
   it("reuses an authenticated VivIntro profile and asks only for context", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", city: "Toronto" }} />);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
 
-    expect(screen.getByRole("heading", { name: "Add a note for Ananya's family" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Confirm your details for Ananya's family" })).toBeInTheDocument();
     expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
     expect(screen.queryByLabelText("Your full name")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
+    expect(screen.getByText(/Boston, Massachusetts, United States/)).toBeInTheDocument();
     expect(screen.getByLabelText("Family context")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
   });
@@ -278,7 +291,7 @@ describe("interest request flow", () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: {
         draft_data: {
-          personal: { name: "Rohan Mehta", profile_for: "self", city: "Toronto" },
+          personal: { name: "Rohan Mehta", profile_for: "self", country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA", city: "Boston", postal_code: "02108" },
           contact: { phone: "" },
         },
         published_data: null,
@@ -303,6 +316,13 @@ describe("interest request flow", () => {
         portfolioToken: "portfolio-token",
         ...decisionDetails,
         useExistingProfile: true,
+        country: "United States",
+        countryCode: "US",
+        state: "Massachusetts",
+        subdivisionCode: "US-MA",
+        city: "Boston",
+        postalCode: "02108",
+        locationSource: "existing_profile",
         familyContext: "Our families have friends in common.",
         message: "We would be glad to connect.",
       }),
@@ -311,6 +331,7 @@ describe("interest request flow", () => {
     expect(response.status).toBe(201);
     expect(rpc).toHaveBeenCalledWith("submit_existing_interest", expect.objectContaining({
       p_share_token: "portfolio-token",
+
       p_family_context: "Our families have friends in common.",
       p_message: "We would be glad to connect.",
     }));
@@ -327,6 +348,8 @@ describe("interest request flow", () => {
   });
 
   it("validates and stores an interest for an active portfolio", async () => {
+    const contractCheck = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", ...decisionDetails, ...requiredLocationPayload, name: "Rohan Mehta", profileFor: "self", phone: "+1 555 010 2200", email: "rohan@example.com" });
+    if (!contractCheck.success) throw new Error(JSON.stringify(contractCheck.error.issues));
     const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
     getApiUser.mockResolvedValue({
       status: "authenticated",
@@ -344,6 +367,7 @@ describe("interest request flow", () => {
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "rohan@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
@@ -371,10 +395,8 @@ describe("interest request flow", () => {
       }),
     }));
 
-    expect(detailedResponse.status).toBe(201);
-    expect(rpc).toHaveBeenLastCalledWith("submit_interest_details", { p_details: expect.objectContaining({
-      location: decisionDetails.location, familyContext: decisionDetails.familyContext, message: decisionDetails.message,
-    }) });
+    expect(detailedResponse.status).toBe(400);
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
   it("requires a verified session before accepting an interest request", async () => {
@@ -408,6 +430,7 @@ describe("interest request flow", () => {
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "owner@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
@@ -457,6 +480,7 @@ describe("interest request flow", () => {
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "rohan@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
@@ -490,6 +514,7 @@ describe("interest request flow", () => {
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
+      ...requiredLocationPayload,
     });
     const unavailable = await POST(new Request("http://local/api/interest", {
       method: "POST",
@@ -530,6 +555,7 @@ describe("interest request flow", () => {
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
+      ...requiredLocationPayload,
       ...override,
     });
 
@@ -537,5 +563,28 @@ describe("interest request flow", () => {
     if (!parsed.success) {
       expect(interestRequestValidationMessage(parsed.error)).toContain(expectedMessage);
     }
+  });
+
+  it("normalizes ZIP+4 and accepts the canonical US Virgin Islands hierarchy", () => {
+    const parsed = interestSubmissionSchema.parse({
+      familyContext: decisionDetails.familyContext,
+      message: decisionDetails.message,
+      portfolioToken: "portfolio-token",
+      useExistingProfile: false,
+      name: "Rohan Mehta",
+      profileFor: "self",
+      phone: "+1 555 010 2200",
+      email: "rohan@example.com",
+      country: "United States",
+      countryCode: "US",
+      state: "United States Virgin Islands",
+      subdivisionCode: "US-VI",
+      city: "Charlotte Amalie",
+      postalCode: "00802-1234",
+      locationSource: "manual",
+      location: { country: "United States", countryCode: "US", state: "United States Virgin Islands", subdivisionCode: "US-VI", city: "Charlotte Amalie", postalCode: "00802-1234", locationSource: "manual" },
+    });
+
+    expect(parsed.postalCode).toBe("00802");
   });
 });

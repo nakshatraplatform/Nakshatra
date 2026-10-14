@@ -129,6 +129,7 @@ export default function DashboardClient({
   const [draftData, setDraftData] = useState<PortfolioData>(() =>
     normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode)
   );
+  const savedDraftRef = useRef<PortfolioData>(normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode));
   const [preparingPreview, setPreparingPreview] = useState(false);
   const [mediaMutations, setMediaMutations] = useState(0);
   const [removingHoroscope, setRemovingHoroscope] = useState(false);
@@ -165,6 +166,7 @@ export default function DashboardClient({
     access: false,
   });
   const [journeyReadiness, setReadinessState] = useState(publicationReadiness);
+  const savedReadinessRef = useRef(publicationReadiness);
   // Refresh the authoritative server projection, retaining local editor progress.
   // A browser/provider return is never itself publication authorization.
   const readinessState = { ...journeyReadiness, verificationStatus: publicationReadiness.verificationStatus };
@@ -210,8 +212,7 @@ export default function DashboardClient({
     && reviewPreviewsOpened.complete
     && verificationComplete
     && readinessState.paymentActive;
-  const selfCreatedPortfolio = draftData.personal.profile_for === "self"
-    && portfolio?.published_data?.personal?.profile_for === "self";
+  const selfCreatedPortfolio = portfolio?.published_data?.personal?.profile_for === "self";
   const publicShareReady = selfCreatedPortfolio
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
@@ -240,9 +241,18 @@ export default function DashboardClient({
     const heading = document.getElementById("portfolio-editor-heading");
     document.body.style.overflow = "hidden";
     heading?.focus({ preventScroll: true });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previous?.focus();
+    };
+  }, [formOpen]);
+
+  useEffect(() => {
+    if (!formOpen) return;
+    const heading = document.getElementById("portfolio-editor-heading");
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setFormOpen(false);
+        closePortfolioEditor();
         return;
       }
       trapDialogFocus(event, heading?.closest<HTMLElement>("[role='dialog']") || null);
@@ -250,10 +260,10 @@ export default function DashboardClient({
     document.addEventListener("keydown", handleKey);
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = previousOverflow;
-      previous?.focus();
     };
-  }, [formOpen]);
+  // Refresh the key handler with the latest save state without resetting editor focus.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formOpen, draftSaveState, savingDraft]);
 
   useEffect(() => {
     if (!reviewOpen) return;
@@ -277,7 +287,7 @@ export default function DashboardClient({
   }, [reviewOpen, publishing]);
 
   useEffect(() => {
-    if (draftSaveState !== "unsaved" || !canCreatePortfolio) return;
+    if (draftSaveState !== "unsaved" || !canCreatePortfolio || savingDraft) return;
     const revision = draftRevisionRef.current;
     if (lastAutosaveAttemptRevisionRef.current === revision) return;
     const timer = window.setTimeout(() => {
@@ -287,17 +297,29 @@ export default function DashboardClient({
     return () => window.clearTimeout(timer);
     // The save operation intentionally uses the latest render's draft snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftData, draftSaveState, canCreatePortfolio]);
+  }, [draftData, draftSaveState, canCreatePortfolio, savingDraft]);
 
   useEffect(() => () => {
     if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
   }, []);
 
   function closePortfolioEditor() {
-    if (
-      draftSaveState !== "saved"
-      && !confirm("You have changes that are not saved. Close the form and keep them only on this screen?")
-    ) return;
+    if (savingDraft) {
+      setDraftError("Please wait for the current save to finish before leaving the form.");
+      return;
+    }
+    if (draftSaveState === "unsaved") {
+      if (!confirm("Your latest changes have not been saved. Discard them and return to the dashboard?")) return;
+      draftRevisionRef.current += 1;
+      setDraftData(savedDraftRef.current);
+      setReadinessState(savedReadinessRef.current);
+      setReviewPreviewsOpened({
+        public: savedReadinessRef.current.publicPreviewReviewed ?? false,
+        complete: savedReadinessRef.current.completePreviewReviewed ?? false,
+      });
+      setDraftSaveState("saved");
+      setDraftError(null);
+    }
     setFormOpen(false);
   }
 
@@ -405,6 +427,7 @@ export default function DashboardClient({
           value: "publication-disclosure-v2",
         });
         if (!disclosureResult.ok) return void handlePortfolioApiFailure(disclosureResult);
+        savedReadinessRef.current = disclosureResult.data.readiness;
         setReadinessState(disclosureResult.data.readiness);
       }
 
@@ -466,10 +489,14 @@ export default function DashboardClient({
     invalidatePreviewReview();
   }
 
-  function invalidatePreviewReview() {
+  function invalidatePreviewReview(persistedMediaChange = false) {
     draftRevisionRef.current += 1;
     setReviewPreviewsOpened({ public: false, complete: false });
     setSensitiveDisclosureAccepted(false);
+    if (persistedMediaChange) {
+      savedReadinessRef.current = { ...savedReadinessRef.current, disclosureConfirmed: false,
+        publicPreviewReviewed: false, completePreviewReviewed: false, reviewFingerprint: null };
+    }
     setReadinessState((current) => ({ ...current, disclosureConfirmed: false,
       publicPreviewReviewed: false, completePreviewReviewed: false, reviewFingerprint: null }));
   }
@@ -492,6 +519,13 @@ export default function DashboardClient({
         handlePortfolioApiFailure(result);
         return false;
       }
+      savedDraftRef.current = result.data.draftData ?? draftData;
+      if (result.data.readiness) {
+        savedReadinessRef.current = draftRevisionRef.current === savingRevision
+          ? result.data.readiness
+          : { ...savedReadinessRef.current, disclosureConfirmed: false,
+            publicPreviewReviewed: false, completePreviewReviewed: false, reviewFingerprint: null };
+      }
       setActivePortfolioId(result.data.portfolioId);
       if (result.data.candidateId) setSavedCandidateId(result.data.candidateId);
       if (result.data.draftData && draftRevisionRef.current === savingRevision) setDraftData(result.data.draftData);
@@ -501,7 +535,7 @@ export default function DashboardClient({
           complete: result.data.readiness.completePreviewReviewed ?? false });
       }
       if (draftRevisionRef.current === savingRevision) savedReviewFingerprintRef.current = result.data.readiness?.reviewFingerprint;
-      if (draftRevisionRef.current === savingRevision) setDraftSaveState("saved");
+      setDraftSaveState(draftRevisionRef.current === savingRevision ? "saved" : "unsaved");
       if (refresh) refreshDashboard();
       return draftRevisionRef.current === savingRevision;
     } catch {
@@ -570,6 +604,7 @@ export default function DashboardClient({
         const result = await updatePublicationProgressRequest({ action: view === "public" ? "public_preview" : "complete_preview", value: fingerprint });
         if (!result.ok) return void handlePortfolioApiFailure(result);
         if (revision !== draftRevisionRef.current) return;
+        savedReadinessRef.current = result.data.readiness;
         setReadinessState(result.data.readiness);
         setReviewPreviewsOpened({ public: result.data.readiness.publicPreviewReviewed ?? false,
           complete: result.data.readiness.completePreviewReviewed ?? false });
@@ -629,6 +664,7 @@ export default function DashboardClient({
           message: "We could not confirm your latest saved portfolio. Loading the latest details; reopen Review and publish when they appear." } });
         return null;
       }
+      savedReadinessRef.current = result.data.readiness;
       setReadinessState(result.data.readiness);
       return result.data.readiness;
     } catch {
@@ -672,6 +708,10 @@ export default function DashboardClient({
         value: section,
       });
       if (result.ok) {
+        savedReadinessRef.current = {
+          ...savedReadinessRef.current,
+          lastEditorSection: result.data.readiness.lastEditorSection,
+        };
         setReadinessState((current) => ({
           ...current,
           lastEditorSection: result.data.readiness.lastEditorSection,
@@ -715,7 +755,7 @@ export default function DashboardClient({
       }
       setPortfolioMedia((current) => [...current, ...uploaded]);
       setMediaUrls((current) => ({ ...current, ...uploadedUrls }));
-      invalidatePreviewReview();
+      invalidatePreviewReview(true);
       refreshDashboard();
     } catch (error) {
       setDraftError(error instanceof Error ? error.message : "Photo upload failed.");
@@ -746,7 +786,7 @@ export default function DashboardClient({
           return item;
         })
       );
-      invalidatePreviewReview();
+      invalidatePreviewReview(true);
     } catch {
       setDraftError("We could not update your photos. Please try again.");
     } finally {
@@ -767,7 +807,7 @@ export default function DashboardClient({
       setMediaUrls((current) => Object.fromEntries(
         Object.entries(current).filter(([id]) => id !== mediaId)
       ));
-      invalidatePreviewReview();
+      invalidatePreviewReview(true);
     } catch {
       setDraftError("We could not update your photos. Please try again.");
     } finally {
@@ -794,7 +834,7 @@ export default function DashboardClient({
       const result = await uploadHoroscopeRequest(formData);
       if (!result.ok) return void handlePortfolioApiFailure(result);
       setPortfolioHoroscope(result.data.horoscope);
-      invalidatePreviewReview();
+      invalidatePreviewReview(true);
       refreshDashboard();
     } catch {
       setDraftError("We could not upload the attachment. Please try again.");
@@ -820,7 +860,7 @@ export default function DashboardClient({
       const result = await deleteHoroscopeRequest(portfolioHoroscope.id);
       if (!result.ok) return void handlePortfolioApiFailure(result);
       setPortfolioHoroscope(null);
-      invalidatePreviewReview();
+      invalidatePreviewReview(true);
       refreshDashboard();
     } catch {
       setDraftError("We could not remove the attachment. Please try again.");

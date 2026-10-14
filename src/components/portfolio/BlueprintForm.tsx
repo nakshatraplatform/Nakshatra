@@ -194,6 +194,10 @@ export function BlueprintForm({
       ...("regionCode" in changes && { region_code: changes.regionCode }),
       ...("city" in changes && { city: changes.city }),
       ...("cityGeonameId" in changes && { city_geoname_id: changes.cityGeonameId }),
+      ...("postalCode" in changes && { postal_code: changes.postalCode }),
+      ...("locationSource" in changes && {
+        location_source: changes.locationSource,
+      }),
     });
   }
 
@@ -317,7 +321,11 @@ export function BlueprintForm({
               <SelectInput label="Marital Status" value={data.personal.marital_status || ""} options={withLegacyMaritalStatus(data.personal.marital_status)} onChange={(value) => updatePersonal({ marital_status: value })} required requirement="Required" audience="Public Introduction and Complete Portfolio" />
               <SelectInput label="Height" value={data.vitals?.height || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), height: value })} required requirement="Required" audience="All portfolio views" />
             </div>
-            <div className="space-y-2"><p className="text-[15px] font-semibold text-[color:var(--workspace-ink)]">Current location</p><LocationFields value={{ country: data.personal.country, countryCode: data.personal.country_code, region: data.personal.region, regionCode: data.personal.region_code, city: data.personal.city, cityGeonameId: data.personal.city_geoname_id }} onChange={updateResidence} labels={{ country: "Current country", region: "Current state or region", city: "Current city" }} requireCountryAndCity /></div>
+            <div className="space-y-2"><p className="text-[15px] font-semibold text-[color:var(--workspace-ink)]">Current location</p><LocationFields value={{ country: data.personal.country, countryCode: data.personal.country_code, region: data.personal.region, regionCode: data.personal.region_code, city: data.personal.city, cityGeonameId: data.personal.city_geoname_id, postalCode: data.personal.postal_code, locationSource: data.personal.location_source }} onChange={updateResidence} labels={{ country: "Current country", region: "Current state", city: "Current city", postalCode: "ZIP or PIN code" }} requireCompleteHierarchy /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextInput label="Street address line 1" value={data.personal.address_line_1 || ""} onChange={(value) => updatePersonal({ address_line_1: value })} required requirement="Required" audience="Only you" hint="Private; never used for matching or shown to viewers." autoComplete="address-line1" maxLength={200} />
+              <TextInput label="Street address line 2" value={data.personal.address_line_2 || ""} onChange={(value) => updatePersonal({ address_line_2: value })} requirement="Optional" audience="Only you" hint="Apartment, building, or landmark, if applicable." autoComplete="address-line2" maxLength={200} />
+            </div>
             <TextInput label="Current profession title" maxLength={200} value={data.career?.title || ""} onChange={(value) => onUpdate("career", { ...(data.career || {}), title: value })} required requirement="Required" audience="All portfolio views" hint="Use a clear title, such as Product designer or Data engineer. If you are studying or between roles, say that directly." autoComplete="organization-title" />
             <TextArea label="Short description" value={data.personal.short_bio || ""} onChange={(value) => updatePersonal({ short_bio: value })} maxLength={240} required requirement="Required" audience="All portfolio views" hint="One or two natural sentences are enough. You can write a longer Personal story later." placeholder="For example: I value family, open conversation, and building a meaningful life together." />
             {photoManager && <EmbeddedPanel title="Photos" description="Choose a clear primary portrait first. Gallery photos can be added now or later.">{photoManager}</EmbeddedPanel>}

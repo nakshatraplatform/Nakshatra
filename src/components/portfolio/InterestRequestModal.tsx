@@ -12,6 +12,7 @@ import type { NewViewerInterestInput } from "@/features/interest/server/interest
 import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
 import type { ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
+import { hasCompleteLocationHierarchy, LocationFields, type LocationValue } from "@/components/portfolio/LocationFields";
 
 type ModalStep = "choice" | "details" | "verify" | "success";
 type InterestPayload = {
@@ -23,10 +24,15 @@ type InterestPayload = {
   country: FormDataEntryValue | null;
   state: FormDataEntryValue | null;
   city: FormDataEntryValue | null;
+  countryCode: FormDataEntryValue | null;
+  subdivisionCode: FormDataEntryValue | null;
+  cityGeonameId: FormDataEntryValue | null;
+  postalCode: FormDataEntryValue | null;
+  locationSource: FormDataEntryValue | null;
   familyContext: FormDataEntryValue | null;
   message: FormDataEntryValue | null;
   useExistingProfile?: boolean;
-  location?: InterestLocationDraft;
+  location?: NewViewerInterestInput["location"];
   candidate?: Omit<NonNullable<NewViewerInterestInput["candidate"]>, "location"> & { location: InterestLocationDraft };
 };
 
@@ -120,7 +126,13 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const locationValue = (prefix: string) => ({ countryCode: String(formData.get(`${prefix}CountryCode`) || ""), regionCode: String(formData.get(`${prefix}RegionCode`) || ""), cityId: Number(formData.get(`${prefix}CityId`)), cityLabel: String(formData.get(`${prefix}CityLabel`) || "") });
+    const candidateLocation = () => ({ countryCode: String(formData.get("candidateCountryCode") || ""), regionCode: String(formData.get("candidateRegionCode") || ""), cityId: Number(formData.get("candidateCityId")), cityLabel: String(formData.get("candidateCityLabel") || "") });
+    const viewerLocation = () => ({
+      country: String(formData.get("country") || ""), state: String(formData.get("state") || ""), city: String(formData.get("city") || ""),
+      countryCode: String(formData.get("countryCode") || ""), subdivisionCode: String(formData.get("subdivisionCode") || ""),
+      cityGeonameId: Number(formData.get("cityGeonameId")) || undefined, postalCode: String(formData.get("postalCode") || ""),
+      locationSource: String(formData.get("locationSource") || ""),
+    });
     const enteredEmail = String(formData.get("email") || "").trim().toLowerCase();
     const payload: InterestPayload = {
       portfolioToken,
@@ -131,12 +143,17 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       country: formData.get("country"),
       state: formData.get("state"),
       city: formData.get("city"),
+      countryCode: formData.get("countryCode"),
+      subdivisionCode: formData.get("subdivisionCode"),
+      cityGeonameId: formData.get("cityGeonameId"),
+      postalCode: formData.get("postalCode"),
+      locationSource: formData.get("locationSource"),
       familyContext: formData.get("familyContext"),
       message: formData.get("message"),
       useExistingProfile: Boolean(sessionEmail && existingViewerProfile),
-      location: locationValue("viewer"),
+      location: viewerLocation() as NewViewerInterestInput["location"],
       ...(formData.get("profileFor") !== "self" && !existingViewerProfile ? { candidate: {
-        name: String(formData.get("candidateName") || ""), email: String(formData.get("candidateEmail") || ""), phone: String(formData.get("candidatePhone") || ""), relationship: String(formData.get("candidateRelationship") || ""), location: locationValue("candidate"),
+        name: String(formData.get("candidateName") || ""), email: String(formData.get("candidateEmail") || ""), phone: String(formData.get("candidatePhone") || ""), relationship: String(formData.get("candidateRelationship") || ""), location: candidateLocation(),
       } } : {}),
     };
     setError("");
@@ -280,8 +297,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Add a note for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Use your saved VivIntro details, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The introduction owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro details will be attached. Add only the context you want this family to see." : "Introduce yourself, your location and family background, then add a message."}</p>
+                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "choice" ? "Use your saved VivIntro details, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The introduction owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro identity is attached. Confirm your current location and add any context you want to share." : "Introduce yourself, your current location and family background, then add a message."}</p>
               </div>
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
@@ -296,7 +313,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
               </div>
             )}
 
-            {step === "details" && <DetailsForm draft={requestPayload} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
+            {step === "details" && <DetailsForm draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -330,8 +347,9 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   );
 }
 
-function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
+function DetailsForm({ draft, portfolioToken, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
   draft: InterestPayload | null;
+  portfolioToken: string;
   sessionEmail: string | null;
   existingViewerProfile?: ExistingViewerProfile | null;
   pending: boolean;
@@ -339,8 +357,34 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
   fieldErrors: Record<string, string>;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const [location, setLocation] = useState<LocationValue>(() => existingViewerProfile ? {
+    country: existingViewerProfile.country,
+    countryCode: existingViewerProfile.countryCode,
+    region: existingViewerProfile.state,
+    regionCode: existingViewerProfile.subdivisionCode,
+    city: existingViewerProfile.city,
+    cityGeonameId: existingViewerProfile.cityGeonameId,
+    postalCode: existingViewerProfile.postalCode,
+    locationSource: "existing_profile",
+  } : {});
+  const [locationError, setLocationError] = useState("");
+
+  function updateLocation(changes: LocationValue) {
+    setLocation((current) => ({ ...current, ...changes }));
+    setLocationError("");
+  }
+
+  function submitDetails(event: React.FormEvent<HTMLFormElement>) {
+    if (sessionEmail && existingViewerProfile && !hasCompleteLocationHierarchy(location)) {
+      event.preventDefault();
+      setLocationError("Select a complete country, state, city, and ZIP or PIN code.");
+      return;
+    }
+    onSubmit(event);
+  }
+
   return (
-    <form onSubmit={onSubmit} className="interest-form" noValidate>
+    <form onSubmit={submitDetails} className="interest-form" noValidate>
       <div className="interest-form-scroll">
         {sessionEmail && existingViewerProfile ? (
           <>
@@ -355,17 +399,23 @@ function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, erro
             <input type="hidden" name="profileFor" value={existingViewerProfile.profileFor} />
             <input type="hidden" name="phone" value={existingViewerProfile.phone} />
             <input type="hidden" name="email" value={sessionEmail} />
-            <input type="hidden" name="country" value={existingViewerProfile.country || ""} />
-            <input type="hidden" name="state" value={existingViewerProfile.state || ""} />
-            <input type="hidden" name="city" value={existingViewerProfile.city || ""} />
-            <div className="interest-optional-copy-grid">
-              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={4} maxLength={600} placeholder="A few helpful details about your family" /></label>
-              <label className="interest-field"><span>Message</span><textarea name="message" rows={4} maxLength={600} placeholder="Anything you would like the family to know" /></label>
-            </div>
+            <div className="interest-form-intro"><strong>Current location</strong><span>* Required</span></div>
+            <LocationFields value={location} onChange={updateLocation} portfolioToken={portfolioToken} requireCompleteHierarchy />
+            <input type="hidden" name="country" value={location.country || ""} />
+            <input type="hidden" name="state" value={location.region || ""} />
+            <input type="hidden" name="city" value={location.city || ""} />
+            <input type="hidden" name="countryCode" value={location.countryCode || ""} />
+            <input type="hidden" name="subdivisionCode" value={location.regionCode || ""} />
+            <input type="hidden" name="cityGeonameId" value={location.cityGeonameId || ""} />
+            <input type="hidden" name="postalCode" value={location.postalCode || ""} />
+            <input type="hidden" name="locationSource" value={location.locationSource || ""} />
+            {locationError && <p className="interest-form-error" role="alert">{locationError}</p>}
+            <label className="interest-field"><span>Family context</span><textarea name="familyContext" maxLength={600} defaultValue={fieldValue(draft?.familyContext)} /></label>
+            <label className="interest-field"><span>Message</span><textarea name="message" maxLength={600} defaultValue={fieldValue(draft?.message)} /></label>
           </>
         ) : (
           <>
-        <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} />
+        <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
           </>
         )}
         {error && <p className="interest-form-error" role="alert">{error}</p>}

@@ -10,6 +10,12 @@ export class InterestRepository {
   submit(input: InterestRequestInput & { useExistingProfile?: boolean }) {
     if (input.useExistingProfile) return this.supabase.rpc("submit_existing_interest", {
       p_share_token: input.portfolioToken, p_family_context: input.familyContext ?? null, p_message: input.message ?? null,
+      p_location: {
+        country: input.country, state: input.state, city: input.city,
+        countryCode: input.countryCode, subdivisionCode: input.subdivisionCode,
+        cityGeonameId: input.cityGeonameId, postalCode: input.postalCode,
+        locationSource: input.locationSource,
+      },
     });
     if ("location" in input) {
       const details = input as NewViewerInterestInput;

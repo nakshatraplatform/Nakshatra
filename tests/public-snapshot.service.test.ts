@@ -23,6 +23,8 @@ const portfolio: PortfolioData = {
     citizenship: "India",
     religion: "Hindu",
     sub_community: "Smartha",
+    address_line_1: "100 Hancock Street",
+    address_line_2: "Unit 12",
   },
   vitals: { height: "5 ft 5 in", complexion: "Fair", gotra: "Kashyap" },
   astrology: {
@@ -85,6 +87,8 @@ describe("public portfolio snapshot", () => {
     expect(snapshot.personal).not.toHaveProperty("dob");
     expect(snapshot.personal.age).toEqual(expect.any(Number));
     expect(snapshot.personal).not.toHaveProperty("place_of_birth");
+    expect(snapshot.personal).not.toHaveProperty("address_line_1");
+    expect(snapshot.personal).not.toHaveProperty("address_line_2");
     expect(snapshot.personal.immigration_status).toBe("H-1B");
     expect(snapshot.personal.community).toBe("Brahmin");
     expect(snapshot.personal).toMatchObject({

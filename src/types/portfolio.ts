@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { normalizePostalCode } from "@/features/location/location.contract";
 
 export const PORTFOLIO_PRIVACY_MODES = ["balanced", "private"] as const;
 export type PortfolioPrivacyMode = (typeof PORTFOLIO_PRIVACY_MODES)[number];
@@ -66,6 +67,10 @@ export const personalSchema = z.object({
   region_code: z.string().max(30).optional(),
   city: z.string().max(120).optional(),
   city_geoname_id: z.number().int().positive().optional(),
+  postal_code: z.string().max(20).transform(normalizePostalCode).optional(),
+  location_source: z.enum(["google_places", "postalpincode", "zippopotam", "geonames", "manual", "existing_profile"]).optional(),
+  address_line_1: z.string().max(200).optional(),
+  address_line_2: z.string().max(200).optional(),
   citizenship: z.string().max(100).optional(),
   religion: z.string().max(100).optional(),
   community: z.string().max(150).optional(),

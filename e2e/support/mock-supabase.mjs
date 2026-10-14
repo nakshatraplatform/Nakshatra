@@ -55,7 +55,7 @@ const ownerPortfolio = {
   share_token: "e2e-portfolio-token",
   draft_data: {
     ...publicSnapshot.data,
-    personal: { ...publicSnapshot.data.personal, name: "Aditi Rao", first_name: "Aditi", last_name: "Rao", profile_for: "self", dob: "1997-02-12", country: "United States", city: "Boston", current_location: "Boston, United States", marital_status: "Never Married", profile_summary: undefined, shared_life_plans: undefined },
+    personal: { ...publicSnapshot.data.personal, name: "Aditi Rao", first_name: "Aditi", last_name: "Rao", profile_for: "self", dob: "1997-02-12", country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA", city: "Boston", postal_code: "02108", location_source: "manual", address_line_1: "123 Test Street", address_line_2: "Unit 2", current_location: "Boston, Massachusetts, United States", marital_status: "Never Married", profile_summary: undefined, shared_life_plans: undefined },
     vitals: { height: "5'5\"" },
     contact: { contact_person: "Aditi Rao", phone: "+1 555 010 0200", email: "aditi@example.test" },
   },

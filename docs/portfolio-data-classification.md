@@ -9,6 +9,7 @@ snapshot builders, token-scoped database functions, RLS, and Storage policies.
 | Public media | A primary or gallery photo explicitly set to Visible to all | Temporary URL | Temporary URL from pinned manifest | Temporary URL | Yes |
 | Protected preview | Generated low-detail derivative for blurred or approval-only photos | Preview only | Pinned eligible media | Original temporary URL | Yes |
 | Restricted identity | Exact birth time, precise birth/location references, detailed verification data | No | No for exact birth time/internal references | Only when explicitly part of Complete | Yes |
+| Owner-only residence | Street address lines 1 and 2 collected during portfolio creation | No | No | No | Yes |
 | Restricted family | Family-member names, occupations, locations, family notes | Bounded by personal projection | Allowlisted non-contact family presentation | Yes when included in Complete | Yes |
 | Restricted contact | Contact names, phone numbers and email addresses | No | No | Yes after identity-bound approval | Yes |
 | Owner-only contact notes | Secure contact notes and internal context | No | No | No | Yes |

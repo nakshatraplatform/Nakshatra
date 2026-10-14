@@ -5,11 +5,17 @@ import { PhoneNumberField } from "./PhoneNumberField";
 import { InterestLocationFields } from "./InterestLocationFields";
 import { InterestField } from "./InterestField";
 import type { NewViewerInterestInput } from "@/features/interest/server/interest.contract";
+import { LocationFields, type LocationValue } from "./LocationFields";
 
-export function VisitorInterestFields({ draft, sessionEmail, errors }: { draft: Partial<NewViewerInterestInput> | null; sessionEmail: string | null; errors: Record<string, string> }) {
+export function VisitorInterestFields({ draft, sessionEmail, errors, portfolioToken }: { draft: Partial<NewViewerInterestInput> | null; sessionEmail: string | null; errors: Record<string, string>; portfolioToken: string }) {
   const [profileFor, setProfileFor] = useState(draft?.profileFor || "");
   const [phone, setPhone] = useState(draft?.phone || "");
   const [candidatePhone, setCandidatePhone] = useState(draft?.candidate?.phone || "");
+  const [location, setLocation] = useState<LocationValue>(() => draft?.location ? {
+    country: draft.location.country, countryCode: draft.location.countryCode, region: draft.location.state,
+    regionCode: draft.location.subdivisionCode, city: draft.location.city, cityGeonameId: draft.location.cityGeonameId,
+    postalCode: draft.location.postalCode, locationSource: draft.location.locationSource,
+  } : {});
   return <>
     <div className="interest-form-intro"><strong>Personal details</strong><span>* Required</span></div>
     <div className="interest-field-grid">
@@ -18,7 +24,17 @@ export function VisitorInterestFields({ draft, sessionEmail, errors }: { draft: 
       <PhoneNumberField name="phone" value={phone} onChange={setPhone} required error={errors.phone} />
       <InterestField label="Your email address *" error={errors.email}>{attributes => <><input {...attributes} aria-label="Email address" name="email" type="email" inputMode="email" autoComplete="email" spellCheck={false} required defaultValue={sessionEmail || draft?.email || ""} readOnly={Boolean(sessionEmail)} maxLength={180} />{sessionEmail && <small>Verified email</small>}</>}</InterestField>
     </div>
-    <InterestLocationFields prefix="viewer" label="Your location" initial={draft?.location} errors={errors} />
+    <div className="interest-form-intro"><strong>Your current location</strong><span>* Required</span></div>
+    <LocationFields value={location} onChange={(changes) => setLocation((current) => ({ ...current, ...changes }))} portfolioToken={portfolioToken} requireCompleteHierarchy />
+    <input type="hidden" name="country" value={location.country || ""} />
+    <input type="hidden" name="state" value={location.region || ""} />
+    <input type="hidden" name="city" value={location.city || ""} />
+    <input type="hidden" name="countryCode" value={location.countryCode || ""} />
+    <input type="hidden" name="subdivisionCode" value={location.regionCode || ""} />
+    <input type="hidden" name="cityGeonameId" value={location.cityGeonameId || ""} />
+    <input type="hidden" name="postalCode" value={location.postalCode || ""} />
+    <input type="hidden" name="locationSource" value={location.locationSource || ""} />
+    {errors.location && <p role="alert" className="interest-form-error">{errors.location}</p>}
     {profileFor && profileFor !== "self" && <section className="interest-candidate-section">
       <h3>Candidate details</h3><p>These details describe the person you are introducing. Share only what you have permission to share. Email verification applies to you, not the candidate.</p>
       <div className="interest-field-grid">

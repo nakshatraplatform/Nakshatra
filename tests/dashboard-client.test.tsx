@@ -68,9 +68,16 @@ const readyData: PortfolioData = {
     ...data.personal,
     first_name: "Aditi",
     last_name: "Rao",
-    current_location: "Boston, United States",
+    current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
+    region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "1 Beacon Street",
+    address_line_2: "Unit 2",
     place_of_birth: "Bengaluru",
     short_bio: "A thoughtful introduction.",
     marital_status: "Never Married",
@@ -524,6 +531,16 @@ describe("dashboard client", () => {
     expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
     expect(screen.getByText(/not Didit identity verification/i)).toBeInTheDocument();
     expect(screen.queryByText("Sharing paused")).not.toBeInTheDocument();
+  });
+
+  it("keeps the ready-to-share heading without redundant supporting copy", () => {
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
+      publicationReadiness: readyPublicationReadiness,
+      isExpired: false,
+    });
+    expect(screen.getByRole("heading", { name: "Your Introduction is ready to share." })).toBeInTheDocument();
+    expect(screen.queryByText("Share your public Introduction, review new interests, or update your portfolio.")).not.toBeInTheDocument();
   });
 
   it("opens the canonical editor when requested by an editing route", () => {
@@ -1257,6 +1274,121 @@ describe("dashboard client", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: "Try saving again" }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
+  });
+
+  it("discards failed-save edits on confirmed exit and restores saved dashboard progress", async () => {
+    mocks.save.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable" },
+    });
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData },
+      publicationReadiness: readyPublicationReadiness,
+    });
+    const savedProgress = screen.getByRole("heading", { name: /required answers complete/ }).textContent;
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Discard them"));
+    expect(screen.queryByRole("heading", { name: "Portfolio details" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /required answers complete/ })).toHaveTextContent(savedProgress || "");
+
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    expect(screen.getByLabelText("Street address line 1")).toHaveValue("1 Beacon Street");
+  });
+
+  it("keeps field focus while editing and applies the same discard confirmation on Escape", () => {
+    renderDashboard({ portfolio: { ...portfolio, draft_data: readyData } });
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    const firstName = screen.getByLabelText("First name");
+    firstName.focus();
+    fireEvent.change(firstName, { target: { value: "Changed" } });
+    expect(firstName).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Discard them"));
+    expect(screen.queryByRole("heading", { name: "Portfolio details" })).not.toBeInTheDocument();
+  });
+
+  it("restores the latest successful save rather than stale initial props after a later failure", async () => {
+    const newerDraft = { ...readyData, personal: { ...readyData.personal, address_line_1: "200 Beacon Street" } };
+    mocks.save.mockResolvedValueOnce({ ok: true, data: { portfolioId: "portfolio-1", draftData: newerDraft, readiness: readyPublicationReadiness } });
+    mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable" } });
+    renderDashboard({ portfolio: { ...portfolio, draft_data: readyData }, publicationReadiness: readyPublicationReadiness });
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "200 Beacon Street" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    expect(screen.getByLabelText("Street address line 1")).toHaveValue("200 Beacon Street");
+  });
+
+  it("does not restore completed preview flags after a persisted photo change and discarded edit", async () => {
+    mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable" } });
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: null, is_published: false },
+      media: [{ ...media, media_type: "hero" }],
+      shareUrl: null,
+      publicationReadiness: { ...readyPublicationReadiness, published: false,
+        publicPreviewReviewed: true, completePreviewReviewed: true, reviewFingerprint: "a".repeat(64) },
+    });
+    const reviewStep = () => within(screen.getByRole("list", { name: "Publication steps" }))
+      .getByText("Review both views").closest("li");
+    expect(reviewStep()?.className).toContain("bg-[light-dark(#e8f3ef");
+
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+    fireEvent.change(screen.getByLabelText("Photo visibility"), { target: { value: "interest_required" } });
+    await waitFor(() => expect(mocks.update).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    expect(reviewStep()?.className).not.toContain("bg-[light-dark(#e8f3ef");
+  });
+
+  it("does not resurrect reviewed flags when a stale draft save finishes after a photo change", async () => {
+    let resolveSave!: (result: unknown) => void;
+    const reviewedReadiness = { ...readyPublicationReadiness, published: false,
+      publicPreviewReviewed: true, completePreviewReviewed: true, reviewFingerprint: "a".repeat(64) };
+    mocks.save.mockImplementationOnce(() => new Promise((resolve) => { resolveSave = resolve; }));
+    renderDashboard({
+      portfolio: { ...portfolio, draft_data: readyData, published_data: null, is_published: false },
+      media: [{ ...media, media_type: "hero" }],
+      shareUrl: null,
+      publicationReadiness: reviewedReadiness,
+    });
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: /delete photo/i }));
+    await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith("media-1"));
+    await act(async () => resolveSave({ ok: true, data: { portfolioId: "portfolio-1", draftData: readyData,
+      readiness: reviewedReadiness } }));
+    await waitFor(() => expect(screen.getByText("Changes not saved")).toBeInTheDocument());
+
+    mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+    fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
+    const reviewStep = within(screen.getByRole("list", { name: "Publication steps" }))
+      .getByText("Review both views").closest("li");
+    expect(reviewStep?.className).not.toContain("bg-[light-dark(#e8f3ef");
   });
 
   it("does not loop autosave requests after a failed attempt", async () => {

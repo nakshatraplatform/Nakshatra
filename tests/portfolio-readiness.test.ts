@@ -9,9 +9,16 @@ const completeDraft: PortfolioDraftData = {
     last_name: "Rao",
     dob: "1996-08-12",
     gender: "female",
-    current_location: "Boston, United States",
+    current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
+    region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "1 Beacon Street",
+    address_line_2: "Unit 2",
     place_of_birth: "Bengaluru",
     short_bio: "A thoughtful introduction.",
     marital_status: "Never Married",
@@ -38,6 +45,22 @@ describe("portfolio completion", () => {
       readyToPublish: true,
       missing: [],
     });
+  });
+
+  it("requires street address line 1 but not line 2", () => {
+    const withoutLine2 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_2: "" },
+    }, true);
+    expect(withoutLine2.readyToPublish).toBe(true);
+    expect(withoutLine2.missing).toEqual([]);
+
+    const withoutLine1 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_1: "", address_line_2: "Unit 2" },
+    }, true);
+    expect(withoutLine1.readyToPublish).toBe(false);
+    expect(withoutLine1.missing.map((item) => item.key)).toContain("private_address");
   });
 
   it("identifies the first incomplete editor section and all missing labels", () => {

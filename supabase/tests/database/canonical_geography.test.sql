@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(17);
+select plan(18);
 
 insert into public.reference_countries(country_code,name) values ('ZZ','Test Country'),('YY','Other Country');
 insert into public.reference_regions(geoname_id,country_code,region_code,name) values
@@ -35,8 +35,9 @@ select is((select current_region from public.candidates where primary_owner_user
 select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country_code":"ZZ","region_code":"02","city_geoname_id":990002002}'))#>>'{draftData,personal,city}','Twin Town','saved draft response carries canonical labels');
 select throws_ok($$select public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country_code":"ZZ","region_code":"01","city_geoname_id":990002003}'))$$,'22023','geography_city_hierarchy_invalid','invalid update fails atomically');
 select is((select current_city_geoname_id from public.candidates where primary_owner_user_id=auth.uid()),990002002::bigint,'failed save leaves prior candidate projection intact');
-select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country":"Unlisted Country","region":"Manual Region","city":"Manual City"}'))->>'status','saved','owner can replace canonical selection with manual labels');
+select is(public.save_dashboard_draft_transaction(pg_temp.geography_payload('{"country":"Unlisted Country","country_code":null,"region":"Manual Region","region_code":null,"city":"Manual City"}'))->>'status','saved','owner can replace canonical selection with manual labels');
 select is((select current_city_geoname_id from public.candidates where primary_owner_user_id=auth.uid()),null::bigint,'manual update clears stale reference IDs');
+select is((select concat_ws('|',current_country,current_region,current_city) from public.candidates where primary_owner_user_id=auth.uid()),'Unlisted Country|Manual Region|Manual City','manual replacement preserves supplied display labels');
 reset role;
 select * from finish();
 rollback;
