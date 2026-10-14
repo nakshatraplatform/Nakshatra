@@ -145,6 +145,43 @@ describe("dashboard portfolio mapping", () => {
     ).toBe(true);
   });
 
+  it("maps structured location fields to queryable candidate columns", () => {
+    const located = {
+      ...draft,
+      personal: {
+        ...draft.personal,
+        country: "United States",
+        country_code: "US",
+        region: "Massachusetts",
+        region_code: "US-MA",
+        city: "Boston",
+        postal_code: "02108",
+        location_source: "google_places" as const,
+      },
+    };
+    expect(mapCandidate(located, "user-id")).toMatchObject({
+      current_country_code: "US",
+      current_subdivision_code: "US-MA",
+      current_city: "Boston",
+      current_postal_code: "02108",
+      location_source: "google_places",
+    });
+  });
+
+  it("normalizes ZIP+4 before portfolio and candidate persistence", () => {
+    const located = {
+      ...draft,
+      personal: {
+        ...draft.personal,
+        country_code: "US",
+        postal_code: "02108-1234",
+      },
+    };
+
+    expect(mapPortfolioDraft(located, null).draft_data.personal.postal_code).toBe("02108");
+    expect(mapCandidate(located, "user-id").current_postal_code).toBe("02108");
+  });
+
   it("persists an explicit three-part name as one canonical candidate name", () => {
     const namedDraft: PortfolioData = {
       ...draft,

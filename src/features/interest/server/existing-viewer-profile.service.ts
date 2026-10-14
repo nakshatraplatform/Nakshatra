@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { careerSchema, lifestyleSchema, contactSchema, personalSchema, type ContactData, type PersonalData } from "@/types/portfolio";
+import { findSubdivision } from "@/features/location/subdivisions";
 
 export type ExistingViewerProfile = {
   name: string;
@@ -10,6 +11,10 @@ export type ExistingViewerProfile = {
   country?: string;
   state?: string;
   city?: string;
+  countryCode?: "IN" | "US";
+  subdivisionCode?: string;
+  cityGeonameId?: number;
+  postalCode?: string;
   profession?: string;
   coreValues?: string;
 };
@@ -27,6 +32,10 @@ const reusablePersonalSchema = personalSchema.pick({
   country: true,
   region: true,
   city: true,
+  country_code: true,
+  region_code: true,
+  city_geoname_id: true,
+  postal_code: true,
 }).partial();
 const reusableContactSchema = contactSchema.pick({ phone: true, contacts: true }).partial();
 
@@ -70,6 +79,10 @@ export async function resolveExistingViewerProfile(
   const firstContact = contact?.contacts?.find((entry) => entry.phone) || contact?.contacts?.[0];
   const requestedProfileFor = personal?.profile_for as ExistingViewerProfile["profileFor"] | undefined;
 
+  const countryCode = personal?.country_code === "IN" || personal?.country_code === "US" ? personal.country_code : undefined;
+  const subdivisionCode = countryCode
+    ? findSubdivision(countryCode, personal?.region_code ?? personal?.region)?.subdivisionCode
+    : undefined;
   return {
     name,
     profileFor: requestedProfileFor && supportedProfileFor.has(requestedProfileFor) ? requestedProfileFor : "self",
@@ -77,6 +90,10 @@ export async function resolveExistingViewerProfile(
     country: personal?.country,
     state: personal?.region,
     city: personal?.city,
+    countryCode,
+    subdivisionCode,
+    cityGeonameId: personal?.city_geoname_id,
+    postalCode: personal?.postal_code,
     profession,
     coreValues,
   };

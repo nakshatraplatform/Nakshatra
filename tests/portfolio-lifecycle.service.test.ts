@@ -47,9 +47,16 @@ const draft: PortfolioData = {
     dob: "1996-08-12",
     gender: "female",
     place_of_birth: "Bengaluru",
-    current_location: "Boston, United States",
+    current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
+    region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "1 Beacon Street",
+    address_line_2: "Unit 2",
     short_bio: "A thoughtful introduction.",
     marital_status: "Never Married",
     immigration_status: "H1B",
@@ -99,7 +106,7 @@ describe("portfolio lifecycle services", () => {
       missingRequired: [],
     });
     repository.findPortfolioForUser.mockResolvedValue({
-      data: { id: "portfolio-id", is_published: false, share_token: null, expires_at: null },
+      data: { id: "portfolio-id", is_published: false, share_token: null, expires_at: null, draft_data: draft },
       error: null,
     });
     repository.publishPortfolioTransaction.mockResolvedValue({
@@ -176,7 +183,7 @@ describe("portfolio lifecycle services", () => {
 
     vi.clearAllMocks();
     repository.findPortfolioForUser.mockResolvedValue({
-      data: { id: "portfolio-id", is_published: false, share_token: null, expires_at: null },
+      data: { id: "portfolio-id", is_published: false, share_token: null, expires_at: null, draft_data: draft },
       error: null,
     });
     repository.publishPortfolioTransaction.mockResolvedValue({
@@ -198,7 +205,7 @@ describe("portfolio lifecycle services", () => {
 
   it("does not rotate the share token for a published portfolio", async () => {
     repository.findPortfolioForUser.mockResolvedValue({
-      data: { id: "portfolio-id", is_published: true, share_token: "123456789012345678901", expires_at: "2099-01-01T00:00:00.000Z" },
+      data: { id: "portfolio-id", is_published: true, share_token: "123456789012345678901", expires_at: "2099-01-01T00:00:00.000Z", draft_data: draft },
       error: null,
     });
     await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });

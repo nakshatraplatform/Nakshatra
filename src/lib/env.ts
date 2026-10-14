@@ -13,6 +13,12 @@ export const env = envSchema.parse({
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 });
 
+/** Optional server-only key for Places API (New). Never expose this through NEXT_PUBLIC_. */
+export function getGooglePlacesApiKey() {
+  const value = process.env.GOOGLE_PLACES_API_KEY?.trim();
+  return value || null;
+}
+
 const deletionReauthSecretSchema = z
   .string()
   .min(32, "DELETION_REAUTH_COOKIE_SECRET must contain at least 32 characters");

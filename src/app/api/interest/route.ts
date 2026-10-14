@@ -81,6 +81,14 @@ export async function POST(request: Request) {
         email: verifiedEmail,
         familyContext: parsed.data.familyContext,
         message: parsed.data.message,
+        country: parsed.data.country,
+        state: parsed.data.state,
+        city: parsed.data.city,
+        countryCode: parsed.data.countryCode,
+        subdivisionCode: parsed.data.subdivisionCode,
+        cityGeonameId: parsed.data.cityGeonameId,
+        postalCode: parsed.data.postalCode,
+        locationSource: parsed.data.locationSource,
       };
     } else {
       interest = parsed.data;
@@ -128,7 +136,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           code: "INTEREST_REQUEST_REJECTED",
-          error: "The request contains a value the database cannot accept. Check the phone number and optional details.",
+          error: "The request contains a value the database cannot accept. Check the phone number and required location details.",
         },
         { status: 400 }
       );
