@@ -184,6 +184,8 @@ describe("blueprint form", () => {
     before(screen.getByLabelText("Marital Status"), screen.getByText("Selected location"));
     before(screen.getByText("Selected location"), screen.getByLabelText("Street address line 1"));
     before(screen.getByLabelText("Street address line 2"), screen.getByLabelText("Current profession title"));
+    expect(screen.getByLabelText("Street address line 1")).toBeRequired();
+    expect(screen.getByLabelText("Street address line 2")).not.toBeRequired();
     before(screen.getByLabelText("Current profession title"), screen.getByLabelText("Short description"));
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     expect(within(screen.getByRole("group", { name: "Education" })).getByLabelText("Institution")).toBeInTheDocument();

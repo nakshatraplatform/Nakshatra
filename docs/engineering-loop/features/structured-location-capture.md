@@ -1,5 +1,15 @@
 # Unassigned — Structured location capture for India and the United States
 
+## 2026-10-14 follow-up: production save and optional address line 2
+
+The live application is ahead of the linked production database: read-only migration history ends at `20261008120000`, while the deployed ISO-subdivision location form requires the `20261013` normalization migrations. An India suggestion can therefore send `IN-KA` to the older GeoNames-only save function and receive SQLSTATE `22023`. Do not weaken form validation to hide this deployment mismatch. Run the manual Production Database Deployment workflow on `main` in preview mode first, confirm its exact pending migration list and the CI result for that revision, then coordinate a separately approved apply. This follow-up must be merged before production Apply so the optional address-line rule is included; no production write is performed by this code change.
+
+The latest product correction makes private street address line 1 required and line 2 optional. The editor label, client readiness checklist, and new forward-only SQL publication-checklist migration must agree. Existing street-address disclosure and matching exclusions remain unchanged. The dashboard now discards unsaved editor answers only after explicit confirmation, restores its last saved progress and clears the failed-save warning; a completed public Introduction has no redundant hero description. This supersedes the historical two-line-required decision below without rewriting the already-merged migration.
+
+Evaluation: verify one-line and two-line publication readiness on client and pgTAP, failed-save close/reopen behavior, preview-only CD semantics, migration/fixture checks, lint, typecheck, and full application tests. A production Apply is a separate release operation after the updated migration is on `main` and its CI/database replay has passed.
+
+Implementation evidence on 2026-10-14 at `eab2864` plus the uncommitted follow-up: 88 focused Vitest cases and the full 1,291-test unit suite pass; lint, typecheck, `db:smoke`, and `git diff --check` pass. A fresh read-only independent review found no blocking source defect in the forward migration, privacy guards, or save/discard race paths. Local database replay/pgTAP and production build remain unverified because the machine lacks a container runtime and has insufficient free disk space. Hosted CI must establish those checks on a PR; no production migration has been applied by this work.
+
 ## Execution Context
 
 - Requirement source: user decisions on 13 October 2026 to implement India + US structured location capture without latitude, longitude, PostGIS, or radius queries, followed by the explicit decisions to require two manually entered street-address lines for portfolio creation, require a complete non-street hierarchy for show-interest, and use PostalPincode.in plus Zippopotam.us while deferring Google Places.
@@ -62,7 +72,7 @@ Provide one search-first location flow for portfolio creation and interest reque
 
 ### Invariants
 
-- Portfolio publication requires country, subdivision, city, postal code, provider/manual provenance, and both owner-only street-address lines.
+- Portfolio publication requires country, subdivision, city, postal code, provider/manual provenance, and owner-only street-address line 1; line 2 is optional per the 2026-10-14 correction above.
 - Show-interest requires country, subdivision, city, and postal code but never collects street-address lines.
 - Street-address lines remain only in private portfolio draft JSON and are forbidden from public, approved, and Broker Standard disclosures.
 - Provider outages never prevent manual entry or submission.
@@ -159,7 +169,7 @@ Validation mode: behavioral change with regression-first tests.
 
 - Decision: no coordinates or PostGIS in this phase.
 - Decision: India + US coverage first, globally compatible code format.
-- Decision: both street-address lines are required at portfolio publication, remain private draft data, and never enter the relational match hierarchy or a disclosure snapshot.
+- Historical decision (superseded 2026-10-14): both street-address lines were required at portfolio publication. Line 1 remains required; line 2 is now optional. Both remain private draft data and never enter the relational match hierarchy or a disclosure snapshot.
 - Decision: country, state, city, and ZIP/PIN are mandatory for show-interest; street address is not collected there.
 - Decision: PostalPincode.in and Zippopotam.us are the credential-free MVP providers; Google is a deferred optional enhancement and manual fallback is mandatory.
 - Decision: Zippopotam ZIP+4 input is normalized to the five-digit ZIP because the upstream endpoint validates only that geographic boundary; latitude and longitude in upstream responses are stripped.
