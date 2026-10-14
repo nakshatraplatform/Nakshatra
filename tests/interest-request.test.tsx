@@ -41,6 +41,18 @@ function fillDecisionDetails() {
   }
 }
 describe("interest request flow", () => {
+  it.each(["light", "dark"] as const)("uses the %s dialog artwork independently of the document theme", (appearance) => {
+    document.documentElement.dataset.appTheme = appearance === "dark" ? "light" : "dark";
+    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} appearance={appearance} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.closest("[data-appearance]")).toHaveAttribute("data-appearance", appearance);
+    const artwork = dialog.querySelector('[data-brand-variant="stacked"]')!;
+    expect(artwork).toHaveAttribute("data-brand-tone", appearance === "dark" ? "reverse" : "primary");
+    expect(artwork.querySelectorAll("img")).toHaveLength(1);
+    unmount();
+    delete document.documentElement.dataset.appTheme;
+  });
   it.each(["abcdefg", "-------", "12", "+1 22222222222222222222"])("rejects invalid interest phone %s at the API contract", (phone) => {
     const parsed = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", name: "Rohan Mehta", profileFor: "self", phone, email: "rohan@example.com" });
     expect(parsed.success).toBe(false);

@@ -361,9 +361,12 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token"].includes(token)) return sendJson(response, 200, null);
+      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token"].includes(token)) return sendJson(response, 200, null);
       const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
       if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
+      if (token === "e2e-long-narrative-token") {
+        portfolio.data.personal.profile_summary = "I value curiosity, kindness and time with family. ".repeat(24);
+      }
       return sendJson(response, 200, portfolio);
     });
   }

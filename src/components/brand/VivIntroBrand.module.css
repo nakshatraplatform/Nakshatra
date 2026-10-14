@@ -15,7 +15,7 @@
 .artwork {
   position: relative;
   display: inline-block;
-  width: var(--vivintro-brand-width);
+  width: var(--vivintro-brand-responsive-width, var(--vivintro-brand-width));
   aspect-ratio: var(--vivintro-brand-ratio);
   flex: none;
 }

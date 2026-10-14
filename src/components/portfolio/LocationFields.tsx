@@ -64,6 +64,8 @@ export function LocationFields({
     queryKey: string;
     options: CityReference[];
   } | null>(null);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [activeCity, setActiveCity] = useState<{ queryKey: string; id: number } | null>(null);
 
   const countryCode = useMemo(
     () =>
@@ -88,6 +90,14 @@ export function LocationFields({
   const cityQueryKey = [countryCode, regionCode, citySearch.trim()].join("|");
   const cities =
     cityResult?.queryKey === cityQueryKey ? cityResult.options : [];
+  const cityExpanded = cityOpen && cities.length > 0;
+  const activeCityIndex = activeCity?.queryKey === cityQueryKey
+    ? cities.findIndex(city => city.geoname_id === activeCity.id) : -1;
+  const activeCityId = cityExpanded && activeCityIndex >= 0 ? `${listId}-city-${cities[activeCityIndex].geoname_id}` : undefined;
+
+  useEffect(() => {
+    if (activeCityId) document.getElementById(activeCityId)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeCityId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -135,6 +145,8 @@ export function LocationFields({
   }, [citySearch, cityQueryKey, countryCode, regionCode]);
 
   function selectCountry(nextCode: string) {
+    setCityOpen(false);
+    setActiveCity(null);
     setManualCountry(false);
     setChooseCountryDirectory(false);
     setManualRegion(false);
@@ -151,6 +163,8 @@ export function LocationFields({
   }
 
   function selectRegion(nextCode: string) {
+    setCityOpen(false);
+    setActiveCity(null);
     setManualRegion(false);
     const region = regions.find((item) => item.region_code === nextCode);
     onChange({
@@ -268,30 +282,60 @@ export function LocationFields({
         </label>
       )}
 
-      <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
-        <span>{labels.city}{requireCountryAndCity && <><span className="ml-1 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</span>
+      <div className="flex min-w-0 flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
+        <label htmlFor={`${listId}-input`}>{labels.city}{requireCountryAndCity && <><span className="ml-2 text-[color:var(--workspace-teal)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}</label>
+        <div className="relative min-w-0" onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget)) { setCityOpen(false); setActiveCity(null); }
+        }}>
         <input
+          id={`${listId}-input`}
           aria-label={labels.city}
           name="current_city"
           autoComplete="address-level2"
           maxLength={120}
           required={requireCountryAndCity}
-          list={listId}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={cityExpanded}
+          aria-controls={cityExpanded ? listId : undefined}
+          aria-activedescendant={activeCityId}
           value={citySearch}
           disabled={!countryHasLabel}
           placeholder={countryHasLabel ? "Type at least 2 letters" : "Select a country first"}
-          onChange={(event) => enterCity(event.target.value)}
+          onFocus={() => { setCityOpen(true); setActiveCity(null); }}
+          onChange={(event) => { enterCity(event.target.value); setCityOpen(true); setActiveCity(null); }}
+          onKeyDown={event => {
+            if (event.nativeEvent.isComposing) return;
+            if ((event.key === "ArrowDown" || event.key === "ArrowUp") && cities.length) {
+              event.preventDefault();
+              const index = !cityExpanded || activeCityIndex < 0
+                ? event.key === "ArrowDown" ? 0 : cities.length - 1
+                : (activeCityIndex + (event.key === "ArrowDown" ? 1 : -1) + cities.length) % cities.length;
+              setCityOpen(true); setActiveCity({ queryKey: cityQueryKey, id: cities[index].geoname_id });
+            } else if (event.key === "Enter" && cityExpanded && activeCityIndex >= 0) {
+              event.preventDefault(); enterCity(cityOptionLabel(cities[activeCityIndex])); setCityOpen(false); setActiveCity(null);
+            } else if (event.key === "Escape" && cityOpen) {
+              event.preventDefault(); event.stopPropagation(); setCityOpen(false); setActiveCity(null);
+            } else if (event.key === "Tab") { setCityOpen(false); setActiveCity(null); }
+          }}
           className="biodata-field min-h-12"
         />
-        <datalist id={listId}>
+        {cityExpanded && <ul id={listId} role="listbox" aria-label={`${labels.city} suggestions`} className="location-suggestions">
           {cities.map((item) => (
-            <option key={item.geoname_id} value={cityOptionLabel(item)} />
+            <li key={item.geoname_id} role="none"><button
+              id={`${listId}-city-${item.geoname_id}`} type="button" role="option" tabIndex={-1}
+              aria-selected={activeCityIndex >= 0 && cities[activeCityIndex].geoname_id === item.geoname_id}
+              onMouseDown={event => event.preventDefault()}
+              onMouseMove={() => setActiveCity({ queryKey: cityQueryKey, id: item.geoname_id })}
+              onClick={() => { enterCity(cityOptionLabel(item)); setCityOpen(false); setActiveCity(null); }}
+              className="location-suggestion">{cityOptionLabel(item)}</button></li>
           ))}
-        </datalist>
+        </ul>}
+        </div>
         <span className="text-sm font-normal text-[color:var(--workspace-ink-muted)]">
           {value.cityGeonameId ? "City selected from the location directory." : "Choose a suggestion to standardize your city, or keep a manual entry if it is not listed."}
         </span>
-      </label>
+      </div>
     </div>
   );
 }

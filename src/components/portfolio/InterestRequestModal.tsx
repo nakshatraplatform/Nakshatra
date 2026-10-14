@@ -274,9 +274,9 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       )}
 
       {open && createPortal(
-        <div className="interest-modal-backdrop" style={{ colorScheme: appearance }}>
+        <div className="interest-modal-backdrop" data-appearance={appearance} style={{ colorScheme: appearance }}>
           <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" decorative displayWidth={112} /></div>
+            <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>

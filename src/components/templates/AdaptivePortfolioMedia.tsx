@@ -140,6 +140,8 @@ export function AdaptivePortfolioGallery({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const lightboxTriggerRef = useRef<HTMLButtonElement | null>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement | null>(null);
+  const lightboxPortalRef = useRef<HTMLDivElement | null>(null);
+  const lightboxDialogRef = useRef<HTMLDivElement | null>(null);
   const orderedPhotos = useMemo(
     () => photos
       .map((photo, index) => ({ photo, index }))
@@ -165,11 +167,32 @@ export function AdaptivePortfolioGallery({
     if (!lightboxOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const background = new Map<HTMLElement, string | null>();
+    function makeBackgroundInert(element: Element) {
+      const portal = lightboxPortalRef.current;
+      if (!(element instanceof HTMLElement) || element === portal || (portal && element.contains(portal)) || background.has(element)) return;
+      background.set(element, element.getAttribute("inert"));
+      element.setAttribute("inert", "");
+    }
+    Array.from(document.body.children).forEach(makeBackgroundInert);
+    const observer = new MutationObserver(records => {
+      records.forEach(record => record.addedNodes.forEach(node => { if (node instanceof Element) makeBackgroundInert(node); }));
+    });
+    observer.observe(document.body, { childList: true });
     document.body.style.overflow = "hidden";
     lightboxCloseRef.current?.focus();
+    function containFocus(event: FocusEvent) {
+      if (event.target instanceof Node && !lightboxDialogRef.current?.contains(event.target)) lightboxCloseRef.current?.focus();
+    }
+    document.addEventListener("focusin", containFocus);
     return () => {
+      observer.disconnect();
+      document.removeEventListener("focusin", containFocus);
+      background.forEach((previous, element) => {
+        if (previous === null) element.removeAttribute("inert"); else element.setAttribute("inert", previous);
+      });
       document.body.style.overflow = previousOverflow;
-      lightboxTriggerRef.current?.focus();
+      if (lightboxTriggerRef.current?.isConnected) lightboxTriggerRef.current.focus();
     };
   }, [lightboxOpen]);
 
@@ -177,17 +200,17 @@ export function AdaptivePortfolioGallery({
     if (!lightboxOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
         setLightboxPhotoId(null);
       } else if (event.key === "Tab") {
-        const controls = Array.from(document.querySelectorAll<HTMLElement>(
-          ".portfolio-lightbox button:not([disabled])"
-        ));
+        const controls = Array.from(lightboxDialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") || []);
         if (!controls.length) return;
         const first = controls[0];
         const last = controls[controls.length - 1];
-        if (!document.activeElement?.closest(".portfolio-lightbox")) {
+        if (!lightboxDialogRef.current?.contains(document.activeElement)) {
           event.preventDefault();
-          first.focus();
+          (event.shiftKey ? last : first).focus();
         } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last.focus();
@@ -196,16 +219,18 @@ export function AdaptivePortfolioGallery({
           first.focus();
         }
       } else if (event.key === "ArrowLeft" && clearPhotos.length > 1) {
+        event.preventDefault();
         const previous = (lightboxIndex - 1 + clearPhotos.length) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[previous].id);
       } else if (event.key === "ArrowRight" && clearPhotos.length > 1) {
+        event.preventDefault();
         const next = (lightboxIndex + 1) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[next].id);
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [clearPhotos, lightboxIndex, lightboxOpen]);
 
   if (!photos.length) return null;
@@ -330,8 +355,8 @@ export function AdaptivePortfolioGallery({
       </div>
 
       {lightboxPhoto && createPortal(
-        <div data-template="celestial-union" className="portfolio-lightbox-portal">
-        <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
+        <div ref={lightboxPortalRef} data-template="celestial-union" className="portfolio-lightbox-portal">
+        <div ref={lightboxDialogRef} className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
           const target = event.target;
           if (target instanceof Element && !target.closest("button, img, figcaption")) setLightboxPhotoId(null);
         }}>

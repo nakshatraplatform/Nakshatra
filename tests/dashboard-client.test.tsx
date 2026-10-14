@@ -163,6 +163,22 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("separates the live Introduction from incomplete saved draft readiness", () => {
+    renderDashboard({ isExpired: false, publicationReadiness: readyPublicationReadiness });
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
+    expect(screen.getByRole("heading", { level: 1, name: "Your Introduction is ready to share." })).toBeInTheDocument();
+    expect(screen.getByText("Saved draft readiness")).toBeInTheDocument();
+    expect(screen.getByText(/Your published Introduction stays live/)).toBeInTheDocument();
+  });
+
+  it("exposes keyboard focus and a generous delete target for owner photos", () => {
+    renderDashboard();
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit details" })[0]);
+    const privacy = screen.getByRole("combobox", { name: "Photo visibility" });
+    expect(privacy.className).toContain("focus-visible:ring-2");
+    expect(screen.getByRole("button", { name: "Delete photo" }).className).toContain("h-12 w-12");
+  });
+
   it("shows preview progress during the initial request and clears it after rejection", async () => {
     let reject!: (error: Error) => void;
     mocks.updateProgress.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));

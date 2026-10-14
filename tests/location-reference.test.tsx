@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React, { useState } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   LocationFields,
@@ -14,6 +14,22 @@ afterEach(() => {
 });
 
 describe("location reference client", () => {
+  it("navigates city matches with arrows and commits the active identifier", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => new Response(JSON.stringify({ options: String(input).includes("level=cities") ? [
+      { geoname_id: 101, name: "Springfield", region_code: "MA" },
+      { geoname_id: 102, name: "Springfield", region_code: "IL" },
+    ] : [] }))));
+    const onChange = vi.fn();
+    render(<LocationFields value={{ countryCode: "US", country: "United States", city: "Spr" }} onChange={onChange} />);
+    const input = screen.getByLabelText("City");
+    fireEvent.focus(input);
+    await screen.findByRole("option", { name: "Springfield · MA · 101" });
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(input).toHaveAttribute("aria-activedescendant", screen.getByRole("option", { name: "Springfield · IL · 102" }).id);
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ city: "Springfield", cityGeonameId: 102, regionCode: "IL" }));
+    expect(input).toHaveAttribute("aria-expanded", "false");
+  });
   it("keeps an unmatched country input stable while clearing and retyping its label", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ options: [] }))));
     function Harness() {
@@ -56,7 +72,8 @@ describe("location reference client", () => {
     }))));
     const onChange = vi.fn();
     render(<LocationFields value={{ country: "Singapore", city: "Sing" }} onChange={onChange} />);
-    await waitFor(() => expect(document.querySelector('datalist option[value="Singapore"]')).toBeInTheDocument());
+    fireEvent.focus(screen.getByLabelText("City"));
+    await within(await screen.findByRole("listbox", { name: "City suggestions" })).findByRole("option", { name: "Singapore" });
     fireEvent.change(screen.getByLabelText("City"), { target: { value: "Singapore" } });
     expect(onChange).toHaveBeenLastCalledWith({ countryCode: "SG", city: "Singapore", cityGeonameId: 1880252 });
   });
@@ -67,7 +84,8 @@ describe("location reference client", () => {
     ] : [] }))));
     const onChange = vi.fn();
     render(<LocationFields value={{ country: "United States", countryCode: "US", city: "Spr" }} onChange={onChange} />);
-    await waitFor(() => expect(document.querySelector('datalist option[value="Springfield · MA · 101"]')).toBeInTheDocument());
+    fireEvent.focus(screen.getByLabelText("City"));
+    await screen.findByRole("option", { name: "Springfield · MA · 101" });
     fireEvent.change(screen.getByLabelText("City"), { target: { value: "Springfield" } });
     expect(onChange).toHaveBeenLastCalledWith({ city: "Springfield", cityGeonameId: undefined });
     fireEvent.change(screen.getByLabelText("City"), { target: { value: "Springfield · IL · 102" } });
@@ -169,7 +187,7 @@ describe("location reference client", () => {
     await waitFor(
       () =>
         expect(
-          document.querySelector('datalist option[value="Boston"]')
+          screen.queryByRole("option", { name: "Boston" })
         ).toBeInTheDocument(),
       { timeout: 1500 }
     );
