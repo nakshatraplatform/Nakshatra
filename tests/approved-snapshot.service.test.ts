@@ -20,6 +20,8 @@ const complete: PortfolioData = {
     community: "Brahmin",
     city_geoname_id: 123,
     profile_for: "self",
+    address_line_1: "100 Hancock Street",
+    address_line_2: "Unit 12",
   },
   vitals: { height: "5'5\"", gotra: "Kashyap", complexion: "Legacy" },
   astrology: { rashi: "kanya", maternal_gotra: "Bharadwaj", time_of_birth: "09:15" },
@@ -71,6 +73,8 @@ describe("approved portfolio snapshot", () => {
     expect(snapshot.lifestyle).not.toHaveProperty("credit_score_band");
     expect(snapshot.personal).not.toHaveProperty("profile_for");
     expect(snapshot.personal).not.toHaveProperty("city_geoname_id");
+    expect(snapshot.personal).not.toHaveProperty("address_line_1");
+    expect(snapshot.personal).not.toHaveProperty("address_line_2");
     expect(snapshot.vitals).not.toHaveProperty("complexion");
     expect(snapshot).not.toHaveProperty("access");
     expect(snapshot).not.toHaveProperty("visibility");

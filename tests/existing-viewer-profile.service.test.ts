@@ -85,6 +85,28 @@ describe("existing viewer profile resolver", () => {
     });
   });
 
+  it("normalizes legacy provider region codes to ISO subdivision codes", async () => {
+    const { client } = createSupabaseClient({
+      draft_data: {
+        personal: {
+          name: "Legacy Viewer",
+          country: "United States",
+          country_code: "US",
+          region: "Massachusetts",
+          region_code: "MA",
+          city: "Boston",
+        },
+        contact: { phone: "+1 617 555 0101" },
+      },
+      published_data: null,
+    });
+
+    await expect(resolveExistingViewerProfile(client, "viewer-legacy")).resolves.toMatchObject({
+      countryCode: "US",
+      subdivisionCode: "US-MA",
+    });
+  });
+
   it("returns null when neither source contains a usable name", async () => {
     const { client } = createSupabaseClient({
       draft_data: { personal: { name: "" }, contact: { phone: "+1 617 555 0101" } },

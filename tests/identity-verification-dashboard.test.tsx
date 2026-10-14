@@ -42,7 +42,7 @@ describe("identity-verification dashboard controls", () => {
     current.mockResolvedValue({ ok: true, data: { state: "expired", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: true, canResume: false, canCancel: false } });
     fireEvent(document, new Event("visibilitychange"));
     expect(await screen.findByRole("heading", { name: "Liveness check" })).toBeInTheDocument();
-    expect(onStatusChange).toHaveBeenLastCalledWith("expired");
+    await waitFor(() => expect(onStatusChange).toHaveBeenLastCalledWith("expired"));
     expect(startSelf).not.toHaveBeenCalled();
   });
   it("ends initial status feedback on failure and leaves a usable refresh action", async () => {

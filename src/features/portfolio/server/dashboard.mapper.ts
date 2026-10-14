@@ -9,6 +9,8 @@ import {
 import { getCelestialBackground } from "@/features/portfolio/celestial-theme";
 import { normalizePortfolioName } from "@/features/portfolio/name";
 import { formListValues } from "@/features/portfolio/form-contract";
+import { findSubdivision } from "@/features/location/subdivisions";
+import { normalizePostalCode } from "@/features/location/location.contract";
 
 const EMPTY_VALUES = new Set(["", undefined, null]);
 
@@ -62,9 +64,13 @@ export function mapPortfolioDraft(
   existingThemeColor: string | null
 ) {
   const privacyMode = normalizePortfolioPrivacyMode(data.privacy_mode);
+  const personal = normalizePortfolioName(data.personal);
   const canonicalData = {
     ...data,
-    personal: normalizePortfolioName(data.personal),
+    personal: {
+      ...personal,
+      postal_code: normalizePostalCode(personal.postal_code),
+    },
     privacy_mode: privacyMode,
     style: withCanonicalTemplate(data.style),
   };
@@ -87,7 +93,16 @@ export function mapPortfolioDraft(
  * Input: validated portfolio data and authenticated owner ID. Output: a candidates upsert payload.
  */
 export function mapCandidate(data: PortfolioData, userId: string) {
-  const personal = normalizePortfolioName(data.personal);
+  const personal = {
+    ...normalizePortfolioName(data.personal),
+    postal_code: normalizePostalCode(data.personal.postal_code),
+  };
+  const countryCode = personal.country_code === "IN" || personal.country_code === "US"
+    ? personal.country_code
+    : null;
+  const subdivisionCode = countryCode
+    ? findSubdivision(countryCode, personal.region_code ?? personal.region)?.subdivisionCode ?? null
+    : null;
   return {
     display_name: personal.name,
     legal_name: personal.name,
@@ -96,6 +111,11 @@ export function mapCandidate(data: PortfolioData, userId: string) {
     current_city: nullable(data.personal.city || data.personal.current_location),
     current_region: nullable(data.personal.region),
     current_country: nullable(data.personal.country),
+    current_country_code: countryCode,
+    current_subdivision_code: subdivisionCode,
+    current_city_geoname_id: data.personal.city_geoname_id ?? null,
+    current_postal_code: nullable(personal.postal_code),
+    location_source: nullable(data.personal.location_source),
     primary_owner_user_id: userId,
     created_by: userId,
   };

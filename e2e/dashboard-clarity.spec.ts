@@ -24,7 +24,8 @@ test("an unpublished complete owner can edit or go directly to liveness", async 
     await page.keyboard.press("Tab");
     expect(await editor.evaluate(dialog => dialog.contains(document.activeElement))).toBe(true);
     await expect(editor.getByLabel("Marital Status", { exact: true })).toBeVisible();
-    await expect(editor.getByLabel("Current country", { exact: true })).toBeVisible();
+    await expect(editor.getByText("Selected location", { exact: true })).toBeVisible();
+    await expect(editor.getByText("Boston, Massachusetts, United States · 02108", { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`basics-${width}.png`), animations: "disabled" });
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);

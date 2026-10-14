@@ -1,10 +1,30 @@
 import { z } from "zod/v4";
 import { isValidPhoneNumber } from "@/features/portfolio/phone-number";
+import { isValidPostalCode, locationCountryCodeSchema, locationSourceSchema, normalizePostalCode } from "@/features/location/location.contract";
+import { findSubdivision } from "@/features/location/subdivisions";
 
 const optionalText = (maximum: number) => z.preprocess(
   (value) => value == null || typeof value === "string" && value.trim() === "" ? undefined : value,
   z.string().trim().max(maximum).optional()
 );
+
+const optionalPositiveInteger = z.preprocess(
+  (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
+  z.number().int().positive().optional()
+);
+
+const requiredText = (maximum: number, message: string) => z.string().trim().min(1, message).max(maximum);
+
+const requiredLocationFields = {
+  country: requiredText(100, "Country is required."),
+  state: requiredText(120, "State is required."),
+  city: requiredText(120, "City is required."),
+  countryCode: locationCountryCodeSchema,
+  subdivisionCode: z.string().trim().regex(/^(?:IN|US)-[A-Z0-9]{1,3}$/),
+  cityGeonameId: optionalPositiveInteger,
+  postalCode: requiredText(20, "ZIP or PIN code is required.").transform(normalizePostalCode),
+  locationSource: locationSourceSchema,
+};
 
 const interestRequestBaseSchema = z.object({
   portfolioToken: z.string().min(8).max(160).regex(/^[A-Za-z0-9_-]+$/),
@@ -17,9 +37,25 @@ export const interestRequestSchema = interestRequestBaseSchema.extend({
   profileFor: z.enum(["self", "son", "daughter", "sibling", "relative"]),
   phone: z.string().trim().max(40),
   email: z.string().trim().email().max(180),
-  country: optionalText(100),
-  state: optionalText(120),
-  city: optionalText(120),
+  ...requiredLocationFields,
+}).superRefine((input, context) => {
+  const expectedCountry = input.countryCode === "IN" ? "India" : "United States";
+  const expectedSubdivision = findSubdivision(input.countryCode, input.subdivisionCode);
+  if (input.country.toLowerCase() !== expectedCountry.toLowerCase()) {
+    context.addIssue({ code: "custom", path: ["country"], message: "Country name and code must match." });
+  }
+  if (!input.subdivisionCode.startsWith(`${input.countryCode}-`)) {
+    context.addIssue({ code: "custom", path: ["subdivisionCode"], message: "Subdivision and country must match." });
+  }
+  if (!expectedSubdivision || input.state.toLowerCase() !== expectedSubdivision.name.toLowerCase()) {
+    context.addIssue({ code: "custom", path: ["state"], message: "State name and subdivision code must match." });
+  }
+  if (input.countryCode === "IN" && !isValidPostalCode(input.countryCode, input.postalCode)) {
+    context.addIssue({ code: "custom", path: ["postalCode"], message: "Enter a valid six-digit Indian PIN code." });
+  }
+  if (input.countryCode === "US" && !isValidPostalCode(input.countryCode, input.postalCode)) {
+    context.addIssue({ code: "custom", path: ["postalCode"], message: "Enter a valid US ZIP code." });
+  }
 });
 
 export type InterestRequestInput = z.infer<typeof interestRequestSchema>;
@@ -29,6 +65,16 @@ export const interestLocationSchema = z.object({
   regionCode: z.string().trim().min(1).max(30),
   cityId: z.number().int().positive(),
 });
+export const viewerStructuredLocationSchema = z.object({
+  country: requiredLocationFields.country,
+  state: requiredLocationFields.state,
+  city: requiredLocationFields.city,
+  countryCode: requiredLocationFields.countryCode,
+  subdivisionCode: requiredLocationFields.subdivisionCode,
+  cityGeonameId: requiredLocationFields.cityGeonameId,
+  postalCode: requiredLocationFields.postalCode,
+  locationSource: requiredLocationFields.locationSource,
+});
 const candidateSchema = z.object({
   name: z.string().trim().min(2).max(180).regex(/\p{L}/u),
   email: z.string().trim().email().max(180),
@@ -37,21 +83,43 @@ const candidateSchema = z.object({
   location: interestLocationSchema,
 });
 
-const newViewerInterestSubmissionSchema = interestRequestSchema.extend({
+const newViewerInterestSubmissionSchema = interestRequestSchema.safeExtend({
   useExistingProfile: z.literal(false),
   phone: z.string().trim().max(40).refine(isValidPhoneNumber, "Enter a valid phone number."),
   name: z.string().trim().min(2).max(180).regex(/\p{L}/u),
   familyContext: z.string().trim().min(40, "Add at least 40 characters of family context.").max(600),
   message: z.string().trim().min(80, "Write a message of at least 80 characters.").max(600),
-  location: interestLocationSchema,
+  location: viewerStructuredLocationSchema,
   candidate: candidateSchema.optional(),
 }).superRefine((input, context) => {
   if (input.profileFor !== "self" && !input.candidate) context.addIssue({ code: "custom", path: ["candidate"], message: "Complete the candidate details." });
+  for (const field of ["country", "state", "city", "countryCode", "subdivisionCode", "postalCode", "locationSource"] as const) {
+    if (input[field] !== input.location[field]) context.addIssue({ code: "custom", path: ["location", field], message: "Your location details must match." });
+  }
 });
 export type NewViewerInterestInput = z.infer<typeof newViewerInterestSubmissionSchema>;
 
 const existingViewerInterestSubmissionSchema = interestRequestBaseSchema.extend({
   useExistingProfile: z.literal(true),
+  ...requiredLocationFields,
+}).superRefine((input, context) => {
+  const expectedCountry = input.countryCode === "IN" ? "India" : "United States";
+  const expectedSubdivision = findSubdivision(input.countryCode, input.subdivisionCode);
+  if (input.country.toLowerCase() !== expectedCountry.toLowerCase()) {
+    context.addIssue({ code: "custom", path: ["country"], message: "Country name and code must match." });
+  }
+  if (!input.subdivisionCode.startsWith(`${input.countryCode}-`)) {
+    context.addIssue({ code: "custom", path: ["subdivisionCode"], message: "Subdivision and country must match." });
+  }
+  if (!expectedSubdivision || input.state.toLowerCase() !== expectedSubdivision.name.toLowerCase()) {
+    context.addIssue({ code: "custom", path: ["state"], message: "State name and subdivision code must match." });
+  }
+  if (input.countryCode === "IN" && !isValidPostalCode(input.countryCode, input.postalCode)) {
+    context.addIssue({ code: "custom", path: ["postalCode"], message: "Enter a valid six-digit Indian PIN code." });
+  }
+  if (input.countryCode === "US" && !isValidPostalCode(input.countryCode, input.postalCode)) {
+    context.addIssue({ code: "custom", path: ["postalCode"], message: "Enter a valid US ZIP code." });
+  }
 });
 
 export const interestSubmissionSchema = z.preprocess(

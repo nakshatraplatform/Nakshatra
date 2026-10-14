@@ -21,8 +21,14 @@ const completeBlueprint: PortfolioData = {
     place_of_birth: "Bengaluru",
     current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
     region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "100 Hancock Street",
+    address_line_2: "Unit 12",
     immigration_status: "H1B",
   },
   vitals: { height: `5'5"`, gotra: "Kashyap" },
@@ -57,6 +63,8 @@ describe("blueprint form", () => {
   it("bounds typed answers to the accepted field lengths", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={vi.fn()} />);
     expect(screen.getByLabelText("Current profession title", { exact: true })).toHaveAttribute("maxlength", "200");
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter location manually" }));
     expect(screen.getByLabelText("Current city", { exact: true })).toHaveAttribute("maxlength", "120");
     expect(screen.getByLabelText("First name", { exact: true })).toHaveAttribute("pattern", expect.stringContaining("\\-"));
     rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="astrology" onSectionChange={vi.fn()} />);
@@ -173,9 +181,9 @@ describe("blueprint form", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     const before = (first: HTMLElement, next: HTMLElement) => expect(first.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     before(screen.getByLabelText("Last name"), screen.getByLabelText("Date of birth"));
-    before(screen.getByLabelText("Marital Status"), screen.getByLabelText("Current country"));
-    before(screen.getByLabelText("Current country"), screen.getByLabelText("Current city"));
-    before(screen.getByLabelText("Current city"), screen.getByLabelText("Current profession title"));
+    before(screen.getByLabelText("Marital Status"), screen.getByText("Selected location"));
+    before(screen.getByText("Selected location"), screen.getByLabelText("Street address line 1"));
+    before(screen.getByLabelText("Street address line 2"), screen.getByLabelText("Current profession title"));
     before(screen.getByLabelText("Current profession title"), screen.getByLabelText("Short description"));
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     expect(within(screen.getByRole("group", { name: "Education" })).getByLabelText("Institution")).toBeInTheDocument();
@@ -192,6 +200,8 @@ describe("blueprint form", () => {
 
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Updated" } });
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "A concise new bio" } });
+    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "200 Beacon Street" } });
+    fireEvent.change(screen.getByLabelText("Street address line 2"), { target: { value: "Unit 4" } });
     fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
@@ -202,6 +212,8 @@ describe("blueprint form", () => {
 
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ first_name: "Updated", name: "Updated Rao" }));
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ short_bio: "A concise new bio" }));
+    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_1: "200 Beacon Street" }));
+    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_2: "Unit 4" }));
     expect(onUpdate).toHaveBeenCalledWith("astrology", expect.objectContaining({ rashi: "kumbha" }));
     expect(onUpdate).toHaveBeenCalledWith("family", expect.objectContaining({ sibling_count: 2 }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({

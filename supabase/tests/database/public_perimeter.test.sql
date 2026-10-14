@@ -16,6 +16,9 @@ select pg_temp.create_auth_actor('22222222-2222-4222-8222-222222222222', '222222
 insert into public.candidates (id, primary_owner_user_id, display_name, created_by)
 values ('33333333-3333-4333-8333-333333333334', '11111111-1111-4111-8111-111111111111', 'Aditi', '11111111-1111-4111-8111-111111111111');
 
+insert into public.candidate_personal_details (candidate_id, profile_for)
+values ('33333333-3333-4333-8333-333333333334', 'self');
+
 update app_private.identity_verification_subjects
 set status = 'verified', verified_at = now() - interval '1 day', expires_at = now() + interval '365 days'
 where candidate_id = '33333333-3333-4333-8333-333333333334';
@@ -46,7 +49,7 @@ select pg_temp.prime_paid_publication(
 
 update public.portfolios
 set is_published = true,
-    published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"balanced"}'::jsonb),
+    published_data = '{"privacy_mode":"balanced","personal":{"name":"Aditi","profile_for":"self"}}'::jsonb,
     expires_at = now() + interval '90 days'
 where id = '33333333-3333-4333-8333-333333333333';
 
@@ -84,7 +87,7 @@ values
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/private-unpublished.webp');
 
 select throws_ok(
-  $$update public.portfolios set published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"private"}'::jsonb)
+  $$update public.portfolios set published_data = '{"privacy_mode":"private","personal":{"name":"Aditi","profile_for":"self"}}'::jsonb
     where id = '33333333-3333-4333-8333-333333333333'$$,
   '23514', 'publication_current_introduction_required',
   'a new publication cannot switch to the retired reduced-disclosure setup'
