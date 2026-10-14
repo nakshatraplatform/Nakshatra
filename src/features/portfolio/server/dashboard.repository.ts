@@ -110,6 +110,11 @@ export class DashboardRepository {
     });
   }
 
+  /** Read-only capability probe used only after a geography command rejects a save. */
+  async probeStructuredLocationSchema() {
+    return this.supabase.from("reference_subdivisions").select("subdivision_code").limit(1);
+  }
+
   /** Atomically persists owner, public, approved, and horoscope publication state. */
   async publishPortfolioTransaction(payload: PublishPortfolioTransactionPayload) {
     return this.supabase.rpc("service_publish_portfolio_transaction", {

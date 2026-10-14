@@ -170,6 +170,24 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("renders request dates consistently across server and viewer timezones", () => {
+    const RealDateTimeFormat = Intl.DateTimeFormat;
+    const format = vi.spyOn(Intl, "DateTimeFormat");
+    for (const timeZone of ["UTC", "America/Los_Angeles"]) {
+      format.mockImplementation(function (locales, options) {
+        return new RealDateTimeFormat(locales, { timeZone, ...options });
+      });
+      const view = renderDashboard({ interests: [{
+        id: "interest-zone", viewer_name: "Rohan", viewer_email: "viewer@example.test",
+        viewer_phone: null, viewer_family_context: null, message: null, status: "new",
+        requester_user_id: null, metadata: null, created_at: "2026-09-20T00:30:00Z",
+        email_verified: true, source_type: "direct", broker_name: null,
+        broker_representative_name: null, requester_portfolio_token: null,
+      }] });
+      expect(screen.getByText("Sep 20 · Verified email")).toBeInTheDocument();
+      view.unmount();
+    }
+  });
   it("shows preview progress during the initial request and clears it after rejection", async () => {
     let reject!: (error: Error) => void;
     mocks.updateProgress.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
