@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(37);
+select plan(38);
 
 select has_table('public', 'reference_subdivisions', 'ISO subdivision reference table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.reference_subdivisions'::regclass), 'subdivision references have RLS enabled');
@@ -200,7 +200,7 @@ insert into public.portfolios(
   '98765432-2000-4000-8000-000000000001',
   '98765432-2200-4000-8000-000000000001',
   'structured_location_token_01',
-  '{}', '{"personal":{"profile_for":"self"}}', true,
+  '{"personal":{"profile_for":"self"}}', '{"personal":{"profile_for":"self"}}', true,
   pg_catalog.now() + interval '30 days'
 );
 insert into public.public_portfolio_snapshots(
@@ -212,6 +212,10 @@ insert into public.public_portfolio_snapshots(
 );
 set local session_replication_role = origin;
 select pg_temp.prime_photo_identity_verification('98765432-2300-4000-8000-000000000001');
+select ok(
+  app_private.pilot_public_portfolio_allowed('structured_location_token_01'),
+  'the structured-interest target satisfies pilot self-profile and verification prerequisites'
+);
 
 select pg_temp.set_authenticated_claims(
   '98765432-2000-4000-8000-000000000002',

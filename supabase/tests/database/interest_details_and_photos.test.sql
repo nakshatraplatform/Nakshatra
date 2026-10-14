@@ -194,7 +194,7 @@ reset role;
 update public.portfolios set draft_data=draft_data || '{"career":{"title":"Engineer"},"lifestyle":{"values_statement":"Kindness and mutual respect"}}'::jsonb where user_id='a1000000-0000-4000-8000-000000000002';
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select ok(public.submit_existing_interest('phase2_secure_token_1',null,null),'existing signed-in profile retains optional-note behavior');
+select ok(public.submit_existing_interest('phase2_secure_token_1',null,null,pg_temp.interest_input()->'location'),'existing signed-in profile retains optional-note behavior with required structured location');
 reset role;
 select is((select metadata->>'profession' from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000002'),'Engineer','reused profession snapshot is owned-account derived');
 update public.reveal_grants set revoked_at=now() where viewer_user_id='a1000000-0000-4000-8000-000000000003';

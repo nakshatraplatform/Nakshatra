@@ -189,4 +189,6 @@ Validation mode: behavioral change with regression-first tests.
 - Full pgTAP remains unverified locally because Docker/Podman is unavailable; the next PR CI run must confirm the database suite. No production database writes were made.
 - The next CI run passed the previously failing publication suites and isolated three remaining fixture/behavior gaps: clearing a canonical candidate location left stale denormalized fields; a structured-interest fixture lacked pilot self/verification eligibility; and an older interest test still submitted a legacy-only country. The candidate trigger now clears dependent fields on canonical removal, while the interest/public-perimeter fixtures satisfy current pilot and ISO contracts without relaxing production checks. A further pgTAP run is pending.
 
+- CI on `82f5ab5` passes 49 of 51 database suites. The remaining fixtures called the retired three-argument existing-interest RPC and omitted the draft self-profile required by the pilot guard. Tests now use the location-bearing four-argument RPC and assert target eligibility before location submission; no production grants or guards were relaxed. Runtime confirmation remains pending in CI because local Docker/Podman is unavailable.
+
 **Status:** Integrated on latest main and unit-verified; full pgTAP/CI verification pending
