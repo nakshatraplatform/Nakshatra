@@ -214,8 +214,18 @@ insert into public.portfolios(
   '98765432-2000-4000-8000-000000000001',
   '98765432-2200-4000-8000-000000000001',
   'structured_location_token_01',
-  '{"personal":{"profile_for":"self"}}', '{"personal":{"profile_for":"self"}}', true,
+  pg_temp.complete_portfolio_draft(), pg_temp.complete_portfolio_draft(), true,
   pg_catalog.now() + interval '30 days'
+);
+-- This is a valid published target for the interest/geography positive control;
+-- the legacy completeness suite separately exercises intentionally incomplete data.
+insert into public.portfolio_media(portfolio_id, candidate_id, media_type, storage_path, visibility)
+values (
+  '98765432-2300-4000-8000-000000000001',
+  '98765432-2200-4000-8000-000000000001',
+  'hero',
+  '98765432-2000-4000-8000-000000000001/98765432-2300-4000-8000-000000000001/hero.webp',
+  'public'
 );
 insert into public.public_portfolio_snapshots(
   portfolio_id, share_token, data, template_id, expires_at, is_active

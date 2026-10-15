@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(30);
+select plan(38);
 
 -- Transaction-only access for legacy engine characterization, not a production
 -- grant. The new interest suite checks that real clients cannot use this RPC.
@@ -49,7 +49,7 @@ select pg_temp.prime_paid_publication(
 
 update public.portfolios
 set is_published = true,
-    published_data = '{"privacy_mode":"balanced","personal":{"name":"Aditi","profile_for":"self"}}'::jsonb,
+    published_data = pg_temp.complete_portfolio_draft('{"privacy_mode":"balanced","personal":{"name":"Aditi","profile_for":"self"}}'::jsonb),
     expires_at = now() + interval '90 days'
 where id = '33333333-3333-4333-8333-333333333333';
 
@@ -85,6 +85,11 @@ insert into storage.objects (bucket_id, name)
 values
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/hero.webp'),
   ('photos', '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/private-unpublished.webp');
+
+insert into public.portfolio_horoscopes(portfolio_id, storage_path, mime_type, file_extension, byte_size, published_at)
+values ('33333333-3333-4333-8333-333333333333',
+  '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/chart.webp',
+  'image/webp', 'webp', 1024, now());
 
 select throws_ok(
   $$update public.portfolios set published_data = '{"privacy_mode":"private","personal":{"name":"Aditi","profile_for":"self"}}'::jsonb
@@ -222,6 +227,41 @@ select is(
   'Aditi Approved',
   'an approved authenticated viewer receives the approved projection'
 );
+select is(public.resolve_complete_portfolio_access((select id from public.reveal_grants limit 1))->>'status',
+  'active', 'an active approval email resolves for its bound viewer');
+select is(public.resolve_approved_horoscope('phase1_secure_token_1')->>'accessPath',
+  '11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/chart.webp',
+  'the approved viewer can resolve a published horoscope before completeness changes');
+select ok(public.can_read_approved_photo('11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/protected.webp'),
+  'the bound approved viewer can read protected media before completeness changes');
+
+reset role;
+-- A pre-existing approval must not bypass new published-snapshot requirements.
+create temporary table intact_publication as select published_data from public.portfolios
+where id='33333333-3333-4333-8333-333333333333';
+alter table public.portfolios disable trigger user;
+update public.portfolios set published_data=published_data #- '{personal,address_line_1}'
+where id='33333333-3333-4333-8333-333333333333';
+alter table public.portfolios enable trigger user;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('22222222-2222-4222-8222-222222222222', '22222222-2222-4222-8222-222222222223');
+select is(public.resolve_approved_portfolio('phase1_secure_token_1'), null,
+  'an existing approval cannot resolve an incomplete legacy publication');
+select is(public.resolve_complete_portfolio_access((select id from public.reveal_grants limit 1))->>'status',
+  'unavailable', 'an old approval email cannot advertise a blocked destination');
+select is(public.resolve_approved_horoscope('phase1_secure_token_1'), null,
+  'the same approved viewer loses horoscope access when published details are incomplete');
+select ok(not public.can_read_approved_photo('11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/protected.webp'),
+  'the same approved viewer loses protected media access when published details are incomplete');
+select is((select count(*)::integer from public.approved_portfolio_snapshots
+  where portfolio_id='33333333-3333-4333-8333-333333333333'), 0,
+  'approved snapshot RLS also rejects the already approved viewer');
+reset role;
+alter table public.portfolios disable trigger user;
+update public.portfolios set published_data=(select published_data from intact_publication)
+where id='33333333-3333-4333-8333-333333333333';
+alter table public.portfolios enable trigger user;
+set local role authenticated;
 
 set local request.jwt.claims = '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated","session_id":"11111111-1111-4111-8111-111111111112"}';
 select is(

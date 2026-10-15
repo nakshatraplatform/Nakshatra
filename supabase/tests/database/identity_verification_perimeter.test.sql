@@ -89,7 +89,7 @@ select pg_temp.prime_paid_publication(
 );
 
 select throws_ok($$update public.portfolios set is_published = true where id = '94000000-0000-4000-8000-000000000001'$$, '23514', null, 'direct database publication fails without current verification');
-select lives_ok($$update public.portfolios set is_published = true where id = '94000000-0000-4000-8000-000000000002'$$, 'verified candidate publication succeeds');
+select lives_ok($$update public.portfolios set is_published = true, published_data = draft_data where id = '94000000-0000-4000-8000-000000000002'$$, 'verified candidate publication succeeds');
 
 insert into public.public_portfolio_snapshots(portfolio_id, share_token, data, template_id, is_active)
 values ('94000000-0000-4000-8000-000000000002', 'identity_verified_token', '{}'::jsonb, 3, true);
