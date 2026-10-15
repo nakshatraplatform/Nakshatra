@@ -651,3 +651,59 @@ outgrows the existing CI budget, distribute intact projects with isolated mock
 services and a fail-closed aggregate rather than dropping cases or relaxing
 assertions/timeouts. Project-parity and unique-report checks guard that delivery
 boundary. Retain the failed full-run evidence instead of relabeling it green.
+
+## PR #103 database-fixture correction — 2026-10-15
+
+User requested resolving the failed database PR checks without relaxing them.
+PR head `0a247e4` includes main/PR #102; local branch was fast-forwarded to that
+head, preserving the unrelated NAK102 document. CI run `38796698449` successfully
+replayed migrations, then failed pgTAP: snapshot suite aborted before its 24
+assertions; structured-location assertions 37–39 of 40 failed. Browser and
+quality outcomes are separate checks, not evidence of SQL correctness.
+
+Release context remains Critical (publication access enforcement); the proposed
+correction changes only test fixtures and documentation. Production migration,
+authorization helpers, role grants, APIs and CI checks must remain unchanged.
+Fresh independent review and hosted database replay/pgTAP are required. Docker,
+Podman and native PostgreSQL tools are absent locally; static smoke is not a
+substitute for SQL execution.
+
+Verified causes and acceptance:
+
+1. `published_snapshot_completeness.test.sql` uses a 23-character publication
+   token. The current private publication transaction in migration
+   `20261003150000_pilot_test_publication_exemption.sql` rejects tokens unless
+   exactly 21 safe characters. Replace the fixture token consistently with a
+   valid 21-character token. Preserve all 24 assertions, including complete
+   publication, old-link denial, optional address, photo privacy and republication.
+2. `structured_location.test.sql` creates a synthetic published target containing
+   only `profile_for`, without hero media. The new read gate correctly rejects
+   that target. Reuse the established `pg_temp.complete_portfolio_draft` helper
+   for both canonical snapshots and add a public hero fixture. Keep the public
+   projection separate/minimal and preserve all 40 assertions, especially valid
+   interest persistence and invalid city/subdivision rejection.
+3. Run static database checks and review exact fixture diffs. Push the reviewed
+   correction to the same PR so the full migration chain, 52 pgTAP suites and
+   generated-type drift checks execute on real ephemeral PostgreSQL in CI. Treat
+   any further failure as unresolved; never suppress a suite, rewrite an expected
+   success as denial, or weaken the completeness gate to make fixtures pass.
+4. No merge or production migration/deployment. After all required checks pass,
+   the user retains the separate merge, preview/apply and verification steps.
+
+Correction review receipt:
+
+- Fresh-context read-only reviewer `/root/db_fixture_fix_review` found no material
+  source findings. Snapshot
+  `bd19ad34d6477db549c18d2dd0a6b2a1d73729eca33acae986407e77df461e24`
+  passed provenance checks before and after review. Exact reviewer/implementer
+  models are unavailable; this is not a verified cross-model review.
+- Both replacement lifecycle tokens contain 21 safe characters. The canonical
+  complete target and public hero satisfy the gate; the redacted projection stays
+  `{}`. Existing fixture-only replica mode restores `origin` before assertions.
+- All 64 assertions remain; migration, application and CI source are unchanged.
+  `node scripts/check-db-fixtures.mjs` and `git diff --check` pass independently.
+  No additional statically evident failure was found after the formerly aborting
+  publication call. SQL runtime acceptance remains unverified until hosted CI.
+- The unrelated NAK102 document retains SHA256
+  `70427AFB1F6B15FC5A45F374AB3934CCDED3F2D235F2ECBCA256F50AF8A24DF4`.
+  This receipt/project-map reconciliation is documentation-only after review.
