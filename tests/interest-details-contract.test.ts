@@ -4,13 +4,27 @@ import { interestFieldErrors, interestRequestValidationMessage, interestSubmissi
 const location = { country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108", locationSource: "manual" };
 const valid = { portfolioToken: "portfolio-token", name: "Mira Rao", profileFor: "self", phone: "+1 617 555 0123", email: "mira@example.com", familyContext: "Our family values honesty, kindness and mutual respect.", message: "I enjoyed reading your introduction and would like to learn more about your family, interests and plans for the future.", ...location, location };
 describe("new visitor interest contract", () => {
+  it("accepts name-only candidate details and derives the relationship once", () => {
+    for (const [profileFor, relationship] of [["son", "Parent"], ["daughter", "Parent"], ["sibling", "Sibling"], ["relative", "Relative"]]) {
+      const result = interestSubmissionSchema.safeParse({ ...valid, profileFor, message: "", candidate: { name: "Arun Rao" } });
+      expect(result.success).toBe(true);
+      if (result.success && !result.data.useExistingProfile) expect(result.data.candidate).toEqual({ name: "Arun Rao", relationship });
+    }
+  });
+  it("allows omitted message and candidate location but rejects malformed supplied values", () => {
+    expect(interestSubmissionSchema.safeParse({ ...valid, message: undefined }).success).toBe(true);
+    for (const candidate of [{ name: "Arun Rao", email: "broken" }, { name: "Arun Rao", phone: "broken" }, { name: "Arun Rao", location: { countryCode: "US" } }]) {
+      expect(interestSubmissionSchema.safeParse({ ...valid, profileFor: "son", candidate }).success).toBe(false);
+    }
+    expect(interestSubmissionSchema.safeParse({ ...valid, profileFor: "son", candidate: { name: "Arun Rao", location } }).success).toBe(true);
+  });
   it("requires decision-making context and canonical locations", () => {
     expect(interestSubmissionSchema.safeParse(valid).success).toBe(true);
-    for (const field of ["familyContext", "message", "location"]) expect(interestSubmissionSchema.safeParse({ ...valid, [field]: undefined }).success).toBe(false);
-    expect(interestSubmissionSchema.safeParse({ ...valid, message: " ".repeat(80) }).success).toBe(false);
+    for (const field of ["familyContext", "location"]) expect(interestSubmissionSchema.safeParse({ ...valid, [field]: undefined }).success).toBe(false);
+    expect(interestSubmissionSchema.safeParse({ ...valid, message: " ".repeat(80) }).success).toBe(true);
     expect(interestSubmissionSchema.safeParse({ ...valid, familyContext: "short" }).success).toBe(false);
     for (const whitespace of ["\t", "\n", "\u00a0", "\uFEFF"]) {
-      expect(interestSubmissionSchema.safeParse({ ...valid, message: whitespace.repeat(80) }).success).toBe(false);
+      expect(interestSubmissionSchema.safeParse({ ...valid, message: whitespace.repeat(80) }).success).toBe(true);
       expect(interestSubmissionSchema.safeParse({ ...valid, familyContext: whitespace.repeat(40) }).success).toBe(false);
     }
   });
@@ -23,7 +37,8 @@ describe("new visitor interest contract", () => {
     if (self.success) expect("candidate" in self.data && self.data.candidate).toBeUndefined();
   });
   it("preserves existing authenticated profile submissions", () => {
-    expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, ...location }).success).toBe(true);
+    expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, familyContext: valid.familyContext, ...location }).success).toBe(true);
+    expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, ...location }).success).toBe(false);
   });
 
   it("rejects country, subdivision, state, and postal mismatches for both viewer paths", () => {
@@ -36,7 +51,7 @@ describe("new visitor interest contract", () => {
     for (const [changes, expectedField] of cases) {
       for (const useExistingProfile of [false, true]) {
         const input = useExistingProfile
-          ? { portfolioToken: valid.portfolioToken, useExistingProfile: true, ...location, ...changes }
+          ? { portfolioToken: valid.portfolioToken, useExistingProfile: true, familyContext: valid.familyContext, ...location, ...changes }
           : { ...valid, ...changes, location: { ...location, ...changes } };
         const result = interestSubmissionSchema.safeParse(input);
         expect(result.success).toBe(false);
@@ -44,7 +59,7 @@ describe("new visitor interest contract", () => {
       }
     }
     const indian = { country: "India", countryCode: "IN", state: "Karnataka", subdivisionCode: "IN-KA", city: "Bangalore", postalCode: "560001", locationSource: "manual" };
-    expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, ...indian }).success).toBe(true);
+    expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, familyContext: valid.familyContext, ...indian }).success).toBe(true);
     expect(interestSubmissionSchema.safeParse({ portfolioToken: valid.portfolioToken, useExistingProfile: true, ...indian, postalCode: "000001" }).success).toBe(false);
   });
 
@@ -64,7 +79,7 @@ describe("new visitor interest contract", () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     const errors = interestFieldErrors(result.error);
-    expect(errors["candidate.name"]).toBe("Enter the candidate’s full name.");
+    expect(errors["candidate.name"]).toBe("Please provide the candidate’s full name.");
     expect(errors["candidate.phone"]).toBe("Enter a valid phone number.");
     expect(errors["candidate.location.cityId"]).toBe("Choose a city.");
     expect(interestRequestValidationMessage(result.error)).toContain("candidate");

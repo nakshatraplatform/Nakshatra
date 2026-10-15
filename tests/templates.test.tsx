@@ -260,8 +260,11 @@ describe("celestial union portfolio", () => {
     expect(pairedRows[1].children).toHaveLength(1);
     const trailingChapters = document.querySelectorAll(".portfolio-chapters-trailing > .portfolio-chapter");
     expect(Array.from(trailingChapters, (chapter) => chapter.id)).toEqual(["preferences", "shared-life"]);
-    expect(trailingChapters[0].children).toHaveLength(3);
-    expect(trailingChapters[1].children).toHaveLength(3);
+    for (const chapter of trailingChapters) {
+      expect(chapter.children).toHaveLength(2);
+      expect(chapter.firstElementChild?.querySelector("h2")).toHaveAttribute("id", `${chapter.id}-title`);
+      expect(chapter.firstElementChild?.querySelector("p > span[aria-hidden=true]")).toHaveTextContent(/^\d{2}$/);
+    }
     expect(document.querySelector("#preferences .portfolio-long-copy")).toBeTruthy();
     expect(document.querySelector("#shared-life .portfolio-long-copy")).toBeTruthy();
     const gallery = document.querySelector(".portfolio-gallery");

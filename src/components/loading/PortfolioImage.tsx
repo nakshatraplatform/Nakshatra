@@ -14,7 +14,7 @@ export function PortfolioImage({ showLoading = true, onLoad, onError, alt, ...pr
   }, []);
   return <>
     {/* eslint-disable-next-line @next/next/no-img-element -- signed/private media must use the original authenticated URL */}
-    <img {...props} alt={alt ?? ""} ref={image} onLoad={(event) => { setState("ready"); onLoad?.(event); }}
+    <img {...props} data-editorial-photo="" alt={alt ?? ""} ref={image} onLoad={(event) => { setState("ready"); onLoad?.(event); }}
       onError={(event) => { setState("failed"); onError?.(event); }} />
     {showLoading && state !== "ready" && <div className={styles.photoStatus} style={{ colorScheme: "light" }}>
       {state === "loading" ? <LoadingStatus compact title="Loading photo" appearance="light" />

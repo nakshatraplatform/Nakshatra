@@ -84,11 +84,29 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Registered email").fill("viewer@example.test");
   await dialog.getByRole("button", { name: "Continue with Google" }).click();
-  const status = dialog.locator("[data-loading-status]");
+  const pendingButton = dialog.getByRole("button", { name: "Connecting to Google", exact: true });
+  const status = pendingButton.getByRole("status");
   await expect(status).toHaveText("Connecting to Google");
+  await expect(pendingButton).toBeDisabled();
+  await expect(pendingButton).toHaveAttribute("aria-busy", "true");
   await expect(status).toHaveCSS("color-scheme", "light");
+  await expect(dialog).toHaveCSS("background-color", "rgb(255, 253, 248)");
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
-  await painted(status.locator("canvas"));
+  const spinner = status.locator("svg");
+  await expect(spinner).toBeVisible();
+  await expect(spinner).toHaveAttribute("aria-hidden", "true");
+  await expect(spinner).toHaveCSS("color", "rgb(255, 253, 248)");
+  await expect(spinner).toHaveCSS("animation-name", "interest-action-spin");
+  const ink = await spinner.evaluate((element: SVGSVGElement) => ({
+    width: element.getBBox().width, height: element.getBBox().height,
+    stroke: getComputedStyle(element).stroke, color: getComputedStyle(element).color,
+  }));
+  expect(ink.width).toBeGreaterThan(0);
+  expect(ink.height).toBeGreaterThan(0);
+  expect(ink.stroke).toBe(ink.color);
+  // A rotating square's viewport bounding box grows; assert its layout size.
+  await expect(spinner).toHaveCSS("width", "24px");
+  await expect(spinner).toHaveCSS("height", "24px");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   release();
   await expect(dialog.getByRole("alert")).toHaveText("Google unavailable");

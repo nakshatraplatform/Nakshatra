@@ -29,13 +29,13 @@ export default async function PreviewPage() {
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Link
               href="/dashboard?edit=1"
-              className="workspace-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-sm font-semibold transition-colors hover:bg-[color:var(--workspace-canvas)]"
+              className="workspace-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-sm font-semibold transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-canvas)]"
             >
               Back to editing
             </Link>
             <Link
               href="/dashboard"
-              className="workspace-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-sm font-semibold transition-colors hover:bg-[color:var(--workspace-canvas)]"
+              className="workspace-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-sm font-semibold transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-canvas)]"
             >
               Dashboard
             </Link>

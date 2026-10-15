@@ -38,7 +38,7 @@ const RASHI_KEYS = RASHI_OPTIONS.map((r) => r.key) as [string, ...string[]];
 // --- Form Step Schemas ---
 
 export const personalSchema = z.object({
-  name: z.string().min(1, "Name is required").max(160, "Name too long"),
+  name: z.string().min(1, "Please provide a name.").max(160, "Please keep the name within 160 characters."),
   first_name: z.string().max(100).optional(),
   middle_name: z.string().max(100).optional(),
   last_name: z.string().max(100).optional(),

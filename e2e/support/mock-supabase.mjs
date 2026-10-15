@@ -413,6 +413,17 @@ const server = createServer((request, response) => {
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/record_public_portfolio_view") {
     return sendJson(response, 200, true);
   }
+  // Synthetic approved-only document fixture; does not alter production grants.
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_approved_horoscope") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== `Bearer ${approvedViewerToken}` || JSON.parse(body || "{}").p_share_token !== "e2e-portfolio-token") return sendJson(response, 200, null);
+      return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString() });
+    });
+  }
+  if (request.method === "POST" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendJson(response, 200, { signedURL: `${url.pathname.replace("/storage/v1", "")}?token=e2e` });
+  if (request.method === "GET" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendPortfolioImage(response, url.pathname);
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/consume_api_rate_limit") {
     return sendJson(response, 200, { allowed: true, retryAfter: 0 });
   }

@@ -175,9 +175,9 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   });
   expect(accents).toEqual({
     background: "#f7f5ef",
-    primary: "#213f59",
-    teal: "#42736f",
-    gold: "#8f6628",
+    primary: "#1c2936",
+    teal: "#1c2936",
+    gold: "#1c2936",
   });
 
   const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
@@ -195,7 +195,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
       const styles = getComputedStyle(element);
       return { display: styles.display, columns: styles.gridTemplateColumns.split(" ").length };
     });
-    expect(chapterStyles).toEqual({ display: "grid", columns: 3 });
+    expect(chapterStyles).toEqual({ display: "grid", columns: 2 });
 
     const pairedStyles = await page.locator(".portfolio-chapter-pair").first().evaluate((element) => {
       const styles = getComputedStyle(element);
@@ -216,8 +216,8 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
       })
     );
     expect(futureChapterStyles).toEqual([
-      { display: "grid", columns: 3, copySize: 18 },
-      { display: "grid", columns: 3, copySize: 18 },
+      { display: "grid", columns: 2, copySize: 18 },
+      { display: "grid", columns: 2, copySize: 18 },
     ]);
   } else {
     await expect(page.locator(".portfolio-chapter-pair").first()).toHaveCSS("display", "block");
@@ -256,9 +256,10 @@ test("interest popup stays in view and requires decision-making details", async 
   expect(bounds.top).toBeGreaterThanOrEqual(0);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
-  await expect(dialog.getByRole("combobox", { name: "ZIP or PIN code" })).toHaveAttribute("required", "");
+  await expect(dialog.getByRole("combobox", { name: "Your location ZIP or PIN code" })).toHaveAttribute("required", "");
   await dialog.getByRole("button", { name: "Enter location manually" }).click();
-  for (const name of ["Country", "State", "City", "ZIP or PIN code", "Family context", "Message"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
+  for (const name of ["Your location country", "Your location state", "Your location city", "Your location ZIP or PIN code", "Family context"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Message", { exact: true })).not.toHaveAttribute("required", "");
   const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
   expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);
   await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();

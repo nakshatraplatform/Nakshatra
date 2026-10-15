@@ -70,14 +70,14 @@ export function AccessVerificationClient({ grantId }: { grantId: string }) {
           <p className="text-sm text-[color:var(--workspace-ink-muted)]">Enter the six-digit code sent to <strong className="text-[color:var(--workspace-ink)]">{email}</strong>.</p>
           <label className="grid gap-2 text-left text-sm font-semibold">
             Six-digit code
-            <input className="min-h-14 rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-center font-mono text-xl font-bold tracking-[0.35em]" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }} />
+            <input className="min-h-14 rounded-lg border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] px-4 text-center font-sans text-xl font-bold tracking-[0.35em]" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }} />
           </label>
           <button className="dashboard-primary-action min-h-12" disabled={pending || otp.length !== 6}>{pending ? "Verifying…" : "Verify and view portfolio"}</button>
           <button type="button" className="dashboard-secondary-action min-h-11" disabled={pending} onClick={() => { setStep("start"); setError(""); }}>Use another email</button>
         </form>
       )}
       {pending && <LoadingStatus compact state="connecting" title={step === "verify" ? "Confirming access to this portfolio" : "Preparing secure sign-in"} />}
-      {error && <p role="alert" className="rounded-lg bg-[light-dark(#f8e8e4,var(--app-dark-danger-surface))] p-3 text-sm text-[light-dark(#8e342e,var(--app-dark-danger))]">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-[var(--ui-danger-surface)] p-3 text-sm text-[var(--ui-danger)]">{error}</p>}
     </div>
   );
 }

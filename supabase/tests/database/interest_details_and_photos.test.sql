@@ -4,12 +4,13 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(38);
+select plan(45);
 
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000001', 'a1100000-0000-4000-8000-000000000001', 'owner@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000002', 'a1100000-0000-4000-8000-000000000002', 'viewer@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000003', 'a1100000-0000-4000-8000-000000000003', 'stranger@access.test');
 select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000004', 'a1100000-0000-4000-8000-000000000004', 'family@access.test');
+select pg_temp.create_auth_actor('a1000000-0000-4000-8000-000000000005', 'a1100000-0000-4000-8000-000000000005', 'optional@access.test');
 
 insert into app_private.b2c_creator_entitlements (email_hash)
 values (app_private.normalized_email_hash('owner@access.test'));
@@ -141,11 +142,11 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('familyContext',repeat(E'\t',40)))$$,'22023','invalid interest request','tabs cannot satisfy family-context minimum');
-select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('message',repeat(E'\n',80)))$$,'22023','invalid interest request','newlines cannot satisfy message minimum');
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('message','short'))$$,'22023','invalid interest request','a supplied nonblank message must satisfy its minimum');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('familyContext',jsonb_build_object('details',repeat('x',40))))$$,'22023','invalid interest request','object payload cannot be coerced into family context');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('location',jsonb_build_object('country','United States','countryCode','US','state','Massachusetts','subdivisionCode','US-MA','city','Fixture city','cityGeonameId',999000002,'postalCode','02108','locationSource','manual')))$$,'22023','invalid interest location','city must belong to selected country and state');
 select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || '{"profileFor":"son"}'::jsonb)$$,'22023','invalid candidate details','someone-else branch requires candidate details');
-select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('profileFor','son','candidate',jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123','relationship',E'\t\n','location',pg_temp.legacy_candidate_location())))$$,'22023','invalid candidate details','relationship cannot consist only of whitespace');
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('profileFor','son','candidate',jsonb_build_object('name','Arun Rao','email','invalid','phone','+1 617 555 0123','relationship',E'\t\n','location',pg_temp.legacy_candidate_location())))$$,'22023','invalid candidate details','optional candidate email must be valid when supplied');
 select ok(public.submit_interest_details(pg_temp.interest_input()),'complete verified new visitor request is accepted');
 reset role;
 -- Capture the real submitted ID outside requester RLS. A lookup performed by the
@@ -194,7 +195,8 @@ reset role;
 update public.portfolios set draft_data=draft_data || '{"career":{"title":"Engineer"},"lifestyle":{"values_statement":"Kindness and mutual respect"}}'::jsonb where user_id='a1000000-0000-4000-8000-000000000002';
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select ok(public.submit_existing_interest('phase2_secure_token_1',null,null,pg_temp.interest_input()->'location'),'existing signed-in profile retains optional-note behavior with required structured location');
+select throws_ok($$select public.submit_existing_interest('phase2_secure_token_1',null,null,pg_temp.interest_input()->'location')$$,'22023','invalid interest context','existing-profile path also requires family context');
+select ok(public.submit_existing_interest('phase2_secure_token_1','Our family values kindness, honesty and mutual respect.',null,pg_temp.interest_input()->'location'),'existing signed-in profile keeps optional message with required context and location');
 reset role;
 select is((select metadata->>'profession' from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000002'),'Engineer','reused profession snapshot is owned-account derived');
 update public.reveal_grants set revoked_at=now() where viewer_user_id='a1000000-0000-4000-8000-000000000003';
@@ -218,7 +220,7 @@ reset role;
 select is((select metadata->'candidate' from public.interest_requests
   where requester_user_id='a1000000-0000-4000-8000-000000000004'),
   jsonb_build_object('name','Arun Rao','email','arun@example.test','phone','+1 617 555 0123',
-    'relationship','My son','location',jsonb_build_object('country','Fixture country','state','Fixture state',
+    'relationship','Parent','location',jsonb_build_object('country','Fixture country','state','Fixture state',
       'city','Fixture city','countryCode','ZZ','regionCode','ZZ','cityId',999000002)),
   'candidate details persist with canonical location for a non-self request');
 set local role authenticated;
@@ -227,5 +229,16 @@ select is(public.get_interest_details((select id from public.interest_requests
   where requester_user_id='a1000000-0000-4000-8000-000000000004'))#>>'{metadata,candidate,name}',
   'Arun Rao','owner can reopen persisted candidate details after non-self submission');
 reset role;
+-- Optional details may be omitted, never fabricated, while their supplied values
+-- and parent hierarchy remain validated at the database boundary.
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000005","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000005"}';
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('email','optional@access.test','profileFor','daughter','candidate',jsonb_build_object('name','Mira Rao','phone','invalid')))$$,'22023','invalid candidate details','optional candidate phone is validated when supplied');
+select throws_ok($$select public.submit_interest_details(pg_temp.interest_input() || jsonb_build_object('email','optional@access.test','profileFor','daughter','candidate',jsonb_build_object('name','Mira Rao','location',jsonb_build_object('subdivisionCode','US-MA'))))$$,'22023','invalid interest location','partly supplied optional candidate geography is rejected');
+select ok(public.submit_interest_details((pg_temp.interest_input()-'message') || jsonb_build_object('email','optional@access.test','profileFor','daughter','candidate',jsonb_build_object('name','Mira Rao','relationship','Forged'))),'candidate name alone and absent message are accepted');
+reset role;
+select is((select metadata->'candidate' from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000005'),'{"name":"Mira Rao","relationship":"Parent"}'::jsonb,'relationship is derived and absent candidate data is not fabricated');
+select is((select message from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000005'),null::text,'omitted optional message persists as null');
+select ok(not has_function_privilege('authenticated','public.submit_existing_interest(text,text,text)','EXECUTE'),'weaker legacy existing-profile overload remains inaccessible');
 select * from finish();
 rollback;

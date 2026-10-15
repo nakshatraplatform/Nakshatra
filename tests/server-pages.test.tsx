@@ -49,11 +49,8 @@ function databaseClient() {
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }) }));
 vi.mock("next/font/google", () => ({
-  Geist: () => ({ variable: "geist-sans" }),
-  Geist_Mono: () => ({ variable: "geist-mono" }),
-  Manrope: () => ({ variable: "portfolio-body" }),
-  Playfair_Display: () => ({ variable: "portfolio-display" }),
-  Tenor_Sans: () => ({ variable: "portfolio-section" }),
+  Inter: () => ({ variable: "portfolio-body" }),
+  Plus_Jakarta_Sans: () => ({ variable: "portfolio-display" }),
 }));
 vi.mock("next/og", () => ({
   ImageResponse: class {

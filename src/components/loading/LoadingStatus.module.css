@@ -4,7 +4,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: light-dark(#183f49, var(--app-dark-ink));
+  color: var(--workspace-ink);
   text-align: center;
 }
 
@@ -15,7 +15,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: light-dark(#e5efeb, #243537);
+  background: var(--workspace-surface-muted);
   vertical-align: middle;
 }
 
@@ -24,7 +24,7 @@
 .orb canvas { flex: none; max-width: none; }
 .copy { min-width: 0; max-width: 26rem; overflow-wrap: anywhere; }
 .title { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.5; }
-.detail { margin: 0.25rem 0 0; color: light-dark(#52636b, var(--app-dark-muted)); font-size: 0.875rem; line-height: 1.6; }
+.detail { margin: 0.25rem 0 0; color: var(--workspace-muted); font-size: 0.875rem; line-height: 1.6; }
 .compact { flex-direction: row; justify-content: flex-start; gap: 0.625rem; text-align: left; }
 .compact .title { font-size: 0.875rem; }
 
@@ -38,7 +38,7 @@
   justify-content: center;
   gap: 2rem;
   padding: 2rem 1rem;
-  background: light-dark(#f7f5ef, var(--app-dark-canvas));
+  background: var(--workspace-canvas);
 }
 
 .photoStatus {
@@ -49,11 +49,11 @@
   width: max-content;
   max-width: calc(100% - 2rem);
   transform: translate(-50%, -50%);
-  border: 1px solid #cbd6d0;
+  border: 1px solid var(--workspace-surface-muted);
   border-radius: 0.75rem;
   padding: 0.75rem;
-  background: #f7f5ef;
-  color: #183f49;
+  background: var(--workspace-canvas);
+  color: var(--workspace-ink);
   pointer-events: none;
 }
 .photoStatus p { margin: 0; font-size: 0.875rem; }
