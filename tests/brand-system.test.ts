@@ -9,6 +9,13 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe("shared brand system", () => {
+  it("defines every referenced shared presentation token", () => {
+    const source = sourceFiles("src").filter(file => /\.(tsx?|css)$/.test(file)).map(file => readFileSync(file, "utf8")).join("\n");
+    const definitions = new Set([...source.matchAll(/(--(?:workspace|product|ui)-[\w-]+)\s*:/g)].map(match => match[1]));
+    const references = new Set([...source.matchAll(/var\((--(?:workspace|product|ui)-[\w-]+)/g)].map(match => match[1]));
+    expect([...references].filter(token => !definitions.has(token))).toEqual([]);
+  });
+
   it("loads only the two agreed web font families", () => {
     const fonts = readFileSync("src/lib/fonts.ts", "utf8");
     expect(fonts).toContain('import { Inter, Plus_Jakarta_Sans } from "next/font/google"');

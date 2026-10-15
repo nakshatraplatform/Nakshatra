@@ -120,6 +120,12 @@ const media: PortfolioMedia = {
   sort_order: 0, alt_text: "Portrait",
 };
 const accessGrantId = "11111111-1111-4111-8111-111111111111";
+// Sharing-positive fixtures need a complete published snapshot and hero. Keep
+// the default incomplete fixture for legacy lockout and draft editing tests.
+const shareablePublished = {
+  portfolio: { ...portfolio, published_data: readyData },
+  media: [{ ...media, media_type: "hero" as const }],
+};
 
 function renderDashboard(overrides: Partial<React.ComponentProps<typeof DashboardClient>> = {}) {
   return render(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
@@ -127,6 +133,32 @@ function renderDashboard(overrides: Partial<React.ComponentProps<typeof Dashboar
     shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]}
     mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} />);
 }
+
+it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
+  renderDashboard({ isExpired: false, daysLeft: 20, portfolio: { ...portfolio, draft_data: readyData },
+    media: [{ ...media, media_type: "hero" }], publicationReadiness: readyPublicationReadiness });
+  expect(screen.queryByRole("button", { name: "Copy link" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Share on WhatsApp" })).not.toBeInTheDocument();
+  expect(screen.queryByText("https://nakshatra.test/p/token")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Update Profile to Resume Sharing" })).toBeInTheDocument();
+});
+
+it("keeps a complete published snapshot shareable while an incomplete draft is being revised", () => {
+  renderDashboard({ isExpired: false, daysLeft: 20, portfolio: { ...portfolio, published_data: readyData },
+    media: [{ ...media, media_type: "hero" }], publicationReadiness: { ...readyPublicationReadiness, previewedAt: null, disclosureConfirmed: false } });
+  expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+});
+
+it("does not serialize a share URL from the server page for an incomplete publication", async () => {
+  mocks.loadDashboardView.mockResolvedValue({ ...shareablePublished,
+    portfolio: { ...portfolio, draft_data: readyData },
+    canCreatePortfolio: true, viewCount: 0, mediaUrls: {}, horoscope: null,
+    interests: [], accessSummary: { grants: [], events: [] },
+    publicationReadiness: readyPublicationReadiness,
+  });
+  const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+  expect(page.props.shareUrl).toBeNull();
+});
 
 function goToFoundation() {
   if (screen.queryByRole("heading", { name: "The essentials" })) return;
@@ -172,7 +204,7 @@ afterEach(() => {
 
 describe("dashboard client", () => {
   it("separates the live Introduction from incomplete saved draft readiness", () => {
-    renderDashboard({ isExpired: false, publicationReadiness: readyPublicationReadiness });
+    renderDashboard({ ...shareablePublished, isExpired: false, publicationReadiness: readyPublicationReadiness });
     expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
     expect(screen.getByRole("heading", { level: 1, name: "Your Introduction is ready to share." })).toBeInTheDocument();
     expect(screen.getByText("Saved draft readiness")).toBeInTheDocument();
@@ -493,8 +525,8 @@ describe("dashboard client", () => {
     expect(screen.getByRole("button", { name: "Review both views before publishing" })).toBeInTheDocument();
   });
   it("uses refreshed server verification without resetting an unsaved editor draft", () => {
-    const props = { portfolio, viewCount: 12, userEmail: "aditi@example.com", canCreatePortfolio: true,
-      shareUrl: "https://nakshatra.test/p/token", isExpired: false, daysLeft: 20, media: [media],
+    const props = { ...shareablePublished, viewCount: 12, userEmail: "aditi@example.com", canCreatePortfolio: true,
+      shareUrl: "https://nakshatra.test/p/token", isExpired: false, daysLeft: 20,
       mediaUrls: { "media-1": "https://signed.test/one-thumb.webp" } };
     const { rerender } = render(<DashboardClient {...props} publicationReadiness={{ ...readyPublicationReadiness, verificationStatus: "required" }} />);
     expect(screen.queryByRole("button", { name: "Share on WhatsApp" })).not.toBeInTheDocument();
@@ -542,6 +574,7 @@ describe("dashboard client", () => {
 
   it("shows public-link controls for the test account without calling it identity verified", () => {
     renderDashboard({
+      ...shareablePublished,
       portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "test_exempt" },
       isExpired: false,
@@ -554,6 +587,7 @@ describe("dashboard client", () => {
 
   it("keeps the ready-to-share heading without redundant supporting copy", () => {
     renderDashboard({
+      ...shareablePublished,
       portfolio: { ...portfolio, draft_data: readyData, published_data: readyData },
       publicationReadiness: readyPublicationReadiness,
       isExpired: false,
@@ -622,7 +656,7 @@ describe("dashboard client", () => {
   }, 10_000);
 
   it("operates published-link controls and signs out", async () => {
-    renderDashboard({ isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
+    renderDashboard({ ...shareablePublished, isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
     expect(metrics.children).toHaveLength(4);
     expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
@@ -653,20 +687,20 @@ describe("dashboard client", () => {
   });
 
   it("uses lifecycle-aware primary actions without treating link status as an insight", async () => {
-    const { rerender } = renderDashboard({ isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
+    const { rerender } = renderDashboard({ ...shareablePublished, isExpired: false, daysLeft: 6, publicationReadiness: readyPublicationReadiness });
     expect(screen.getByRole("button", { name: "Share on WhatsApp" })).toBeInTheDocument();
     expect(screen.queryByText("Public link")).not.toBeInTheDocument();
 
     rerender(
       <DashboardClient
-        portfolio={portfolio}
+        portfolio={shareablePublished.portfolio}
         viewCount={12}
         userEmail="aditi@example.com"
         canCreatePortfolio
         shareUrl="https://nakshatra.test/p/token"
         isExpired
         daysLeft={0}
-        media={[media]}
+        media={shareablePublished.media}
         mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }}
         publicationReadiness={readyPublicationReadiness}
       />
@@ -680,7 +714,7 @@ describe("dashboard client", () => {
   });
 
   it("groups the active URL and routine actions without a redundant active badge", () => {
-    renderDashboard({ isExpired: false, publicationReadiness: readyPublicationReadiness });
+    renderDashboard({ ...shareablePublished, isExpired: false, publicationReadiness: readyPublicationReadiness });
     const sharing = screen.getByRole("region", { name: "Introduction link" });
     expect(sharing).toHaveTextContent("https://nakshatra.test/p/token");
     for (const name of ["Edit details", "Copy link", "Share on WhatsApp"]) {
@@ -830,6 +864,7 @@ describe("dashboard client", () => {
 
   it("lets the owner renew and revoke Complete Portfolio access", async () => {
     renderDashboard({
+      ...shareablePublished,
       isExpired: false,
       publicationReadiness: readyPublicationReadiness,
       accessSummary: {
@@ -873,6 +908,7 @@ describe("dashboard client", () => {
 
   it("distinguishes an existing approval from currently available viewing", () => {
     renderDashboard({
+      ...shareablePublished,
       isExpired: false,
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required" },
       accessSummary: {

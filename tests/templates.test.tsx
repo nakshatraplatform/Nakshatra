@@ -98,6 +98,18 @@ const photos: PortfolioPhoto[] = [
 ];
 
 describe("celestial union portfolio", () => {
+  it.each(["light", "dark"] as const)("keeps the signature portrait orbits decorative in the %s theme", (appearance) => {
+    const { container } = render(<CelestialUnion data={{ ...complete, style: { ...complete.style, appearance } }} sunSign="kanya" accessMode="public" />);
+    const artwork = container.querySelector(".portfolio-photo-stage .portfolio-portrait-artwork");
+    expect(artwork).toHaveAttribute("aria-hidden", "true");
+    expect(artwork?.querySelectorAll(".portfolio-orbit")).toHaveLength(2);
+    expect(artwork?.querySelector(".portfolio-orbit-one")).toBeInTheDocument();
+    expect(artwork?.querySelector(".portfolio-orbit-two")).toBeInTheDocument();
+    expect(artwork?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(artwork?.querySelector(".portfolio-primary-photo")).toBeNull();
+    expect(container.querySelector(".portfolio-photo-stage > .portfolio-primary-photo")).toBeInTheDocument();
+  });
+
   it("hides conversion for the signed-in public-link owner without widening disclosure", () => {
     render(<BiodataTemplate templateId={3} data={complete} sunSign="kanya" accessMode="public" viewingOwnPortfolio />);
     expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();

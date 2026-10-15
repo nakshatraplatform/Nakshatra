@@ -276,7 +276,7 @@
 .portrait { position: relative; }
 .portrait::before { width: 220px; height: 220px; transform: translate(-45%, 62%); }
 .portrait::after { width: 260px; height: 260px; transform: translate(43%, -58%); }
-.portrait span { font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 4.5rem; }
+.portrait span { font-family: var(--font-portfolio-body), system-ui, sans-serif; font-size: 4.5rem; }
 
 .introduction { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 2rem; }
 .verified { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 99px; padding: 0.5rem 0.5rem; background: var(--teal-soft); color: var(--workspace-ink); font-size: 0.75rem; font-weight: 700; }

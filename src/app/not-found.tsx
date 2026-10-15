@@ -14,7 +14,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/dashboard"
-        className="workspace-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-[color:var(--ui-on-action)] transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-navy-strong)]"
+        className="workspace-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-[color:var(--ui-on-action)] transition-[transform,box-shadow,filter] hover:bg-[color:var(--ui-action-hover)]"
       >
         Go to dashboard
       </Link>
