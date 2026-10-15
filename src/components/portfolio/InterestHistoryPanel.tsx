@@ -23,7 +23,7 @@ export function InterestHistoryPanel() {
   }, [open, offset, attempt]);
   const loading = !result || result.offset !== offset;
   return <section className="dashboard-interest-history"><button type="button" className="dashboard-secondary-action" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? "Hide interest history" : "View all interest submissions"}</button>{open && <div>
-    <h3>Interest history</h3><p>Reopen submitted details even after access expires or ends. Deleted or retention-removed data is no longer available.</p>
+    <h3>Interest history</h3><p>A viewer&apos;s 15-day access expiry or revocation does not delete their submitted request. You can reopen details kept in your history; deleted or anonymized details are no longer available. <a href="/privacy#retention" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">How long request details are kept</a>.</p>
     {loading ? <p role="status">Loading interest history…</p> : result.error ? <p role="alert">{result.error} <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry</button></p> : <>
       {!result.items?.length && <p>No more submissions.</p>}
       {result.items?.map(item => <article key={item.id}><h4>{item.name || "Viewer"}</h4><p>{new Date(item.submittedAt).toLocaleString()} · {item.status}</p><InterestDetailsPanel requestId={item.id} /></article>)}
