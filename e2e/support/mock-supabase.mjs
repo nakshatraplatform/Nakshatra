@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
@@ -75,6 +75,10 @@ const ownerPortfolio = {
   created_at: "2026-09-15T00:00:00Z",
   updated_at: "2026-10-01T00:00:00Z",
 };
+// Public projections intentionally omit private required answers. Published
+// owner data, unlike a public projection, retains the canonical reviewed data.
+const legacyPublishedData = ownerPortfolio.published_data;
+ownerPortfolio.published_data = structuredClone(ownerPortfolio.draft_data);
 
 const ownerInterests = [
   { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
@@ -188,7 +192,7 @@ const publicMedia = [
 ];
 
 const publicMediaWithPreviews = publicMedia.map((item) =>
-  item.media_type === "gallery" && !item.metadata?.blurPath
+  !item.metadata?.blurPath
     ? {
         ...item,
         metadata: {
@@ -270,6 +274,7 @@ const server = createServer((request, response) => {
     if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
     if (request.headers.authorization === `Bearer ${publishedOwnerToken}`) return sendJson(response, 200, publishedOwnerUser);
+    if (request.headers.authorization === `Bearer ${legacyOwnerToken}`) return sendJson(response, 200, legacyOwnerUser);
     if (request.headers.authorization === `Bearer ${draftOwnerToken}`) return sendJson(response, 200, draftOwnerUser);
     if (request.headers.authorization === `Bearer ${authenticatedAccessToken}`) {
       return sendJson(response, 200, authenticatedUser);
@@ -293,6 +298,13 @@ const server = createServer((request, response) => {
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
     if (url.pathname === "/rest/v1/rpc/resolve_customer_broker_relationships") return sendJson(response, 200, { available: true, relationships: [] });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_dashboard") return sendJson(response, 200, {
+      available: true, workspaceRef: `wrk_${"e".repeat(32)}`, workspaceName: "Fixture agency",
+      metrics: { activeCustomers: 0, openIntroductions: 0, responsesAwaitingReview: 0, portfolioUpdates: 0 }, actions: [],
+    });
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_customers") return sendJson(response, 200, {
+      available: true, workspaceRef: `wrk_${"e".repeat(32)}`, customers: [],
+    });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_team") return sendJson(response, 200, {
       available: true,
       workspaceRef: `wrk_${"e".repeat(32)}`,
@@ -310,12 +322,12 @@ const server = createServer((request, response) => {
     });
     if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests"].includes(url.pathname)) return sendJson(response, 200, null);
   }
-  if ([publishedOwnerToken, draftOwnerToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
+  if ([publishedOwnerToken, draftOwnerToken, legacyOwnerToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
     const draftOwner = request.headers.authorization === `Bearer ${draftOwnerToken}`;
     const dashboardPortfolio = draftOwner ? {
       ...ownerPortfolio, user_id: draftOwnerUser.id, candidate_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", is_published: false,
       published_data: null, published_at: null, share_token: null, expires_at: null,
-    } : ownerPortfolio;
+    } : request.headers.authorization === `Bearer ${legacyOwnerToken}` ? { ...ownerPortfolio, user_id: legacyOwnerUser.id, published_data: legacyPublishedData } : ownerPortfolio;
     const readiness = { portfolioExists: true, lastEditorSection: "foundation", previewedAt: "2026-09-30T00:00:00Z", reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: true, selectedPlanCode: "launch_30", verificationStatus: draftOwner ? "required" : "test_exempt", paymentStatus: "paid", paymentExpiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), paymentActive: true, disclosureConfirmed: !draftOwner, published: !draftOwner, missingRequired: [] };
     if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 200, { portfolio: dashboardPortfolio, media: [publicMedia[0]], horoscope: null, readiness });
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
@@ -324,7 +336,7 @@ const server = createServer((request, response) => {
       response.writeHead(200, { "Content-Range": "0-11/12", "Access-Control-Allow-Origin": "*" });
       return response.end();
     }
-    if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMedia[0]]);
+    if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMediaWithPreviews[0]]);
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
     if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
@@ -413,6 +425,17 @@ const server = createServer((request, response) => {
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/record_public_portfolio_view") {
     return sendJson(response, 200, true);
   }
+  // Synthetic approved-only document fixture; does not alter production grants.
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_approved_horoscope") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== `Bearer ${approvedViewerToken}` || JSON.parse(body || "{}").p_share_token !== "e2e-portfolio-token") return sendJson(response, 200, null);
+      return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString() });
+    });
+  }
+  if (request.method === "POST" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendJson(response, 200, { signedURL: `${url.pathname.replace("/storage/v1", "")}?token=e2e` });
+  if (request.method === "GET" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendPortfolioImage(response, url.pathname);
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/consume_api_rate_limit") {
     return sendJson(response, 200, { allowed: true, retryAfter: 0 });
   }

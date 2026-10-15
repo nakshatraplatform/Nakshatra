@@ -1,11 +1,11 @@
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import styles from "./PortfolioChrome.module.css";
 
-export function PortfolioFooter({ livenessChecked }: { livenessChecked: boolean }) {
+export function PortfolioFooter({ livenessChecked, appearance = "light" }: { livenessChecked: boolean; appearance?: "light" | "dark" }) {
   return (
     <footer className={styles.footer} data-portfolio-footer>
       <div className={styles.footerIdentity}>
-        <VivIntroBrand variant="horizontal" decorative displayWidth={132} />
+        <VivIntroBrand variant="horizontal" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={132} />
         <p>One introduction, shared with care.</p>
       </div>
       <nav className={styles.policies} aria-label="Portfolio help and policies">

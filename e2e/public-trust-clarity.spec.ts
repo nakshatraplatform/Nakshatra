@@ -13,7 +13,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
       await page.goto(`/p/${token}`);
       const portfolio = page.locator('[data-template="celestial-union"]:visible');
       await expect(portfolio).toHaveAttribute("data-appearance", appearance);
-      const badge = portfolio.locator(".portfolio-verified-badge");
+      const badge = portfolio.getByLabel(/^Liveness checked\./);
       await expect(badge).toBeVisible();
       await expect(badge.getByText("Liveness checked")).toBeVisible();
       await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, portfolio photo ownership/i);
@@ -31,7 +31,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
 test("the fictional introduction does not claim a real liveness check", async ({ page }) => {
   await page.goto("/demo");
   await expect(page.getByText("Fictional sample introduction")).toBeVisible();
-  await expect(page.locator(".portfolio-verified-badge")).toHaveCount(0);
+  await expect(page.getByLabel(/^Liveness checked\./)).toHaveCount(0);
 });
 
 test("public trust explanation matches the publication exception and link controls", async ({ page }, testInfo) => {

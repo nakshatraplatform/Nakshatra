@@ -54,6 +54,11 @@ export const publishedOwnerCookie = {
   value: `base64-${encode({ access_token: publishedOwnerToken, refresh_token: "published-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: publishedOwnerUser })}`,
 };
 
+// A previously published profile missing newly mandatory answers.
+export const legacyOwnerUser = { ...publishedOwnerUser, id: "66666666-6666-4666-8666-666666666666", email: "legacy-owner@example.test" };
+export const legacyOwnerToken = [encode({ alg: "HS256", typ: "JWT" }), encode({ sub: legacyOwnerUser.id, role: "authenticated", exp: 4102444800, session_id: "55555555-5555-4555-8555-555555555555" }), Buffer.from("legacy-local-ui-fixture").toString("base64url")].join(".");
+export const legacyOwnerCookie = { ...themeTestCookie, value: `base64-${encode({ access_token: legacyOwnerToken, refresh_token: "legacy-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: legacyOwnerUser })}` };
+
 // Unpublished owner: synthetic token accepted only by the local mock.
 export const draftOwnerUser = { ...publishedOwnerUser, id: "99999999-9999-4999-8999-999999999999", email: "draft-owner@example.test" };
 export const draftOwnerToken = [encode({ alg: "HS256", typ: "JWT" }), encode({ sub: draftOwnerUser.id, role: "authenticated", exp: 4102444800, session_id: "77777777-7777-4777-8777-777777777777" }), Buffer.from("draft-local-ui-fixture").toString("base64url")].join(".");

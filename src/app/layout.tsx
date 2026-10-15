@@ -1,45 +1,10 @@
 import type { Metadata } from "next";
-import {
-  Geist,
-  Geist_Mono,
-  Manrope,
-  Playfair_Display,
-  Tenor_Sans,
-} from "next/font/google";
+import { portfolioBody, portfolioDisplay } from "@/lib/fonts";
 import "./globals.css";
 import "./app-theme.css";
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { ThemeBootstrap } from "@/components/theme/ThemeBootstrap";
 import { PrivacySafeAnalytics } from "@/components/analytics/PrivacySafeAnalytics";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  preload: false,
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  preload: false,
-});
-
-const portfolioDisplay = Playfair_Display({
-  variable: "--font-portfolio-display",
-  subsets: ["latin"],
-});
-
-const portfolioBody = Manrope({
-  variable: "--font-portfolio-body",
-  subsets: ["latin"],
-});
-
-const portfolioSection = Tenor_Sans({
-  variable: "--font-portfolio-section",
-  weight: "400",
-  subsets: ["latin"],
-  preload: false,
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -68,9 +33,9 @@ export default function RootLayout({
       lang="en"
       data-app-theme="light"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${portfolioDisplay.variable} ${portfolioBody.variable} ${portfolioSection.variable} h-full antialiased`}
+      className={`${portfolioDisplay.variable} ${portfolioBody.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-dvh" suppressHydrationWarning>
         <ThemeBootstrap />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <AppThemeProvider>{children}</AppThemeProvider>

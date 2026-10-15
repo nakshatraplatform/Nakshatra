@@ -77,10 +77,21 @@ test("portaled brand uses the portfolio appearance with the opposite app theme",
     await page.goto(`/p/${token}`);
     await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
     const dialog = page.getByRole("dialog");
-    const image = dialog.locator('[data-brand-variant="stacked"] img');
+    // Desktop context and mobile header placements are CSS-exclusive, but both
+    // must select artwork from the portal appearance rather than the app theme.
+    const artwork = dialog.locator('[data-brand-variant="stacked"] img');
+    await expect(artwork).toHaveCount(2);
+    for (const placement of await artwork.all()) {
+      await expect(placement).toHaveAttribute("src", new RegExp(`stacked-${appearance === "dark" ? "reverse" : "primary"}\\.svg`));
+    }
+    const image = dialog.locator('[data-brand-variant="stacked"] img:visible');
     await expect(image).toHaveCount(1);
     await expect(image).toBeVisible();
     await expect(image).toHaveAttribute("src", new RegExp(`stacked-${appearance === "dark" ? "reverse" : "primary"}\\.svg`));
     await expect(dialog).toHaveCSS("color-scheme", appearance);
+    await expect(dialog).toHaveCSS("background-color", appearance === "dark" ? "rgb(27, 41, 50)" : "rgb(255, 253, 248)");
+    await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
+    const searchCountry = dialog.getByLabel("Your location search country");
+    await expect(searchCountry.locator("..")).toHaveCSS("color", appearance === "dark" ? "rgb(237, 242, 239)" : "rgb(36, 52, 67)");
   }
 });

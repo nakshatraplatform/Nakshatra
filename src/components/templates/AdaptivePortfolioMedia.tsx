@@ -1,6 +1,7 @@
 "use client";
 
 import { PortfolioImage } from "@/components/loading/PortfolioImage";
+import { ChapterHeading, ProtectedDataVault } from "@/components/portfolio/presentation/PortfolioPrimitives";
 
 import { ChevronLeft, ChevronRight, LockKeyhole, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,7 +18,7 @@ import type { PortfolioPhotoOrientation } from "@/types/portfolio";
  */
 export function AdaptivePortfolioHero({
   photos,
-  fallbackColor = "#17151c",
+  fallbackColor = "var(--workspace-surface-muted)",
 }: {
   photos: PortfolioPhoto[];
   fallbackColor?: string;
@@ -273,12 +274,8 @@ export function AdaptivePortfolioGallery({
 
   return (
     <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
-      <div className="portfolio-section-heading">
-        <p>Captured moments</p>
-        <h2 id="portfolio-gallery-title" tabIndex={-1}>Gallery</h2>
-      </div>
+      <ChapterHeading eyebrow="Captured moments" title="Gallery" id="portfolio-gallery-title" />
       <div className="portfolio-gallery-meta">
-        <p>A simple collection of everyday moments.</p>
         <span>{orderedPhotos.length} photo{orderedPhotos.length === 1 ? "" : "s"}</span>
       </div>
       <div className="portfolio-gallery-viewer">
@@ -430,9 +427,7 @@ function meaningfulCaption(alt: string) {
 function ProtectedGalleryTile() {
   return (
     <div className="portfolio-gallery-protected">
-      <span><LockKeyhole aria-hidden="true" /></span>
-      <strong>Photo shared after approval</strong>
-      <p>This photo stays protected until the portfolio owner approves access.</p>
+      <ProtectedDataVault title="Photo shared after approval" detail="This photo stays private until access is approved." />
     </div>
   );
 }

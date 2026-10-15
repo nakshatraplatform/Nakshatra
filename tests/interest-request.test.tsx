@@ -9,9 +9,6 @@ const enforceRateLimit = vi.hoisted(() => vi.fn());
 const startAuthentication = vi.hoisted(() => vi.fn());
 const verifyAuthenticationCode = vi.hoisted(() => vi.fn());
 const continueToAuthProvider = vi.hoisted(() => vi.fn());
-vi.mock("../src/components/portfolio/InterestLocationFields", () => ({
-  InterestLocationFields: ({ prefix, label, initial }: { prefix: string; label: string; initial?: { countryCode: string; regionCode: string; cityId: number } }) => <fieldset><legend>{label}</legend>{[["CountryCode", "country", "US"], ["RegionCode", "state", "MA"], ["CityId", "city", "4930956"]].map(([suffix, name, value]) => <label key={suffix}>{label} {name}<select aria-label={`${label} ${name}`} name={`${prefix}${suffix}`} required defaultValue={initial ? String(initial[suffix === "CountryCode" ? "countryCode" : suffix === "RegionCode" ? "regionCode" : "cityId"]) : ""}><option value="">Choose one</option><option value={value}>{value}</option></select></label>)}</fieldset>,
-}));
 vi.mock("../src/components/portfolio/LocationFields", () => ({
   hasCompleteLocationHierarchy: (value: { countryCode?: string; regionCode?: string; city?: string; postalCode?: string }) =>
     value.countryCode === "US" && value.regionCode === "US-MA" && value.city === "Boston" && value.postalCode === "02108",
@@ -49,12 +46,54 @@ function fillDecisionDetails() {
   if (screen.queryByLabelText("Candidate’s full name")) {
     fireEvent.change(screen.getByLabelText("Candidate’s full name"), { target: { value: "Arun Mehta" } });
     fireEvent.change(screen.getByLabelText("Candidate’s email"), { target: { value: "arun@example.com" } });
-    fireEvent.change(screen.getByLabelText("Candidate’s phone"), { target: { value: "+1 617 555 0123" } });
-    fireEvent.change(screen.getByLabelText("Your relationship to candidate"), { target: { value: "Relative" } });
-    for (const [field, value] of [["country", "US"], ["state", "MA"], ["city", "4930956"]]) fireEvent.change(screen.getByLabelText(`Candidate’s location ${field}`), { target: { value } });
+    fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "+1 617 555 0123" } });
   }
 }
 describe("interest request flow", () => {
+  it("focuses and describes an incomplete existing-profile location before sending", async () => {
+    const request = vi.fn();
+    vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.submit(screen.getByRole("button", { name: "Send interest" }).closest("form")!);
+    const location = await screen.findByRole("group", { name: "Your location", description: /./ });
+    await waitFor(() => expect(location).toHaveFocus());
+    expect(location).toHaveAttribute("data-invalid", "true");
+    expect(location).toHaveAccessibleDescription();
+    expect(request).not.toHaveBeenCalled();
+  });
+  it("submits a name-only candidate with a blank message and prevents duplicate in-flight sends", async () => {
+    let complete!: (response: Response) => void;
+    const request = vi.fn<typeof fetch>(() => new Promise<Response>(resolve => { complete = resolve; }));
+    vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "daughter" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 617 555 0123" } });
+    fillDecisionDetails();
+    fireEvent.change(screen.getByLabelText("Candidate’s email"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "" } });
+    const form = screen.getByRole("button", { name: "Send interest" }).closest("form")!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
+    const payload = JSON.parse(String(request.mock.calls[0][1]?.body));
+    expect(payload.candidate).toEqual({ name: "Arun Mehta", relationship: "Parent" });
+    expect(payload.message).toBeNull();
+    complete(new Response(JSON.stringify({ ok: true }), { status: 201 }));
+    expect(await screen.findByText(/Request sent to Ananya/)).toBeInTheDocument();
+  });
+
+  it("shows an inline registered-email error without invoking OAuth", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    expect(screen.getByLabelText("Registered email")).toHaveAccessibleDescription("Enter your registered email address.");
+    expect(startAuthentication).not.toHaveBeenCalled();
+  });
   it.each(["light", "dark"] as const)("uses the %s dialog artwork independently of the document theme", (appearance) => {
     document.documentElement.dataset.appTheme = appearance === "dark" ? "light" : "dark";
     const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} appearance={appearance} />);
@@ -86,6 +125,7 @@ describe("interest request flow", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     enforceRateLimit.mockResolvedValue(null);
     startAuthentication.mockResolvedValue({ ok: true, body: { sent: true } });
     verifyAuthenticationCode.mockResolvedValue({ ok: true, body: { verified: true, email: "rohan@example.com" } });
@@ -246,10 +286,15 @@ describe("interest request flow", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    for (const label of ["Your full name", "Contacting for", "Phone number", "Email address", "Your location country", "Your location state", "Your location city", "Family context", "Message"]) expect(screen.getByLabelText(label)).toBeRequired();
+    for (const label of ["Your full name", "Contacting for", "Phone number", "Email address", "Your location country", "Your location state", "Your location city", "Family context"]) expect(screen.getByLabelText(label)).toBeRequired();
+    expect(screen.getByLabelText("Message")).not.toBeRequired();
     expect(screen.queryByLabelText("Candidate’s full name")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "son" } });
     expect(screen.getByLabelText("Candidate’s full name")).toBeRequired();
+    expect(screen.getByLabelText("Candidate’s email")).not.toBeRequired();
+    expect(screen.getByLabelText("Candidate’s phone (optional)")).not.toBeRequired();
+    expect(screen.queryByLabelText("Your relationship to candidate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Candidate’s location country")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
     expect(screen.queryByLabelText("Candidate’s full name")).not.toBeInTheDocument();
   });
@@ -323,8 +368,8 @@ describe("interest request flow", () => {
         city: "Boston",
         postalCode: "02108",
         locationSource: "existing_profile",
-        familyContext: "Our families have friends in common.",
-        message: "We would be glad to connect.",
+        familyContext: decisionDetails.familyContext,
+        message: "",
       }),
     }));
 
@@ -332,8 +377,8 @@ describe("interest request flow", () => {
     expect(rpc).toHaveBeenCalledWith("submit_existing_interest", expect.objectContaining({
       p_share_token: "portfolio-token",
 
-      p_family_context: "Our families have friends in common.",
-      p_message: "We would be glad to connect.",
+      p_family_context: decisionDetails.familyContext,
+      p_message: null,
     }));
   });
 

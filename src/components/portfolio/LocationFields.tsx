@@ -16,7 +16,7 @@ export interface LocationValue {
   city?: string; cityGeonameId?: number; postalCode?: string;
   locationSource?: StructuredLocation["locationSource"];
 }
-type Labels = { country: string; region: string; city: string; postalCode?: string };
+type Labels = { country: string; region: string; city: string; postalCode?: string; searchCountry?: string };
 const newSessionToken = () => globalThis.crypto?.randomUUID?.() ?? "00000000-0000-4000-8000-000000000000";
 
 export function hasCompleteLocationHierarchy(value: LocationValue) {
@@ -165,11 +165,11 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
     <div className="space-y-4">
       <p className="text-sm text-[color:var(--workspace-muted)]">Location search sends your entry to a postal lookup provider or Google Places when enabled. Choose manual entry before searching to avoid external lookups. <a href="/privacy#location-search" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
       <div className="grid gap-4 sm:grid-cols-[11rem_1fr]">
-        <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>Search country</span><select aria-label="Search country" value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
+        <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.searchCountry ?? "Search country"}</span><select aria-label={labels.searchCountry ?? "Search country"} value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
         <label className="relative flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) { setSuggestionsOpen(false); setActiveId(null); } }}>
-          <span>ZIP or PIN code{locationRequired ? " *" : ""}</span>
-          <input aria-label="ZIP or PIN code" role="combobox" aria-autocomplete="list" aria-expanded={expanded}
+          <span>{labels.postalCode ?? "ZIP or PIN code"}{locationRequired ? " *" : ""}</span>
+          <input aria-label={labels.postalCode ?? "ZIP or PIN code"} role="combobox" aria-autocomplete="list" aria-expanded={expanded}
             aria-controls={expanded ? listboxId : undefined}
             aria-activedescendant={expanded && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
             required={locationRequired} value={query}

@@ -72,7 +72,7 @@ import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
-import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
 } from "@/features/portfolio/template";
@@ -215,7 +215,12 @@ export default function DashboardClient({
     && verificationComplete
     && readinessState.paymentActive;
   const selfCreatedPortfolio = portfolio?.published_data?.personal?.profile_for === "self";
+  const publishedProfileComplete = isProfileFullyComplete(
+    portfolio?.published_data, portfolioMedia.some(isShareablePrimaryPhoto)
+  );
+  const publishedProfileNeedsUpdate = Boolean(portfolio?.is_published && !publishedProfileComplete);
   const publicShareReady = selfCreatedPortfolio
+    && publishedProfileComplete
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
   const pendingInterestCount = interestItems.filter(
@@ -345,7 +350,7 @@ export default function DashboardClient({
   }
 
   async function copyLink() {
-    if (!shareUrl || !publicShareReady) return;
+    if (!shareUrl || !viewerAccessAvailable) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -356,7 +361,7 @@ export default function DashboardClient({
   }
 
   async function shareWhatsApp() {
-    if (!shareUrl || !publicShareReady) return;
+    if (!shareUrl || !viewerAccessAvailable) return;
     const profileName = portfolio?.published_data?.personal?.name
       || portfolio?.draft_data?.personal?.name
       || "this profile";
@@ -878,25 +883,25 @@ export default function DashboardClient({
 
       <main id="main-content" tabIndex={-1} className="relative flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
-          {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-4 rounded-xl border border-[light-dark(#a9c8be,var(--app-dark-border))] bg-[light-dark(#eff7f2,var(--app-dark-surface))] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
-            <div><p className="font-semibold">Creator insights</p><p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Review private onboarding feedback from portfolio creators.</p></div>
+          {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
+            <div><p className="font-semibold">Creator insights</p><p className="mt-2 text-sm text-[var(--workspace-muted)]">Review private onboarding feedback from portfolio creators.</p></div>
             <Link href="/admin/onboarding-feedback" className="dashboard-primary-action min-h-11 justify-center">View feedback</Link>
           </section> : null}
           {!formOpen && !reviewOpen && (refreshing || openingReview || preparingPreview || renewing || rotatingLink || unpublishing || savingDraft || reviewPreviewSaving) && <LoadingStatus compact className="mb-4" title={renewing ? "Reactivating your Introduction link" : rotatingLink ? "Replacing your Introduction link" : unpublishing ? "Unpublishing your portfolio" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : savingDraft ? "Saving your private draft" : reviewPreviewSaving ? "Saving preview progress" : "Refreshing your dashboard"} />}
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
             <section className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
-              <div className="rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] p-4">
-                <LockKeyhole className="h-7 w-7 text-[light-dark(#315f57,var(--app-dark-accent))]" />
+              <div className="rounded-full bg-[var(--ui-success-surface)] p-4">
+                <LockKeyhole className="h-7 w-7 text-[var(--workspace-ink)]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#356863,var(--app-dark-accent))]">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--workspace-ink)]">
                   Account setup
                 </p>
-                <h1 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
+                <h1 className="mt-2 text-3xl font-medium text-[var(--workspace-ink)]">
                   Your portfolio is not ready to start yet.
                 </h1>
-                <p className="mx-auto mt-4 max-w-xl text-[light-dark(#475569,var(--app-dark-muted))]">
+                <p className="mx-auto mt-4 max-w-xl text-[var(--workspace-muted)]">
                   Please refresh this page. If this continues, contact VivIntro support. Your existing account and shared-link access remain available.
                 </p>
               </div>
@@ -904,17 +909,17 @@ export default function DashboardClient({
             </section>
           ) : !portfolio?.is_published ? (
             <section className="dashboard-glass flex flex-col items-start gap-4 p-6 sm:p-6" aria-label="Your portfolio">
-              <div className="rounded-full bg-[light-dark(#dcebe5,var(--app-dark-success-surface))] p-4">
-                <Edit3 className="h-7 w-7 text-[light-dark(#315f57,var(--app-dark-accent))]" />
+              <div className="rounded-full bg-[var(--ui-success-surface)] p-4">
+                <Edit3 className="h-7 w-7 text-[var(--workspace-ink)]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[light-dark(#356863,var(--app-dark-accent))]">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--workspace-ink)]">
                   {portfolio ? "Continue your saved draft" : "Start your portfolio"}
                 </p>
-                <h1 className="mt-2 text-3xl font-medium text-[light-dark(#18272e,var(--app-dark-ink))]">
+                <h1 className="mt-2 text-3xl font-medium text-[var(--workspace-ink)]">
                   {portfolio ? "Your portfolio is saved privately." : "Let’s build one clear introduction."}
                 </h1>
-                <p className="mx-auto mt-4 max-w-lg text-[light-dark(#475569,var(--app-dark-muted))]">
+                <p className="mx-auto mt-4 max-w-lg text-[var(--workspace-muted)]">
                   {portfolio
                     ? completion.readyToPublish
                       ? "Your required answers are complete. You can edit at any time; follow the publishing checklist below when you are ready to share."
@@ -937,18 +942,18 @@ export default function DashboardClient({
                 {portfolio && completion.readyToPublish && <button type="button" onClick={() => { void openFinalReview(); }} disabled={openingReview} className="dashboard-primary-action"><Send className="h-4 w-4" aria-hidden="true" />{openingReview ? "Preparing review…" : "Review and publish"}</button>}
                 </div>
               ) : (
-                <p className="rounded-xl border border-[light-dark(#477b7740,var(--app-dark-border))] bg-[light-dark(#dcebe580,var(--app-dark-success-surface))] px-4 py-4 text-sm text-[light-dark(#315f57,var(--app-dark-accent))]">
+                <p className="rounded-xl border border-[var(--workspace-border)] bg-[var(--ui-success-surface)] px-4 py-4 text-sm text-[var(--workspace-ink)]">
                   Creator access is paused for this account. Your saved portfolio and history remain available.
                 </p>
               )}
-              <p className="text-sm text-[light-dark(#526273,var(--app-dark-muted))]">Save your work and continue later. Nothing is published until you complete the final review.</p>
+              <p className="text-sm text-[var(--workspace-muted)]">Save your work and continue later. Nothing is published until you complete the final review.</p>
             </section>
           ) : (
               <section className="dashboard-welcome">
                 <div>
                   {publicShareReady && isExpired && <span className="dashboard-status is-expired">Introduction link expired</span>}
-                  <h1>{publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h1>
-                  {(!publicShareReady || isExpired) && <p>{isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
+                  <h1>{publishedProfileNeedsUpdate ? "Update your profile to resume sharing." : publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h1>
+                  {(!publicShareReady || isExpired) && <p>{publishedProfileNeedsUpdate ? "Update the required details, review both views, and publish the update to resume sharing." : isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
                   {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
                 {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
@@ -985,7 +990,7 @@ export default function DashboardClient({
                 <h3 className="text-base font-semibold">Introduction link</h3>
                 <p className="dashboard-sharing-description">Share this link for your public Introduction. Protected details still need your approval.</p>
                 <div className="dashboard-share-link-row">
-                  <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[light-dark(#f1f5f9,var(--app-dark-canvas))] px-4 py-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                  <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
                   </code>
                   <button
@@ -1027,13 +1032,18 @@ export default function DashboardClient({
               </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
-                <p className="text-sm font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Public sharing is off</p>
-                <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
-                  {isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved portfolio and activity remain available."
+                <p className="text-sm font-semibold text-[var(--workspace-ink)]">{publishedProfileNeedsUpdate ? "Update required before sharing" : "Public sharing is off"}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
+                  {publishedProfileNeedsUpdate ? "Your published profile no longer meets the required details. Update your saved details, review both views, and publish the update before sharing again."
+                    : isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved portfolio and activity remain available."
                     : readinessState.verificationStatus === "test_exempt"
                     ? "Review and publish your self-created portfolio to activate its link. Test publishing access does not confirm identity."
                     : "Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification."}
                 </p>
+                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
+                  if (completion.readyToPublish) void openFinalReview();
+                  else openEditorAtRequiredStep();
+                }}>Update Profile to Resume Sharing</button>}
                 {portfolio?.is_published && (
                   <button onClick={unpublishPortfolio} disabled={unpublishing} className="dashboard-danger-action mt-4">
                     <LockKeyhole className="h-4 w-4" /> {unpublishing ? "Unpublishing..." : "Unpublish"}
@@ -1132,18 +1142,18 @@ export default function DashboardClient({
       </div>
 
       {canCreatePortfolio && reviewOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#18272e]/70 p-4 backdrop-blur-sm sm:p-6">
+        <div className="dashboard-review-overlay fixed inset-0 z-[60] bg-[color:var(--ui-scrim)]/70 p-4 backdrop-blur-sm sm:p-6">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="portfolio-review-heading"
-            className="mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[light-dark(#f8f6f0,var(--app-dark-canvas))] text-[light-dark(#18272e,var(--app-dark-ink))] dashboard-dialog-elevation"
+            className="dashboard-review-dialog mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[var(--workspace-canvas)] text-[var(--workspace-ink)] dashboard-dialog-elevation"
           >
-            <header className="flex flex-none flex-col gap-4 border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <header className="dashboard-review-header flex flex-none flex-col gap-4 border-b border-[var(--workspace-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#356863,var(--app-dark-accent))]">Review before publishing</p>
+                <p className="dashboard-review-eyebrow text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-gold)]">Review before publishing</p>
                 <h2 id="portfolio-review-heading" className="mt-2 text-xl font-semibold">Review both views before publishing</h2>
-                <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+                <p className="dashboard-review-guidance mt-2 text-sm text-[var(--workspace-muted)]">
                   {publishing
                     ? "Your reviewed portfolio is being published. This page will update when the result is ready."
                     : "Check what is public and what needs your approval. Previews open in new tabs; return here to continue. Your saved review progress is remembered until you change your portfolio."}
@@ -1151,11 +1161,11 @@ export default function DashboardClient({
               </div>
               <div className="app-header-actions">
                 <ThemeSwitch />
-                <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>Back to editing</button>
+                <button type="button" className="dashboard-secondary-action dashboard-review-edit" aria-label="Back to editing" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}><Edit3 aria-hidden="true" className="h-4 w-4" /><span>Back to editing</span></button>
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="dashboard-review-content min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               {publishing ? (
                 <PortfolioLoadingStatus
                   title={portfolio?.is_published ? "Publishing your changes" : "Publishing your portfolio"}
@@ -1166,26 +1176,26 @@ export default function DashboardClient({
               ) : (
                 <>
                   <div id="review-preview-links" className="grid gap-4 lg:grid-cols-2">
-                    <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-6">
-                      <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4">
+                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
+                      <div className="border-b border-[var(--workspace-border)] pb-4">
                         <h3 className="font-semibold">Public Introduction</h3>
-                        <p className="mt-2 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">Visible to anyone with your active link.</p>
+                        <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible to anyone with your active link.</p>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between gap-6 px-4 py-6">
-                        <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check your primary photo and the details people can see without requesting access.</p>
+                      <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
+                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check your primary photo and the details people can see without requesting access.</p>
                         <a id="review-public-preview" href="/preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("public")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Review public Introduction
                         </a>
                       </div>
                     </article>
-                    <article className="flex flex-col rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-6">
-                      <div className="border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4">
+                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
+                      <div className="border-b border-[var(--workspace-border)] pb-4">
                         <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
-                        <p className="mt-2 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">Visible only to a verified viewer you approve.</p>
+                        <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible only to a verified viewer you approve.</p>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between gap-6 px-4 py-6">
-                        <p className="text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Check the additional details and photos you are willing to share after approving a request.</p>
+                      <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
+                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check the additional details and photos you are willing to share after approving a request.</p>
                         <a id="review-complete-preview" href="/approved-preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("complete")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Review Complete Portfolio
@@ -1194,9 +1204,9 @@ export default function DashboardClient({
                     </article>
                   </div>
 
-                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] p-6">
+                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                     <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
-                     <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Follow the next incomplete step below. Publishing activates your public Introduction link; protected details still require your approval.</p>
+                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public Introduction link; protected details still require your approval.</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Required details complete" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
                       <ReviewRequirement complete={reviewPreviewsOpened.public && reviewPreviewsOpened.complete && Boolean(readinessState.previewedAt)} label="Both views reviewed" pendingLabel="Review the public Introduction and Complete Portfolio" />
@@ -1205,18 +1215,18 @@ export default function DashboardClient({
                       <ReviewRequirement complete={readinessState.disclosureConfirmed || sensitiveDisclosureAccepted} label="Publication consent given" pendingLabel="Give consent when all other steps are complete" />
                     </div>
                   </section>
-                  {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[light-dark(#b7cbc6,var(--app-dark-border))] bg-[light-dark(#eef5f2,var(--app-dark-canvas))] p-4 text-sm leading-6">
+                  {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
                     <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
                     <span>I reviewed the public Introduction and Complete Portfolio previews. My full name and Marital Status will be visible to anyone with my active link. Complete Portfolio details, protected contact information, and exact birth details require my approval. I consent to publish the information shown in these previews. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
-                  </label> : <p className="mt-4 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f7f5ee,var(--app-dark-surface-soft))] p-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Once the details, both reviews, liveness check and account status are complete, you can give publication consent here. Consent for the liveness check is requested separately.</p>}
+                  </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Once the details, both reviews, liveness check and account status are complete, you can give publication consent here. Consent for the liveness check is requested separately.</p>}
                 </>
               )}
             </div>
 
-            <footer className="dashboard-review-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] px-4 py-4 sm:px-6">
+            <footer className="dashboard-review-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-4 py-4 sm:px-6">
               <div>
                 <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready to confirm publication." : "Your saved changes are not public yet."}</p>
-                <p className="mt-2 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
+                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
                 {reviewPreviewSaving && !publishing && <LoadingStatus compact title="Saving your preview progress" />}
               </div>
@@ -1267,9 +1277,9 @@ export default function DashboardClient({
       )}
 
       {canCreatePortfolio && formOpen && (
-        <div className="dashboard-editor fixed inset-0 z-50 bg-[#18272e]/45 backdrop-blur-sm">
+        <div className="dashboard-editor fixed inset-0 z-50 bg-[color:var(--ui-scrim)]/45 backdrop-blur-sm">
           <div role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden dashboard-dialog-elevation">
-            <div className="dashboard-editor-header flex-none border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="dashboard-editor-header flex-none border-b border-[var(--workspace-border)] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-4">
@@ -1282,7 +1292,7 @@ export default function DashboardClient({
                           : "Changes not saved"}
                     </span>
                   </div>
-                  <p className="text-sm text-[light-dark(#526273,var(--app-dark-muted))]">
+                  <p className="text-sm text-[var(--workspace-muted)]">
                     Complete what you know. Save your work and continue later.
                   </p>
                 </div>
@@ -1338,34 +1348,34 @@ export default function DashboardClient({
                     </>
                   }
                 />
-                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[light-dark(#526273,var(--app-dark-muted))]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
               </div>
             </div>
 
-            <div className="dashboard-editor-footer flex-none border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f3f0e8,var(--app-dark-surface-soft))] px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
+            <div className="dashboard-editor-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 {(savingDraft || openingReview || preparingPreview || refreshing) && <LoadingStatus compact className="mb-4" title={savingDraft ? "Saving your private draft" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : "Refreshing your portfolio"} />}
                 {draftError && (
-                  <div role="alert" className="mb-4 rounded-lg border border-[light-dark(#d8a7a1,var(--app-dark-border))] bg-[light-dark(#fff0ee,var(--app-dark-canvas))] px-4 py-4 text-sm text-[light-dark(#7f3535,var(--app-dark-danger))]">
+                  <div role="alert" className="mb-4 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] px-4 py-4 text-sm text-[var(--ui-danger)]">
                     <p className="font-semibold">We couldn&apos;t complete that action.</p>
                     <p className="mt-2 leading-5">{draftError}</p>
                     <p className="mt-2 leading-5">Your answers are still on this screen.</p>
                     {draftSaveState === "unsaved" && (
-                      <button type="button" onClick={saveDashboardDraft} disabled={savingDraft} className="mt-2 min-h-10 rounded-lg border border-[light-dark(#b96a63,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] px-4 font-semibold text-[light-dark(#7f3535,var(--app-dark-danger))] hover:bg-[light-dark(#fff8f6,var(--app-dark-surface))]">
+                      <button type="button" onClick={saveDashboardDraft} disabled={savingDraft} className="mt-2 min-h-10 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-4 font-semibold text-[var(--ui-danger)] hover:bg-[var(--workspace-surface)]">
                         Try saving again
                       </button>
                     )}
                   </div>
                 )}
                 <div className="dashboard-editor-footer-layout">
-                  <div className="dashboard-editor-footer-notes"><p className="dashboard-editor-footer-copy text-sm leading-6 text-[light-dark(#526273,var(--app-dark-muted))]">
+                  <div className="dashboard-editor-footer-notes"><p className="dashboard-editor-footer-copy text-sm leading-6 text-[var(--workspace-muted)]">
                     {editorSection === "privacy"
                       ? "Last section: save your answers, then review both portfolio views. The review will guide you to any remaining steps."
                       : portfolio?.is_published
                       ? "Changes autosave as a draft. Review and publish to update what people see."
                       : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
                   </p>
-                  <p className="text-xs leading-5 text-[light-dark(#526273,var(--app-dark-muted))]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                  <p className="text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
                   </div><div className="dashboard-editor-actions">
                     <button
                       type="button"
@@ -1424,13 +1434,14 @@ function ReviewRequirement({
   pendingLabel: string;
 }) {
   return (
-    <div className={`flex items-start gap-4 rounded-lg border px-4 py-4 ${complete ? "border-[light-dark(#b8d8ce,var(--app-dark-border))] bg-[light-dark(#eef7f3,var(--app-dark-canvas))]" : "border-[light-dark(#ded5bd,var(--app-dark-border))] bg-[light-dark(#faf7ed,var(--app-dark-canvas))]"}`}>
+    <div className="dashboard-review-requirement" data-complete={complete}>
       {complete
-        ? <CheckCircle2 className="mt-2 h-5 w-5 flex-none text-[light-dark(#315f57,var(--app-dark-accent))]" aria-hidden="true" />
-        : <Circle className="mt-2 h-5 w-5 flex-none text-[light-dark(#9a7b32,var(--app-dark-gold))]" aria-hidden="true" />}
+        ? <CheckCircle2 aria-hidden="true" />
+        : <Circle aria-hidden="true" />}
       <div>
         <p className="text-sm font-semibold">{complete ? label : pendingLabel}</p>
-        {!complete && <p className="mt-2 text-xs text-[light-dark(#475569,var(--app-dark-muted))]">{label}</p>}
+        <span className="sr-only">{complete ? "Complete" : "Incomplete"}</span>
+        {!complete && <p className="mt-2 text-xs text-[var(--workspace-muted)]">{label}</p>}
       </div>
     </div>
   );
@@ -1475,11 +1486,11 @@ function CreatorReadinessTracker({
     <section className="dashboard-glass p-4 sm:p-6" aria-labelledby="creator-readiness-heading">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#356863,var(--app-dark-accent))]">{readiness.published ? "Saved draft readiness" : "Your publishing journey"}</p>
-          <h2 id="creator-readiness-heading" className="mt-2 text-xl font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">{readiness.published ? "Saved draft readiness" : "Your publishing journey"}</p>
+          <h2 id="creator-readiness-heading" className="mt-2 text-xl font-semibold text-[var(--workspace-ink)]">
             {completion.percentage}% of required draft answers complete
           </h2>
-          <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+          <p className="mt-2 text-sm text-[var(--workspace-muted)]">
             {readiness.published ? introductionLive
               ? "Your published Introduction stays live. This checklist applies to your saved draft before publishing an update."
               : "This checklist applies to your saved draft. Your published snapshot is unchanged; see its sharing status above."
@@ -1488,20 +1499,20 @@ function CreatorReadinessTracker({
               : nextStep ? `Next: ${nextStep.label}` : "Your portfolio is published."}
             {draftSaveState === "saving" ? " · Saving changes…" : ""}
           </p>
-          {!completion.readyToPublish && <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
+          {!completion.readyToPublish && <p className="mt-2 text-sm text-[var(--workspace-muted)]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           {nextAction && <button type="button" onClick={nextAction.onClick} disabled={openingReview} className="dashboard-primary-action">{openingReview ? "Loading saved review…" : nextAction.label}</button>}
         </div>
       </div>
 
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[light-dark(#e2e8f0,var(--app-dark-surface-soft))]" aria-hidden="true">
-        <div className="h-full rounded-full bg-[#477b77] transition-[width]" style={{ width: `${completion.percentage}%` }} />
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--workspace-surface-muted)]" aria-hidden="true">
+        <div className="h-full rounded-full bg-[color:var(--workspace-ink)] transition-[width]" style={{ width: `${completion.percentage}%` }} />
       </div>
 
       <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Publication steps">
         {steps.map((step) => (
-          <li key={step.label} className={`flex min-h-12 items-center gap-2 rounded-lg border px-4 py-2 text-xs ${step.complete ? "border-[light-dark(#a9cfc3,var(--app-dark-border))] bg-[light-dark(#e8f3ef,var(--app-dark-surface-soft))] text-[light-dark(#315f57,var(--app-dark-accent))]" : "border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#ffffff,var(--app-dark-surface))] text-[light-dark(#475569,var(--app-dark-muted))]"}`}>
+          <li key={step.label} className={`flex min-h-12 items-center gap-2 rounded-lg border px-4 py-2 text-xs ${step.complete ? "border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] text-[var(--workspace-ink)]" : "border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--workspace-muted)]"}`}>
             {step.complete
               ? <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
               : <Circle className="h-4 w-4 shrink-0" aria-hidden="true" />}
@@ -1513,13 +1524,13 @@ function CreatorReadinessTracker({
       </ol>
 
       {!completion.readyToPublish && completion.missing.length > 0 ? (
-        <p className="mt-4 text-xs leading-5 text-[light-dark(#526273,var(--app-dark-muted))]">
+        <p className="mt-4 text-xs leading-5 text-[var(--workspace-muted)]">
           Still needed: {completion.missing.slice(0, 4).map((item) => item.label).join(", ")}
           {completion.missing.length > 4 ? ` and ${completion.missing.length - 4} more` : ""}.
         </p>
       ) : null}
       {completion.invalidAnswers.length > 0 ? (
-        <p className="mt-2 text-xs leading-5 text-[light-dark(#9f2f2f,var(--app-dark-danger))]">
+        <p className="mt-2 text-xs leading-5 text-[var(--ui-danger)]">
           Review entered answer: {completion.invalidAnswers[0].label}
         </p>
       ) : null}
@@ -1615,7 +1626,7 @@ function HoroscopeManager({
             placeholder="For example, Kannada"
             className="mt-2 h-10 w-full rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-4 text-sm text-[var(--workspace-ink)] outline-none placeholder:text-[var(--workspace-ink-muted)] focus:border-[var(--workspace-border)]"
           />
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--workspace-teal-soft)] px-4 text-sm font-semibold text-[light-dark(#17151c,var(--app-dark-ink))] hover:bg-[light-dark(#fff0b7,var(--app-dark-warning-surface))] disabled:opacity-50">
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--workspace-teal-soft)] px-4 text-sm font-semibold text-[var(--workspace-ink)] hover:bg-[var(--ui-warning-surface)] disabled:opacity-50">
             <Upload className={`h-4 w-4 ${uploading ? "animate-pulse" : ""}`} />
             {uploading ? "Checking attachment..." : "Attach horoscope"}
           </button>
@@ -1650,17 +1661,17 @@ function ReceivedBrokerIntroductions({ introductions }: { introductions: Receive
   if (introductions.length === 0) return null;
   return <section className="dashboard-glass p-6 sm:p-6" aria-labelledby="broker-introductions-heading">
     <div className="flex items-start gap-4">
-      <Inbox className="mt-2 h-5 w-5 text-[light-dark(#356863,var(--app-dark-accent))]" />
+      <Inbox className="mt-2 h-5 w-5 text-[var(--workspace-ink)]" />
       <div>
-        <h2 id="broker-introductions-heading" className="text-lg font-semibold text-[light-dark(#18272e,var(--app-dark-ink))]">Broker introductions</h2>
-        <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">Profiles selected for you by your broker. Only you and the other customer can open each introduction.</p>
+        <h2 id="broker-introductions-heading" className="text-lg font-semibold text-[var(--workspace-ink)]">Broker introductions</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">Profiles selected for you by your broker. Only you and the other customer can open each introduction.</p>
       </div>
     </div>
     <div className="mt-4 grid gap-4">
-      {introductions.map((introduction) => <article key={introduction.introductionRef} className="flex flex-col gap-4 rounded-xl border border-[light-dark(#d9d3c7,var(--app-dark-border))] p-4 sm:flex-row sm:items-center sm:justify-between">
+      {introductions.map((introduction) => <article key={introduction.introductionRef} className="flex flex-col gap-4 rounded-xl border border-[var(--workspace-border)] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <strong className="text-sm text-[light-dark(#18272e,var(--app-dark-ink))]">{introduction.sourceName}</strong>
-          <p className="mt-2 text-xs text-[light-dark(#526273,var(--app-dark-muted))]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · {introduction.disclosureLevel === "complete" ? "Complete access" : "respond by"} {formatAccessDate(introduction.expiresAt)}</p>
+          <strong className="text-sm text-[var(--workspace-ink)]">{introduction.sourceName}</strong>
+          <p className="mt-2 text-xs text-[var(--workspace-muted)]">From {introduction.brokerName} · {introduction.response ? `Response: ${introduction.response}` : "Your response is waiting"} · {introduction.disclosureLevel === "complete" ? "Complete access" : "respond by"} {formatAccessDate(introduction.expiresAt)}</p>
         </div>
         <Link className="dashboard-secondary-action" href={`/introductions/${introduction.introductionRef}`}>
           View introduction
@@ -2000,36 +2011,36 @@ function RelationshipLifecycle({
       )}
 
       {approvalCandidate && (
-        <div className="fixed inset-0 z-[70] grid place-items-center bg-[#102027]/65 p-4" role="presentation">
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-[color:var(--ui-scrim)]/65 p-4" role="presentation">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby={approvalTitleId}
-            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#fffdf8,var(--app-dark-surface))] text-[light-dark(#18272e,var(--app-dark-ink))] dashboard-dialog-elevation"
+            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--workspace-ink)] dashboard-dialog-elevation"
           >
             <div className="min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[light-dark(#356863,var(--app-dark-accent))]">Confirm controlled disclosure</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">Confirm controlled disclosure</p>
               <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Complete Portfolio access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
-              <p className="mt-2 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+              <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
                 Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
               </p>
-              <div className="mt-6 rounded-xl border border-[light-dark(#e2e8f0,var(--app-dark-border))] bg-[light-dark(#f8fafc,var(--app-dark-surface))] p-4">
+              <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
                 <p className="text-sm font-semibold">The Complete Portfolio will disclose:</p>
                 {disclosedCategories.length > 0 ? (
-                  <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[light-dark(#334155,var(--app-dark-ink))]">
+                  <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[var(--workspace-ink)]">
                     {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-[light-dark(#475569,var(--app-dark-muted))]">No additional protected information has been added yet.</p>
+                  <p className="mt-2 text-sm text-[var(--workspace-muted)]">No additional protected information has been added yet.</p>
                 )}
               </div>
-              <p className="mt-4 text-sm leading-6 text-[light-dark(#475569,var(--app-dark-muted))]">
+              <p className="mt-4 text-sm leading-6 text-[var(--workspace-muted)]">
                 You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
               </p>
               {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
               {workingId && <LoadingStatus compact className="mt-4" title="Granting Complete Portfolio access" />}
             </div>
-            <div className="flex shrink-0 flex-col gap-2 border-t border-[light-dark(#e2e8f0,var(--app-dark-border))] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
+            <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
               <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
               <button
                 ref={approvalConfirmRef}
@@ -2481,14 +2492,14 @@ function PhotoManager({
                 <div className="flex h-full items-center justify-center text-xs text-[var(--workspace-ink-muted)]">Preview unavailable</div>
               )}
               {item.media_type === "hero" && (
-                <span className="absolute left-2 top-2 inline-flex items-center gap-2 rounded-md bg-[var(--workspace-teal-soft)] px-2 py-2 text-xs font-semibold text-[light-dark(#17151c,var(--app-dark-ink))]">
+                <span className="absolute left-2 top-2 inline-flex items-center gap-2 rounded-md bg-[var(--workspace-teal-soft)] px-2 py-2 text-xs font-semibold text-[var(--workspace-ink)]">
                   <Crown className="h-3 w-3" /> Hero
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => onDelete(item.id)}
-                className="absolute right-2 top-2 flex h-12 w-12 items-center justify-center rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[light-dark(#873a3a,var(--app-dark-danger))] transition-colors hover:bg-[light-dark(#f8e8e4,var(--app-dark-danger-surface))] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="absolute right-2 top-2 flex h-12 w-12 items-center justify-center rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--ui-danger)] transition-[transform,box-shadow,filter] hover:bg-[var(--ui-danger-surface)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="Delete photo"
                 title="Delete photo"
               >
@@ -2522,7 +2533,7 @@ function PhotoManager({
                 <button
                   type="button"
                   onClick={() => onUpdate(item.id, { media_type: "hero" })}
-                  className="min-h-10 w-full rounded-md border border-[var(--workspace-border)] px-2 py-2 text-xs font-medium text-[var(--workspace-ink-muted)] transition-colors hover:bg-[var(--workspace-surface-muted)]"
+                  className="min-h-10 w-full rounded-md border border-[var(--workspace-border)] px-2 py-2 text-xs font-medium text-[var(--workspace-ink-muted)] transition-[transform,box-shadow,filter] hover:bg-[var(--workspace-surface-muted)]"
                 >
                   Make primary photo
                 </button>
@@ -2535,7 +2546,7 @@ function PhotoManager({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="flex h-36 w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--workspace-border)] bg-[var(--workspace-teal-soft)] px-4 text-center text-xs font-medium text-[var(--workspace-teal)] transition-colors hover:bg-[var(--workspace-teal-soft)] disabled:opacity-50 sm:h-40 sm:w-40"
+            className="flex h-36 w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--workspace-border)] bg-[var(--workspace-teal-soft)] px-4 text-center text-xs font-medium text-[var(--workspace-teal)] transition-[transform,box-shadow,filter] hover:bg-[var(--workspace-teal-soft)] disabled:opacity-50 sm:h-40 sm:w-40"
           >
             {uploading ? <Upload className="h-5 w-5 animate-pulse" /> : <ImagePlus className="h-5 w-5" />}
             {uploading ? "Uploading" : "Add photos"}

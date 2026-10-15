@@ -246,3 +246,33 @@ Execution context: finish the personal-policy consolidation and publish its
 remote branch. Initial markets, founders and shared grievance contacts are
 confirmed. Address/governing-law publication is deferred by the owner; broader
 NAK-74 legal, cookie/provider and production evidence remains open.
+
+### Integrated validation and final handoff
+
+Integrated `origin/main` at `f07b376` (PRs #101 and #102) without rewriting the
+already-pushed branch history. The documentation-index conflict keeps both main's
+NAK-106 records and this NAK-74 record. Main's location-field label changes are
+preserved alongside the new contextual privacy notice. Its serializers and
+personal grant durations are unchanged; the notice's requester examples do not
+claim the now-optional candidate fields are mandatory.
+
+The integrated production build passed, including TypeScript and all 81 static
+pages, using non-secret synthetic Supabase build configuration. Full lint passed
+with zero errors and two existing unused-disable warnings in Open Graph sources.
+The repository's merge-commit hook may remove an unused directive in a staged
+main file; that is comment cleanup only, not a media behavior change.
+
+Browser inspection of the local production build at a 1280px viewport confirmed
+the founder names and absence of unfinished address/law placeholders on Terms,
+both privacy contacts and the approved mailto address, request persistence after
+15-day access expiry, and the location/storage/retention section anchors. No
+horizontal overflow or broken same-page anchor was observed. This is a bounded
+desktop policy inspection, not a responsive whole-application/accessibility or
+provider-network audit. The local start helper emitted the existing standalone
+output advisory; the pages rendered successfully.
+
+Final pre-push fixture, typecheck and full unit-suite outcomes plus the resulting
+remote commit are recorded in NAK-74 after the push. No production environment,
+database or provider settings were changed, and no deployment or legal clearance
+is claimed. This completes the owner-scoped personal disclosure implementation;
+the wider NAK-74 release review stays open.
