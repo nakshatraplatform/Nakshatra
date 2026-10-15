@@ -3,6 +3,7 @@
 import { ThinkingOrb, type OrbState } from "thinking-orbs";
 import { useAppTheme } from "@/components/theme/AppThemeProvider";
 import type { AppTheme } from "@/lib/app-theme";
+import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
 import styles from "./LoadingStatus.module.css";
 
 type LoadingStatusProps = {
@@ -25,7 +26,7 @@ export function LoadingOrb({ size = 32, state = "working", appearance }: {
   const resolvedTheme = appearance ?? theme;
   return <span className={styles.orb} data-size={size} aria-hidden="true">
     <ThinkingOrb size={size} state={state} theme={resolvedTheme}
-      color={resolvedTheme === "dark" ? "#edc978" : "#16505a"} aria-hidden="true" />
+      color={CELESTIAL_THEME_COLORS[resolvedTheme].ink} aria-hidden="true" />
   </span>;
 }
 

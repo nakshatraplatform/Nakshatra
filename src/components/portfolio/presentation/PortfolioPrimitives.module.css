@@ -1,0 +1,28 @@
+.chapterHeading { display: flex; min-width: 0; flex-direction: column; gap: 6px; text-align: left; }
+.eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--workspace-muted); font: 600 12px/1.5 var(--font-portfolio-body), sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.chapterHeading h2 { margin: 0; scroll-margin-top: 96px; overflow-wrap: anywhere; color: var(--workspace-ink); font: 500 clamp(24px, 3vw, 36px)/1.2 var(--font-portfolio-display), sans-serif; letter-spacing: -.025em; }
+.trustBadge { display: inline-flex; width: fit-content; align-items: center; gap: 6px; max-width: 100%; border-radius: 999px; padding: 4px 12px; background: var(--ui-trust-surface); color: var(--ui-trust-ink); font-size: 12px; font-weight: 500; line-height: 1.5; }
+.trustBadge svg { width: 16px; height: 16px; flex: none; }
+.dataRow { display: flex; flex-direction: row; align-items: flex-start; gap: 16px; min-width: 0; }
+.dataIcon { display: flex; width: 40px; height: 40px; flex: none; align-items: center; justify-content: center; border-radius: 999px; background: color-mix(in srgb, var(--workspace-muted) 10%, transparent); color: var(--workspace-ink); }
+.dataIcon svg { width: 20px; height: 20px; stroke-width: 1.5; }
+.dataContent { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.dataContent h3 { margin: 0; color: var(--workspace-ink); font: 600 16px/1.5 var(--font-portfolio-display), sans-serif; }
+.dataLabel, .subtitle { margin: 0; color: var(--workspace-muted); font-size: 14px; line-height: 1.6; }
+.pill { display: inline-flex; max-width: 100%; align-items: center; border-radius: 999px; padding: 6px 16px; background: color-mix(in srgb, var(--workspace-ink) 5%, transparent); color: var(--workspace-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--workspace-ink) 6%, transparent); font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.vault { position: relative; isolation: isolate; display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 16px; overflow: hidden; padding: 24px; border: 1px solid var(--workspace-border); border-radius: 16px; background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--workspace-ink) 2%, transparent) 8px 9px), color-mix(in srgb, var(--workspace-surface) 80%, transparent); color: var(--workspace-ink); text-align: center; }
+.vaultIcon { width: 24px; height: 24px; flex: none; }
+.vault p { display: flex; flex-direction: column; gap: 8px; max-width: 65ch; margin: 0; overflow-wrap: anywhere; }
+.vault strong { font-weight: 600; }
+.vault p > span { color: var(--workspace-muted); font-size: 14px; line-height: 1.6; }
+.prose { min-width: 0; max-width: 65ch; }
+.proseText { max-width: 65ch; overflow-wrap: anywhere; white-space: pre-line; }
+.proseText[data-collapsed="true"] { mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
+.textAction { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; border-radius: 4px; padding: 0; background: transparent; color: var(--workspace-ink); font-family: var(--font-portfolio-body), system-ui, sans-serif; font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; transition: transform var(--default-transition-duration) var(--default-transition-timing-function); }
+.textAction svg { width: 16px; height: 16px; transition: transform var(--default-transition-duration) var(--default-transition-timing-function); }
+.textAction svg[data-expanded="true"] { transform: rotate(180deg); }
+.textAction:focus-visible { outline: 2px solid var(--workspace-ink); outline-offset: 4px; }
+.textAction:active { transform: scale(.98); }
+@media (hover: hover) and (pointer: fine) { .textAction:hover { text-decoration-thickness: 2px; } }
+@media (prefers-reduced-motion: reduce) { .textAction, .textAction svg { transition: none; } .textAction:active { transform: none; } }
+@media (forced-colors: active) { .trustBadge, .pill, .vault { border: 1px solid CanvasText; } .proseText[data-collapsed="true"] { mask-image: none; } }

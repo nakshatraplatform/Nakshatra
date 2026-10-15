@@ -23,8 +23,8 @@ export default async function ApprovedPreviewPage() {
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-medium">Complete Portfolio · Owner preview</span>
           <div className="flex gap-2">
-            <Link href="/dashboard?edit=1" className="rounded-lg border border-border px-3 py-1 text-sm transition-colors hover:bg-background">Edit portfolio</Link>
-            <Link href="/dashboard" className="rounded-lg border border-border px-3 py-1 text-sm transition-colors hover:bg-background">Dashboard</Link>
+            <Link href="/dashboard?edit=1" className="rounded-lg border border-border px-3 py-1 text-sm transition-[transform,box-shadow,filter] hover:bg-background">Edit portfolio</Link>
+            <Link href="/dashboard" className="rounded-lg border border-border px-3 py-1 text-sm transition-[transform,box-shadow,filter] hover:bg-background">Dashboard</Link>
           </div>
         </div>
       </div>

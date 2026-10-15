@@ -121,7 +121,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       <div className={styles.panelTitle}><Send /><div><h2>Broker introductions</h2><p>Choose another ready customer in this workspace. Both portfolios must be published, and both customers must have completed liveness checks.</p></div></div>
       {canCreate && eligibleRecipients.length > 0 ? <form className={styles.introductionForm} onSubmit={create}>
         <label>Introduce this customer to
-          <select className="min-h-11 rounded-lg border border-[light-dark(#d6cec0,var(--app-dark-border))] bg-[light-dark(#fff,var(--app-dark-surface-soft))] px-3 text-inherit" name="recipientRelationshipRef" required defaultValue="">
+          <select className="min-h-11 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-3 text-inherit" name="recipientRelationshipRef" required defaultValue="">
             <option value="" disabled>Select an eligible customer</option>
             {eligibleRecipients.map((recipient) => <option key={recipient.relationshipRef} value={recipient.relationshipRef}>
               {[recipient.displayName, recipient.gender, recipient.location].filter(Boolean).join(" · ")}

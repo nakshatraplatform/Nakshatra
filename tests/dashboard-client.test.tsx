@@ -1366,7 +1366,7 @@ describe("dashboard client", () => {
     });
     const reviewStep = () => within(screen.getByRole("list", { name: "Publication steps" }))
       .getByText("Review both views").closest("li");
-    expect(reviewStep()?.className).toContain("bg-[light-dark(#e8f3ef");
+    expect(reviewStep()?.className).toContain("bg-[var(--workspace-surface-muted)]");
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
@@ -1376,7 +1376,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
-    expect(reviewStep()?.className).not.toContain("bg-[light-dark(#e8f3ef");
+    expect(reviewStep()?.className).not.toContain("bg-[var(--workspace-surface-muted)]");
   });
 
   it("does not resurrect reviewed flags when a stale draft save finishes after a photo change", async () => {
@@ -1407,7 +1407,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     const reviewStep = within(screen.getByRole("list", { name: "Publication steps" }))
       .getByText("Review both views").closest("li");
-    expect(reviewStep?.className).not.toContain("bg-[light-dark(#e8f3ef");
+    expect(reviewStep?.className).not.toContain("bg-[var(--workspace-surface-muted)]");
   });
 
   it("does not loop autosave requests after a failed attempt", async () => {
@@ -1460,8 +1460,8 @@ describe("dashboard client", () => {
   it("keeps the paused-creator notice on a theme-aware contrast surface", () => {
     renderDashboard({ portfolio: { ...portfolio, is_published: false }, canCreatePortfolio: false });
     expect(screen.getByText(/Creator access is paused/)).toHaveClass(
-      "bg-[light-dark(#dcebe580,var(--app-dark-success-surface))]",
-      "text-[light-dark(#315f57,var(--app-dark-accent))]",
+      "bg-[var(--ui-success-surface)]",
+      "text-[var(--workspace-ink)]",
     );
   });
 

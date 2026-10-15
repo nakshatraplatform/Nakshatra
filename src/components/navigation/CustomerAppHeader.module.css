@@ -38,7 +38,7 @@
   align-items: center;
   border-radius: 9px;
   padding: 0.6rem 0.8rem;
-  color: light-dark(#344e59, var(--app-dark-ink));
+  color: var(--workspace-ink);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
@@ -49,13 +49,13 @@
 .desktopSignOut:hover,
 .menuLink:hover,
 .menuSignOut:hover {
-  background: light-dark(#e9eeeb, var(--app-dark-surface-soft));
+  background: var(--workspace-surface-muted);
 }
 
 .navLink[aria-current="page"],
 .menuLink[aria-current="page"] {
-  background: light-dark(#e4eee9, var(--app-dark-surface-soft));
-  color: light-dark(#174c54, var(--app-dark-accent));
+  background: var(--workspace-surface-muted);
+  color: var(--workspace-ink);
 }
 
 .desktopSignOut,
@@ -80,7 +80,7 @@
 .menuLink:focus-visible,
 .menuSignOut:focus-visible,
 .mobileMenu summary:focus-visible {
-  outline: 3px solid light-dark(#27716f, var(--app-dark-accent));
+  outline: 3px solid var(--workspace-ink);
   outline-offset: 2px;
 }
 
@@ -92,7 +92,7 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 1rem 0.5rem;
-  color: light-dark(#963e3e, var(--app-dark-danger));
+  color: var(--ui-danger);
   font-size: 0.85rem;
 }
 
@@ -120,12 +120,12 @@
     align-items: center;
     gap: 0.35rem;
     padding: 0.4rem 0.6rem;
-    border: 1px solid light-dark(#cbd4d0, var(--app-dark-border));
+    border: 1px solid var(--workspace-border);
     border-radius: 9px;
-    color: light-dark(#234750, var(--app-dark-ink));
-    background: light-dark(#fffdfa, var(--app-dark-surface));
+    color: var(--workspace-ink);
+    background: var(--workspace-surface);
     font-size: 0.85rem;
-    font-weight: 650;
+    font-weight: 600;
     cursor: pointer;
     list-style: none;
   }
@@ -140,18 +140,18 @@
     right: 0;
     width: min(19rem, calc(100vw - 1.25rem));
     padding: 0.5rem;
-    border: 1px solid light-dark(#d8d8d2, var(--app-dark-border));
+    border: 1px solid var(--workspace-border);
     border-radius: 12px;
-    background: light-dark(#fffdfa, var(--app-dark-surface));
-    box-shadow: 0 16px 32px rgb(20 43 50 / 0.16);
+    background: var(--workspace-surface);
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--ui-ink) 16%, transparent);
   }
 
   .accountEmail {
     overflow-wrap: anywhere;
     margin: 0 0 0.35rem;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid light-dark(#e4e6e1, var(--app-dark-border));
-    color: light-dark(#5c6970, var(--app-dark-muted));
+    border-bottom: 1px solid var(--workspace-border);
+    color: var(--workspace-muted);
     font-size: 0.75rem;
   }
 
@@ -165,7 +165,7 @@
   }
 
   .menuSignOut {
-    border-top: 1px solid light-dark(#e4e6e1, var(--app-dark-border));
+    border-top: 1px solid var(--workspace-border);
     border-radius: 0 0 8px 8px;
     text-align: left;
   }

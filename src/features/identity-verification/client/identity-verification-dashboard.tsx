@@ -180,7 +180,7 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
           <p>Verification is required before this profile can be publicly published.</p>
         </div>
       </div>
-      <p className="text-sm text-[light-dark(#475569,var(--app-dark-muted))]">
+      <p className="text-sm text-[var(--workspace-muted)]">
         Didit checks that a live person is present. No ID document or portfolio-photo comparison is required. VivIntro stores your consent and check results, not camera evidence. This does not verify your identity or profile details.
       </p>
       {pending || statusLoading || (processing && !error && !statusError && !current?.processingIssue) ?
@@ -197,7 +197,7 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
           ? "Your check is confirmed, but we could not send the confirmation email. You can continue from your dashboard."
           : "Your check is confirmed. A confirmation email is queued; you do not need to wait for it to continue."}</p> : null}
       {current?.deadline && current.canResume ? <p className="dashboard-action-note">Resume before <time dateTime={current.deadline}>{new Date(current.deadline).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>. The 30-minute window does not reset.</p> : null}
-      {!awaitingStartStatus && (current?.canStart || !current) ? <label className="mt-4 flex gap-3 text-sm text-[light-dark(#334155,var(--app-dark-ink))]">
+      {!awaitingStartStatus && (current?.canStart || !current) ? <label className="mt-4 flex gap-3 text-sm text-[var(--workspace-ink)]">
         <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
         <span>I consent to Didit processing my live camera capture for liveness checks.</span>
       </label> : null}
