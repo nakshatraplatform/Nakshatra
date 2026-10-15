@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
-import { approvedViewerCookie } from "./support/theme-session.mjs";
+import { approvedViewerCookie, publishedOwnerCookie, themeTestCookie } from "./support/theme-session.mjs";
 
 async function contrast(locator: Locator) {
   return locator.evaluate(element => {
@@ -22,6 +22,46 @@ async function contrast(locator: Locator) {
     return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
   });
 }
+
+test("standalone and unavailable actions retain contrast on focus and hover", async ({ page, context }, testInfo) => {
+  await page.goto("/");
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => localStorage.setItem("nakshatra-app-theme", value), theme);
+    for (const [route, name] of [["/presentation-missing-page", "Go to dashboard"], ["/verification/result", "Sign in to view result"]]) {
+      await page.goto(route);
+      await expect(page.locator("html")).toHaveAttribute("data-app-theme", theme);
+      const action = page.getByRole("link", { name, exact: true });
+      await action.focus();
+      expect(await contrast(action)).toBeGreaterThanOrEqual(4.5);
+      if (!testInfo.project.use.hasTouch) {
+        await action.hover();
+        expect(await contrast(action)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  }
+  await context.addCookies([themeTestCookie]);
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => localStorage.setItem("nakshatra-app-theme", value), theme);
+    await page.goto(`/brokerdesk/w/wrk_${"e".repeat(32)}/customers/bcr_${"a".repeat(32)}`);
+    await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-app-theme", theme);
+    for (const action of [page.getByRole("button", { name: "Try again", exact: true }), page.getByRole("link", { name: "Go home", exact: true })]) {
+      await action.focus();
+      expect(await contrast(action)).toBeGreaterThanOrEqual(4.5);
+      if (!testInfo.project.use.hasTouch) {
+        await action.hover();
+        expect(await contrast(action)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  }
+  await context.addCookies([publishedOwnerCookie]);
+  await page.goto("/preview");
+  const banner = page.locator("[data-preview-bar]:visible");
+  await expect(banner).toHaveCount(1);
+  await expect(banner).toBeVisible();
+  await expect(banner).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await contrast(banner)).toBeGreaterThanOrEqual(4.5);
+});
 
 test("inverse demo and landing examples retain readable text in both themes", async ({ page }) => {
   for (const theme of ["light", "dark"]) {

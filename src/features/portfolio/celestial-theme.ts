@@ -11,7 +11,7 @@ export const CELESTIAL_THEME_COLORS = {
     muted: "#59636e",
     primary: "#1c2936",
     teal: "#1c2936",
-    gold: "#1c2936",
+    gold: "#80551c",
     border: "#d5d0c5",
   },
   dark: {
@@ -22,7 +22,7 @@ export const CELESTIAL_THEME_COLORS = {
     muted: "#c0c8ce",
     primary: "#f4f1e9",
     teal: "#f4f1e9",
-    gold: "#f4f1e9",
+    gold: "#dfb777",
     border: "#46525d",
   },
 } as const;

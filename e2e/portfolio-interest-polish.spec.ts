@@ -1,6 +1,41 @@
 import { expect, test } from "@playwright/test";
 import { APP_THEME_STORAGE_KEY } from "../src/lib/app-theme";
 
+for (const [token, theme] of [["e2e-portfolio-token", "light"], ["e2e-dark-portfolio-token", "dark"]] as const) {
+  test(`signature portrait artwork stays visible and clipped in the ${theme} portfolio theme`, async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/p/${token}`);
+    const stage = page.locator(".portfolio-photo-stage");
+    const artwork = stage.locator(".portfolio-portrait-artwork");
+    await expect(artwork).toHaveAttribute("aria-hidden", "true");
+    await expect(artwork).toHaveCSS("pointer-events", "none");
+    await expect(artwork).toHaveCSS("overflow", "hidden");
+    await expect(artwork.locator(".portfolio-orbit")).toHaveCount(2);
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => document.fonts.ready);
+      const stageBox = (await stage.boundingBox())!;
+      const artworkBox = (await artwork.boundingBox())!;
+      expect(artworkBox.width).toBeLessThanOrEqual(stageBox.width);
+      expect(artworkBox.height).toBeLessThanOrEqual(stageBox.height);
+      for (const ring of await artwork.locator(".portfolio-orbit").all()) {
+        await expect(ring).toBeVisible();
+        await expect(ring).toHaveCSS("border-top-style", "solid");
+        await expect(ring).toHaveCSS("border-top-width", "1px");
+        expect(await ring.evaluate(el => getComputedStyle(el).borderTopColor)).not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/);
+        expect(await ring.evaluate(el => getComputedStyle(el).transform)).not.toBe("none");
+      }
+      const photo = stage.locator(".portfolio-primary-photo");
+      expect(await photo.evaluate(el => {
+        const box = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      })).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      await stage.screenshot({ path: testInfo.outputPath(`portrait-${theme}-${width}.png`), animations: "disabled" });
+    }
+  });
+}
+
 test("shared portfolio components retain typography, contrast and keyboard behavior across owner themes", async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   for (const [token, appearance, appTheme] of [["e2e-long-narrative-token", "light", "dark"], ["e2e-dark-portfolio-token", "dark", "light"]] as const) {

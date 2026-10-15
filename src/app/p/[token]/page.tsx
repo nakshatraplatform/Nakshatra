@@ -8,6 +8,7 @@ import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.cont
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
 import { resolveExistingViewerProfile, type ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
+import { formatPortfolioLocation } from "@/features/portfolio/presentation";
 import {
   isPortfolioOwner,
   recordPublicPortfolioView,
@@ -93,7 +94,7 @@ export default async function PublicBiodataPage({ params }: Props) {
       photos={portfolio.photos}
       viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
+      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
     />
   );
 }

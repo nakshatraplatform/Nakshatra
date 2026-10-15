@@ -28,13 +28,13 @@ export default function Error({
       <div className="mt-6 flex w-full max-w-sm flex-col gap-3 sm:flex-row sm:justify-center">
         <button
           onClick={reset}
-          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-[color:var(--ui-on-action)] transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-navy-strong)]"
+          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl bg-[color:var(--workspace-action)] px-5 text-base font-semibold text-[color:var(--ui-on-action)] transition-[transform,box-shadow,filter] hover:bg-[color:var(--ui-action-hover)]"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-5 text-base font-semibold transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-surface-soft)]"
+          className="workspace-focus inline-flex min-h-12 items-center justify-center rounded-xl border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-5 text-base font-semibold transition-[transform,box-shadow,filter] hover:bg-[color:var(--workspace-surface-muted)]"
         >
           Go home
         </Link>

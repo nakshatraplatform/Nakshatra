@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import type { Metadata } from "next";
 import DashboardClient from "./dashboard-client";
 import { loadDashboardView } from "@/features/portfolio/server/dashboard-view.service";
+import { isProfileFullyComplete } from "@/features/portfolio/readiness";
+import { isShareablePrimaryPhoto } from "@/features/media/portfolio-photo";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -22,7 +24,8 @@ export default async function DashboardPage({
   const renderedAt = Date.now();
 
   let shareUrl: string | null = null;
-  if (portfolio?.share_token) {
+  if (portfolio?.is_published && portfolio.share_token
+    && isProfileFullyComplete(portfolio.published_data, dashboard.media.some(isShareablePrimaryPhoto))) {
     const h = await headers();
     const host = h.get("host") ?? "localhost:3000";
     const proto = h.get("x-forwarded-proto") ?? "http";

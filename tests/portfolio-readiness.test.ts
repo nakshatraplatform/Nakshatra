@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import type { PortfolioDraftData } from "@/types/portfolio";
 
 const completeDraft: PortfolioDraftData = {
@@ -35,6 +35,21 @@ const completeDraft: PortfolioDraftData = {
 };
 
 describe("portfolio completion", () => {
+  it("fails closed for missing and malformed published snapshots", () => {
+    for (const snapshot of [null, undefined, {}, [], "published", { personal: { dob: "1990-99-99" } }]) {
+      expect(isProfileFullyComplete(snapshot, true)).toBe(false);
+    }
+  });
+
+  it("checks current required published answers and a shareable primary photo", () => {
+    expect(isProfileFullyComplete(completeDraft, true)).toBe(true);
+    expect(isProfileFullyComplete(completeDraft, false)).toBe(false);
+    for (const field of ["postal_code", "address_line_1", "region_code"] as const) {
+      expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, [field]: "" } }, true)).toBe(false);
+    }
+    expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, address_line_2: "" } }, true)).toBe(true);
+  });
+
   it("uses one deterministic checklist for completion and publication readiness", () => {
     expect(calculatePortfolioCompletion(completeDraft, true)).toMatchObject({
       percentage: 100,

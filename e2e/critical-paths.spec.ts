@@ -177,8 +177,9 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
     background: "#f7f5ef",
     primary: "#1c2936",
     teal: "#1c2936",
-    gold: "#1c2936",
+    gold: "#80551c",
   });
+  expect(accents.gold).not.toBe(accents.primary);
 
   const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
   await expect(privacyControl).toBeVisible();
@@ -262,7 +263,7 @@ test("interest popup stays in view and requires decision-making details", async 
   await expect(dialog.getByLabel("Message", { exact: true })).not.toHaveAttribute("required", "");
   const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
   expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);
-  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeInViewport();
 });
 
 test("Private portfolio keeps one gallery photo clear and shows protected placeholders", async ({ page }) => {

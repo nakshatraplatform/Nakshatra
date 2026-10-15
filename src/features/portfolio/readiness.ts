@@ -1,4 +1,4 @@
-import type { PortfolioDraftData } from "@/types/portfolio";
+import { portfolioDraftSchema, type PortfolioDraftData } from "@/types/portfolio";
 import { resolvePortfolioNameParts } from "@/features/portfolio/name";
 import { HEIGHT_OPTIONS } from "@/features/portfolio/blueprint-options";
 import { NAME_PART_MAX_LENGTH, NAME_PART_PATTERN, portfolioEditorPublishSchema, validAdultBirthDate } from "@/features/portfolio/form-contract";
@@ -35,6 +35,12 @@ function hasValue(value: unknown) {
 
 function validNamePart(value: string) {
   return value.length > 0 && value.length <= NAME_PART_MAX_LENGTH && NAME_PART_PATTERN.test(value);
+}
+
+/** Check the owner's canonical published snapshot, never a privacy-reduced public projection or an editable draft. */
+export function isProfileFullyComplete(publishedData: unknown, hasShareablePrimaryPhoto: boolean): boolean {
+  const parsed = portfolioDraftSchema.safeParse(publishedData);
+  return parsed.success && calculatePortfolioCompletion(parsed.data, hasShareablePrimaryPhoto).readyToPublish;
 }
 
 /** One canonical checklist drives progress UI, resume guidance, and server publication validation. */
