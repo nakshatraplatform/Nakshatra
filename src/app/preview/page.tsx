@@ -23,7 +23,7 @@ export default async function PreviewPage() {
   return (
     <div className="flex flex-1 flex-col" style={{ colorScheme: getCelestialAppearance(data.style) }}>
       {/* Preview banner */}
-      <div data-preview-bar="" className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-soft)] px-4 py-3 text-[color:var(--workspace-ink)]">
+      <div data-preview-bar="" className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-[color:var(--workspace-ink)]">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-semibold">Public Introduction · Draft preview{previousSharingSetup ? " · Your active link remains unchanged until you review and publish" : ""}</span>
           <div className="grid grid-cols-2 gap-2 sm:flex">

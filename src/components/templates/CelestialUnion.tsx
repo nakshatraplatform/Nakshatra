@@ -610,7 +610,11 @@ export default function CelestialUnion({
       <main id="main-content" className="portfolio-main" tabIndex={-1}>
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
           <div className="portfolio-photo-stage">
-            <BrandMotif />
+            <div className="portfolio-portrait-artwork" aria-hidden="true">
+              <BrandMotif />
+              <span className="portfolio-orbit portfolio-orbit-one" />
+              <span className="portfolio-orbit portfolio-orbit-two" />
+            </div>
             <div className="portfolio-primary-photo">
               <AdaptivePortfolioHero photos={heroPhotos} fallbackColor={theme.surfaceSoft} />
             </div>

@@ -72,7 +72,7 @@ import { normalizePortfolioName } from "@/features/portfolio/name";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
-import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
 } from "@/features/portfolio/template";
@@ -215,7 +215,12 @@ export default function DashboardClient({
     && verificationComplete
     && readinessState.paymentActive;
   const selfCreatedPortfolio = portfolio?.published_data?.personal?.profile_for === "self";
+  const publishedProfileComplete = isProfileFullyComplete(
+    portfolio?.published_data, portfolioMedia.some(isShareablePrimaryPhoto)
+  );
+  const publishedProfileNeedsUpdate = Boolean(portfolio?.is_published && !publishedProfileComplete);
   const publicShareReady = selfCreatedPortfolio
+    && publishedProfileComplete
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
   const pendingInterestCount = interestItems.filter(
@@ -345,7 +350,7 @@ export default function DashboardClient({
   }
 
   async function copyLink() {
-    if (!shareUrl || !publicShareReady) return;
+    if (!shareUrl || !viewerAccessAvailable) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -356,7 +361,7 @@ export default function DashboardClient({
   }
 
   async function shareWhatsApp() {
-    if (!shareUrl || !publicShareReady) return;
+    if (!shareUrl || !viewerAccessAvailable) return;
     const profileName = portfolio?.published_data?.personal?.name
       || portfolio?.draft_data?.personal?.name
       || "this profile";
@@ -947,8 +952,8 @@ export default function DashboardClient({
               <section className="dashboard-welcome">
                 <div>
                   {publicShareReady && isExpired && <span className="dashboard-status is-expired">Introduction link expired</span>}
-                  <h1>{publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h1>
-                  {(!publicShareReady || isExpired) && <p>{isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
+                  <h1>{publishedProfileNeedsUpdate ? "Update your profile to resume sharing." : publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h1>
+                  {(!publicShareReady || isExpired) && <p>{publishedProfileNeedsUpdate ? "Update the required details, review both views, and publish the update to resume sharing." : isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
                   {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
                 {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
@@ -1027,13 +1032,18 @@ export default function DashboardClient({
               </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
-                <p className="text-sm font-semibold text-[var(--workspace-ink)]">Public sharing is off</p>
+                <p className="text-sm font-semibold text-[var(--workspace-ink)]">{publishedProfileNeedsUpdate ? "Update required before sharing" : "Public sharing is off"}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
-                  {isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved portfolio and activity remain available."
+                  {publishedProfileNeedsUpdate ? "Your published profile no longer meets the required details. Update your saved details, review both views, and publish the update before sharing again."
+                    : isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved portfolio and activity remain available."
                     : readinessState.verificationStatus === "test_exempt"
                     ? "Review and publish your self-created portfolio to activate its link. Test publishing access does not confirm identity."
                     : "Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification."}
                 </p>
+                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
+                  if (completion.readyToPublish) void openFinalReview();
+                  else openEditorAtRequiredStep();
+                }}>Update Profile to Resume Sharing</button>}
                 {portfolio?.is_published && (
                   <button onClick={unpublishPortfolio} disabled={unpublishing} className="dashboard-danger-action mt-4">
                     <LockKeyhole className="h-4 w-4" /> {unpublishing ? "Unpublishing..." : "Unpublish"}
@@ -1132,18 +1142,18 @@ export default function DashboardClient({
       </div>
 
       {canCreatePortfolio && reviewOpen && (
-        <div className="fixed inset-0 z-[60] bg-[color:var(--ui-scrim)]/70 p-4 backdrop-blur-sm sm:p-6">
+        <div className="dashboard-review-overlay fixed inset-0 z-[60] bg-[color:var(--ui-scrim)]/70 p-4 backdrop-blur-sm sm:p-6">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="portfolio-review-heading"
-            className="mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[var(--workspace-canvas)] text-[var(--workspace-ink)] dashboard-dialog-elevation"
+            className="dashboard-review-dialog mx-auto flex h-full w-full max-w-[96rem] flex-col overflow-hidden rounded-2xl bg-[var(--workspace-canvas)] text-[var(--workspace-ink)] dashboard-dialog-elevation"
           >
-            <header className="flex flex-none flex-col gap-4 border-b border-[var(--workspace-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <header className="dashboard-review-header flex flex-none flex-col gap-4 border-b border-[var(--workspace-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">Review before publishing</p>
+                <p className="dashboard-review-eyebrow text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-gold)]">Review before publishing</p>
                 <h2 id="portfolio-review-heading" className="mt-2 text-xl font-semibold">Review both views before publishing</h2>
-                <p className="mt-2 text-sm text-[var(--workspace-muted)]">
+                <p className="dashboard-review-guidance mt-2 text-sm text-[var(--workspace-muted)]">
                   {publishing
                     ? "Your reviewed portfolio is being published. This page will update when the result is ready."
                     : "Check what is public and what needs your approval. Previews open in new tabs; return here to continue. Your saved review progress is remembered until you change your portfolio."}
@@ -1151,11 +1161,11 @@ export default function DashboardClient({
               </div>
               <div className="app-header-actions">
                 <ThemeSwitch />
-                <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}>Back to editing</button>
+                <button type="button" className="dashboard-secondary-action dashboard-review-edit" aria-label="Back to editing" disabled={publishing} onClick={() => { setReviewOpen(false); setFormOpen(true); }}><Edit3 aria-hidden="true" className="h-4 w-4" /><span>Back to editing</span></button>
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="dashboard-review-content min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               {publishing ? (
                 <PortfolioLoadingStatus
                   title={portfolio?.is_published ? "Publishing your changes" : "Publishing your portfolio"}
@@ -1166,12 +1176,12 @@ export default function DashboardClient({
               ) : (
                 <>
                   <div id="review-preview-links" className="grid gap-4 lg:grid-cols-2">
-                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-6">
-                      <div className="border-b border-[var(--workspace-border)] px-4 py-4">
+                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
+                      <div className="border-b border-[var(--workspace-border)] pb-4">
                         <h3 className="font-semibold">Public Introduction</h3>
                         <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible to anyone with your active link.</p>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between gap-6 px-4 py-6">
+                      <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
                         <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check your primary photo and the details people can see without requesting access.</p>
                         <a id="review-public-preview" href="/preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("public")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
@@ -1179,12 +1189,12 @@ export default function DashboardClient({
                         </a>
                       </div>
                     </article>
-                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-6">
-                      <div className="border-b border-[var(--workspace-border)] px-4 py-4">
+                    <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
+                      <div className="border-b border-[var(--workspace-border)] pb-4">
                         <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
                         <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible only to a verified viewer you approve.</p>
                       </div>
-                      <div className="flex flex-1 flex-col justify-between gap-6 px-4 py-6">
+                      <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
                         <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check the additional details and photos you are willing to share after approving a request.</p>
                         <a id="review-complete-preview" href="/approved-preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("complete")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
@@ -1194,7 +1204,7 @@ export default function DashboardClient({
                     </article>
                   </div>
 
-                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-6">
+                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                     <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
                      <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public Introduction link; protected details still require your approval.</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -1216,7 +1226,7 @@ export default function DashboardClient({
             <footer className="dashboard-review-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-4 py-4 sm:px-6">
               <div>
                 <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready to confirm publication." : "Your saved changes are not public yet."}</p>
-                <p className="mt-2 text-xs text-[var(--workspace-muted)]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
+                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
                 {reviewPreviewSaving && !publishing && <LoadingStatus compact title="Saving your preview progress" />}
               </div>
@@ -1424,12 +1434,13 @@ function ReviewRequirement({
   pendingLabel: string;
 }) {
   return (
-    <div className={`flex items-start gap-4 rounded-lg border px-4 py-4 ${complete ? "border-[var(--workspace-border)] bg-[var(--workspace-canvas)]" : "border-[var(--workspace-border)] bg-[var(--workspace-canvas)]"}`}>
+    <div className="dashboard-review-requirement" data-complete={complete}>
       {complete
-        ? <CheckCircle2 className="mt-2 h-5 w-5 flex-none text-[var(--workspace-ink)]" aria-hidden="true" />
-        : <Circle className="mt-2 h-5 w-5 flex-none text-[var(--workspace-ink)]" aria-hidden="true" />}
+        ? <CheckCircle2 aria-hidden="true" />
+        : <Circle aria-hidden="true" />}
       <div>
         <p className="text-sm font-semibold">{complete ? label : pendingLabel}</p>
+        <span className="sr-only">{complete ? "Complete" : "Incomplete"}</span>
         {!complete && <p className="mt-2 text-xs text-[var(--workspace-muted)]">{label}</p>}
       </div>
     </div>

@@ -35,9 +35,10 @@ type InterestPayload = {
   candidate?: NonNullable<NewViewerInterestInput["candidate"]>;
 };
 
-export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
+export function InterestRequestModal({ portfolioToken, profileName, profileSummary, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
   portfolioToken: string;
   profileName: string;
+  profileSummary?: string;
   authenticated: boolean;
   verifiedEmail?: string | null;
   existingViewerProfile?: ExistingViewerProfile | null;
@@ -322,6 +323,24 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       {open && createPortal(
         <div className="interest-modal-backdrop" data-appearance={appearance} style={{ colorScheme: appearance }}>
           <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <aside className="interest-context" aria-label="About this introduction">
+              <VivIntroBrand variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={112} />
+              <div className="interest-context-profile">
+                <p className="portfolio-eyebrow">A thoughtful introduction</p>
+                <h3>{profileName}</h3>
+                {profileSummary && <p>{profileSummary}</p>}
+              </div>
+              <div className="interest-context-steps">
+                <h3>Next steps</h3>
+                <ol>
+                  <li>Introduce yourself and your family.</li>
+                  <li>Verify your email before sending.</li>
+                  <li>The owner reviews your request.</li>
+                </ol>
+              </div>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />Protected details stay private until the owner approves.</p>
+            </aside>
+            <div className="interest-main-pane">
             <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
@@ -373,6 +392,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
+            </div>
           </div>
         </div>, document.body
       )}

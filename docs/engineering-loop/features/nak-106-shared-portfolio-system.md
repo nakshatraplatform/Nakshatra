@@ -196,3 +196,348 @@ Publish as a draft while hosted CI/database checks, device confirmation and
 rollout coordination remain outstanding. Keep the actual PR URL/status in the
 subsequent handoff once GitHub creation is confirmed. Browser-controller startup
 and the GitHub connector are currently unavailable; Git SSH access works.
+
+## Post-merge portrait artwork and presentation follow-up — 2026-10-15
+
+### Current increment: split accent, responsive dialogs and sharing completeness
+
+The next user request supersedes the monochrome-only accent rule: retain Inter /
+Plus Jakarta Sans and the existing cream/ink surfaces, with a restrained,
+contrast-tested warm gold for portfolio metadata and chapter markers. Preserve
+the local restored orbits and all prior follow-up fixes. Existing NAK102 edits
+remain unrelated. No push, deployment or production database action is authorized.
+
+Mode: full contract extension; Critical because the user explicitly approved a
+separate forward migration to block already distributed URLs for incomplete
+published profiles. Prepare but do not apply it. Reuse the canonical database
+publication checklist at the shared personal-link perimeter, preserving existing
+ownership, verification, snapshot and expiry checks. Do not mutate publication
+flags, snapshots, drafts or grants. Valid published snapshots remain accessible
+during incomplete draft edits. Fresh-context additional review and database
+runtime checks are release gates; a dry run alone does not establish enforcement.
+
+Acceptance / evaluations:
+
+1. Hero eyebrow (12px / 600 / .2em) and metadata (500) use accessible warm gold;
+   the name and chapter titles stay ink. Chapter markers use the same gold.
+   Test both owner themes, including opposite app themes, normal-text >=4.5:1,
+   phone/768px/desktop widths. Reject same-color ink/gold and washed-out gold.
+2. At >=768px interest dialog has context/next-steps sidebar and a form pane;
+   below that it remains single-column. Keep a bounded, independently scrolling
+   form, theme-scoped surfaces, visible close control and desktop right-aligned
+   submission. Include choice, details, OTP/error/loading and success, keyboard
+   trap/restoration and short laptop screens. Preserve field semantics and OTP
+   verification, never duplicate IDs/controls or add sensitive candidate data.
+3. Mobile publishing review is edge-to-edge viewport takeover with compact
+   header, spacious independently scrolling checklist and pinned action region;
+   safe-area padding, 44px targets, no last-row obstruction. Desktop remains
+   bounded. Complete rows use semantic success, incomplete dashed indicators;
+   text conveys state too. Preserve preview fingerprint, consent and server gates.
+4. Every dashboard share/copy action requires the current canonical completion
+   check of **published_data**, not merely is_published or the editable draft.
+   Null/malformed/legacy published answers and missing shareable hero fail closed;
+   a complete unpublished draft cannot unlock an incomplete live snapshot. A
+   complete published snapshot is not invalidated by incomplete unsaved draft
+   edits or draft review flags. The server page must not supply its share URL
+   for incomplete published data. Show "Update Profile to Resume Sharing" and
+   route to editing/review. Verify positive, missing new location/address fields,
+   optional address line 2, photo, verification, expiry, refresh and recovery cases.
+5. Old tokens for incomplete canonical published snapshots fail closed across
+   public/approved portfolio RPCs, horoscope, interest, link lifecycle and storage
+   predicates that already consume the shared personal publication gate. No raw
+   canonical JSON is exposed to anonymous viewers. Malformed legacy dates fail
+   closed rather than raising a public error. Existing signed media URLs retain
+   their previously issued TTL; this migration cannot revoke a downloaded image.
+   Validate transactional pgTAP negatives and successful reviewed republication.
+   Roll out the independently reviewed migration before releasing UI changes;
+   preview affected counts without personal data, verify history and re-run a dry
+   run afterwards. Emergency rollback requires a separately reviewed predicate
+   restoration, not editing applied migrations or relaxing unrelated gates.
+
+Delivery constraint verified in `.github/workflows/cd.yml`: production CD is
+main-only and checks out the dispatched SHA. Therefore a migration-first release
+requires a **migration-only reviewed PR merged first**, then CD preview/apply /
+history verification, then the application PR. Alternatively an explicitly
+approved frontend deployment hold is required. Do not tell the operator to run
+the feature branch through this main-only workflow. No PR split, merge, SQL
+execution or deployment is performed by this local implementation increment.
+
+Design basis: extend the existing canonical readiness module and semantic color
+tokens; no parallel checklist, new UI framework or duplicated form submission
+logic. Keep dialog lifecycle ownership in current components. Existing public /
+approved projections intentionally omit private fields and must not be sent to
+the owner-completeness helper. Raw canonical published data stays owner-scoped.
+Validate unit/coverage, lint/type/build, affected responsive Chromium/WebKit and
+fresh review; record actual results separately from this planned matrix.
+
+Main is now `d551bbf` (PR #101). The user requests a typography/color omission
+check across pages and restoration of the signature design behind the portrait
+in light and dark. This is a new, Standard-risk, bounded presentation follow-up,
+not a reopening of the completed Phase 1/2 review or permission to publish.
+Preserve the merged fonts, palette, photo, responsive layout and privacy rules.
+No schema, migration, production deployment or data mutation is required.
+
+The two original orbit spans were removed when BrandMotif was introduced; their
+theme-aware CSS remains. Restore both within a clipped, noninteractive decorative
+layer, keeping the faint arch motif and photo separate. Acceptance: both rings
+are visible in both portfolio themes, bounded at phone/tablet/desktop widths,
+cannot intercept interaction, and cannot enlarge the document after scrolling.
+A missing-ring implementation must fail a template regression before correction.
+
+Audit browser typography/palette source and representative rendered public,
+authenticated and BrokerDesk screens in both app themes, including opposite
+owner/app themes. Record actual routes and limits rather than claiming every
+authenticated/error/data state was visited. Server-generated social-card images
+are separate from browser typography. Preserve the unrelated NAK102 document.
+The initial browser audit reproduced a standalone `/verification/result` action
+at 1.07:1: the shared override used undefined `--product-action` outside its
+workspace wrappers, invalidating the background. Add canonical semantic-token
+fallbacks to primary and secondary actions without changing scoped consumers.
+Landing example initials also incorrectly used display typography; use Inter.
+The hero template regression first failed for missing decoration in both themes,
+then passed after restoration. Initial focused validation: 40 tests pass.
+
+This now materially changes shared presentation rules (Standard with mandatory
+fresh review). Confirm primary/secondary defaults and hover/focus contrast inside
+and outside wrappers; retain the theme-first-frame tests and all contrast limits.
+No new shared abstraction is needed: the existing CSS tokens, orbit geometry,
+BrandMotif and page components own these responsibilities. Rollback is a normal
+application revert, with no database or data recovery action.
+
+The loopback browser mock gains two read-only, schema-shaped empty BrokerDesk
+projections; tests explicitly require dashboard/customer headings so a generic
+error page cannot masquerade as successful route coverage. This does not replace
+production authentication or RPC authorization. Redirecting invite links wait for
+the actual signup destination. Both app themes are explicitly asserted.
+
+Fresh-context review round 1 (model unknown), snapshot
+`c617e13683b2ec0e850ef41008f0d7276734643b14a0df5a4237946480d38421`,
+confirmed NAK106-PF-R1: undefined `--workspace-navy-strong` and
+`--workspace-surface-soft` in error/404 hover and preview-banner consumers.
+Pre-existing at `d551bbf`; corrected to `--ui-action-hover` and
+`--workspace-surface-muted`. The new whole-source shared-token check rejects
+unresolved ui/workspace/product references. Browser checks exercise actual
+standalone, 404 and error controls in both themes, including desktop hover.
+Resolution remains pending final passing verification and return review.
+The reviewer withdrew a suspected legacy site-button hover issue because it
+has no active source consumer; do not turn it into speculative cleanup.
+
+Test-only corrections: the BrokerDesk heading is "People you represent", not
+"Customers". The preview preparation requires existing blur derivatives for
+hero photos too; the mock now supplies those metadata paths, without replacing
+real preview preparation or authorization. Earlier broad-run test failures are
+retained as history, not counted as green runs or permission to weaken checks.
+
+Next: finish responsive Chromium/WebKit checks and static/build validation,
+return the corrected snapshot for bounded review, and record actual coverage
+and limitations. Nothing will be pushed by this request.
+
+### Follow-up verification receipt
+
+Production and test source is complete locally on
+`fix/nak-106-hero-artwork-followup`, based on merged PR #101 (`d551bbf`).
+The original two intersecting orbits are restored behind the unchanged portrait
+in both themes; the arch motif remains at its existing subtle opacity. The
+decorative layer is bounded, hidden from assistive technology and noninteractive.
+
+Verified on 15 October 2026 using Node 26:
+
+- Full Vitest coverage: **1,345 tests / 178 files passed**, statements 85.85%,
+  branches 80.71%, functions 84.55%, lines 89.49%; unchanged global thresholds.
+- All **59 feature coverage gates passed** (`check-feature-coverage.mjs`).
+- Full ESLint and TypeScript checks passed; final changed-test ESLint replay
+  passed. Next 16.3.8 production build passed, including its TypeScript check.
+- Chromium: **114 distinct final cases verified** across desktop/tablet/mobile,
+  reconciled rather than one green whole-matrix invocation. The last broad run
+  passed 110/111; its sole failure was a strict locator matching a hidden streamed
+  preview copy. The correction requires exactly one **visible** preview banner;
+  the complete standalone/error/404/preview test then passed in all three projects.
+  The original combined portrait test was subsequently split by theme, preserving
+  all three widths, screenshots, assertions and the 30-second limit. All six final
+  Chromium portrait cases passed. Those replace three old combined cases in the
+  final 114-case manifest; the other 108 cases retain their passing evidence.
+- WebKit: **all six final tests passed** in one fresh run. The initial combined
+  six-snapshot test reached every image but exceeded 30 seconds; independent
+  light/dark cases now fit the unchanged timeout. The other four tests remain
+  unchanged. This is local Safari-engine coverage, not a physical-device claim.
+- `db:smoke`, `git diff --check` and `graphify update .` passed. Graphify has no
+  CSS extractor/SQL grammar here; CSS parser and rendered checks are separate.
+
+The source inventory covers 39 page entries; rendered font/flat-surface contrast
+and width checks cover the 26 explicit routes in `presentation-followup.spec.ts`
+in both app themes at the three configured Chromium viewports. Additional
+portfolio, approved horoscope, owner preview, error and 404 paths have focused
+checks. Hero screenshots were inspected at 320/768/1440px in light and dark;
+legal/account/BrokerDesk rendered samples were also inspected. The new action
+test checks both themes for error/404/standalone focus and desktop hover; preview
+banner coverage uses the fixture's final dark app theme, not every owner/app
+combination. Gradients/photos, disabled/translucent text and decorative SVGs are
+excluded from the flat-background contrast calculation, not falsely certified.
+Privileged admin views, real verification/provider states, every populated
+BrokerDesk state and physical iPhone 16 Pro/iOS 26.6.2 remain outside this replay.
+Server-generated social-card raster fonts and approved logo artwork remain the
+documented browser-font exceptions. No further evidenced browser-font/palette
+omission was found within the inspected scope.
+
+Expected error-boundary fixture logs remain visible. Some screenshot captures
+also produced development hydration notices showing Playwright's injected
+`caret-color: transparent`; this is not claimed as a clean hydration audit or
+treated as evidence to alter production rendering. No threshold, valid assertion,
+authorization rule or production photo-preparation step was relaxed.
+
+Fresh review round 2, snapshot
+`1dc092db6362c5c25b8a8f0496b6f595dca67d63b6d6638b96fe05af1c49a0dc`,
+confirmed R1's canonical-token correction and found no additional material source
+finding. R1 is now resolved by the passing real hover/focus and preview replay.
+Only the visible-banner assertion and independent theme test cases changed since
+that source review; final bounded correction review follows. The unrelated
+NAK102 document retains SHA256
+`70427AFB1F6B15FC5A45F374AB3934CCDED3F2D235F2ECBCA256F50AF8A24DF4`.
+
+Reusable lesson: a shared action cannot assume it always lives inside a product
+shell; canonical fallbacks and a standalone rendered consumer catch invalid
+custom-property backgrounds. A global definition check catches retired aliases,
+but cannot alone prove that a token resolves at every consumer boundary.
+
+Final fresh-context round 3 (model unknown), snapshot
+`527bb7766493b4c24e8700e7127bdd7948447e5ecaf2f8b1c3143f17533d3e8e`,
+returned **no material findings**. Before/after provenance checks passed.
+Comparison against round 2 confirmed only the two documented test corrections
+and the two progress documents changed; production source and mock were
+unchanged. The reviewer confirmed the same assertions/timeouts and resolved R1.
+Three follow-up review rounds are complete; no unresolved material finding
+remains within this scope. Test executions are coordinator evidence, not claimed
+as independently rerun by the reviewer. This final receipt and the project-map
+historical-status correction are documentation-only additions after that review.
+
+No commit, push, PR, merge, migration or deployment was performed for this
+follow-up. This change adds no SQL. Hosted CI and an authorized release remain
+separate from the local implementation and verification.
+
+## Split accent, responsive review and old-link enforcement — 2026-10-15
+
+This receipt follows the current-increment contract above and supersedes the
+previous follow-up's **no new SQL** statement only for this newly approved work.
+Risk is Critical. All changes remain local on
+`fix/nak-106-hero-artwork-followup`; no commit/push/PR/merge/deployment or
+production SQL application has occurred.
+
+Implemented:
+
+- Accessible warm gold lives in semantic platform/owner palette tokens. Hero
+  eyebrow and profession/location plus ChapterHeading markers use it; names and
+  titles stay ink/Jakarta. The portrait artwork and previous token fixes remain.
+- `InterestRequestModal` has a >=768px 1:1.5 context/form split, with public-only
+  name/summary, next steps and privacy copy. Choice, details, OTP and success keep
+  their existing lifecycle and bounded scroll areas. Phone remains single-pane;
+  desktop submission is auto-width/right-aligned. No protected data is added.
+- Mobile dashboard review uses an edge-to-edge 100dvh flex takeover, compact
+  accessible header, independent content scroll, safe-area-aware action region
+  outside the scroller, and distinct complete/incomplete checklist indicators.
+  Preview fingerprints, consent text and publication gates are unchanged.
+- `isProfileFullyComplete` reuses canonical readiness against the owner's
+  **published_data**, not a draft or reduced public projection. Dashboard server
+  URL serialization, copy/share handlers and rendered controls fail closed for
+  incomplete snapshots; recovery prompts editing/review/republication. Valid live
+  data is not invalidated by unfinished draft edits or draft preview/consent flags.
+- Separate migration
+  `20261015180000_require_complete_published_portfolios.sql` adds a private
+  published-snapshot checker using the current SQL publication checklist and
+  current shareable hero visibility choices. The personal-link gate is narrowed,
+  preserving existing ownership, verification, snapshot and expiry checks.
+  Verification-badge and approval-email reads also use the shared perimeter.
+  No drafts, snapshots, flags, approvals or stored data are rewritten. Invalid
+  legacy dates fail closed. Existing signed capabilities retain their issued TTL
+  (public photos up to one hour; protected capabilities capped at five minutes)
+  and downloaded files cannot be revoked by this migration.
+
+Evaluation results on the reviewed runtime source:
+
+- `vitest run --coverage --maxWorkers=1`: **1,350 tests / 178 files passed**;
+  statements 85.83%, branches 80.71%, functions 84.52%, lines 89.48%. All original
+  thresholds retained. `node scripts/check-feature-coverage.mjs`: **59 gates
+  passed**. Earlier two-worker execution hit two existing 5-second autosave test
+  timeouts; both passed in isolation (1.01s combined), then passed in the full
+  single-worker run. No assertions or timeouts were weakened.
+- ESLint `--max-warnings=0`, `tsc --noEmit`, and Next 16.3.8 production build:
+  **passed**. Build used loopback Supabase/app URLs, not production services.
+- Playwright with `CI=true --workers=1 --retries=0`: **63 cases passed** across
+  desktop/tablet/mobile Chromium for `dashboard-clarity`,
+  `portfolio-interest-polish`, `shared-brand-system`, and
+  `split-accent-publishing`. WebKit config: **11 cases passed**. Covers both
+  owner themes/opposite app themes, readable gold, split panes through OTP and
+  success, narrow/full-screen review, pinned actions, old-share lockout/recovery,
+  consent, touch navbar, optional candidate questions and bounded footer replay.
+  The initial combined two-theme matrix exceeded the unchanged 30-second case
+  budget; independent theme cases retain every viewport/assertion and the same
+  timeout. Screenshots of both OTP themes, gold hero and mobile review were
+  visually inspected. This is local engine evidence, not a physical-iPhone test
+  or a rerun of the entire 357-case default browser inventory.
+- `node scripts/check-db-fixtures.mjs`: **passed**, including 24 new snapshot
+  assertions and the extended 38-assertion public-perimeter fixture. Actual
+  `node scripts/verify-local-db.mjs`: **blocked** because Docker and Podman are
+  unavailable. No migration chain or pgTAP runtime pass is claimed.
+- `git diff --check`: passed. `graphify update .`: AST graph refreshed without
+  API usage; CSS is unsupported and SQL extraction lacks tree_sitter_sql, so this
+  is not CSS/SQL validation. Unrelated NAK102 document retains SHA256
+  `70427AFB1F6B15FC5A45F374AB3934CCDED3F2D235F2ECBCA256F50AF8A24DF4`.
+
+Independent review (fresh context, model unknown, read-only instruction with
+before/after provenance checks, no hardware isolation):
+
+1. `/root/split_publishing_review`, snapshot
+   `eb7ca9e67d28cee13b52a44924a73ba7e751cc053be7128946294dd5c560aa0d`:
+   no confirmed material source defect; release blocked on database runtime.
+   **NAK106-SPLIT-G1**: introduced, confirmed low/nonmaterial test gap; the new
+   horoscope denial had no approved positive control.
+2. Snapshot
+   `843cc9f77499e908426986ba9d60c1dcaa3aba886b7f8e2929e9ed142bd2089c`:
+   reviewer confirmed G1 **statically corrected, execution pending**. The public
+   perimeter fixture now creates a published horoscope, proves the bound approved
+   viewer can resolve it/read protected media, removes a required published
+   address, and asserts both denials plus approved-data/email/RLS lockout.
+   No new material finding. Runtime source/migration unchanged from round 1;
+   only that fixture and the main-only rollout contract changed.
+
+Tests/build/browser results are coordinator evidence, not independent reruns.
+The current two-document receipt is a post-review progress update; runtime code
+and tests remain at the second reviewed snapshot. Final receipt review follows.
+
+Remaining release gates: run the complete migration chain and pgTAP suite in
+authorized database CI/sandbox, review aggregate affected-profile counts and all
+pending migrations, then use migration-only main delivery / explicit CD preview,
+apply and history verification before releasing the UI (or an approved frontend
+hold). Recheck a known complete link, an incomplete legacy link, an existing
+approval and a reviewed republish. Do not treat a successful dry run or old PR
+checks as evidence for this new migration. Production remains unchanged.
+
+Final review receipt: round 3/3 examined snapshot
+`0a424f42f9cc86068e3ef07e351f3eb7f3cf84bcd72ddf318852e0ee8f8cb651`.
+Before/after provenance and diff hygiene passed. The reviewer verified only the
+two progress documents changed since round 2; runtime, migration, tests,
+dependencies and unrelated NAK102 edits were unchanged. No new material finding;
+G1 remains statically corrected / execution pending. The review budget is complete
+and database runtime remains the release blocker. This receipt and the matching
+project-map review count are documentation-only additions after that review.
+
+## PR delivery split — 2026-10-15
+
+The user authorized committing, pushing and preparing PRs for the remaining local
+NAK-106 work. The receipts above describe their pre-delivery snapshots; no new
+runtime changes were made while preparing delivery.
+
+- Database-only branch: `fix/nak-106-published-completeness`, based on main
+  `d551bbf`, commit `960ab27`. Includes the completeness migration and four SQL
+  test files; no frontend changes.
+- UI branch: `fix/nak-106-hero-artwork-followup`, independently based on the same
+  main. Includes portrait artwork, typography/token follow-ups, split interest
+  dialog, mobile publishing review, published-snapshot share lockout and their
+  tests/evidence. Does not include the migration or SQL test changes.
+- Both PRs must target `main` so the existing required CI workflow runs. Wait for
+  all checks, especially clean migration replay and pgTAP on the database PR.
+  Local database execution remains unverified because Docker/Podman is absent.
+- Release order: merge the database-only PR, inspect production migration preview,
+  explicitly apply and verify migration history, then merge/deploy the UI PR.
+  The main-only production workflow cannot deploy this feature branch directly.
+  No production SQL, deployment, or merge is authorized by PR preparation.
+- Unrelated NAK102 document edits remain excluded and unchanged.

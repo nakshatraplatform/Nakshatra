@@ -171,9 +171,16 @@ describe("authenticated server pages", () => {
   });
 
   it("loads dashboard counts, media, share URL, and expiry", async () => {
-    mocks.outcomes.portfolios = { data: portfolio };
+    mocks.outcomes.portfolios = { data: { ...portfolio, published_data: {
+      personal: { ...data.personal, profile_for: "self", first_name: "Aditi", last_name: "Rao",
+        marital_status: "Never Married", short_bio: "A thoughtful introduction.",
+        country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA",
+        city: "Boston", postal_code: "02108", location_source: "manual", address_line_1: "1 Beacon Street",
+        current_location: "Boston, Massachusetts, United States" },
+      vitals: { height: "5'5\"" }, career: { title: "Engineer" },
+    } } };
     mocks.outcomes.portfolio_views = { count: 7 };
-    mocks.outcomes.portfolio_media = { data: [{ id: "media-1" }] };
+    mocks.outcomes.portfolio_media = { data: [{ id: "media-1", media_type: "hero", visibility: "public" }] };
     render(await DashboardPage({ searchParams: Promise.resolve({}) }));
     const props = screen.getByTestId("dashboard-props").textContent ?? "";
     expect(props).toContain('"viewCount":7');

@@ -1,5 +1,5 @@
 .chapterHeading { display: flex; min-width: 0; flex-direction: column; gap: 6px; text-align: left; }
-.eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--workspace-muted); font: 600 12px/1.5 var(--font-portfolio-body), sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.eyebrow { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--workspace-gold); font: 600 12px/1.5 var(--font-portfolio-body), sans-serif; letter-spacing: .2em; text-transform: uppercase; }
 .chapterHeading h2 { margin: 0; scroll-margin-top: 96px; overflow-wrap: anywhere; color: var(--workspace-ink); font: 500 clamp(24px, 3vw, 36px)/1.2 var(--font-portfolio-display), sans-serif; letter-spacing: -.025em; }
 .trustBadge { display: inline-flex; width: fit-content; align-items: center; gap: 6px; max-width: 100%; border-radius: 999px; padding: 4px 12px; background: var(--ui-trust-surface); color: var(--ui-trust-ink); font-size: 12px; font-weight: 500; line-height: 1.5; }
 .trustBadge svg { width: 16px; height: 16px; flex: none; }
