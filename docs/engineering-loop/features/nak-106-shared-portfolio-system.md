@@ -541,3 +541,113 @@ runtime changes were made while preparing delivery.
   The main-only production workflow cannot deploy this feature branch directly.
   No production SQL, deployment, or merge is authorized by PR preparation.
 - Unrelated NAK102 document edits remain excluded and unchanged.
+
+## PR #102 browser-check correction — 2026-10-15
+
+Compact record; Standard risk: bounded modal geometry and regression expectations,
+not publication policy, authorization, migrations or CI gate configuration.
+Inspected PR head `3e17978` and CI run `38784809427` in the authenticated browser.
+The browser job failed; the required aggregate correctly failed because it needs
+both quality and browser jobs. Audit/lint/unit/build and the UI branch's baseline
+database job passed. That database result does not validate the separate migration.
+
+Acceptance/evaluation contract:
+
+1. Preserve the approved warm gold/ink split. Update the old critical-path test's
+   monochrome gold expectation to the approved light gold, with an explicit
+   distinct-from-primary assertion; do not change production colors to fit it.
+2. Exactly one logo is visible at the responsive dialog's choice step, and both the
+   desktop/context and mobile/header artwork use the dialog appearance despite
+   an opposite outer app theme. Retain count, visibility and asset checks rather
+   than selecting an arbitrary first match.
+3. Keep the existing tablet form-space requirement (>55% of viewport height),
+   bounded dialog, required fields and reachable submit action. Increase the
+   desktop/tablet modal's capped available height instead of lowering the check.
+4. Preserve all CI jobs, assertions, retries, timeouts and coverage gates. Run the
+   failing critical-path/landing cases first, then the complete browser inventory
+   with zero retries and focused static/unit checks. No production changes.
+
+Verified edit locations: `src/app/globals.css` desktop interest modal height;
+`e2e/critical-paths.spec.ts` accent/geometry checks;
+`e2e/landing-interest-audit.spec.ts` responsive portaled brand checks.
+The header/sidebar intentionally retain separate, CSS-exclusive brand placements.
+The modal already owns bounded pane scrolling; no new state or abstraction is
+needed. Local red/green results and delivery status follow after execution.
+
+Local red/green: the original targeted run reproduced the same **seven failures
+and two passes** as CI (`3e17978`). After the correction, the same nine cases
+passed with `CI=true --workers=1 --retries=0`, preserving the original timeouts.
+The tablet form measurement is now approximately 756px at 834x1194 (was 634px;
+required >656.7px), with the modal bounded at 960px. Visual inspection confirmed
+the sidebar, readable form and consistent theme; temporary browser sizing was
+reset. ESLint `--max-warnings=0`, five brand-system unit tests and diff hygiene
+passed. AST Graphify update completed without API usage; CSS is unsupported and
+SQL extraction lacks its grammar, so this is not CSS/SQL runtime validation.
+
+Self-review: the only production edit is the existing desktop/tablet modal's
+height cap. Split columns, minimum/maximum sizing, pane scrolling, focus/inert
+lifecycle, form validation and submission handlers are unchanged. Updated test
+expectations follow the already approved gold and responsive-brand contract;
+the submit check is strengthened from visible to in-viewport. No CI configuration,
+dependency, SQL, retry, timeout, coverage threshold or skipped-test change.
+
+### Evidenced CI runtime constraint and scope escalation
+
+The full single-run replay then hit its unchanged 900-second suite budget:
+**336 passed, six existing skips, 15 unexecuted, zero assertion failures**.
+This is a failed/incomplete full-run result, not a pass. The initial hosted run
+also exhausted this budget. The correction now includes Significant-risk CI
+execution orchestration; fresh-context review is required before delivery.
+This supersedes the earlier plan to leave CI configuration unchanged, not its
+requirement to preserve validation strength.
+
+CI plan and acceptance:
+
+- Run the exact three configured projects as a GitHub Actions matrix, each on
+  its own runner with the existing one-worker, retry and 900-second timeout
+  settings. Do not filter tests or share mutable mock servers across jobs.
+- Keep `fail-fast: false` so a failed project does not cancel the others. Keep
+  `needs: [quality, browser]`, `if: always()` and both success checks unchanged;
+  any failed/cancelled/skipped matrix result must still reject the required gate.
+- Namespace artifact names by project, retaining failure reports from every
+  runner without immutable-artifact collisions. Browser jobs still receive no
+  production credentials. Quality, database and secret-scan checks are untouched.
+- `tests/ci-workflow.test.ts` verifies exact matrix/config project parity, command
+  propagation, separate artifact names, no error suppression and the existing
+  shell-tested success/failure/cancellation/skip gate behavior. Its new matrix
+  case failed before the workflow edit (missing matrix), preserving red/green.
+- Run the remaining 15 mobile cases separately with zero retries and the same
+  timeout, and verify the three project inventories still total 357 cases. This
+  can complete local case coverage but does not turn the timed-out monolithic run
+  into a pass. Hosted matrix execution remains a separate required verification.
+- No new service/dependency/permission or deployment action. Reverting the CI
+  orchestration returns the previous single-run design, but also its demonstrated
+  budget limitation. Production migrations remain in the separate branch.
+
+Correction verification and review:
+
+- The remaining 15 mobile cases passed in 1.1m with the same one-worker,
+  zero-retry and 900-second settings. Combined with the timed-out run's 336
+  passes, all **351 runnable cases passed across these runs**, with six existing
+  skips. No successful monolithic full-suite result is claimed.
+- YAML parsing and actual `playwright test --list --project=...` calls verified
+  **119 cases per project / 357 total**. Workflow/brand unit tests: **13 passed**,
+  including the new matrix invariant and existing failure/cancellation/skip
+  shell checks. ESLint `--max-warnings=0` and diff hygiene passed.
+- Fresh-context review `/root/ci_matrix_fix_review`, actual model unknown,
+  snapshot `97fb8dc9ab88a254a9f87eb40340b66b32598eacbff039008287eeb2e47ba4ee`:
+  **no material findings**. Before/after provenance passed. Reviewer independently
+  ran the 13 workflow/brand checks and all three inventories, inspected every
+  scoped edit and relevant consumers/configuration. Browser timing/behavior
+  evidence is coordinator-reported, not independently replayed. Read-only
+  instructions plus provenance checks were used, without hardware isolation.
+- This result receipt and the matching project-map update are documentation-only
+  additions after review. Hosted execution of the new matrix and all required
+  checks remains pending; no merge or production action has occurred.
+
+Scoped lesson: validate the complete browser inventory as well as individual
+feature suites after responsive/theme contracts change. When its serial runtime
+outgrows the existing CI budget, distribute intact projects with isolated mock
+services and a fail-closed aggregate rather than dropping cases or relaxing
+assertions/timeouts. Project-parity and unique-report checks guard that delivery
+boundary. Retain the failed full-run evidence instead of relabeling it green.

@@ -1025,7 +1025,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
     width: min(1120px, 100%);
-    height: min(840px, calc(100dvh - 48px));
+    height: min(960px, calc(100dvh - 48px));
     max-height: calc(100dvh - 48px);
   }
   .interest-context { display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: 32px; overflow-y: auto; overscroll-behavior: contain; padding: 32px; border-right: 1px solid var(--workspace-border); background: var(--workspace-surface-muted); }

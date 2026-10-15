@@ -36,6 +36,20 @@ describe("split CI validation", () => {
     expect(job("validate")).toContain("if: always()");
   });
 
+  it("runs every browser project independently without cancelling coverage or colliding reports", () => {
+    const config = readFileSync(new URL("../playwright.config.ts", import.meta.url), "utf8");
+    const projects = [...config.matchAll(/\{ name: "([^"]+)", use:/g)].map(match => match[1]);
+    const browser = job("browser");
+    const matrix = browser?.match(/project: \[([^\]]+)\]/)?.[1].split(",").map(value => value.trim());
+    expect(projects).toEqual(["chromium", "tablet-chromium", "mobile-chromium"]);
+    expect(matrix).toEqual(projects);
+    expect(browser).toContain("fail-fast: false");
+    expect(browser).toContain("--global-timeout=900000 --project=${{ matrix.project }}");
+    expect(browser).toContain("name: playwright-${{ github.run_id }}-${{ matrix.project }}");
+    expect(browser).not.toContain("--grep");
+    expect(browser).not.toContain("continue-on-error");
+  });
+
   it.each(["success", "failure", "cancelled", "skipped"])("required gate handles dependency outcome %s", outcome => {
     const command = job("validate")?.match(/        run: \|\n((?:          .+\n)+)/)?.[1].replace(/^          /gm, "");
     expect(command).toBeDefined();
