@@ -17,7 +17,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
-- [NAK-74 personal sharing disclosures](features/nak-74-personal-sharing-disclosures.md): local privacy/terms clarification for creating, publishing, sharing and managing personal portfolios; existing retention records/rationale explained. BrokerDesk and future paid/refund terms are deferred from this increment. Retention durations and authorization are unchanged; broader launch/legal/production evidence remains open.
+- [NAK-74 personal sharing disclosures](features/nak-74-personal-sharing-disclosures.md): privacy/terms clarification for creating, publishing, sharing and managing personal portfolios, with retention, provider and browser-storage explanations. Owner confirmed initial markets India/US (primarily Indians in India and abroad), two named US-based operators and shared grievance contacts on October 15; state, public address and governing-law/forum decisions remain unresolved. BrokerDesk and future paid/refund terms are deferred. Retention durations and authorization are unchanged; broader launch/legal/production evidence remains open.
 
 - [Shared presentation audit refactor](features/shared-presentation-audit-refactor.md): platform tokens, explicit editor colors, portfolio cascade cleanup, grid spacing/weights, tinted elevation, dashboard state clarity/accessibility and aligned skeleton. Follow-ups cover editor comboboxes, narrative/contact/gallery accessibility, landing readability/contrast and portal artwork theme isolation. Local implementation verified with unit, build and responsive/theme checks plus independent review; not deployed. Autosave API400 diagnosis remains a separate pre-push task.
 

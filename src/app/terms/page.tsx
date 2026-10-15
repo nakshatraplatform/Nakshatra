@@ -29,19 +29,26 @@ export default function TermsPage() {
         <p>Do not use VivIntro for harassment, impersonation, fraud, unlawful discrimination, unauthorized surveillance, or distribution of illegal or harmful content. Do not attempt to bypass access controls or interfere with the service.</p>
       </PolicySection>
 
+      <PolicySection title="Current free personal portfolio features">
+        <p>The current personal portfolio creation and sharing flow is free. It has no paid creator plan, checkout, or subscription to cancel. Any future paid features will have separate pricing and purchase terms presented before you choose to buy.</p>
+      </PolicySection>
+
       <PolicySection title="Service availability">
         <p>Features may change as the product develops. We may limit access when needed for safety, maintenance, legal compliance, or misuse prevention. Where practical, material changes will be communicated clearly.</p>
       </PolicySection>
 
-      <PolicySection title="Operator and governing terms">
-        <p>{legalEntity ? `VivIntro is operated by ${legalEntity}.` : "The legal operator name will be added here when the pilot entity is formally confirmed."} {registeredAddress ? `Registered address: ${registeredAddress}.` : "A registered address has not yet been published."} {governingLaw ? `These terms are governed by the laws of ${governingLaw}.` : "The governing-law and jurisdiction clause will be published before general availability."}</p>
+      <PolicySection title="Founders and responsibility">
+        <p>VivIntro was founded by Nagarjun Mallesh and Rahul Gollapalli Rangnatha to help people create and share marriage portfolios while controlling access to their details.</p>
+        <p>{legalEntity ? `VivIntro is operated by ${legalEntity}.` : "The founders currently operate the service as individuals; no entity has been registered for the service."}</p>
+        {registeredAddress ? <p>Business/contact address: {registeredAddress}.</p> : null}
+        {governingLaw ? <p>These terms are governed by the laws of {governingLaw}.</p> : null}
       </PolicySection>
 
       <PolicySection title="Questions">
         <p>For questions about these terms, contact <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 14, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 15, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }

@@ -95,7 +95,154 @@ at `9f84f3f`. Repository commit/push hooks are enabled for lint, typechecking,
 fixture checks and the unit suite; their final results and the remote commit are
 recorded in NAK-74 after the push. No PR creation or deployment is requested.
 
-Execution context: personal-sharing content is implemented. Its broader
-launch-validation gates remain open. Operator
-identity/contact/jurisdiction and cookie/location/operational evidence still need
-their separate decisions and checks. Do not mark the whole issue complete.
+## Consolidated disclosure follow-up — October 15, 2026
+
+The owner requested consolidating the remaining pointers into one PR. Pending
+scope clarification, preserve the last confirmed boundary: personal-portfolio
+privacy/terms disclosures, with BrokerDesk and monetization deferred. Do not
+interpret this as approval to change production settings or certify all twenty
+launch workstreams. Public operator/address/market/governing-law/grievance facts
+have been requested and remain unresolved; no invented values may replace them.
+
+Implemented source-verifiable additions:
+- Explain PostalPincode, Zippopotam and optional Google Places inputs/purpose,
+  and manual entry as an alternative to external location lookup.
+- Describe personal-flow Supabase sign-in/PKCE cookies, ten-minute deletion
+  security cookies, persistent local theme preference and provider-hosted pages.
+- Qualify marketing analytics as a configured page-view filter, not a complete
+  network or consent-applicability assessment.
+- Distinguish VivIntro's normalized liveness records from Didit's capture
+  processing and asynchronous deletion, with no unverified deletion guarantee.
+- State the owner-confirmed free personal offer; add no refund restrictions.
+
+Acceptance: notices match current source; the manual-entry alternative remains
+available before searching; existing search/access/account behavior is unchanged;
+unknown legal/provider/operational facts are recorded as outstanding evidence.
+Use existing render, location-provider, location-field and cookie tests plus
+targeted lint/typecheck. Do not add prose-mirroring tests. A cookie banner or
+jurisdiction-specific legal clauses require confirmed applicability, not inference
+from the absence of a banner.
+
+Source checks: `location-provider.service.ts` and `LocationFields.tsx` (server
+lookup input bodies, ZIP+4 normalization and manual mode); Supabase browser,
+server and proxy clients; installed `@supabase/ssr` cookie defaults (400-day
+maximum age when written, distinct from session validity); deletion cookie
+helpers and their callback/deletion clear paths; theme provider; marketing
+analytics filter; candidate worker's no-face-retention deletion request.
+The account paragraph also now distinguishes export from deletion's fresh-sign-in
+requirement, matching current account APIs rather than requiring reauthentication
+for both operations.
+
+Primary provider references checked October 15, 2026:
+- [Supabase SSR guide](https://supabase.com/docs/guides/auth/server-side/advanced-guide)
+  and changelog: sign-in state uses cookies; browser cookie expiry is not server
+  session validity. No Supabase SDK/configuration change was made.
+- [Vercel analytics privacy](https://vercel.com/docs/analytics/privacy-policy):
+  cookie-free analytics still processes request-derived information.
+- [Didit verification privacy](https://didit.me/terms/verification-privacy-notice/)
+  and [biometric retention](https://didit.me/terms/biometric-data-policy/):
+  provider capture/processing is separate from VivIntro's stored results. The
+  verification notice describes configurable retention and model-data use
+  enabled by default, with an organization opt-out. VivIntro's actual settings
+  were not inspected; do not assert opt-out, a fixed retention region/deadline,
+  completed erasure or absence of secondary use. Console/contract confirmation
+  remains a release evidence dependency, not a proven configuration violation.
+
+Validation: 70 existing tests passed across server pages, location providers,
+location fields/routes, deletion cookies, theme, analytics and owner request
+details. Targeted ESLint, typecheck and diff whitespace checks passed. No browser
+capture, production build, legal applicability determination, provider-console
+mutation, real verification or database cleanup was performed for this follow-up.
+
+Disposition: POL-03's missing location explanation and POL-04's missing
+personal-flow cookie/storage notice are corrected in source; their provider and
+runtime/consent evidence is still open. POL-05's public operator/grievance/legal
+facts remain pending owner input. Stored terms-acceptance versioning and the
+other twenty-part launch checks have not been implemented or signed off by this
+copy increment. Keep this follow-up uncommitted on the same branch pending the
+scope/business-detail response, then prepare one consolidated PR.
+
+### Owner-confirmed markets and grievance mailbox — October 15, 2026
+
+The owner confirmed India and the United States as launch countries. These are
+intended markets, not evidence of data residency or a chosen operating/legal
+jurisdiction. Individual US states and provider transfer/biometric applicability
+still require assessment where relevant.
+
+The public grievance mailbox is `nakshathra.platform@gmail.com`, spelled exactly
+as provided. Privacy's fallback and `.env.example` now use it. An existing deployed
+`VIVINTRO_GRIEVANCE_EMAIL` value will still override the fallback; deployment
+configuration must match the approved address before checking the live notice.
+No message was sent and mailbox ownership/delivery was not independently tested.
+This confirms an email address, not a named grievance officer's appointment.
+
+The owner requested an explanation of governing law. No governing law or forum
+has been selected. Operator identity, public business/contact address and actual
+country/state of operation remain unanswered; launching in India/US does not
+answer those questions. No invented jurisdiction was added to terms. The earlier
+pending-markets/mailbox statements above are superseded by this confirmation.
+
+### Founder situation and audience clarification — October 15, 2026
+
+The owner clarified the audience as Indians living in India and abroad seeking
+arranged marriage, primarily India. Preserve India/US as the previously confirmed
+initial launch countries; this is not approval for unrestricted worldwide rollout.
+Privacy now describes that audience and initial-market distinction.
+
+VivIntro is currently operated by two developers with no registered entity. The
+terms fallback now states this confirmed fact rather than implying an entity is
+awaiting formal confirmation. Address copy says business/contact address instead
+of requiring a company registered office; existing environment keys remain
+compatible and can name responsible individuals. Do not infer a sole
+proprietorship, partnership, corporation, operator domicile or governing-law
+choice from the founders' audience or lack of incorporation.
+
+Public operator names, actual country/state of operation, an appropriate public
+business/contact address and the named grievance contact are still unanswered.
+The mailbox alone does not identify the accountable individual. These disclosure
+changes do not certify that any particular business form or public launch meets
+applicable requirements. No jurisdiction, legal structure or company name was
+invented, and no deployment configuration was changed.
+
+### Public operators and shared grievance responsibility confirmed
+
+The owner authorized the exact public names **Nagarjun Mallesh** and **Rahul
+Gollapalli Rangnatha**, confirmed that both operate from the **United States of
+America**, and confirmed that both handle grievances at
+`nakshathra.platform@gmail.com`. Terms now names both operators and the operating
+country. Privacy identifies both grievance contacts, with wording that supports
+multiple people. Environment examples carry the approved public names; existing
+deployed values can still override them and require live verification.
+
+No US state, business/contact address, chosen governing law or court/forum was
+provided. Do not infer these from developer workspace paths, customer audience
+or US hosting. The earlier unknown-names/country/grievance-person statements are
+superseded by this confirmation. No legal entity was registered by these edits,
+and no formal officer-role eligibility or launch compliance is certified.
+
+### Owner decision — defer location/address/governing-law publication
+
+The owner explicitly requested skipping the remaining US-state, public address
+and governing-law decisions for this implementation, emphasizing founder identity
+and product purpose. These questions no longer block this disclosure increment;
+do not keep requesting them to finish the agreed code work.
+
+Terms now emphasizes the two named founders and the portfolio-sharing purpose.
+It omits the operator-location sentence and unfinished address/jurisdiction
+messages. Existing optional address/governing-law environment hooks remain
+compatible and render only when supplied; empty values no longer show a public
+placeholder. The example configuration labels those fields optional. No chosen
+jurisdiction or address was fabricated.
+
+This is an explicit scope deferral, not a legal determination that those details
+are unnecessary for every launch context. Preserve unresolved applicability and
+provider/operational evidence in NAK-74 without presenting this code increment as
+completion of the entire launch audit. BrokerDesk and monetization remain out of
+scope. The prior hold-for-business-details instruction is superseded: finish
+checks, integrate current main, and commit/push this consolidated follow-up on
+the existing branch. The user retains manual PR creation.
+
+Execution context: finish the personal-policy consolidation and publish its
+remote branch. Initial markets, founders and shared grievance contacts are
+confirmed. Address/governing-law publication is deferred by the owner; broader
+NAK-74 legal, cookie/provider and production evidence remains open.
