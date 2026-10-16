@@ -987,7 +987,7 @@
 .interest-verification > .portfolio-button { width: 100%; margin-top: 0.5rem; }
 .interest-verification > .interest-verification-notice { width: 100%; margin: 0 0 0.5rem; border-left: 3px solid var(--workspace-ink); padding: 0.5rem 1rem; background: var(--workspace-surface-muted); color: var(--workspace-ink); font-size: 0.78rem; line-height: 1.45; text-align: left; }
 .interest-secondary-action { display: inline-flex; min-height: 44px; align-items: center; gap: 0.5rem; border: 0; background: transparent; color: var(--workspace-ink); font-size: 0.84rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.interest-secondary-action svg { width: 0.95rem; height: 0.95rem; }
+.interest-secondary-action > svg { width: 0.95rem; height: 0.95rem; }
 .interest-secondary-action:disabled { color: var(--workspace-muted); cursor: default; }
 .interest-success { display: grid; width: min(100%, 450px); min-height: 0; align-content: start; margin: 0 auto; justify-items: center; overflow-y: auto; overscroll-behavior: contain; padding: clamp(2rem, 6vw, 3.5rem) 1.5rem; text-align: center; }
 .interest-success > svg { width: 3rem; height: 3rem; margin-bottom: 1rem; color: var(--workspace-ink); }

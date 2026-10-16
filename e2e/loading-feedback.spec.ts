@@ -82,7 +82,7 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
     await route.fulfill({ status: 503, json: { error: "Google unavailable" } });
   });
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Registered email").fill("viewer@example.test");
+  await expect(dialog.getByLabel("Registered email")).toHaveCount(0);
   await dialog.getByRole("button", { name: "Continue with Google" }).click();
   const pendingButton = dialog.getByRole("button", { name: "Connecting to Google", exact: true });
   const status = pendingButton.getByRole("status");
@@ -95,7 +95,7 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
   const spinner = status.locator("svg");
   await expect(spinner).toBeVisible();
   await expect(spinner).toHaveAttribute("aria-hidden", "true");
-  await expect(spinner).toHaveCSS("color", "rgb(255, 253, 248)");
+  await expect(spinner).toHaveCSS("color", await pendingButton.evaluate(element => getComputedStyle(element).color));
   await expect(spinner).toHaveCSS("animation-name", "interest-action-spin");
   const ink = await spinner.evaluate((element: SVGSVGElement) => ({
     width: element.getBBox().width, height: element.getBBox().height,

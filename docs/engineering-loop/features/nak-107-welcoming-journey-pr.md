@@ -49,3 +49,53 @@ merging, deploying, applying production migrations or promising a release date.
 Physical-device and actual email/provider journeys remain separate release QA.
 No new database deployment is required by this migration-free PR; earlier
 production migration status is not re-certified here.
+
+## PR105 browser-check correction
+
+Compact Standard correction, October 16, based on PR head `abc9eb4`. The user
+reported four failed checks on NAK-107 (GitHub PR105). Hosted run `38978710937`
+passed quality/build and Supabase replay/pgTAP/type drift. Desktop and tablet each
+had one browser failure (119 passed, three existing project-specific skips);
+mobile had two (121 passed). The aggregate correctly failed closed because the
+browser matrix failed; its workflow is not changed.
+
+- NAK107-CI01, confirmed introduced test drift: `loading-feedback.spec.ts` still
+  filled the intentionally removed Registered email field. Require its absence
+  and exercise the unchanged Google request/loading/failure lifecycle. Google
+  is now secondary, so assert the spinner inherits its button's themed color
+  instead of requiring a light primary-action color. Preserve busy/disabled,
+  visible SVG, stroke, animation, 24px sizing, portal theme and overflow checks.
+- NAK107-CI02, confirmed introduced test drift: `public-trust-clarity.spec.ts`
+  expected portfolio photo ownership instead of introduction photo ownership.
+  Keep the semantic limit and additionally require the profile-statement and
+  non-endorsement disclaimer. All six widths and both themes remain.
+- NAK107-CI03, confirmed introduced presentation regression, reproduced locally
+  after CI01 exposed later assertions: the secondary-action descendant SVG rule
+  shrank the nested loading spinner to 15.1875px, violating the existing 24px
+  assertion. Limit that icon rule to direct child icons. Nested progress owns
+  its original size/animation; direct-arrow icons remain unchanged. Do not lower
+  the size assertion or override reduced-motion behavior.
+
+No authentication, publication, database, dependency or CI-policy changes.
+No retries, timeouts, skip conditions or assertion thresholds relaxed. Focused
+browser replay, lint/type/build checks and a fresh review of this shared CSS
+correction passed locally. Earlier targeted
+browser selection omitted these two existing files; full hosted CI caught that
+coverage gap. Retain these callers in checks for future interest-entry/copy edits.
+
+Correction verification: `npx playwright test e2e/loading-feedback.spec.ts
+e2e/public-trust-clarity.spec.ts --workers=1` passed 16 cases across all three
+configured projects, with the same two project-specific badge-matrix skips.
+The six-width/two-theme badge matrix executed on mobile. Trace/video settings
+and repository test configuration were unchanged. `npm run lint`,
+`npm run typecheck`, `npm run build` and diff hygiene passed. Build generated
+all 81 static routes. Graphify AST update completed without topology changes;
+its existing SQL/CSS extraction limitations do not certify those file contents.
+
+Fresh-context, instruction-based read-only review on the shared checkout found
+no material findings at snapshot
+`3604f5b6bebef50c8819ad56f9521544fd6b1ed7182cedb2f662e7da41c52a3a`.
+Reviewer model identity is unknown. Start/end provenance and preserved NAK102
+hash passed; reviewer inspected source/test contracts but did not rerun runtime
+checks. This final receipt is the only post-review change. Hosted CI for the new
+commit remains required; no merge/deployment is authorized.
