@@ -10,7 +10,7 @@ export default function AboutPage() {
     <PolicyLayout
       eyebrow="About VivIntro"
       title="A more thoughtful way to share marriage introductions."
-      summary="VivIntro helps people create a marriage portfolio, share an Introduction through their existing family network, and decide when to release protected details."
+      summary="VivIntro helps people create a marriage introduction, share it through their existing family network, and decide when to release private details."
     >
       <PolicySection title="The product idea">
         <p>A relative asks for updated biodata. Another asks for contact details or a horoscope. VivIntro keeps the first introduction at one current link and lets you handle requests for more from your dashboard. It does not list profiles or recommend matches.</p>

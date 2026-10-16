@@ -84,7 +84,7 @@ export default function CelestialUnion({
       ? {
           id: "legacy-owner-photo",
           src: data.personal.photo_url,
-          alt: `${data.personal.name || "Portfolio"} portrait`,
+          alt: `${data.personal.name || "Introduction"} portrait`,
           mediaType: "hero",
           orientation: "unknown",
         }
@@ -620,7 +620,7 @@ export default function CelestialUnion({
             </div>
           </div>
           <div className="portfolio-hero-copy">
-            <p className="portfolio-eyebrow">A Marriage Introduction</p>
+            <p className="portfolio-eyebrow">Marriage introduction</p>
             <div className="portfolio-name-row">
               <h1 id="portfolio-name">{clean(data.personal.name) || "Marriage introduction"}</h1>
               {identityVerified && <TrustBadge />}
@@ -706,7 +706,7 @@ export default function CelestialUnion({
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
                     ? "These contact details became visible when the introduction owner approved your request."
-                    : "Introduce yourself using a verified email. The introduction owner decides whether to share the protected details with you."}
+                    : `Tap Show interest and confirm your email. ${firstName(data.personal.name)} decides whether to share the details below.`}
               </p>
             </div>
             {protectedItems.length > 0 && (
@@ -739,11 +739,11 @@ export default function CelestialUnion({
           <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
-              <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
-              <p>Create your portfolio privately. When you are ready, share an Introduction and keep sensitive details behind your approval.</p>
+              <h2 id="portfolio-creator-cta-title">Want an introduction like this?</h2>
+              <p>Create yours privately. Share it when you’re ready, and keep private details behind your approval.</p>
             </div>
             <a href="/signup">
-              Create your portfolio
+              Create your introduction
               <ArrowRight aria-hidden="true" />
             </a>
           </aside>

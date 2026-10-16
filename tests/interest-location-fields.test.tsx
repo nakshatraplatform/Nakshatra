@@ -20,8 +20,8 @@ describe("structured interest location", () => {
   });
   it("uses the portfolio ZIP API and serializes canonical candidate fields", async () => {
     render(<Harness />);
-    fireEvent.change(screen.getByLabelText("Candidate’s location search country"), { target: { value: "US" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "Candidate’s location ZIP or PIN code" }), { target: { value: "02108" } });
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "US" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "ZIP or PIN code" }), { target: { value: "02108" } });
     fireEvent.click(await screen.findByRole("option", { name: "Boston, Massachusetts 02108" }));
     expect(search).toHaveBeenCalledWith(expect.objectContaining({ query: "02108", countryCode: "US", portfolioToken: "portfolio-token" }), expect.any(AbortSignal));
     expect(formData().get("candidateSubdivisionCode")).toBe("US-MA");
@@ -39,14 +39,14 @@ describe("structured interest location", () => {
   it("preserves manual fallback after provider failure and clears child geography", async () => {
     search.mockResolvedValue([]);
     render(<Harness />);
-    fireEvent.change(screen.getByRole("combobox", { name: "Candidate’s location ZIP or PIN code" }), { target: { value: "560001" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "ZIP or PIN code" }), { target: { value: "560001" } });
     expect(await screen.findByText(/No match found/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Enter location manually" }));
-    fireEvent.change(screen.getByLabelText("Candidate’s location state"), { target: { value: "IN-KA" } });
-    fireEvent.change(screen.getByLabelText("Candidate’s location city"), { target: { value: "Bangalore" } });
-    fireEvent.change(screen.getByLabelText("Candidate’s location ZIP or PIN code"), { target: { value: "560001" } });
+    fireEvent.change(screen.getByLabelText("State"), { target: { value: "IN-KA" } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Bangalore" } });
+    fireEvent.change(screen.getByLabelText("ZIP or PIN code"), { target: { value: "560001" } });
     expect(formData().get("candidateLocationSource")).toBe("manual");
-    fireEvent.change(screen.getByLabelText("Candidate’s location country"), { target: { value: "US" } });
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "US" } });
     expect(formData().get("candidateSubdivisionCode")).toBe("");
     expect(formData().get("candidateCity")).toBe("");
     expect(formData().get("candidatePostalCode")).toBe("");

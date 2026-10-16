@@ -8,7 +8,7 @@ import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
 import type { PortfolioData } from "@/types/portfolio";
 
 export const metadata: Metadata = {
-  title: "Public Introduction preview",
+  title: "Public introduction preview",
   robots: { index: false, follow: false },
 };
 
@@ -25,7 +25,7 @@ export default async function PreviewPage() {
       {/* Preview banner */}
       <div data-preview-bar="" className="border-b border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] px-4 py-3 text-[color:var(--workspace-ink)]">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold">Public Introduction · Draft preview{previousSharingSetup ? " · Your active link remains unchanged until you review and publish" : ""}</span>
+          <span className="text-sm font-semibold">Public introduction · Draft preview{previousSharingSetup ? " · Your active link remains unchanged until you review and publish" : ""}</span>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Link
               href="/dashboard?edit=1"

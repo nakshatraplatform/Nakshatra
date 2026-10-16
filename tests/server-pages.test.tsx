@@ -73,8 +73,8 @@ vi.mock("@/features/portfolio/server/owner-preview.service", () => ({
   loadOwnerApprovedPreview: mocks.loadOwnerApprovedPreview,
 }));
 vi.mock("@/components/templates", () => ({
-  BiodataTemplate: (props: { data: PortfolioData; accessMode?: string; interestAction?: React.ReactNode }) => (
-    <div data-testid="template">{props.data.personal.name}:{props.accessMode}{props.interestAction}</div>
+  BiodataTemplate: (props: { data: PortfolioData; accessMode?: string; interestAction?: React.ReactNode; photos?: { alt?: string }[] }) => (
+    <div data-testid="template" data-photo-alts={JSON.stringify(props.photos?.map(photo => photo.alt))}>{props.data.personal.name}:{props.accessMode}{props.interestAction}</div>
   ),
 }));
 vi.mock("@/components/auth/AuthForm", () => ({ AuthForm: ({ mode }: { mode: string }) => <div>auth:{mode}</div> }));
@@ -199,7 +199,7 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolios = { data: portfolio };
     mocks.outcomes.portfolio_media = { data: [] };
     render(await PreviewPage());
-    expect(screen.getByText("Public Introduction · Draft preview")).toBeInTheDocument();
+    expect(screen.getByText("Public introduction · Draft preview")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to editing" })).toHaveAttribute("href", "/dashboard?edit=1");
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
     expect(mocks.loadOwnerPublicPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
@@ -212,7 +212,7 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolio_media = { data: [] };
     mocks.outcomes.portfolio_horoscopes = { data: null };
     render(await ApprovedPreviewPage());
-    expect(screen.getByText(/Complete Portfolio · Owner preview/)).toBeInTheDocument();
+    expect(screen.getByText(/Private details · Your preview/)).toBeInTheDocument();
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:owner");
     expect(mocks.loadOwnerApprovedPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
   });
@@ -281,6 +281,15 @@ describe("public portfolio pages", () => {
     expect(screen.getByText("This is your introduction.")).toBeInTheDocument();
     expect(screen.queryByText(/Owner-only approved data/)).not.toBeInTheDocument();
     expect(mocks.rpc).toHaveBeenCalledWith("resolve_approved_portfolio", { p_share_token: "token" });
+  });
+
+  it("names generic authorized photos without replacing meaningful alternative text", async () => {
+    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, media: [
+      { key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" },
+      { key: "gallery", accessPath: "gallery.webp", mediaType: "gallery", sortOrder: 1, presentation: "clear", altText: "Walking in the garden" },
+    ] } };
+    render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
+    expect(JSON.parse(screen.getByTestId("template").getAttribute("data-photo-alts")!)).toEqual(["Photo of Aditi, 1 of 2", "Walking in the garden"]);
   });
 
   it("keeps the separate horoscope image viewer gated with a grant-bounded URL", async () => {

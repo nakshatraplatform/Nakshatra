@@ -11,17 +11,17 @@ import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-ima
 
 describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
-    expect(metadata.title).toEqual({ absolute: "Marriage Introduction Link | VivIntro" });
-    expect(metadata.description).toMatch(/marriage introduction/i);
+    expect(metadata.title).toEqual({ absolute: "Marriage biodata link you control | VivIntro" });
+    expect(metadata.description).toMatch(/marriage biodata/i);
     expect(metadata.description).toMatch(/until you approve/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
-      title: "One Introduction. One Link. Always Current. | VivIntro",
+      title: "Your biodata, as one link you control.",
       description: metadata.description,
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
-      title: "One Introduction. One Link. Always Current. | VivIntro",
+      title: "Your biodata, as one link you control.",
       description: metadata.description,
     });
     expect(metadata.alternates?.canonical).toBe("/");

@@ -809,6 +809,7 @@
 /* CSS declarations also set the compiler's light-dark fallback inheritance.
    Inline colorScheme alone cannot isolate those fallbacks from the app root. */
 .interest-modal-backdrop[data-appearance="light"] { color-scheme: light; }
+.interest-modal-backdrop[hidden], .interest-form[hidden], .interest-form-section[hidden] { display: none; }
 .interest-modal-backdrop[data-appearance="dark"] { color-scheme: dark; }
 .interest-modal-backdrop {
   position: fixed;
@@ -869,7 +870,7 @@
 .interest-form-intro { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; color: var(--workspace-ink); }
 .interest-form-intro strong { font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 1.08rem; font-weight: 600; }
 .interest-form-intro span { color: var(--workspace-muted); font-size: 0.75rem; font-weight: 500; }
-.interest-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.interest-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 1rem; }
 .interest-location-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .interest-optional-copy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .interest-field { display: grid; min-width: 0; gap: 0.5rem; color: var(--workspace-ink); font-size: 0.82rem; font-weight: 600; }
@@ -881,6 +882,9 @@
 .interest-field textarea { min-height: 72px; resize: vertical; }
 .split-phone-field { min-width: 0; margin: 0; padding: 0; border: 0; color: var(--workspace-ink); }
 .split-phone-field legend { margin-bottom: 0.5rem; padding: 0; font-size: 0.9rem; font-weight: 600; }
+.interest-modal :is(.interest-field, .split-phone-field legend) { font-size: 0.9375rem; line-height: 1.5; }
+.interest-modal .interest-field { align-content: start; }
+.interest-modal .interest-field > span { min-height: 1.5em; }
 .split-phone-inputs { display: grid; grid-template-columns: minmax(88px, 0.35fr) minmax(0, 1fr); gap: 0.5rem; }
 .split-phone-inputs label { display: grid; min-width: 0; gap: 0.5rem; font-size: 0.78rem; font-weight: 600; }
 .split-phone-inputs input { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--workspace-border); border-radius: 10px; padding: 0.5rem 1rem; background: var(--workspace-surface); color: var(--workspace-ink); font: inherit; font-size: 0.95rem; font-weight: 400; }

@@ -35,9 +35,9 @@ export function PortfolioNav({ sections, showInterest, appearance = "light" }: {
       if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
     }}>
       <div className={styles.headerInner}>
-        <VivIntroBrand href="#main-content" variant="horizontal" tone={appearance === "dark" ? "reverse" : "primary"} className={styles.brand} />
+        <VivIntroBrand href="/" variant="horizontal" tone={appearance === "dark" ? "reverse" : "primary"} className={styles.brand} />
         {showInterest && <span className={styles.interestAction} data-tip-dismissed={tipDismissed} onMouseEnter={() => setTipDismissed(false)} onFocus={() => setTipDismissed(false)}><a className={styles.interest} href="#portfolio-interest" aria-label="Show Interest" aria-describedby={interestTipId} onClick={() => { setOpen(false); setTipDismissed(true); }}><Heart aria-hidden="true" /></a><span id={interestTipId} role="tooltip" className={styles.tooltip}>Show Interest</span></span>}
-        <button ref={trigger} type="button" className={styles.menuButton} aria-label={open ? "Close portfolio sections" : "Open portfolio sections"} aria-expanded={open} aria-controls={menuId} onClick={() => setOpen(value => !value)}>
+        <button ref={trigger} type="button" className={styles.menuButton} aria-label={open ? "Close introduction sections" : "Open introduction sections"} aria-expanded={open} aria-controls={menuId} onClick={() => setOpen(value => !value)}>
           {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
         <nav id={menuId} className={styles.sections} data-open={open} aria-label="Introduction quick actions">

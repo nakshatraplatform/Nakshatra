@@ -8,42 +8,38 @@ import styles from "./LandingExperience.module.css";
 export type LandingVariant = "clarity" | "control" | "story";
 
 const concepts = {
-  clarity: { headline: "One introduction. One link. Always current.", lead: "VivIntro gives families one marriage introduction link instead of another PDF. Update it anytime. Contact details and horoscope files stay protected until you approve access." },
+  clarity: { headline: "Your biodata, as one link you control.", lead: "Share it on WhatsApp like you always do. Update it anytime without sending a new PDF. Your phone number and horoscope file stay hidden until you say yes." },
   control: { headline: "Share an introduction. Keep personal details personal.", lead: "One shareable link gives families a thoughtful first introduction. You decide who can see the details that should not be forwarded freely." },
-  story: { headline: "A more human way to make a marriage introduction.", lead: "Present the person, not another attachment. VivIntro keeps the story clear and disclosure under the owner’s control." },
+  story: { headline: "A more human way to make a marriage introduction.", lead: "Present the person, not another attachment. Tell your story and decide when to share private details." },
 } as const;
 
 export const landingFaqs = [
-  { question: "What is a VivIntro marriage portfolio?", answer: "A VivIntro marriage portfolio is a web-based introduction you can edit and share by link through WhatsApp, email, or your family network. It presents your story, background, and photos, with a separate Complete Portfolio for details you release only after approving a viewer’s request." },
-  { question: "Who is VivIntro for?", answer: "VivIntro is for people and families already making marriage introductions through relatives, friends, community networks, or matchmakers. It helps them share an introduction; it does not find someone to introduce." },
-  { question: "Is VivIntro a matchmaking website?", answer: "No. VivIntro does not list profiles, recommend matches, or search on your behalf. It helps a person or family share an introduction with people they choose." },
-  { question: "How is this different from a biodata PDF?", answer: "You can update a VivIntro introduction without sending a new file. The shared view and protected details are separate, so a viewer must request and receive your approval before seeing the latter. A forwarded PDF cannot be updated or withdrawn." },
-  { question: "Who can open a shared link?", answer: "Anyone who receives or is forwarded the link can read the public Introduction. It is not listed in a VivIntro directory and is marked not to appear in search results. A viewer can still forward or capture what they see, so put only information you are comfortable sharing in that first view." },
-  { question: "Can someone save details after I approve them?", answer: "Yes. Someone can save or photograph anything they can see, including protected details after approval. VivIntro can end their access to the protected view, but cannot erase copies they already made." },
-  { question: "What can someone with my link see?", answer: "The shared Introduction is what someone with your link can read. Contact details, the original horoscope file, exact birth details, and other Complete Portfolio information stay protected. For a personally shared link, a viewer confirms their email and requests access; you can approve or set the request aside." },
-  { question: "What does Liveness checked mean?", answer: "When this badge appears, Didit approved a live camera liveness check. It does not compare your portfolio photo or verify legal identity, age, marital status, profile statements, or suitability. A test publication without this check has no badge." },
-  { question: "Can I change or stop sharing it?", answer: "Yes. Edit, review, and publish your changes to update the current link. Unpublishing pauses access; if you publish again, approvals that have not expired or been revoked can resume. Revoke an approval or replace the link to end that access. Replacing the link also stops the old link from opening your Introduction. Personal-link approvals last up to 15 days and can be renewed by the owner." },
-  { question: "Is VivIntro free to try?", answer: "Yes. You can create a portfolio for free. Broker-sponsored actions have no separate VivIntro charge for customers. There is no paid creator plan yet; we will explain any future personal pricing before asking you to pay." },
-  { question: "Can I join now?", answer: "Yes. Create an account with email or Google, confirm your email, and begin an unpublished portfolio draft. Publishing has separate content, consent, and liveness check steps." },
+  { question: "Is this a matchmaking site?", answer: "No. There’s no profile directory and no match suggestions. You choose who gets your link." },
+  { question: "Can a parent or sibling create my profile?", answer: "Support for a parent, sibling, or other family member to create a profile on your behalf is coming soon. For now, create and publish your own introduction. Your family can help you prepare it and share your link." },
+  { question: "How is this different from a biodata PDF?", answer: "You update one link instead of sending new files. Private details stay separate until you approve. You can stop future viewing, which a forwarded PDF never allows. Copies someone has already saved cannot be erased." },
+  { question: "Can my link be forwarded?", answer: "Yes. The first view can be forwarded or screenshotted, so share only what you’re comfortable with there. Private details still need your approval. You can replace your link anytime to stop the old one from opening." },
+  { question: "What happens after I approve someone?", answer: "They can see your private details for up to 15 days. You can end access early or renew it. We can’t erase copies they’ve already saved. Unpublishing pauses viewing; an approval that hasn’t expired or been revoked can resume when you publish again." },
+  { question: "What does “Liveness checked” mean?", answer: "Before publishing, you complete a live camera check through Didit. The badge means a live person passed that check. It doesn’t verify legal identity, compare photos, or confirm anything written in the introduction. A test publication without this check has no badge." },
+  { question: "Is it free?", answer: "Yes. Creating and sharing is free. If we ever add paid options, we’ll tell you before asking you to pay." },
 ] as const;
 
 const problems = [
-  { title: "Different versions circulate", body: "A correction means another file, while the old one may still be read." },
-  { title: "Personal details travel too soon", body: "Phone numbers and horoscope files can spread before either family decides to continue." },
-  { title: "The next step feels awkward", body: "Sharing more, waiting, or saying no can be hard to handle in a group chat." },
+  { title: "Old versions keep circulating.", body: "Every correction is a new file, and the old one is still being read." },
+  { title: "Your number travels too soon.", body: "Phone numbers and horoscopes spread before anyone decides to talk." },
+  { title: "“Not now” is awkward.", body: "Saying no in a family group chat is hard for everyone." },
 ] as const;
 
 const values = [
-  { icon: Globe2, label: "Anyone with your personal link", title: "Public Introduction", body: "Your published name, age, Marital Status, profession, and the story, family, and cultural details you include. Photos follow the sharing settings you review before publishing." },
-  { icon: LockKeyhole, label: "After your approval", title: "Complete Portfolio", body: "Adds contact details, exact birth details, protected photo originals, and an optional horoscope file. A viewer signs in, confirms their email, and requests access; you approve or set it aside." },
-  { icon: UserCheck, label: "Only in your account", title: "Owner-only notes", body: "Private preference notes and secure contact notes stay out of both views. Complete does not mean every field you have saved." },
+  { icon: Globe2, label: "Anyone with your link", title: "Your introduction", body: "Your name, age, marital status, profession, story, family background, and the photos you choose to share publicly." },
+  { icon: LockKeyhole, label: "After you approve", title: "Private details", body: "Phone, email, exact birth details, horoscope file, family names, and more photos, if you’ve added them. A viewer confirms their email and taps Show interest; you decide whether to share." },
+  { icon: UserCheck, label: "Only you", title: "Private notes", body: "Your private notes and street address stay in your account. They aren’t included in either shared view." },
 ] as const;
 
 const trustFacts = [
-  { icon: ShieldCheck, title: "Can someone forward the link?", body: "Yes. The public Introduction can be forwarded or captured. Only place details there that you are comfortable sharing; protected details still require approval." },
-  { icon: Globe2, title: "Is this a matchmaking website?", body: "No. VivIntro has no searchable profile directory and does not recommend matches. You choose who receives the introduction." },
-  { icon: Smartphone, title: "Does the viewer need an app?", body: "No. The introduction opens in a regular browser on a phone or computer." },
-  { icon: BadgeCheck, title: "What does the liveness badge mean?", body: "It appears only after approved liveness checks. It does not establish photo ownership. It does not verify legal identity or the claims in an introduction." },
+  { icon: ShieldCheck, title: "Choose your first view", body: "Anything someone can see can be saved or screenshotted. Share only what you’re comfortable with." },
+  { icon: Globe2, title: "No profile directory", body: "Your introduction is not listed in any VivIntro directory. You choose who gets your link." },
+  { icon: Smartphone, title: "No app needed", body: "Read an introduction in any browser, on a phone or computer." },
+  { icon: BadgeCheck, title: "Stay in control", body: "You can end approved access or stop sharing. Copies already saved by someone else can’t be recalled." },
 ] as const;
 
 export function LandingExperience({ variant = "clarity" }: { variant?: LandingVariant }) {
@@ -62,37 +58,37 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
       <main id="main-content">
         <section id="top" className={styles.hero}>
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Marriage introductions, shared with care</p><h1>{concept.headline}</h1><p className={styles.heroLead}>{concept.lead}</p>
-            <div className={styles.heroActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link><Link href="/signup" className={styles.secondaryButton}>Create your portfolio</Link></div>
-            <p className={styles.heroNote}><Check aria-hidden="true" /> Free to create. Your draft stays private until you publish.</p>
+            <p className={styles.eyebrow}>For marriage introductions</p><h1>{concept.headline}</h1><p className={styles.heroLead}>{concept.lead}</p>
+            <div className={styles.heroActions}><Link href="/signup" className={styles.primaryButton}>Create your introduction <ArrowRight aria-hidden="true" /></Link><Link href="/demo" className={styles.secondaryButton}>See an example</Link></div>
+            <p className={styles.heroNote}><Check aria-hidden="true" /> Free. Private until you publish.</p>
             <ul className={styles.heroAssurances} aria-label="VivIntro privacy assurances">
-              <li><BadgeCheck aria-hidden="true" /><span><strong>Liveness checks are clearly marked</strong><small>Badge shown only after approved checks</small></span></li>
-              <li><Globe2 aria-hidden="true" /><span><strong>Not searchable</strong><small>No public profile directory</small></span></li>
-              <li><LockKeyhole aria-hidden="true" /><span><strong>Sensitive details stay protected</strong><small>Approval required for protected access</small></span></li>
+              <li><Globe2 aria-hidden="true" /><span><strong>Not listed in any directory</strong><small>You choose who gets your link</small></span></li>
+              <li><LockKeyhole aria-hidden="true" /><span><strong>Contact details only after your approval</strong><small>You decide when to share more</small></span></li>
+              <li><BadgeCheck aria-hidden="true" /><span><strong>Stop sharing anytime</strong><small>Copies already saved can’t be recalled</small></span></li>
             </ul>
           </div><PortfolioPreview />
         </section>
 
         <section id="why" className={styles.problemSection}>
-          <div className={styles.sectionHeading}><h2>A simple introduction becomes a trail of files.</h2><p className={styles.heroLead}>A relative forwards a biodata. Someone asks for a newer photo or horoscope. Soon old files and personal details sit in different chats, with no clear next step.</p></div>
+          <div className={styles.sectionHeading}><h2>Biodata PDFs don’t stay in your hands.</h2><p className={styles.heroLead}>One file becomes many versions. Your introduction can stay current instead.</p></div>
           <div className={styles.problemGrid}>{problems.map(({ title, body }) => <article key={title}><h3>{title}</h3><p>{body}</p></article>)}</div>
         </section>
 
         <section id="privacy" className={styles.controlSection}>
-          <div className={styles.controlIntro}><h2>Share the introduction. Decide on the rest.</h2><p>Send your Introduction by link. People can read it without an app. For a personal link, an interested viewer confirms their email to request protected details; you decide who gets access.</p><div className={styles.accessFlow}><span>Shared introduction</span><ArrowRight aria-hidden="true" /><span>Email-confirmed request</span><ArrowRight aria-hidden="true" /><strong>Up to 15 days of approved access</strong></div><p className={styles.sharingBoundary}>A shared link can be forwarded. Review both previews before publishing, and keep phone numbers or other private details out of your public story.</p></div>
+          <div className={styles.controlIntro}><h2>You decide who sees what.</h2><p>Share an introduction first. Decide when to share private details.</p><div className={styles.accessFlow}><span>Share your link</span><ArrowRight aria-hidden="true" /><span>Show interest</span><ArrowRight aria-hidden="true" /><strong>Approve for up to 15 days</strong></div><p className={styles.sharingBoundary}>Anything someone can see, they can screenshot. Keep the first view to what you’re comfortable sharing. Keep phone numbers and other private details out of your public story.</p></div>
           <div className={styles.controlGrid}>{values.map(({ icon: Icon, label, title, body }) => <article key={title}><Icon aria-hidden="true" /><span>{label}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
         </section>
 
         <section id="samples" className={styles.samplesSection}>
-          <div className={styles.samplesHeading}><div className={styles.sectionHeading}><h2>See an Introduction before you join.</h2></div><p>Open Ananya Mehta’s fictional Introduction. Read the shared view and see where an interested viewer would ask for protected details.</p></div>
-          <div className={styles.betaActions}><Link href="/demo" className={styles.primaryButton}>View a sample introduction <ArrowRight aria-hidden="true" /></Link></div><p className={styles.sampleNote}>Ananya and every detail in the sample are fictional. The Complete Portfolio is not shown.</p>
+          <div className={styles.samplesHeading}><div className={styles.sectionHeading}><h2>See Ananya’s introduction.</h2></div><p>She’s fictional, but you can explore the same introduction layout before creating yours.</p></div>
+          <div className={styles.betaActions}><Link href="/demo" className={styles.primaryButton}>See an example <ArrowRight aria-hidden="true" /></Link></div><p className={styles.sampleNote}>Ananya and every detail in the sample are fictional. Private details are not shown.</p>
         </section>
 
         <GuidedTour />
 
         <section id="viewer" className={styles.familySection}>
-          <div className={styles.sectionHeading}><h2>Received a link? Read first, then decide.</h2></div>
-          <div className={styles.familyGrid}><article><span className={styles.eyebrow}>01</span><h3>Open the introduction</h3><p>No app or account is required to read the shared view.</p></article><article><span className={styles.eyebrow}>02</span><h3>Decide whether it feels relevant</h3><p>If you want to continue, confirm your email and request protected access.</p></article><article><span className={styles.eyebrow}>03</span><h3>Respect the owner’s decision</h3><p>The owner may approve the request or set it aside privately. Approved access lasts up to 15 days.</p></article></div>
+          <div className={styles.sectionHeading}><h2>Got someone’s introduction?</h2></div>
+          <div className={styles.familyGrid}><article><span className={styles.eyebrow}>01</span><h3>Read it in any browser</h3><p>No app or account needed to read the introduction.</p></article><article><span className={styles.eyebrow}>02</span><h3>Show interest</h3><p>If you’d like to continue, introduce yourself and confirm your email.</p></article><article><span className={styles.eyebrow}>03</span><h3>Let them decide</h3><p>They can approve you for up to 15 days, or quietly set it aside.</p></article></div>
           <div className={styles.betaActions}><Link href="/received-a-link" className={styles.secondaryButton}>Read the viewer guide <ArrowRight aria-hidden="true" /></Link></div>
         </section>
 
@@ -102,12 +98,12 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
         </section>
 
         <section id="beta" className={styles.betaSection}>
-          <div className={styles.betaCopy}><p className={styles.eyebrow}>A considered introduction</p><h2>For families already making introductions.</h2><p>VivIntro is for people already exchanging introductions through relatives, friends, community networks, or matchmakers. It helps you share and manage an introduction; it does not find matches.</p></div>
-          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>The person stays in control</strong>Family can help, but the person creates, reviews, and publishes their own Introduction.</span><span><MessageCircle aria-hidden="true" /><strong>Use familiar channels</strong>Share your link through WhatsApp, email, relatives, or a matchmaker you choose.</span></div>
+          <div className={styles.betaCopy}><p className={styles.eyebrow}>With your family’s help</p><h2>Your introduction. Your choice.</h2><p>Creating a profile for your son, daughter, or sibling? This option is coming soon. For now, they create and publish their own introduction, with your help.</p></div>
+          <div className={styles.betaDetails}><span><BadgeCheck aria-hidden="true" /><strong>You stay in control</strong>Family can help. You confirm the details and choose when to publish.</span><span><MessageCircle aria-hidden="true" /><strong>Share in familiar places</strong>Send your published link through WhatsApp, email, or relatives.</span></div>
         </section>
 
-        <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><h2>Common questions</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
-        <section className={styles.finalCta}><div><h2>Make the next introduction easier to share.</h2><p>Keep one current view for the first conversation and decide when to share more.</p></div><div className={styles.finalAction}><Link href="/signup" className={styles.lightButton}>Create your portfolio <ArrowRight aria-hidden="true" /></Link><span>Start privately. Choose when to publish.</span></div></section>
+        <section id="questions" className={styles.faqSection}><div className={styles.sectionHeading}><h2>Questions families ask</h2></div><div className={styles.faqList}>{landingFaqs.map((faq) => <details key={faq.question}><summary>{faq.question}<ChevronDown aria-hidden="true" /></summary><p>{faq.answer}</p></details>)}</div></section>
+        <section className={styles.finalCta}><div><h2>Send your next introduction as a link.</h2><p>One introduction, shared with care.</p></div><div className={styles.finalAction}><Link href="/signup" className={styles.lightButton}>Create your introduction <ArrowRight aria-hidden="true" /></Link><span>Free. Private until you publish.</span></div></section>
       </main>
 
       <footer className={styles.footer}><VivIntroBrand href="/" variant="full-symbol" className={styles.brand} /><p>One introduction, shared with care.</p><div><Link href="/about">About</Link><Link href="/trust">Trust</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div></footer>
@@ -116,5 +112,5 @@ export function LandingExperience({ variant = "clarity" }: { variant?: LandingVa
 }
 
 function PortfolioPreview() {
-  return <div className={styles.visual} aria-label="Illustration of Ananya’s fictional VivIntro introduction"><p className={styles.mobilePreviewLabel}>A fictional example of the shared Introduction</p><div className={styles.visualGlow} aria-hidden="true" /><div className={styles.floatingMessage}><ShieldCheck aria-hidden="true" /><span><strong>Protected details</strong>Approval required</span></div><article className={styles.portfolioCard}><header><span><VivIntroBrand variant="full-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> Public Introduction</span></header><div className={styles.portfolioBody}><div className={styles.portrait}><span>AM</span></div><div className={styles.introduction}><span className={styles.verified}>Fictional example</span><p>A marriage introduction</p><h2>Ananya</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, optimistic, and happiest around family, books, and the outdoors.</p></div></div><footer><span>Overview</span><span>Family / Journey</span><span>Show interest</span></footer></article><div className={styles.previewLifecycle}><span><small>01 · Link shared</small><strong>Introduction</strong></span><ArrowRight aria-hidden="true" /><span><small>02 · Email confirmed</small><strong>Access request</strong></span><ArrowRight aria-hidden="true" /><span data-approved><small>03 · Owner decides</small><strong>Approve or set aside</strong></span></div></div>;
+  return <div className={styles.visual} aria-label="Illustration of Ananya’s fictional VivIntro introduction"><p className={styles.mobilePreviewLabel}>A fictional example of the shared introduction</p><div className={styles.visualGlow} aria-hidden="true" /><div className={styles.floatingMessage}><ShieldCheck aria-hidden="true" /><span><strong>Private details</strong>Approval required</span></div><article className={styles.portfolioCard}><header><span><VivIntroBrand variant="full-symbol" tone="primary" decorative displayWidth={20} /></span><span><ShieldCheck aria-hidden="true" /> Introduction</span></header><div className={styles.portfolioBody}><div className={styles.portrait}><span>AM</span></div><div className={styles.introduction}><span className={styles.verified}>Fictional example</span><p>A marriage introduction</p><h2>Ananya</h2><strong>Product designer · Bengaluru</strong><p>Thoughtful, optimistic, and happiest around family, books, and the outdoors.</p></div></div><footer><span>Overview</span><span>Family / Journey</span><span>Show interest</span></footer></article><div className={styles.previewLifecycle}><span><small>01 · Link shared</small><strong>Introduction</strong></span><ArrowRight aria-hidden="true" /><span><small>02 · Email confirmed</small><strong>Show interest</strong></span><ArrowRight aria-hidden="true" /><span data-approved><small>03 · You decide</small><strong>Approve or set aside</strong></span></div></div>;
 }

@@ -70,7 +70,7 @@ export async function publishPortfolio({
 }) {
   if (data.privacy_mode === "private") {
     throw new PortfolioPublishError(
-      "Update this draft to the current public Introduction and review its preview before publishing.",
+      "Update this draft to the current sharing setup, then confirm publication consent.",
       "PUBLIC_INTRODUCTION_UPDATE_REQUIRED",
       409
     );

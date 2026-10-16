@@ -120,7 +120,7 @@ test("shared portfolio components retain typography, contrast and keyboard behav
     }
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      const menu = page.getByRole("button", { name: "Open portfolio sections" });
+      const menu = page.getByRole("button", { name: "Open introduction sections" });
       if (width === 375) await menu.click();
       const overview = page.getByRole("navigation", { name: "Introduction quick actions" }).getByRole("link", { name: "Overview" });
       await expect(overview).toBeVisible();
@@ -142,14 +142,15 @@ test("portfolio end stays bounded after scrolling, resizing, and closing interes
   // Wait for the streamed footer and font layout before measuring document end.
   await expect(footer).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  await page.getByRole("button", { name: "Open portfolio sections" }).click();
-  await page.getByRole("button", { name: "Close portfolio sections" }).click();
+  await page.getByRole("button", { name: "Open introduction sections" }).click();
+  await page.getByRole("button", { name: "Close introduction sections" }).click();
   const end = () => page.evaluate(() => {
     const footer = document.querySelector('[data-portfolio-footer]')!;
     return { height: document.documentElement.scrollHeight, end: footer.getBoundingClientRect().bottom + scrollY,
       width: document.documentElement.scrollWidth, viewport: innerWidth };
   });
   let previous = 0;
+  let enteredDetails = false;
   for (const height of [874, 720, 874]) {
     await page.setViewportSize({ width: 402, height });
     for (let round = 0; round < 5; round++) {
@@ -172,7 +173,11 @@ test("portfolio end stays bounded after scrolling, resizing, and closing interes
     await expect(page.locator("body")).toHaveCSS("position", "fixed");
     const lockedScroll = await page.locator("body").evaluate(el => -parseFloat(el.style.top));
     expect(lockedScroll).toBeCloseTo(savedScroll, 0);
-    await page.getByRole("button", { name: "Continue as a new visitor" }).click();
+    if (!enteredDetails) {
+      await page.getByRole("button", { name: "Continue as a new visitor" }).click();
+      enteredDetails = true;
+    }
+    await expect(page.getByRole("group", { name: "About you" })).toBeVisible();
     await page.getByRole("button", { name: "Close interest form" }).click();
     await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - savedScroll)).toBeLessThanOrEqual(1);
     await expect(trigger).toBeFocused();
@@ -217,7 +222,7 @@ test("candidate questions are optional except name and share the ZIP lookup", as
   await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
   await page.getByRole("button", { name: "Continue as a new visitor" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Contacting for").selectOption("daughter");
+  await dialog.getByLabel("Who are you contacting for?").selectOption("daughter");
   await expect(dialog.getByLabel("Candidate’s full name")).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Candidate’s email", { exact: true })).not.toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Candidate’s phone (optional)", { exact: true })).not.toHaveAttribute("required", "");
@@ -225,17 +230,17 @@ test("candidate questions are optional except name and share the ZIP lookup", as
   await expect(dialog.getByLabel("Message", { exact: true })).not.toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Family context", { exact: true })).toHaveAttribute("required", "");
   await dialog.getByRole("button", { name: "Add candidate location (optional)" }).click();
-  await expect(dialog.getByRole("combobox", { name: "Candidate’s location ZIP or PIN code" })).toBeVisible();
+  await expect(dialog.getByRole("group", { name: "Candidate’s location", exact: true }).getByRole("combobox", { name: "ZIP or PIN code" })).toBeVisible();
   const locationAction = dialog.getByRole("group", { name: "Candidate’s location", exact: true }).getByRole("button", { name: "Enter location manually" });
   await expect(locationAction).toHaveCSS("font-weight", "500");
   await expect(locationAction).toHaveCSS("border-radius", "12px");
   expect((await locationAction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await dialog.getByRole("button", { name: "Remove location", exact: true }).click();
   await expect(dialog.locator('[name="candidateCountryCode"]')).toHaveCount(0);
-  await dialog.getByLabel("Contacting for").selectOption("self");
-  await expect(dialog.getByLabel("Candidate’s full name")).toHaveCount(0);
+  await dialog.getByLabel("Who are you contacting for?").selectOption("self");
+  await expect(dialog.getByLabel("Candidate’s full name")).toBeHidden();
   await dialog.getByRole("button", { name: "Verify email and continue" }).click();
-  await expect(dialog.getByLabel("Your full name")).toBeFocused();
+  await expect(dialog.getByLabel("Full name", { exact: true })).toBeFocused();
   await expect(dialog.getByLabel("Message", { exact: true })).toHaveAttribute("aria-invalid", "false");
   await page.screenshot({ path: testInfo.outputPath("interest-cards-errors.png"), animations: "disabled" });
 });

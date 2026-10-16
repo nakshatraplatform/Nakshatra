@@ -112,7 +112,7 @@ describe("celestial union portfolio", () => {
 
   it("hides conversion for the signed-in public-link owner without widening disclosure", () => {
     render(<BiodataTemplate templateId={3} data={complete} sunSign="kanya" accessMode="public" viewingOwnPortfolio />);
-    expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create your introduction" })).not.toBeInTheDocument();
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Copy phone" })).not.toBeInTheDocument();
   });
@@ -205,7 +205,7 @@ describe("celestial union portfolio", () => {
 
     expect(screen.getByRole("heading", { name: "Aditi Rao" })).toBeInTheDocument();
     expect(screen.queryByText("Liveness checked")).not.toBeInTheDocument();
-    expect(screen.getByText("A Marriage Introduction")).toBeInTheDocument();
+    expect(screen.getByText("Marriage introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
@@ -305,7 +305,7 @@ describe("celestial union portfolio", () => {
       <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
     expect(screen.getByLabelText("Protected access details")).toBeInTheDocument();
-    expect(screen.queryByText("Complete Portfolio", { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText("private details", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
     expect(approvedPersonalStory).toBeTruthy();
@@ -360,7 +360,7 @@ describe("celestial union portfolio", () => {
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
+    expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
   });
 
   it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
@@ -372,11 +372,11 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Want to share an introduction with this level of care?" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
+    expect(screen.getByRole("heading", { name: "Want an introduction like this?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
 
     rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
-    expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create your introduction" })).not.toBeInTheDocument();
   });
 
   it("links protected chapters to the interest action and explains the disclosure bundle", () => {
@@ -400,7 +400,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
   });
 
-  it("does not promise another approval when a Complete Portfolio has no details in a restricted chapter", () => {
+  it("does not promise another approval when a private details has no details in a restricted chapter", () => {
     const sparseData = {
       privacy_mode: "balanced" as const,
       personal: { name: "Aditi", short_bio: "A short hello." },

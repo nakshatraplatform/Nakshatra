@@ -6,6 +6,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function ResetPasswordPage() {
-  return <ResetPasswordForm />;
+export default async function ResetPasswordPage({ searchParams }: { searchParams?: Promise<{ redirect?: string | string[] }> } = {}) {
+  const returnTo = (await searchParams)?.redirect;
+  return <ResetPasswordForm returnTo={typeof returnTo === "string" ? returnTo : undefined} />;
 }

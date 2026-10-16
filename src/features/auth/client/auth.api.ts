@@ -5,7 +5,7 @@ export type AuthStartPayload =
   | { method: "email_otp"; email: string; redirect: string }
   | { method: "pilot_access_otp"; email: string }
   | { method: "resend_signup"; email: string; redirect: string }
-  | { method: "password_recovery"; email: string };
+  | { method: "password_recovery"; email: string; redirect?: string };
 
 type AuthResponse = {
   url?: string;

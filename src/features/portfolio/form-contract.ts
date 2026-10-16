@@ -45,7 +45,7 @@ export function latestAdultBirthDate() {
 
 function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, publishing: boolean) {
   if (publishing && data.privacy_mode === "private") {
-    addIssue(ctx, ["privacy_mode"], "Update this draft to the current public Introduction and review its preview before publishing.");
+    addIssue(ctx, ["privacy_mode"], "Update this draft to the current sharing setup, then confirm publication consent.");
   }
   const nameParts = resolvePortfolioNameParts(data.personal);
   for (const [field, label] of [

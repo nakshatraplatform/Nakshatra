@@ -20,8 +20,8 @@ describe("password recovery form", () => {
     updateRecoveredPassword.mockResolvedValue({ ok: true, body: { updated: true } });
   });
 
-  it("renders the private reset-password page metadata and form", () => {
-    render(<ResetPasswordPage />);
+  it("renders the private reset-password page metadata and form", async () => {
+    render(await ResetPasswordPage());
     expect(screen.getByRole("heading", { name: "Choose a new password." })).toBeInTheDocument();
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
@@ -34,6 +34,11 @@ describe("password recovery form", () => {
     await user.click(screen.getByRole("button", { name: "Save new password" }));
     expect(screen.getByRole("alert")).toHaveTextContent("The passwords do not match.");
     expect(updateRecoveredPassword).not.toHaveBeenCalled();
+  });
+
+  it("passes the interrupted introduction from the page query through to recovery", async () => {
+    render(await ResetPasswordPage({ searchParams: Promise.resolve({ redirect: "/p/shared-token#portfolio-interest" }) }));
+    expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute("href", "/login?redirect=%2Fp%2Fshared-token%23portfolio-interest");
   });
 
   it("updates the password and returns to the dashboard", async () => {
@@ -62,5 +67,14 @@ describe("password recovery form", () => {
     await user.type(screen.getByLabelText("Confirm new password"), "NewPassword1");
     await user.click(screen.getByRole("button", { name: "Save new password" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("This recovery link has expired.");
+  });
+
+  it.each(["/p/shared-token#portfolio-interest", "//outside.example"])("resumes a safe interrupted journey after reset: %s", async (returnTo) => {
+    const user = userEvent.setup();
+    render(<ResetPasswordForm returnTo={returnTo} />);
+    await user.type(screen.getByLabelText("New password"), "NewPassword1");
+    await user.type(screen.getByLabelText("Confirm new password"), "NewPassword1");
+    await user.click(screen.getByRole("button", { name: "Save new password" }));
+    expect(replace).toHaveBeenCalledWith(returnTo.startsWith("/p/") ? returnTo : "/dashboard?password=updated");
   });
 });

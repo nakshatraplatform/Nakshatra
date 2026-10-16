@@ -279,6 +279,15 @@ describe("authentication start route", () => {
     expect(signInWithOAuth).not.toHaveBeenCalled();
   });
 
+  it.each(["/p/shared-token#portfolio-interest", "https://outside.example", "//outside.example"])("carries only a safe destination through password recovery: %s", async (destination) => {
+    expect((await POST(request({ method: "password_recovery", email: "owner@example.com", redirect: destination }))).status).toBe(200);
+    const callback = new URL(resetPasswordForEmail.mock.calls[0][1].redirectTo);
+    const reset = new URL(callback.searchParams.get("next")!, "https://local.test");
+    expect(reset.pathname).toBe("/reset-password");
+    expect(reset.searchParams.get("redirect")).toBe(destination.startsWith("/p/") ? destination : "/dashboard");
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
+  });
+
   it("redacts unexpected provider failures and supplies a request id", async () => {
     resetPasswordForEmail.mockResolvedValueOnce({ error: new Error("smtp secret") });
     const response = await POST(request({ method: "password_recovery", email: "owner@example.com" }));

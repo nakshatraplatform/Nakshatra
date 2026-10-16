@@ -42,15 +42,15 @@ test(`gold metadata and split interest panes remain legible through OTP and succ
     await expect(sidebar).toBeVisible();
     await expect(sidebar.getByRole("heading", { name: "Next steps" })).toBeVisible();
     await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
-    await dialog.getByLabel("Your full name", { exact: true }).fill("Maya Shah");
-    await dialog.getByLabel("Contacting for").selectOption("self");
+    await dialog.getByLabel("Full name", { exact: true }).fill("Maya Shah");
+    await dialog.getByLabel("Who are you contacting for?").selectOption("self");
     await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("6175550123");
     await dialog.getByLabel("Email address", { exact: true }).fill("maya@example.test");
     await dialog.getByRole("button", { name: "Enter location manually", exact: true }).click();
-    await dialog.getByLabel("Your location country", { exact: true }).selectOption("US");
-    await dialog.getByLabel("Your location state", { exact: true }).selectOption("US-MA");
-    await dialog.getByLabel("Your location city", { exact: true }).fill("Boston");
-    await dialog.getByLabel("Your location ZIP or PIN code", { exact: true }).fill("02108");
+    await dialog.getByLabel("Country", { exact: true }).selectOption("US");
+    await dialog.getByLabel("State", { exact: true }).selectOption("US-MA");
+    await dialog.getByLabel("City", { exact: true }).fill("Boston");
+    await dialog.getByLabel("ZIP or PIN code", { exact: true }).fill("02108");
     await dialog.getByLabel("Family context", { exact: true }).fill("Our family values honesty, kindness and mutual respect.");
     await dialog.getByRole("button", { name: "Verify email and continue" }).click();
     await expect(dialog.getByRole("heading", { name: "Verify your email" })).toBeVisible();
@@ -94,7 +94,7 @@ test(`mobile publishing review preserves checklist space and pinned actions: ${t
     await page.reload();
     await page.getByRole("button", { name: "Edit details", exact: true }).click();
     await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: /review both views/i });
+    const dialog = page.getByRole("dialog", { name: "Review and publish", exact: true });
     await expect(dialog).toBeVisible();
     for (const width of [320, 375, 402, 768, 1440]) {
       await page.setViewportSize({ width, height: 740 });
@@ -105,9 +105,14 @@ test(`mobile publishing review preserves checklist space and pinned actions: ${t
       }
       expect(scroll.height).toBeGreaterThan(240);
       expect(scroll.y + scroll.height).toBeLessThanOrEqual(actions.y + 1);
+      const requirement = dialog.getByText("Give consent when all other steps are complete", { exact: true });
+      await requirement.scrollIntoViewIfNeeded();
+      await expect(requirement).toBeInViewport();
+      const publish = dialog.getByRole("button", { name: "Save and publish", exact: true });
+      await expect(publish).toBeInViewport();
+      await expect(publish).toBeDisabled();
       await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
-      await expect(dialog.getByText("Give consent when all other steps are complete", { exact: true })).toBeInViewport();
-      await expect(dialog.getByRole("button", { name: "Review both views before publishing", exact: true })).toBeInViewport();
+      await expect(publish).toBeInViewport();
       for (const row of await dialog.locator('.dashboard-review-requirement[data-complete="true"]').all()) {
         expect(await textContrast(row)).toBeGreaterThanOrEqual(4.5);
       }

@@ -15,7 +15,7 @@ export default function TermsPage() {
     >
       <PolicySection id="data-accuracy" title="Your account and content">
         <p>You are responsible for keeping account access private and for the accuracy, permission, and legality of the information and files you add. Do not share sign-in links or upload information you are not authorized to use.</p>
-        <p>For the personal portfolio you create and share through your own link, VivIntro displays selected published answers in a public Introduction and, after your approval, a Complete Portfolio. Your saved draft and unpublished edits remain private. Review both previews before publishing and correct inaccurate information in Portfolio details.</p>
+        <p>For the introduction you create and share through your own link, VivIntro displays selected published answers publicly and private details only after your approval. Your saved draft and unpublished edits remain private. Confirm publication consent before publishing and correct inaccurate information in Introduction details. Both previews are optional.</p>
       </PolicySection>
 
       <PolicySection title="Publishing and sharing">

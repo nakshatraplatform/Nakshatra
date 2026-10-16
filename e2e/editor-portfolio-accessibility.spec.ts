@@ -9,8 +9,8 @@ test("published horoscope status and remove action retain contrast in both theme
     page_count: null, published_at: "2026-10-01T00:00:00Z", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z",
   } } }));
   await page.goto("/dashboard?edit=1");
-  const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
-  const sectionSelect = editor.getByRole("combobox", { name: "Go to portfolio section" });
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
+  const sectionSelect = editor.getByRole("combobox", { name: "Go to introduction section" });
   if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
   else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();
   await editor.locator('input[type="file"]').setInputFiles({ name: "mock.png", mimeType: "image/png", buffer: Buffer.from("fixture") });
@@ -70,7 +70,7 @@ test("editor suggestions support virtual focus and dark contrast", async ({ page
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
     await editor.getByRole("button", { name: "Change", exact: true }).click();
@@ -96,9 +96,9 @@ test("editor suggestions support virtual focus and dark contrast", async ({ page
     await expect(editor.getByText("Boston, Massachusetts, United States · 02108")).toBeVisible();
     await expect(editor.getByRole("button", { name: "Change", exact: true })).toBeFocused();
   }
-  const sections = editor.getByRole("combobox", { name: "Go to portfolio section" });
+  const sections = editor.getByRole("combobox", { name: "Go to introduction section" });
   if (await sections.isVisible()) await sections.selectOption("story");
-  else await editor.getByRole("navigation", { name: "Portfolio form sections" }).getByRole("button", { name: /Personal story/ }).click();
+  else await editor.getByRole("navigation", { name: "Introduction form sections" }).getByRole("button", { name: /Personal story/ }).click();
   const tags = editor.getByRole("combobox", { name: "Values that matter to you" });
   await tags.fill("Kind");
   await tags.press("ArrowDown");
@@ -112,7 +112,7 @@ test("mobile chapter navigation remains reachable at 720px and below", async ({ 
   for (const width of [320, 720]) {
     await page.setViewportSize({ width, height: 812 });
     await page.goto("/p/e2e-portfolio-token");
-    const opener = page.getByRole("button", { name: "Open portfolio sections" });
+    const opener = page.getByRole("button", { name: "Open introduction sections" });
     await expect(opener).toBeVisible();
     await opener.click();
     const nav = page.getByRole("navigation", { name: "Introduction quick actions" });
