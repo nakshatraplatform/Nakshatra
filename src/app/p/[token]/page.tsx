@@ -91,7 +91,12 @@ export default async function PublicBiodataPage({ params }: Props) {
       accessMode={portfolio.accessMode}
       accessExpiresAt={portfolio.accessExpiresAt}
       identityVerified={portfolio.identityVerified}
-      photos={portfolio.photos}
+      photos={portfolio.photos.map((photo, index) => ({
+        ...photo,
+        alt: photo.alt && !/^(?:portfolio|introduction) photo$/i.test(photo.alt)
+          ? photo.alt
+          : `Photo of ${portfolio.data.personal.first_name || portfolio.data.personal.name?.split(/\s+/)[0] || "this person"}, ${index + 1} of ${portfolio.photos.length}`,
+      }))}
       viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
       interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}

@@ -18,7 +18,7 @@ export function StructuredInterestLocation({ prefix = "", label, value, onChange
     subdivisionCode: value.regionCode, cityGeonameId: value.cityGeonameId, postalCode: value.postalCode, locationSource: value.locationSource };
   return <div role="group" tabIndex={error ? -1 : undefined} aria-label={label} data-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} className="interest-location-group">
     <LocationFields value={value} onChange={onChange} portfolioToken={portfolioToken} requireCompleteHierarchy
-      labels={{ country: `${label} country`, region: `${label} state`, city: `${label} city`, postalCode: `${label} ZIP or PIN code`, searchCountry: `${label} search country` }} />
+      labels={{ country: "Country", region: "State", city: "City", postalCode: "ZIP or PIN code", searchCountry: "Country" }} />
     {Object.entries(fields).map(([key, field]) => <input key={key} type="hidden" name={prefix ? `${prefix}${key[0].toUpperCase()}${key.slice(1)}` : key} value={field ?? ""} />)}
     {error && <p id={errorId} className="interest-form-error" role="alert">{error}</p>}
   </div>;

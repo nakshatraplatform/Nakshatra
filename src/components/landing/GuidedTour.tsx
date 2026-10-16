@@ -18,32 +18,32 @@ const tourSteps = [
     number: "01",
     label: "Create",
     title: "Begin with a private draft.",
-    body: "Start with your name, location, profession, and a short introduction. Add family, cultural details, and an optional horoscope as you work through the guided sections. Save and return when ready.",
+    body: "Fill in guided sections. Everything saves privately as you go. Add optional details when you’re ready.",
     points: ["Guided sections", "Save as you go", "Private until publication"],
     icon: FilePenLine,
   },
   {
     number: "02",
-    label: "Preview and prepare",
-    title: "See every view before anyone else does.",
-    body: "Compare the shared introduction with its protected details, then complete the publication steps shown in your dashboard.",
-    points: ["Shared Introduction preview", "Protected view preview", "Publication checks"],
+    label: "Review and consent",
+    title: "Choose what you share.",
+    body: "Complete the publishing checks, then give consent. Open either preview if you’d like; previews are optional.",
+    points: ["Optional previews", "Clear publication consent", "Private details stay separate"],
     icon: BadgeCheck,
   },
   {
     number: "03",
     label: "Share",
     title: "Send one link that stays current.",
-    body: "Publish when you are ready and share through WhatsApp, email, or wherever your family already talks. Future updates remain at the same link.",
+    body: "Publish and send one link on WhatsApp or email. Publish future updates at the same link, without sending another PDF.",
     points: ["One current link", "No app required", "Unpublish or replace anytime"],
     icon: Send,
   },
   {
     number: "04",
     label: "Approve",
-    title: "Open protected details deliberately.",
-    body: "Review email-confirmed requests in your dashboard and decide who receives protected access for 15 days.",
-    points: ["Email-confirmed request", "Owner approval", "Access can end early"],
+    title: "Decide when to share more.",
+    body: "When someone taps Show interest, they confirm their email. Approve them for up to 15 days, or quietly set it aside.",
+    points: ["Show interest", "Your approval", "Access can end early"],
     icon: UserCheck,
   },
 ] as const;
@@ -79,7 +79,7 @@ export function GuidedTour() {
         <div className={styles.guidedTourIntro}>
           <p className={styles.eyebrow}>A guided tour</p>
           <h2>How VivIntro works</h2>
-          <p>Create once, share carefully, and decide what comes next—from a private draft to time-limited protected access.</p>
+          <p>Create. Share. Approve. No app needed.</p>
           <p className={styles.tourExampleNote}>Illustrations below use fictional details.</p>
           <nav className={styles.tourNavigation} aria-label="Guided tour steps">
             {tourSteps.map((step) => (
@@ -141,9 +141,9 @@ function TourVisual({ step }: { step: string }) {
   if (step === "02") {
     return (
       <div className={styles.tourVisual} data-visual="preview" aria-label="Introduction preview choices">
-        <div className={styles.tourWindowBar}><span /><span /><span /><small>Preview views</small></div>
-        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Complete Portfolio</strong></div>
-        <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Before publishing</small><strong>Review both views</strong></span></div>
+        <div className={styles.tourWindowBar}><span /><span /><span /><small>Optional previews</small></div>
+        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Private details</strong></div>
+        <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Before publishing</small><strong>Confirm your consent</strong></span></div>
       </div>
     );
   }
@@ -161,7 +161,7 @@ function TourVisual({ step }: { step: string }) {
   return (
     <div className={styles.tourVisual} data-visual="approve" aria-label="Illustrated email-confirmed interest request">
       <div className={styles.tourWindowBar}><span /><span /><span /><small>Interest request</small></div>
-      <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Email confirmed</small><strong>Protected access requested</strong></span></div>
+      <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Email confirmed</small><strong>Interest received</strong></span></div>
       <div className={styles.tourDecision}><span>Set aside</span><strong>Approve 15 days</strong></div>
     </div>
   );

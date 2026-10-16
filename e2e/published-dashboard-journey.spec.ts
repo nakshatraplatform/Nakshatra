@@ -31,18 +31,18 @@ test("published creator can understand sharing, requests, and Complete access", 
   await expect(awaiting.getByText("Verification pending")).toBeVisible();
   await awaiting.getByRole("button", { name: "Review", exact: true }).last().click();
   const details = page.getByRole("dialog", { name: /A long family name/ });
-  await expect(details.getByText("A verified VivIntro account is required before Complete access can be granted.")).toBeVisible();
-  await expect(details.getByRole("button", { name: "Grant Complete Portfolio access" })).toHaveCount(0);
+  await expect(details.getByText("A verified VivIntro account is required before private details can be shared.")).toBeVisible();
+  await expect(details.getByRole("button", { name: "Grant private details access" })).toHaveCount(0);
   await details.getByRole("button", { name: "Close details" }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();
-  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant Complete Portfolio access" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant private details access" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("published-request-detail-mobile.png"), animations: "disabled" });
-  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant Complete Portfolio access" }).click();
-  await expect(page.getByRole("dialog", { name: /Grant Complete Portfolio access to Maya Shah/ })).toContainText("Access expires 15 days after approval.");
+  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant private details access" }).click();
+  await expect(page.getByRole("dialog", { name: /Grant private details access to Maya Shah/ })).toContainText("Access expires 15 days after approval.");
   await expect(page.locator(".dashboard-modal-backdrop")).toHaveAttribute("inert", "");
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  for (const name of ["Cancel", "Confirm Complete Portfolio for 15 days"]) {
+  for (const name of ["Cancel", "Confirm private details for 15 days"]) {
     const box = await page.getByRole("dialog").getByRole("button", { name }).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y).toBeGreaterThanOrEqual(0);
@@ -51,11 +51,11 @@ test("published creator can understand sharing, requests, and Complete access", 
   }
   await page.screenshot({ path: testInfo.outputPath("published-approval-mobile.png"), animations: "disabled" });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Grant Complete Portfolio access to Maya Shah/ })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: /Grant private details access to Maya Shah/ })).toHaveCount(0);
   await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Close details" }).click();
   await page.getByRole("link", { name: "Manage access" }).click();
   const access = page.locator('[data-stage="access"]');
-  await expect(access.getByRole("button", { name: /Complete Portfolio approvals/ })).toHaveAttribute("aria-expanded", "true");
+  await expect(access.getByRole("button", { name: /private details approvals/i })).toHaveAttribute("aria-expanded", "true");
   await access.getByRole("button", { name: "Manage" }).click();
   await expect(page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "End access" })).toBeVisible();
   await page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "Close details" }).click();

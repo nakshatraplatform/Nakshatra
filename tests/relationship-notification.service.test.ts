@@ -46,7 +46,7 @@ describe("relationship notification delivery", () => {
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
     expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: "viewer@example.com",
-      subject: "You can now view the Complete Portfolio",
+      subject: "You can now view private details",
       text: expect.stringContaining(`https://vivintro.test/access/${grantId}`),
     }));
     expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
@@ -65,10 +65,10 @@ describe("relationship notification delivery", () => {
   });
 
   it.each([
-    ["new_introduction", "A new verified introduction is waiting", "/dashboard"],
+    ["new_introduction", "Someone has shown interest", "/dashboard"],
     ["introduction_declined", "Update on your VivIntro introduction", "not sharing"],
-    ["full_view_revoked", "Your Complete Portfolio access has ended", "no longer open"],
-    ["full_view_access_expiring", "Complete Portfolio access expires soon", "/dashboard"],
+    ["full_view_revoked", "Your access to private details has ended", "no longer open"],
+    ["full_view_access_expiring", "Approved access expires soon", "/dashboard"],
   ])("renders %s without loading an access grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{
@@ -165,8 +165,8 @@ describe("relationship notification delivery", () => {
   });
 
   it.each([
-    ["full_view_renewed", "Your Complete Portfolio access was renewed", "renewed"],
-    ["full_view_expiring", "Your Complete Portfolio access expires soon", "expires on"],
+    ["full_view_renewed", "Your access to private details was renewed", "renewed"],
+    ["full_view_expiring", "Your access to private details expires soon", "expires on"],
   ])("renders %s from the active grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{

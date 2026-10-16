@@ -3,16 +3,16 @@ import { expect, test } from "@playwright/test";
 test("landing explains the family problem, disclosure boundary, and next step", async ({ page }, testInfo) => {
   await page.goto("/");
 
-  await expect(page.locator("#why")).toContainText("old files and personal details sit in different chats");
-  await expect(page.locator("#privacy")).toContainText("Shared introduction");
-  await expect(page.locator("#privacy")).toContainText("A shared link can be forwarded");
-  await expect(page.locator("#privacy").getByRole("heading", { name: "Complete Portfolio", exact: true })).toBeVisible();
-  await expect(page.locator("#privacy")).toContainText("Complete does not mean every field you have saved");
+  await expect(page.locator("#why")).toContainText("Old versions keep circulating");
+  await expect(page.locator("#privacy")).toContainText("Your introduction");
+  await expect(page.locator("#privacy")).toContainText("Anything someone can see, they can screenshot");
+  await expect(page.locator("#privacy").getByRole("heading", { name: "Private details", exact: true })).toBeVisible();
+  await expect(page.locator("#privacy")).toContainText("Your private notes and street address stay in your account");
   await page.locator("#privacy").screenshot({ path: testInfo.outputPath("disclosure-examples.png"), animations: "disabled" });
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
   await page.locator("#tour-step-01").screenshot({ path: testInfo.outputPath("fictional-draft-example.png"), animations: "disabled" });
   await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
-  await expect(page.locator("#samples").getByRole("link", { name: "View a sample introduction" })).toHaveAttribute("href", "/demo");
+  await expect(page.locator("#samples").getByRole("link", { name: "See an example" })).toHaveAttribute("href", "/demo");
   expect(await page.locator("#samples").evaluate((element) => {
     const tour = document.querySelector("#how");
     return tour !== null && Boolean(element.compareDocumentPosition(tour) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -22,8 +22,8 @@ test("landing explains the family problem, disclosure boundary, and next step", 
     await page.locator("#samples").screenshot({ path: testInfo.outputPath("sample-section-desktop-light.png"), animations: "disabled" });
   }
 
-  await page.locator("#questions").getByText("Who can open a shared link?").click();
-  await expect(page.locator("#questions")).toContainText("A viewer can still forward or capture what they see");
+  await page.locator("#questions").getByText("Can my link be forwarded?").click();
+  await expect(page.locator("#questions")).toContainText("The first view can be forwarded or screenshotted");
 });
 
 test("trust and FAQ disclosures work with keyboard in both themes", async ({ page }, testInfo) => {
@@ -35,7 +35,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
   await expect(trustSummary).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Enter");
   await expect(trust).toHaveAttribute("open", "");
-  await expect(trust.getByText(/public Introduction can be forwarded/i)).toBeVisible();
+  await expect(trust.getByText(/Anything someone can see can be saved or screenshotted/i)).toBeVisible();
 
   const faq = page.locator("#questions details").first();
   await faq.locator("summary").click();
@@ -191,7 +191,7 @@ test("frequent tour feedback is immediate and sample CTA opens the real demo", a
   await step.focus();
   await expect(step).toHaveCSS("outline-style", "solid");
 
-  const sample = page.locator("#top").getByRole("link", { name: "View a sample introduction" });
+  const sample = page.locator("#top").getByRole("link", { name: "See an example" });
   await expect(sample).toHaveAttribute("href", "/demo");
   await sample.click();
   await expect(page.getByText("Fictional sample introduction", { exact: true })).toBeVisible();

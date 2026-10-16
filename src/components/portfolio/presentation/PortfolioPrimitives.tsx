@@ -16,7 +16,7 @@ export function ChapterHeading({ number, eyebrow, title, id }: {
 }
 
 export function TrustBadge() {
-  return <span className={styles.trustBadge} aria-label="Liveness checked. A live person completed liveness checks. This does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match." title="Liveness checked">
+  return <span className={styles.trustBadge} aria-label="Liveness checked. A live person completed liveness checks. This does not verify legal identity, introduction photo ownership, profile statements, or endorse a match." title="Liveness checked">
     <ShieldCheck aria-hidden="true" strokeWidth={1.5} />Liveness checked
   </span>;
 }

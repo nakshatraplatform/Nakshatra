@@ -20,7 +20,7 @@ test("an unpublished complete owner can edit or go directly to liveness", async 
     await page.screenshot({ path: testInfo.outputPath(`draft-journey-${width}.png`), fullPage: true, animations: "disabled" });
     await page.getByRole("button", { name: "Edit details", exact: true }).click();
     const editor = page.getByRole("dialog");
-    await expect(editor.getByRole("heading", { name: "Portfolio details", exact: true })).toBeFocused();
+    await expect(editor.getByRole("heading", { name: "Introduction details", exact: true })).toBeFocused();
     await page.keyboard.press("Tab");
     expect(await editor.evaluate(dialog => dialog.contains(document.activeElement))).toBe(true);
     await expect(editor.getByLabel("Marital Status", { exact: true })).toBeVisible();
@@ -47,7 +47,7 @@ test("dashboard landmarks and photo controls stay usable across themes", async (
   await expect(page.locator("main#main-content")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
     const remove = editor.getByRole("button", { name: "Delete photo", exact: true }).first();
@@ -68,7 +68,7 @@ test("editor hints and footer notes meet normal-text contrast in both themes", a
   await context.addCookies([draftOwnerCookie]);
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   const birthHintId = (await editor.getByLabel("Date of birth", { exact: true }).getAttribute("aria-describedby"))!.split(" ")[0];
   for (const theme of ["light", "dark"]) {
     if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
@@ -120,7 +120,7 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     const publishReview = page.getByRole("button", { name: "Review and publish", exact: true });
     expect(await edit.evaluate((element) => Boolean(element.nextElementSibling?.textContent?.includes("Review and publish")))).toBe(true);
     await edit.click();
-    const editor = page.getByRole("dialog", { name: "Portfolio details", exact: true });
+    const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
     const savedFirstName = await editor.getByLabel("First name", { exact: true }).inputValue();
     for (const action of ["Preview", "Review and publish", ...(width >= 640 ? ["Save draft"] : [])]) {
       const button = editor.getByRole("button", { name: action, exact: true });
@@ -140,15 +140,17 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     await page.screenshot({ path: testInfo.outputPath(`editor-fit-${width}-${height}.png`), animations: "disabled" });
     await editor.getByRole("button", { name: /^(Back to dashboard|Dashboard)$/ }).click();
     await publishReview.click();
-    const review = page.getByRole("dialog", { name: "Review both views before publishing", exact: true });
+    const review = page.getByRole("dialog", { name: "Review and publish", exact: true });
     await expect(review).toBeVisible();
     await expect(review.getByRole("button", { name: "Back to editing" })).toBeVisible();
-    const next = review.getByRole("button", { name: "Review both views before publishing", exact: true });
+    const next = review.getByRole("button", { name: "Go to liveness check", exact: true });
     const box = await next.boundingBox();
     expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
     expect(box!.y + box!.height).toBeLessThanOrEqual(height + 1);
-    await next.click();
-    await expect(review.getByRole("link", { name: "Review public Introduction", exact: true })).toBeFocused();
+    await expect(next).toBeEnabled();
+    await expect(review.getByRole("checkbox")).toHaveCount(0);
+    await next.focus();
+    await expect(next).toBeFocused();
     expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`review-fit-${width}-${height}.png`), animations: "disabled" });
     await review.getByRole("button", { name: "Back to editing", exact: true }).click();
@@ -180,7 +182,7 @@ test("dashboard previews count toward review without accepting publication conse
     } } });
   });
   await page.goto("/dashboard");
-  for (const name of [/preview public introduction/i, /preview complete portfolio/i]) {
+  for (const name of [/preview public introduction/i, /preview private details/i]) {
     const popup = page.waitForEvent("popup");
     await page.getByRole("link", { name }).click();
     await (await popup).close();
@@ -188,8 +190,8 @@ test("dashboard previews count toward review without accepting publication conse
   await expect.poll(() => publicReviewed && completeReviewed).toBe(true);
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
-  const review = page.getByRole("dialog", { name: /review both views/i });
-  await expect(review.getByRole("checkbox", { name: /I reviewed the public/i })).not.toBeChecked();
-  await expect(review.getByRole("button", { name: "Review both views before publishing", exact: true })).toHaveCount(0);
-  await expect(review.getByRole("button", { name: "Confirm & publish changes", exact: true })).toBeDisabled();
+  const review = page.getByRole("dialog", { name: /review and publish/i });
+  await expect(review.getByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
+  await expect(review.getByRole("button", { name: "Review and publish", exact: true })).toHaveCount(0);
+  await expect(review.getByRole("button", { name: "Save and publish", exact: true })).toBeDisabled();
 });

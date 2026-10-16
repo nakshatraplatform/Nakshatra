@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Marriage Introduction Link | VivIntro");
-  await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first();
+  await expect(page).toHaveTitle("Marriage biodata link you control | VivIntro");
+  await expect(page.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeVisible();
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");
   await page.goto("/waitlist");
   await expect(page).toHaveURL(/\/signup$/);
@@ -15,7 +15,7 @@ test("landing page presents the product and reaches open account creation", asyn
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
   await page.goto("/login?redirect=%2Fedit");
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
   await page.getByLabel("Email address").fill("person@example.com");
@@ -44,19 +44,19 @@ test("BrokerDesk reuses account creation with clear private-workspace guidance",
 test("unauthenticated owners are redirected away from protected screens", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login\?redirect=%2Fdashboard/);
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
 
   await page.goto("/account");
   await expect(page).toHaveURL(/\/login\?redirect=%2Faccount/);
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
 });
 
 test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /create your portfolio/i }).first()).toBeVisible();
-  await expect(page.locator("#top").getByRole("link", { name: /view a sample introduction/i })).toBeVisible();
+  await expect(main.getByRole("link", { name: /create your introduction/i }).first()).toBeVisible();
+  await expect(page.locator("#top").getByRole("link", { name: /see an example/i })).toBeVisible();
 });
 
 test("landing concepts keep the same clear path to signup", async ({ page }) => {
@@ -68,7 +68,7 @@ test("landing concepts keep the same clear path to signup", async ({ page }) => 
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first()).toHaveAttribute(
+    await expect(page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first()).toHaveAttribute(
       "href",
       "/signup"
     );
@@ -83,7 +83,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(verifiedBadge).toBeVisible();
   await expect(verifiedBadge).toHaveAttribute(
     "aria-label",
-    /does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match/
+    /does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
@@ -98,13 +98,13 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(viewerChoiceDialog).toBeVisible();
   const googleContinuation = viewerChoiceDialog.getByRole("button", { name: "Continue with Google" });
   await expect(googleContinuation).toBeVisible();
-  await expect(googleContinuation).toHaveCSS("background-color", "rgb(35, 75, 104)");
+  await expect(viewerChoiceDialog.getByRole("link", { name: "Sign in to VivIntro" })).toHaveCSS("background-color", "rgb(35, 75, 104)");
   await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
 
   const interestDialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(interestDialog).toBeVisible();
-  await expect(interestDialog.getByLabel("Your full name")).toHaveValue("");
-  await expect(interestDialog.getByLabel("Contacting for")).toHaveValue("");
+  await expect(interestDialog.getByLabel("Full name", { exact: true })).toHaveValue("");
+  await expect(interestDialog.getByLabel("Who are you contacting for?")).toHaveValue("");
   await expect(interestDialog.getByLabel("Phone number")).toHaveValue("");
   await expect(interestDialog.getByLabel("Email address")).toHaveValue("");
   await interestDialog.getByRole("button", { name: "Close interest form" }).click();
@@ -183,7 +183,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
 
   const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
   await expect(privacyControl).toBeVisible();
-  await expect(privacyControl).toHaveAttribute("href", "#main-content");
+  await expect(privacyControl).toHaveAttribute("href", "/");
   await privacyControl.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
@@ -245,8 +245,8 @@ test("interest popup stays in view and requires decision-making details", async 
 
   const dialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel("Your full name")).toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("Contacting for")).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Full name", { exact: true })).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Who are you contacting for?")).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Phone number")).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Email address")).toHaveAttribute("required", "");
 
@@ -257,9 +257,9 @@ test("interest popup stays in view and requires decision-making details", async 
   expect(bounds.top).toBeGreaterThanOrEqual(0);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
-  await expect(dialog.getByRole("combobox", { name: "Your location ZIP or PIN code" })).toHaveAttribute("required", "");
+  await expect(dialog.getByRole("combobox", { name: "ZIP or PIN code" })).toHaveAttribute("required", "");
   await dialog.getByRole("button", { name: "Enter location manually" }).click();
-  for (const name of ["Your location country", "Your location state", "Your location city", "Your location ZIP or PIN code", "Family context"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
+  for (const name of ["Country", "State", "City", "ZIP or PIN code", "Family context"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Message", { exact: true })).not.toHaveAttribute("required", "");
   const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
   expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);

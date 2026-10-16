@@ -6,6 +6,7 @@ import { BriefcaseBusiness } from "lucide-react";
 import { ChapterHeading, IconDataRow, Pill, ProtectedDataVault, TrustBadge } from "@/components/portfolio/presentation/PortfolioPrimitives";
 import { ExpandableProse } from "@/components/portfolio/presentation/ExpandableProse";
 import { PortfolioNav } from "@/components/portfolio/presentation/PortfolioNav";
+import { PortfolioFooter } from "@/components/templates/PortfolioFooter";
 import CelestialUnion from "@/components/templates/CelestialUnion";
 import { formatPortfolioLocation, isPortfolioAudienceLocked, portfolioHobbies } from "@/features/portfolio/presentation";
 import type { AccessData, PortfolioData } from "@/types/portfolio";
@@ -77,6 +78,15 @@ describe("portfolio presentation mapping", () => {
 });
 
 describe("portfolio micro-components", () => {
+  it.each(["light", "dark"] as const)("links navbar and footer artwork home in %s appearance", (appearance) => {
+    render(<><PortfolioNav sections={[]} showInterest={false} appearance={appearance} /><PortfolioFooter livenessChecked appearance={appearance} /></>);
+    const links = screen.getAllByRole("link", { name: "VivIntro home" });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", "/");
+      expect(link.querySelector("[data-brand-tone]")).toHaveAttribute("data-brand-tone", appearance === "dark" ? "reverse" : "primary");
+    }
+  });
   it("groups the chapter number and eyebrow with a labelled display heading", () => {
     const { container } = render(<ChapterHeading number={2} eyebrow="Astrology" title="Cultural alignment" id="astrology-title" />);
     expect(screen.getByRole("heading", { level: 2, name: "Cultural alignment" })).toHaveAttribute("id", "astrology-title");
@@ -130,7 +140,7 @@ describe("portfolio micro-components", () => {
 
   it("keeps mobile chapter links reachable and restores menu focus on Escape", () => {
     render(<PortfolioNav sections={[{ href: "#main-content", label: "Overview" }, { href: "#family", label: "Family" }]} showInterest={false} />);
-    const menu = screen.getByRole("button", { name: "Open portfolio sections" });
+    const menu = screen.getByRole("button", { name: "Open introduction sections" });
     fireEvent.click(menu);
     expect(menu).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "location");

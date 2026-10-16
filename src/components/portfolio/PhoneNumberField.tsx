@@ -12,6 +12,7 @@ export function PhoneNumberField({
   hint,
   label = "Phone number",
   error,
+  showPartLabels = true,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -21,6 +22,7 @@ export function PhoneNumberField({
   hint?: string;
   label?: string;
   error?: string;
+  showPartLabels?: boolean;
 }) {
   const errorId = useId();
   const [emptyNumberCode, setEmptyNumberCode] = useState(defaultCallingCode.replace(/\D/g, "").slice(0, 3));
@@ -33,7 +35,7 @@ export function PhoneNumberField({
       <legend>{label}{required ? " *" : ""}</legend>
       <div className="split-phone-inputs">
         <label>
-          <span>Country code</span>
+          <span className={showPartLabels ? undefined : "sr-only"}>Country code</span>
           <span className="split-phone-code">
             <span aria-hidden="true">+</span>
             <input
@@ -57,7 +59,7 @@ export function PhoneNumberField({
           </span>
         </label>
         <label>
-          <span>Phone number</span>
+          <span className={showPartLabels ? undefined : "sr-only"}>Phone number</span>
           <input
             type="tel"
             inputMode="tel"

@@ -6,12 +6,11 @@ import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useState } from "react";
-import { Download, KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
+import { KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
 import { emptyAccountProfile, type AccountProfile } from "@/features/account/profile";
 import {
   cancelAccountDeletionRequest,
-  downloadAccountExportRequest,
   requestAccountDeletionRequest,
   revokeOtherSessionsRequest,
   startAccountDeletionReauthRequest,
@@ -26,7 +25,7 @@ interface Props {
   signInMethods?: string[];
 }
 
-type Action = "profile" | "export" | "sessions" | "delete" | "cancel" | "reauth" | null;
+type Action = "profile" | "sessions" | "delete" | "cancel" | "reauth" | null;
 
 /** Presents browser-safe account controls while all privileged work remains in authenticated APIs. */
 export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, signInMethods = [], reauthComplete = false }: Props) {
@@ -57,25 +56,6 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
       setSavedProfile(result.data);
       setMessage("Your account names have been saved. Your portfolio has not changed.");
     }
-    setAction(null);
-  }
-
-  /** Requests the export and lets the browser save the returned private JSON file locally. */
-  async function downloadExport() {
-    beginAction("export");
-    const result = await downloadAccountExportRequest();
-    if (!result.ok) {
-      setError(result.message);
-      setAction(null);
-      return;
-    }
-    const url = URL.createObjectURL(result.data);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `vivintro-account-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setMessage("Your account export has been downloaded.");
     setAction(null);
   }
 
@@ -164,7 +144,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
           {error ? <p className="account-notice is-error">{error}</p> : null}
         </div>
 
-        {action && !confirmationOpen && <LoadingStatus compact className="my-4" title={action === "profile" ? "Saving your account names" : action === "export" ? "Preparing your account download" : action === "sessions" ? "Signing out other devices" : action === "reauth" ? "Preparing secure sign-in" : action === "cancel" ? "Cancelling scheduled deletion" : "Scheduling account deletion"} />}
+        {action && !confirmationOpen && <LoadingStatus compact className="my-4" title={action === "profile" ? "Saving your account names" : action === "sessions" ? "Signing out other devices" : action === "reauth" ? "Preparing secure sign-in" : action === "cancel" ? "Cancelling scheduled deletion" : "Scheduling account deletion"} />}
 
         <section className="account-settings-group" aria-labelledby="account-profile-heading">
           <h2 id="account-profile-heading">Your account profile</h2>
@@ -189,17 +169,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
         </section>
 
         <section className="account-settings-group" aria-labelledby="data-devices-heading">
-          <h2 id="data-devices-heading">Your data and devices</h2>
-          <section className="account-control-row" aria-labelledby="export-heading">
-            <div>
-              <h3 id="export-heading">Download your data</h3>
-              <p>Export your profile, portfolio, media inventory, memberships, and your own activity as JSON.</p>
-            </div>
-            <button className="dashboard-secondary-action" onClick={downloadExport} disabled={action !== null}>
-              {action === "export" ? <LoadingOrb size={20} /> : <Download />}
-              Download
-            </button>
-          </section>
+          <h2 id="data-devices-heading">Your devices</h2>
 
           <section className="account-control-row" aria-labelledby="sessions-heading">
             <div>

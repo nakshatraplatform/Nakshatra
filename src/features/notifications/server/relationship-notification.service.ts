@@ -120,16 +120,16 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   }
 
   if (job.notification_type === "new_introduction") {
-    return { to, subject: "A new verified introduction is waiting", text: `A verified viewer has introduced themselves.\n\nReview the introduction in your VivIntro dashboard: ${origin}/dashboard\n\nReview their verified contact and context before deciding whether to share the Complete Portfolio.` };
+    return { to, subject: "Someone has shown interest", text: `Someone has confirmed their email and introduced themselves.\n\nReview their interest in your VivIntro dashboard: ${origin}/dashboard\n\nRead their details before deciding whether to share private details. Email confirmation is not proof of identity.` };
   }
   if (job.notification_type === "introduction_declined") {
-    return { to, subject: "Update on your VivIntro introduction", text: "The portfolio owner is not sharing Complete Portfolio access at this time. Your verified contact information remains protected by VivIntro's access controls." };
+    return { to, subject: "Update on your VivIntro introduction", text: "The person you contacted is not sharing private details at this time. The details you sent remain subject to VivIntro’s privacy and retention rules." };
   }
   if (job.notification_type === "full_view_revoked") {
-    return { to, subject: "Your Complete Portfolio access has ended", text: "The portfolio owner has ended your Complete Portfolio access. The access link will no longer open protected details." };
+    return { to, subject: "Your access to private details has ended", text: "The person who shared their introduction has ended your access. The access link will no longer open their private details." };
   }
   if (job.notification_type === "full_view_access_expiring") {
-    return { to, subject: "Complete Portfolio access expires soon", text: `A viewer's Complete Portfolio access expires within 24 hours.\n\nReview access in your VivIntro dashboard: ${origin}/dashboard` };
+    return { to, subject: "Approved access expires soon", text: `Someone’s access to your private details expires within 24 hours.\n\nReview access in your VivIntro dashboard: ${origin}/dashboard` };
   }
 
   if (!job.grant_id) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
@@ -151,14 +151,14 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   const expiry = formatExpiry(grant.expires_at);
 
   if (job.notification_type === "full_view_expiring") {
-    return { to, subject: "Your Complete Portfolio access expires soon", text: `Your access${ownerName ? ` to ${ownerName}'s Complete Portfolio` : ""} expires on ${expiry}.\n\nOpen the portfolio after verifying your email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
+    return { to, subject: "Your access to private details expires soon", text: `Your access${ownerName ? ` to ${ownerName}'s private details` : ""} expires on ${expiry}.\n\nOpen the introduction using the same verified email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
   }
 
   const renewed = job.notification_type === "full_view_renewed";
   return {
     to,
-    subject: renewed ? "Your Complete Portfolio access was renewed" : "You can now view the Complete Portfolio",
-    text: `${ownerName || "The portfolio owner"} has ${renewed ? "renewed" : "granted"} your Complete Portfolio access for 15 days.\n\nView the portfolio: ${accessUrl}\n\nAccess expires on ${expiry}. You must verify the same email address that received this message. Forwarding this email does not transfer access, and the owner may end access early.`,
+    subject: renewed ? "Your access to private details was renewed" : "You can now view private details",
+    text: `${ownerName || "The person you contacted"} has ${renewed ? "renewed" : "granted"} your access to private details for 15 days.\n\nView the introduction: ${accessUrl}\n\nAccess expires on ${expiry}. Verify the same email address that received this message. Forwarding this email does not transfer access. The person sharing may end access early.`,
   };
 }
 

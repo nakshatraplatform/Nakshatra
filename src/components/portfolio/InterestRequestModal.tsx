@@ -4,6 +4,7 @@ import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { InterestContextFields, VisitorInterestFields } from "./VisitorInterestFields";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { ArrowLeft, CheckCircle2, LoaderCircle, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
 import type { NewViewerInterestInput } from "@/features/interest/server/interest.contract";
 import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
@@ -46,13 +47,12 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   appearance?: CelestialAppearance;
 }) {
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const [step, setStep] = useState<ModalStep>(authenticated ? "details" : "choice");
   const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [registeredEmail, setRegisteredEmail] = useState("");
-  const [registeredEmailError, setRegisteredEmailError] = useState(false);
   const [email, setEmail] = useState(verifiedEmail || "");
   const [otp, setOtp] = useState("");
   const [resendSeconds, setResendSeconds] = useState(0);
@@ -62,6 +62,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   const titleId = useId();
   const verificationErrorId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
@@ -81,6 +82,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     const resume = window.setTimeout(() => {
       setStep("details");
+      setHasOpened(true);
       setOpen(true);
     }, 0);
     return () => window.clearTimeout(resume);
@@ -95,21 +97,31 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     for (const element of Array.from(document.body.children)) {
       if (element instanceof HTMLElement && !element.contains(dialogRef.current)) { background.set(element, element.inert); element.inert = true; }
     }
-    dialogRef.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
-
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") return setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!inFlight.current) setOpen(false);
+        return;
+      }
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [href]'
-      )).filter(element => !element.hidden && getComputedStyle(element).display !== "none");
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])'
+      )).filter(element => {
+        if (element.tabIndex < 0) return false;
+        for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+          if (node.hidden || getComputedStyle(node).display === "none") return false;
+          if (node instanceof HTMLDetailsElement && !node.open && !node.querySelector("summary")?.contains(element)) return false;
+        }
+        return true;
+      });
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      const index = focusable.indexOf(document.activeElement as HTMLElement);
+      if (event.shiftKey && (index <= 0)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (index < 0 || document.activeElement === last)) {
         event.preventDefault();
         first.focus();
       }
@@ -123,6 +135,12 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       previous?.focus({ preventScroll: true });
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (step === "verify") codeInputRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [open, step]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -220,7 +238,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     inFlight.current = true;
     setPending(true);
     setError("");
-    const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest`, ...(registeredEmail ? { email: registeredEmail } : {}) });
+    const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest` });
     if (!ok || !body?.url) {
       setError(body?.error || "We could not connect to Google. Please try again.");
       setPending(false);
@@ -285,6 +303,8 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       if (!response.ok) throw new Error(result?.error || "Unable to send interest");
       setSubmitted(true);
       setStep("success");
+      setRequestPayload(null);
+      setOtp("");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to send interest");
     } finally {
@@ -296,21 +316,14 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
   function openModal() {
     if (isOwner) return;
-    setError("");
-    if (!requestPayload) {
-      setStep(authenticated ? "details" : "choice");
-      setOtp("");
-      setVerificationNotice("");
-    }
-    setVerificationAction("idle");
-    setEmail(requestPayload?.email || sessionEmail || "");
+    setHasOpened(true);
     setOpen(true);
   }
 
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> The owner will decide whether to share protected details.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> The owner will decide whether to share private details.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -320,11 +333,11 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
         <button ref={triggerRef} type="button" className="portfolio-button portfolio-button-primary" onClick={openModal}><MessageCircle aria-hidden="true" /> Show interest</button>
       )}
 
-      {open && createPortal(
-        <div className="interest-modal-backdrop" data-appearance={appearance} style={{ colorScheme: appearance }}>
+      {hasOpened && createPortal(
+        <div className="interest-modal-backdrop" hidden={!open} data-appearance={appearance}>
           <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <aside className="interest-context" aria-label="About this introduction">
-              <VivIntroBrand variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={112} />
+              <VivIntroBrand href="/" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} />
               <div className="interest-context-profile">
                 <p className="portfolio-eyebrow">A thoughtful introduction</p>
                 <h3>{profileName}</h3>
@@ -335,37 +348,34 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                 <ol>
                   <li>Introduce yourself and your family.</li>
                   <li>Verify your email before sending.</li>
-                  <li>The owner reviews your request.</li>
+                  <li>{firstName(profileName)} reviews your interest.</li>
                 </ol>
               </div>
-              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />Protected details stay private until the owner approves.</p>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />Private details are shared only after approval.</p>
             </aside>
             <div className="interest-main-pane">
-            <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} decorative displayWidth={112} /></div>
+            <div className="interest-brand-lockup"><VivIntroBrand href="/" className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Use your saved VivIntro details, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The introduction owner can now review your request." : sessionEmail && existingViewerProfile ? "Confirm your current location and introduce your family. Your verified VivIntro identity is attached." : "Introduce yourself and your family. Add candidate details if you are contacting for someone else."}</p>
+                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "choice" ? "Sign in to reuse your details, or continue with email. You don’t need to create an introduction." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : sessionEmail && existingViewerProfile ? "Check your location and add a short introduction. Your signed-in details are already filled in." : "A few details help the family understand who is getting in touch."}</p>
               </div>
               <button type="button" className="interest-modal-close" disabled={pending} onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
 
             {step === "choice" && (
               <div className="interest-account-choice">
-                <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with Google to reuse the profile details connected to your account.</p></div>
+                <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with your usual account to reuse your details.</p></div>
                 {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
-                <form noValidate onSubmit={event => {
-                  event.preventDefault();
-                  const input = event.currentTarget.elements.namedItem("registeredEmail") as HTMLInputElement;
-                  if (!input.validity.valid) { setRegisteredEmailError(true); setError("Enter your registered email address."); input.focus(); return; }
-                  setRegisteredEmailError(false); void continueWithVivIntro();
-                }} className="interest-choice-form"><label className="interest-field"><span>Registered email</span><input type="email" name="registeredEmail" autoComplete="email" spellCheck={false} required maxLength={180} value={registeredEmail} aria-invalid={registeredEmailError} aria-describedby={registeredEmailError ? verificationErrorId : undefined} onChange={event => { setRegisteredEmail(event.target.value.trim()); if (registeredEmailError) { setRegisteredEmailError(false); setError(""); } }} /></label><small>Choose this Google account when signing in. Your verified account determines which details are reused.</small><button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : "Continue with Google"}</button></form>
+                <Link href={`/login?redirect=${encodeURIComponent(`${portfolioPath}#portfolio-interest`)}`} className="portfolio-button portfolio-button-primary">Sign in to VivIntro</Link>
+                <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : "Continue with Google"}</button>
                 <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setError(""); setStep("details"); }}>Continue as a new visitor</button>
               </div>
             )}
 
-            {step === "details" && <DetailsForm draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
+            {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
+            {(step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -388,7 +398,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
                 <h3>Request sent to {firstName(profileName)}.</h3>
-                <p>The introduction owner can review it and decide whether to share protected details. You can return whenever you&apos;re ready.</p>
+                <p>{firstName(profileName)} can review your interest and decide whether to share private details. There’s nothing else to send now.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
@@ -400,7 +410,8 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   );
 }
 
-function DetailsForm({ draft, portfolioToken, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
+function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
+  hidden: boolean;
   draft: InterestPayload | null;
   portfolioToken: string;
   sessionEmail: string | null;
@@ -425,7 +436,7 @@ function DetailsForm({ draft, portfolioToken, sessionEmail, existingViewerProfil
   }
 
   return (
-    <form onSubmit={onSubmit} className="interest-form" noValidate>
+    <form onSubmit={onSubmit} hidden={hidden} className="interest-form" noValidate>
       <div className="interest-form-scroll">
         {sessionEmail && existingViewerProfile ? (
           <>
@@ -452,8 +463,9 @@ function DetailsForm({ draft, portfolioToken, sessionEmail, existingViewerProfil
         <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
           </>
         )}
+        <p className="interest-verification-help">Your answers stay here while this page is open. {sessionEmail ? "Sending shares them with this family." : "Next, confirm your email to send your interest."}</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
-        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Sending interest shares these details with the introduction owner. Protected details are available only if they approve your request. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
+        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Sending interest shares these details with the introduction owner. Private details are available only if they approve your request. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
       </div>
       <div className="interest-form-footer">
         <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? sessionEmail ? "Sending interest" : "Sending verification code" : undefined}>{pending ? <InterestActionProgress label={sessionEmail ? "Sending interest" : "Sending verification code"} /> : sessionEmail ? "Send interest" : "Verify email and continue"}</button>

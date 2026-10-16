@@ -181,7 +181,7 @@ export default function DashboardClient({
   const accessEvents = accessSummary.events;
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
-  const reviewPublishRef = useRef<HTMLButtonElement>(null);
+  const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
   const draftRevisionRef = useRef(0);
   const savedReviewFingerprintRef = useRef<string | null | undefined>(undefined);
   // A versioned or deliberately unbound loader projection must not become a
@@ -204,14 +204,11 @@ export default function DashboardClient({
     portfolioMedia.some(isShareablePrimaryPhoto)
   );
   const nextRequiredSection = navigableSection(completion.nextEditorSection as PortfolioEditorSection);
-  const nextRequiredSectionLabel = PORTFOLIO_EDITOR_SECTIONS.find((section) => section.id === nextRequiredSection)?.label || "portfolio details";
+  const nextRequiredSectionLabel = PORTFOLIO_EDITOR_SECTIONS.find((section) => section.id === nextRequiredSection)?.label || "introduction details";
   const verificationComplete = canPublishWithVerificationStatus(readinessState.verificationStatus);
   const activeCandidateId = portfolio?.candidate_id || savedCandidateId;
   const readyForPublicationConsent = completion.readyToPublish
     && draftData.privacy_mode !== "private"
-    && Boolean(readinessState.previewedAt)
-    && reviewPreviewsOpened.public
-    && reviewPreviewsOpened.complete
     && verificationComplete
     && readinessState.paymentActive;
   const selfCreatedPortfolio = portfolio?.published_data?.personal?.profile_for === "self";
@@ -277,13 +274,13 @@ export default function DashboardClient({
     const previous = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    reviewPublishRef.current?.focus();
+    reviewHeadingRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !publishing) {
         setReviewOpen(false);
         return;
       }
-      trapDialogFocus(event, reviewPublishRef.current?.closest<HTMLElement>("[role='dialog']") || null);
+      trapDialogFocus(event, reviewHeadingRef.current?.closest<HTMLElement>("[role='dialog']") || null);
     };
     document.addEventListener("keydown", handleKey);
     return () => {
@@ -368,7 +365,7 @@ export default function DashboardClient({
     const text = encodeURIComponent(
       `Sharing ${profileName}'s VivIntro marriage introduction.\n\n`
       + `View the introduction: ${shareUrl}\n\n`
-      + "This link opens the public Introduction. Protected details are shared only if the owner approves a request."
+      + "This link opens the public introduction. Private details are shared only if the owner approves a request."
     );
     window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
   }
@@ -447,7 +444,7 @@ export default function DashboardClient({
       setReviewOpen(false);
       refreshDashboard();
     } catch {
-      setDraftError("We could not publish your portfolio. Please try again.");
+      setDraftError("We could not publish your introduction. Please try again.");
     } finally {
       setPublishing(false);
     }
@@ -455,7 +452,7 @@ export default function DashboardClient({
 
   /** Replaces the active public URL after the owner confirms that the previous link should stop working. */
   async function rotateLink() {
-    if (!confirm("Rotate this link? The existing portfolio URL will stop working immediately.")) return;
+    if (!confirm("Rotate this link? The existing introduction URL will stop working immediately.")) return;
     setRotatingLink(true);
     setDraftError(null);
     try {
@@ -472,7 +469,7 @@ export default function DashboardClient({
 
   /** Removes public access without deleting the owner draft, media, or dashboard configuration. */
   async function unpublishPortfolio() {
-    if (!confirm("Unpublish this portfolio? Anyone using the current link will no longer be able to view it.")) return;
+    if (!confirm("Unpublish this introduction? Anyone using the current link will no longer be able to view it.")) return;
     setUnpublishing(true);
     setDraftError(null);
     try {
@@ -562,7 +559,7 @@ export default function DashboardClient({
 
   async function reviewPortfolio() {
     if (draftData.privacy_mode === "private") {
-      setDraftError("Update the saved sharing setup in Appearance & contact, then review the public Introduction before publishing.");
+      setDraftError("Update the saved sharing setup in Appearance & contact, then review the public introduction before publishing.");
       return;
     }
     const needsSave = draftSaveState !== "saved" || !activePortfolioId;
@@ -668,7 +665,7 @@ export default function DashboardClient({
         || (!allowRevisionChange && expectedFingerprint === null)
         || (fresh.reviewFingerprint && expectedFingerprint !== fresh.reviewFingerprint)) {
         handlePortfolioApiFailure({ ok: false, error: { code: "PORTFOLIO_REVIEW_CHANGED", status: 409,
-          message: "We could not confirm your latest saved portfolio. Loading the latest details; reopen Review and publish when they appear." } });
+          message: "We could not confirm your latest saved introduction. Loading the latest details; reopen Review and publish when they appear." } });
         return null;
       }
       savedReadinessRef.current = result.data.readiness;
@@ -884,10 +881,10 @@ export default function DashboardClient({
       <main id="main-content" tabIndex={-1} className="relative flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
           {pilotAccessState?.isPilotAdministrator ? <section className="mb-6 flex flex-col gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pilot administration">
-            <div><p className="font-semibold">Creator insights</p><p className="mt-2 text-sm text-[var(--workspace-muted)]">Review private onboarding feedback from portfolio creators.</p></div>
+            <div><p className="font-semibold">Creator insights</p><p className="mt-2 text-sm text-[var(--workspace-muted)]">Review private onboarding feedback from introduction creators.</p></div>
             <Link href="/admin/onboarding-feedback" className="dashboard-primary-action min-h-11 justify-center">View feedback</Link>
           </section> : null}
-          {!formOpen && !reviewOpen && (refreshing || openingReview || preparingPreview || renewing || rotatingLink || unpublishing || savingDraft || reviewPreviewSaving) && <LoadingStatus compact className="mb-4" title={renewing ? "Reactivating your Introduction link" : rotatingLink ? "Replacing your Introduction link" : unpublishing ? "Unpublishing your portfolio" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : savingDraft ? "Saving your private draft" : reviewPreviewSaving ? "Saving preview progress" : "Refreshing your dashboard"} />}
+          {!formOpen && !reviewOpen && (refreshing || openingReview || preparingPreview || renewing || rotatingLink || unpublishing || savingDraft || reviewPreviewSaving) && <LoadingStatus compact className="mb-4" title={renewing ? "Reactivating your Introduction link" : rotatingLink ? "Replacing your Introduction link" : unpublishing ? "Unpublishing your introduction" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your introduction preview" : savingDraft ? "Saving your private draft" : reviewPreviewSaving ? "Saving preview progress" : "Refreshing your dashboard"} />}
           <div className="flex flex-col gap-6">
           {!canCreatePortfolio && !portfolio ? (
             <section className="dashboard-glass dashboard-onboarding flex flex-col items-center gap-6 px-6 py-12 text-center sm:px-12">
@@ -899,7 +896,7 @@ export default function DashboardClient({
                   Account setup
                 </p>
                 <h1 className="mt-2 text-3xl font-medium text-[var(--workspace-ink)]">
-                  Your portfolio is not ready to start yet.
+                  Your introduction is not ready to start yet.
                 </h1>
                 <p className="mx-auto mt-4 max-w-xl text-[var(--workspace-muted)]">
                   Please refresh this page. If this continues, contact VivIntro support. Your existing account and shared-link access remain available.
@@ -908,16 +905,16 @@ export default function DashboardClient({
               <button type="button" className="dashboard-primary-action" onClick={() => refreshDashboard()}>Refresh account status</button>
             </section>
           ) : !portfolio?.is_published ? (
-            <section className="dashboard-glass flex flex-col items-start gap-4 p-6 sm:p-6" aria-label="Your portfolio">
+            <section className="dashboard-glass flex flex-col items-start gap-4 p-6 sm:p-6" aria-label="Your introduction">
               <div className="rounded-full bg-[var(--ui-success-surface)] p-4">
                 <Edit3 className="h-7 w-7 text-[var(--workspace-ink)]" />
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--workspace-ink)]">
-                  {portfolio ? "Continue your saved draft" : "Start your portfolio"}
+                  {portfolio ? "Continue your saved draft" : "Start your introduction"}
                 </p>
                 <h1 className="mt-2 text-3xl font-medium text-[var(--workspace-ink)]">
-                  {portfolio ? "Your portfolio is saved privately." : "Let’s build one clear introduction."}
+                  {portfolio ? "Your introduction is saved privately." : "Let’s build one clear introduction."}
                 </h1>
                 <p className="mx-auto mt-4 max-w-lg text-[var(--workspace-muted)]">
                   {portfolio
@@ -943,7 +940,7 @@ export default function DashboardClient({
                 </div>
               ) : (
                 <p className="rounded-xl border border-[var(--workspace-border)] bg-[var(--ui-success-surface)] px-4 py-4 text-sm text-[var(--workspace-ink)]">
-                  Creator access is paused for this account. Your saved portfolio and history remain available.
+                  Creator access is paused for this account. Your saved introduction and history remain available.
                 </p>
               )}
               <p className="text-sm text-[var(--workspace-muted)]">Save your work and continue later. Nothing is published until you complete the final review.</p>
@@ -953,7 +950,7 @@ export default function DashboardClient({
                 <div>
                   {publicShareReady && isExpired && <span className="dashboard-status is-expired">Introduction link expired</span>}
                   <h1>{publishedProfileNeedsUpdate ? "Update your profile to resume sharing." : publicShareReady ? isExpired ? "Your Introduction link has expired." : "Your Introduction is ready to share." : "Your Introduction is not shareable yet."}</h1>
-                  {(!publicShareReady || isExpired) && <p>{publishedProfileNeedsUpdate ? "Update the required details, review both views, and publish the update to resume sharing." : isExpired ? "Reactivate the link before sharing again. Your portfolio and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
+                  {(!publicShareReady || isExpired) && <p>{publishedProfileNeedsUpdate ? "Update the required details, confirm consent, and publish to resume sharing." : isExpired ? "Reactivate the link before sharing again. Your introduction and previous activity remain available." : "Complete the required steps to share your Introduction. Your saved details remain private."}</p>}
                   {readinessState.verificationStatus === "test_exempt" && <p className="dashboard-test-exemption-note">Test publishing access is active for this account. This is not Didit identity verification.</p>}
                 </div>
                 {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
@@ -984,11 +981,11 @@ export default function DashboardClient({
           {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="dashboard-liveness-slot scroll-mt-28" tabIndex={-1}>
             <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} hideWhenVerified initiallyVerified={readinessState.verificationStatus === "verified"} />
           </div> : null}
-          {portfolio && <section className="dashboard-overview" aria-label="Portfolio overview">
+          {portfolio && <section className="dashboard-overview" aria-label="Introduction overview">
             {viewerAccessAvailable ? (
               <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Share this link for your public Introduction. Protected details still need your approval.</p>
+                <p className="dashboard-sharing-description">Share this link for your public introduction. Private details still need your approval.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1034,11 +1031,11 @@ export default function DashboardClient({
               <div className="dashboard-glass p-4">
                 <p className="text-sm font-semibold text-[var(--workspace-ink)]">{publishedProfileNeedsUpdate ? "Update required before sharing" : "Public sharing is off"}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
-                  {publishedProfileNeedsUpdate ? "Your published profile no longer meets the required details. Update your saved details, review both views, and publish the update before sharing again."
-                    : isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved portfolio and activity remain available."
+                  {publishedProfileNeedsUpdate ? "Your published profile no longer meets the required details. Update your saved details, confirm consent, and publish before sharing again."
+                    : isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved introduction and activity remain available."
                     : readinessState.verificationStatus === "test_exempt"
-                    ? "Review and publish your self-created portfolio to activate its link. Test publishing access does not confirm identity."
-                    : "Your saved portfolio, interests, access history, and view totals remain available here. Public sharing requires your own portfolio and current verification."}
+                    ? "Review and publish your self-created introduction to activate its link. Test publishing access does not confirm identity."
+                    : "Your saved introduction, interests, access history, and view totals remain available here. Public sharing requires your own introduction and current verification."}
                 </p>
                 {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
                   if (completion.readyToPublish) void openFinalReview();
@@ -1060,7 +1057,7 @@ export default function DashboardClient({
                 className="dashboard-secondary-action"
               >
                 <Eye className="mr-2 h-4 w-4" />
-                Preview public Introduction
+                Preview public introduction
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>
               <a
@@ -1070,11 +1067,11 @@ export default function DashboardClient({
                 className="dashboard-secondary-action"
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                Preview Complete Portfolio
+                Preview private details
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>
             </div>}
-            {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Portfolio activity at a glance">
+            {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Introduction activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
                 <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
@@ -1152,11 +1149,11 @@ export default function DashboardClient({
             <header className="dashboard-review-header flex flex-none flex-col gap-4 border-b border-[var(--workspace-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p className="dashboard-review-eyebrow text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-gold)]">Review before publishing</p>
-                <h2 id="portfolio-review-heading" className="mt-2 text-xl font-semibold">Review both views before publishing</h2>
+                <h2 ref={reviewHeadingRef} tabIndex={-1} id="portfolio-review-heading" className="mt-2 text-xl font-semibold">Review and publish</h2>
                 <p className="dashboard-review-guidance mt-2 text-sm text-[var(--workspace-muted)]">
                   {publishing
-                    ? "Your reviewed portfolio is being published. This page will update when the result is ready."
-                    : "Check what is public and what needs your approval. Previews open in new tabs; return here to continue. Your saved review progress is remembered until you change your portfolio."}
+                    ? "Your reviewed introduction is being published. This page will update when the result is ready."
+                    : "Confirm what you want to share, then publish. You can open either preview if you’d like to check the details."}
                 </p>
               </div>
               <div className="app-header-actions">
@@ -1168,24 +1165,39 @@ export default function DashboardClient({
             <div className="dashboard-review-content min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               {publishing ? (
                 <PortfolioLoadingStatus
-                  title={portfolio?.is_published ? "Publishing your changes" : "Publishing your portfolio"}
+                  title={portfolio?.is_published ? "Publishing your changes" : "Publishing your introduction"}
                   detail="We are preparing your Introduction link. Keep this page open until the result appears."
                   state="weaving"
                   className="mx-auto min-h-full justify-center py-12"
                 />
               ) : (
                 <>
-                  <div id="review-preview-links" className="grid gap-4 lg:grid-cols-2">
+                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
+                    <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
+                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public introduction link; private details still require your approval.</p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <ReviewRequirement complete={completion.readyToPublish} label="Required details complete" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
+                      <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness checks complete"} pendingLabel="Complete the liveness checks" />
+                      <ReviewRequirement complete={readinessState.paymentActive} label="Creator account active" pendingLabel="Creator account required" />
+                      <ReviewRequirement complete={readinessState.disclosureConfirmed || sensitiveDisclosureAccepted} label="Publication consent given" pendingLabel="Give consent when all other steps are complete" />
+                    </div>
+                  </section>
+                  {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
+                    <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
+                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. Contact information, exact birth details, and other private details require my approval. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
+                  </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Complete the required details, liveness check and account setup to give publication consent here. Consent for the liveness check is requested separately.</p>}
+                  <h3 className="mt-6 font-semibold">Optional previews</h3>
+                  <div id="review-preview-links" className="mt-4 grid gap-4 lg:grid-cols-2">
                     <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                       <div className="border-b border-[var(--workspace-border)] pb-4">
-                        <h3 className="font-semibold">Public Introduction</h3>
+                        <h3 className="font-semibold">Public introduction</h3>
                         <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible to anyone with your active link.</p>
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
                         <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check your primary photo and the details people can see without requesting access.</p>
                         <a id="review-public-preview" href="/preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("public")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
-                          Review public Introduction
+                          Review public introduction
                         </a>
                       </div>
                     </article>
@@ -1198,27 +1210,11 @@ export default function DashboardClient({
                         <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check the additional details and photos you are willing to share after approving a request.</p>
                         <a id="review-complete-preview" href="/approved-preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("complete")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
-                          Review Complete Portfolio
+                          Review private details
                         </a>
                       </div>
                     </article>
                   </div>
-
-                  <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
-                    <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
-                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public Introduction link; protected details still require your approval.</p>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      <ReviewRequirement complete={completion.readyToPublish} label="Required details complete" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
-                      <ReviewRequirement complete={reviewPreviewsOpened.public && reviewPreviewsOpened.complete && Boolean(readinessState.previewedAt)} label="Both views reviewed" pendingLabel="Review the public Introduction and Complete Portfolio" />
-                      <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness checks complete"} pendingLabel="Complete the liveness checks" />
-                      <ReviewRequirement complete={readinessState.paymentActive} label="Creator account active" pendingLabel="Creator account required" />
-                      <ReviewRequirement complete={readinessState.disclosureConfirmed || sensitiveDisclosureAccepted} label="Publication consent given" pendingLabel="Give consent when all other steps are complete" />
-                    </div>
-                  </section>
-                  {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
-                    <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
-                    <span>I reviewed the public Introduction and Complete Portfolio previews. My full name and Marital Status will be visible to anyone with my active link. Complete Portfolio details, protected contact information, and exact birth details require my approval. I consent to publish the information shown in these previews. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
-                  </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Once the details, both reviews, liveness check and account status are complete, you can give publication consent here. Consent for the liveness check is requested separately.</p>}
                 </>
               )}
             </div>
@@ -1226,29 +1222,21 @@ export default function DashboardClient({
             <footer className="dashboard-review-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-4 py-4 sm:px-6">
               <div>
                 <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready to confirm publication." : "Your saved changes are not public yet."}</p>
-                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">The Complete Portfolio remains locked until you approve a verified interest request.</p>
+                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">Private details stay private until you approve a verified interest request.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
                 {reviewPreviewSaving && !publishing && <LoadingStatus compact title="Saving your preview progress" />}
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button type="button" className="dashboard-secondary-action" disabled={publishing} onClick={() => setReviewOpen(false)}>Back to dashboard</button>
-                {!completion.readyToPublish || draftData.privacy_mode === "private" ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); openEditorAtRequiredStep(); }}>
+                {!completion.readyToPublish || draftData.privacy_mode === "private" ? <button type="button" className="dashboard-primary-action" onClick={() => { setReviewOpen(false); openEditorAtRequiredStep(); }}>
                   <Edit3 className="h-4 w-4" /> Complete {nextRequiredSectionLabel}
-                </button> : !reviewPreviewsOpened.public || !reviewPreviewsOpened.complete ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => {
-                  const nextPreviewId = reviewPreviewsOpened.public ? "review-complete-preview" : "review-public-preview";
-                  document.getElementById(nextPreviewId)?.focus();
-                }}>
-                  <Eye className="h-4 w-4" aria-hidden="true" /> Review both views before publishing
-                </button> : !readinessState.previewedAt ? <button type="button" ref={reviewPublishRef} disabled={reviewPreviewSaving} className="dashboard-primary-action" onClick={() => { void markPreviewed(); }}>
-                  <RefreshCw className="h-4 w-4" /> {reviewPreviewSaving ? "Saving preview progress..." : "Retry saving preview progress"}
-                </button> : !verificationComplete && !activeCandidateId ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
+                </button> : !verificationComplete && !activeCandidateId ? <button type="button" className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
                   <RefreshCw className="h-4 w-4" /> Refresh verification setup
-                </button> : !verificationComplete ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={goToLivenessCheck}>
+                </button> : !verificationComplete ? <button type="button" className="dashboard-primary-action" onClick={goToLivenessCheck}>
                   <ShieldCheck className="h-4 w-4" /> Go to liveness check
-                </button> : !readinessState.paymentActive ? <button type="button" ref={reviewPublishRef} className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
+                </button> : !readinessState.paymentActive ? <button type="button" className="dashboard-primary-action" onClick={() => { setReviewOpen(false); refreshDashboard(); }}>
                   <RefreshCw className="h-4 w-4" /> Refresh account status
                 </button> : <button
-                  ref={reviewPublishRef}
                   type="button"
                   className="dashboard-primary-action"
                   disabled={
@@ -1261,13 +1249,7 @@ export default function DashboardClient({
                   <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
                   {publishing
                     ? "Publishing..."
-                    : portfolio?.is_published
-                          ? readinessState.disclosureConfirmed
-                            ? "Publish reviewed changes"
-                            : "Confirm & publish changes"
-                          : readinessState.disclosureConfirmed
-                            ? "Publish portfolio"
-                            : "Confirm & publish portfolio"}
+                    : "Save and publish"}
                 </button>
                 }
               </div>
@@ -1283,7 +1265,7 @@ export default function DashboardClient({
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-4">
-                    <h2 id="portfolio-editor-heading" tabIndex={-1} className="text-lg font-semibold">Portfolio details</h2>
+                    <h2 id="portfolio-editor-heading" tabIndex={-1} className="text-lg font-semibold">Introduction details</h2>
                     <span className={`dashboard-save-state is-${draftSaveState}`} aria-live="polite">
                       {draftSaveState === "saving"
                         ? "Saving..."
@@ -1354,7 +1336,7 @@ export default function DashboardClient({
 
             <div className="dashboard-editor-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
-                {(savingDraft || openingReview || preparingPreview || refreshing) && <LoadingStatus compact className="mb-4" title={savingDraft ? "Saving your private draft" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your portfolio preview" : "Refreshing your portfolio"} />}
+                {(savingDraft || openingReview || preparingPreview || refreshing) && <LoadingStatus compact className="mb-4" title={savingDraft ? "Saving your private draft" : openingReview ? "Preparing your saved review" : preparingPreview ? "Preparing your introduction preview" : "Refreshing your introduction"} />}
                 {draftError && (
                   <div role="alert" className="mb-4 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] px-4 py-4 text-sm text-[var(--ui-danger)]">
                     <p className="font-semibold">We couldn&apos;t complete that action.</p>
@@ -1370,10 +1352,10 @@ export default function DashboardClient({
                 <div className="dashboard-editor-footer-layout">
                   <div className="dashboard-editor-footer-notes"><p className="dashboard-editor-footer-copy text-sm leading-6 text-[var(--workspace-muted)]">
                     {editorSection === "privacy"
-                      ? "Last section: save your answers, then review both portfolio views. The review will guide you to any remaining steps."
+                      ? "Save your answers, then confirm consent in Review and publish. Previews are optional."
                       : portfolio?.is_published
                       ? "Changes autosave as a draft. Review and publish to update what people see."
-                      : "Changes autosave as a draft. Publishing creates the portfolio people can view."}
+                      : "Changes autosave as a draft. Publishing creates the introduction people can view."}
                   </p>
                   <p className="text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
                   </div><div className="dashboard-editor-actions">
@@ -1467,7 +1449,6 @@ function CreatorReadinessTracker({
   const steps = [
     { label: "Basics", complete: completion.basicsComplete },
     { label: "Required details", complete: completion.readyToPublish },
-    { label: "Review both views", complete: Boolean(readiness.publicPreviewReviewed && readiness.completePreviewReviewed) },
     { label: readiness.verificationStatus === "test_exempt" ? "Test publishing access" : "Liveness check", complete: canPublishWithVerificationStatus(readiness.verificationStatus) },
     { label: "Creator account", complete: readiness.paymentActive },
     { label: "Final publication consent", complete: readiness.disclosureConfirmed },
@@ -1496,7 +1477,7 @@ function CreatorReadinessTracker({
               : "This checklist applies to your saved draft. Your published snapshot is unchanged; see its sharing status above."
               : completion.readyToPublish && !canPublishWithVerificationStatus(readiness.verificationStatus)
               ? "Next: Liveness check. Your answers are complete, but publishing is not finished."
-              : nextStep ? `Next: ${nextStep.label}` : "Your portfolio is published."}
+              : nextStep ? `Next: ${nextStep.label}` : "Your introduction is published."}
             {draftSaveState === "saving" ? " · Saving changes…" : ""}
           </p>
           {!completion.readyToPublish && <p className="mt-2 text-sm text-[var(--workspace-muted)]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
@@ -1568,7 +1549,7 @@ function HoroscopeManager({
           Horoscope attachment
         </h3>
         <p className="mt-2 text-xs leading-5 text-[var(--workspace-ink-muted)]">
-          One private scanned image. It appears only to signed-in viewers you approve and opens separately from the portfolio.
+          One private scanned image. It appears only to signed-in viewers you approve and opens separately from the introduction.
         </p>
       </div>
 
@@ -1597,7 +1578,7 @@ function HoroscopeManager({
                     ? "Legacy document — replace it with a scanned image before sharing"
                     : horoscope.published_at
                       ? "Published for approved viewers"
-                      : "Ready — publish or update the portfolio to share it"}
+                      : "Ready — publish or update the introduction to share it"}
                 </p>
               </div>
             </div>
@@ -1809,8 +1790,8 @@ function RelationshipLifecycle({
 
   async function manage(grant: AccessGrant, action: "renew" | "revoke") {
     const prompt = action === "revoke"
-      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the Complete Portfolio.`
-      : `Renew Complete Portfolio access for ${grant.viewerName || "this viewer"} for 15 days?`;
+      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the private details.`
+      : `Renew private details access for ${grant.viewerName || "this viewer"} for 15 days?`;
     if (!confirm(prompt)) return;
     setWorkingId(grant.id);
     setActionError(null);
@@ -1868,7 +1849,7 @@ function RelationshipLifecycle({
     : listModal === "set-aside"
       ? "Requests set aside"
       : listModal === "access"
-        ? "Current Complete Portfolio approvals"
+        ? "Current private details approvals"
         : "Relationship history";
 
   return (
@@ -1915,8 +1896,8 @@ function RelationshipLifecycle({
 
       <CompactRelationshipStage
         stage="access"
-        title="Complete Portfolio approvals"
-        description={viewerAccessAvailable ? "Approved viewers can open protected details until their grants end." : "Existing approvals remain on record, but viewers cannot open protected details while the Introduction is unavailable."}
+        title="Private details approvals"
+        description={viewerAccessAvailable ? "Approved viewers can open private details until their grants end." : "Existing approvals remain on record, but viewers cannot open private details while the Introduction is unavailable."}
         count={activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
         onToggle={() => onToggleStage("access")}
@@ -2020,12 +2001,12 @@ function RelationshipLifecycle({
           >
             <div className="min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">Confirm controlled disclosure</p>
-              <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant Complete Portfolio access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
+              <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant private details access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
                 Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
               </p>
               <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
-                <p className="text-sm font-semibold">The Complete Portfolio will disclose:</p>
+                <p className="text-sm font-semibold">You will share:</p>
                 {disclosedCategories.length > 0 ? (
                   <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[var(--workspace-ink)]">
                     {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
@@ -2038,7 +2019,7 @@ function RelationshipLifecycle({
                 You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
               </p>
               {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
-              {workingId && <LoadingStatus compact className="mt-4" title="Granting Complete Portfolio access" />}
+              {workingId && <LoadingStatus compact className="mt-4" title="Granting private details access" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
               <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
@@ -2051,7 +2032,7 @@ function RelationshipLifecycle({
                   if (approved) setApprovalCandidate(null);
                 })}
               >
-                {workingId === approvalCandidate.id ? "Granting access..." : "Confirm Complete Portfolio for 15 days"}
+                {workingId === approvalCandidate.id ? "Granting access..." : "Confirm private details for 15 days"}
               </button>
             </div>
           </section>
@@ -2181,8 +2162,8 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
     <>
       {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
       {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
-      {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro portfolio</Link>}
-      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant Complete Portfolio access</button> : <span className="dashboard-action-note">A verified VivIntro account is required before Complete access can be granted.</span>}</> : null}
+      {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro introduction</Link>}
+      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant private details access</button> : <span className="dashboard-action-note">A verified VivIntro account is required before private details can be shared.</span>}</> : null}
     </>
   );
 }
@@ -2191,7 +2172,7 @@ function GrantDetail({ grant, viewerAccessAvailable }: { grant: AccessGrant; vie
   return (
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
-      {grant.status === "active" && !viewerAccessAvailable && <p>Approval remains on record, but this viewer cannot open the Complete Portfolio while your Introduction is unavailable.</p>}
+      {grant.status === "active" && !viewerAccessAvailable && <p>Approval remains on record, but this viewer cannot open the private details while your Introduction is unavailable.</p>}
       <dl className="dashboard-detail-grid">
         <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
         <div><dt>Access ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
@@ -2251,13 +2232,13 @@ function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: stri
     request_submitted: `${viewer} submitted a request`,
     request_reopened: `${viewer}'s request was reopened`,
     request_rejected: `${viewer}'s request was set aside`,
-    grant_created: `Complete Portfolio access granted to ${viewer}`,
-    grant_renewed: `Complete Portfolio access renewed for ${viewer}`,
-    grant_accessed: `${viewer} opened the Complete Portfolio`,
+    grant_created: `Private details access granted to ${viewer}`,
+    grant_renewed: `Private details access renewed for ${viewer}`,
+    grant_accessed: `${viewer} opened the private details`,
     grant_revoked: `Access ended for ${viewer}`,
-    grant_expired: `Complete Portfolio access expired for ${viewer}`,
-    portfolio_rotated: "Portfolio link rotated",
-    portfolio_unpublished: "Portfolio unpublished",
+    grant_expired: `Private details access expired for ${viewer}`,
+    portfolio_rotated: "Introduction link rotated",
+    portfolio_unpublished: "Introduction unpublished",
   };
   return labels[type];
 }
@@ -2295,7 +2276,10 @@ function trapDialogFocus(event: KeyboardEvent, dialog: HTMLElement | null) {
   if (!focusable.length) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
+  if (!focusable.includes(document.activeElement as HTMLElement)) {
+    event.preventDefault();
+    (event.shiftKey ? last : first).focus();
+  } else if (event.shiftKey && document.activeElement === first) {
     event.preventDefault();
     last.focus();
   } else if (!event.shiftKey && document.activeElement === last) {
@@ -2356,7 +2340,7 @@ function fullViewDisclosureCategories(
     const protectedCopy = protectedPhotoCount > 0
       ? `, including ${protectedPhotoCount} protected ${protectedPhotoCount === 1 ? "photo" : "photos"}`
       : "";
-    categories.push(`${media.length} portfolio ${media.length === 1 ? "photo" : "photos"}${protectedCopy}`);
+    categories.push(`${media.length} introduction ${media.length === 1 ? "photo" : "photos"}${protectedCopy}`);
   }
   if (horoscope) categories.push("Original horoscope attachment");
   return categories;
@@ -2382,7 +2366,7 @@ const EMPTY_DATA: PortfolioData = {
   contact: {},
   style: {
     appearance: "light",
-    template_name: "Nakshatra Portfolio",
+    template_name: "Nakshatra Introduction",
     theme_color: "#f7f5ef",
   },
   preferences: {},

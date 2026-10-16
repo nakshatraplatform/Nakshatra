@@ -49,7 +49,7 @@ const authStartSchema = z.discriminatedUnion("method", [
     email,
     redirect: z.string().max(500).optional(),
   }),
-  z.object({ method: z.literal("password_recovery"), email }),
+  z.object({ method: z.literal("password_recovery"), email, redirect: z.string().max(500).optional() }),
 ]);
 
 function authEmailProviderErrorResponse(error: unknown) {
@@ -220,8 +220,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const resetPath = parsed.data.redirect
+      ? `/reset-password?redirect=${encodeURIComponent(sanitizeInternalRedirect(parsed.data.redirect))}`
+      : "/reset-password";
     const recoveryUrl = createCanonicalAppUrl(
-      "/api/auth/callback?next=%2Freset-password",
+      `/api/auth/callback?next=${encodeURIComponent(resetPath)}`,
       request.url
     );
     const { error } = await supabase.auth.resetPasswordForEmail(

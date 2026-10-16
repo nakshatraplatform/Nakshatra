@@ -143,7 +143,7 @@ describe("blueprint form", () => {
 
   it("guides optional narrative answers with an accessible example and minimum length", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story/ }));
     expect(screen.getByLabelText("How would your close friends describe you?")).toHaveAttribute("maxLength", "1600");
     fireEvent.click(screen.getAllByText("See a good example")[0]);
     expect(screen.getByText(/brings friends together for a relaxed meal/)).toBeVisible();
@@ -156,7 +156,7 @@ describe("blueprint form", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     expect(screen.getByText(/City and country where you studied/)).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /04Family/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /04Family/ }));
     expect(screen.getAllByText(/Place or region your family traces its roots to/)).toHaveLength(2);
   });
 
@@ -167,7 +167,7 @@ describe("blueprint form", () => {
     }
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "An unsaved but retained answer" } });
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story/ }));
     const interests = screen.getByRole("combobox", { name: "Select up to 6 Interests" });
     for (const item of ["Cooking", "Music", "Reading", "Hiking", "Travel", "Art"]) {
       fireEvent.change(interests, { target: { value: item } });
@@ -290,7 +290,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
 
-    const sectionNavigation = screen.getByRole("navigation", { name: "Portfolio form sections" });
+    const sectionNavigation = screen.getByRole("navigation", { name: "Introduction form sections" });
     const sectionLabels = within(sectionNavigation).getAllByRole("button").map((button) => button.textContent);
     expect(sectionLabels).toHaveLength(7);
     expect(sectionLabels.map((label) => label?.replace(/\s+/g, " "))).toEqual([
@@ -343,7 +343,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
     fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
-    expect(screen.getByText("Public Introduction")).toBeInTheDocument();
+    expect(screen.getByText("Public introduction")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Brief Introduction|Detailed Introduction/ })).not.toBeInTheDocument();
     rerender(<BlueprintForm data={{ ...completeBlueprint, privacy_mode: "private" }} onUpdate={onUpdate} />);
     fireEvent.click(screen.getByRole("button", { name: "Update sharing setup" }));
@@ -355,7 +355,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     render(<BlueprintForm data={{ ...completeBlueprint, preferences: {} }} onUpdate={onUpdate} />);
 
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Match & future/i }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Match & future/i }));
     fireEvent.change(screen.getByLabelText("Maximum height"), { target: { value: `5'10"` } });
 
     expect(onUpdate).toHaveBeenCalledWith("preferences", expect.objectContaining({

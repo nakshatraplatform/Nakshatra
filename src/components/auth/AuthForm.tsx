@@ -21,7 +21,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "@/features/auth/password-policy";
-import { isBrokerdeskAuthRedirect } from "@/lib/security/redirect";
+import { isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 type Mode = "login" | "signup";
 type Screen = "credentials" | "verify" | "recovery" | "recovery_sent";
@@ -30,7 +30,7 @@ type PendingAction = "google" | "credentials" | "verify" | "resend" | "recovery"
 const COPY = {
   login: {
     eyebrow: "Welcome back",
-    title: "Sign in to your portfolio",
+    title: "Sign in to VivIntro",
     body: "Use your email and password, or continue with Google.",
     primaryAction: "Sign in",
     altPrompt: "New to VivIntro?",
@@ -40,7 +40,7 @@ const COPY = {
   signup: {
     eyebrow: "Begin privately",
     title: "Create your account",
-    body: "Create a private portfolio, preview both views, and follow the publication steps shown in your dashboard.",
+    body: "Start your introduction privately. When you’re ready, confirm consent and publish. Previews are optional.",
     primaryAction: "Create account",
     altPrompt: "Already have an account?",
     altCta: "Sign in",
@@ -59,7 +59,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const requestedRedirect = searchParams.get("redirect") || "/dashboard";
+  const requestedRedirect = sanitizeInternalRedirect(searchParams.get("redirect"));
   const brokerdeskContinuation = isBrokerdeskAuthRedirect(requestedRedirect);
   const redirectPath = requestedRedirect;
   const copy = brokerdeskContinuation
@@ -186,7 +186,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     event.preventDefault();
     setPendingAction("recovery");
     setError("");
-    const { ok, body } = await startAuthentication({ method: "password_recovery", email });
+    const { ok, body } = await startAuthentication({ method: "password_recovery", email, redirect: redirectPath });
     if (!ok || !body?.sent) {
       setError(body?.error || "We could not send the recovery email.");
     } else {
@@ -211,17 +211,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <main className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined} data-mode={mode}>
         {!brokerdeskContinuation && (
           <aside className="account-context" aria-label="VivIntro access model">
-            <p className="account-context-kicker">One current portfolio</p>
-            <h2>{mode === "signup" ? "Begin privately. Share only when you are ready." : "Return to your portfolio and its conversations."}</h2>
+            <p className="account-context-kicker">One current introduction</p>
+            <h2>{mode === "signup" ? "Begin privately. Share only when you are ready." : "Return to your introduction and its conversations."}</h2>
             <p>{mode === "signup"
-              ? "Build your introduction in your own time, preview every view, and decide when it becomes shareable."
+              ? "Build your introduction in your own time, use optional previews, and decide when to publish."
               : "Update your story, manage your shared link, and respond to verified interest from one place."}</p>
             <ol className="account-context-flow">
               <li><span>01</span><div><strong>Create privately</strong><small>Your draft is visible only to you.</small></div></li>
-              <li><span>02</span><div><strong>Publish an Introduction</strong><small>Share one current link without exposing protected details.</small></div></li>
-              <li><span>03</span><div><strong>Approve protected access</strong><small>Complete Portfolio access lasts 15 days and can end earlier.</small></div></li>
+              <li><span>02</span><div><strong>Publish an Introduction</strong><small>Share one current link without exposing private details.</small></div></li>
+              <li><span>03</span><div><strong>Approve private sharing</strong><small>Private details access lasts 15 days and can end earlier.</small></div></li>
             </ol>
-            <div className="account-context-assurance"><ShieldCheck aria-hidden="true" /><span><strong>Designed around consent</strong><small>No searchable public directory and no automatic access to protected details.</small></span></div>
+            <div className="account-context-assurance"><ShieldCheck aria-hidden="true" /><span><strong>Designed around consent</strong><small>No searchable public directory and no automatic access to private details.</small></span></div>
           </aside>
         )}
         <section className="account-panel" aria-labelledby="account-title">
@@ -236,9 +236,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 <div className="account-pilot-note">
                   <ShieldCheck aria-hidden="true" />
                   <div>
-                    <strong>Your portfolio begins as a private draft.</strong>
-                    <p>Confirm your email to start creating. Publishing requires your own portfolio, required details, your final review, and liveness checks. A Liveness checked badge appears only after those checks succeed; it does not verify legal identity or photo ownership. If someone shared a portfolio with you, use that link to view it and show interest—you do not need to create your own portfolio.</p>
-                    <Link href="/#samples">See the portfolio format</Link>
+                    <strong>Your introduction begins as a private draft.</strong>
+                    <p>Confirm your email to start creating. Publishing requires your own introduction, required details, your final review, and liveness checks. A Liveness checked badge appears only after those checks succeed; it does not verify legal identity or photo ownership. If someone shared an introduction with you, use that link to view it and show interest—you do not need to create your own introduction.</p>
+                    <Link href="/#samples">See the introduction format</Link>
                   </div>
                 </div>
               )}

@@ -16,7 +16,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
       const badge = portfolio.getByLabel(/^Liveness checked\./);
       await expect(badge).toBeVisible();
       await expect(badge.getByText("Liveness checked")).toBeVisible();
-      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, portfolio photo ownership/i);
+      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/i);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       if (width === 375 || width === 1440) {
         await page.screenshot({

@@ -2,7 +2,7 @@ export const CELESTIAL_UNION_TEMPLATE_ID = 1;
 export const CELESTIAL_UNION_TEMPLATE_NAME = "Nakshatra Portfolio";
 
 export const PORTFOLIO_VIEW_LABELS = {
-  complete: "Complete Portfolio",
+  complete: "Private details",
 } as const;
 
 /**

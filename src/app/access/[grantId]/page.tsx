@@ -14,13 +14,13 @@ const resolutionSchema = z.discriminatedUnion("status", [
 export default async function CompletePortfolioAccessPage({ params }: { params: Promise<{ grantId: string }> }) {
   const { grantId } = await params;
   const parsedGrantId = grantIdSchema.safeParse(grantId);
-  if (!parsedGrantId.success) return <AccessState title="This access link is unavailable" copy="Ask the portfolio owner to share a current access email." />;
+  if (!parsedGrantId.success) return <AccessState title="This access link is unavailable" copy="Ask the person who shared this introduction to share a current access email." />;
 
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) {
     return (
-      <AccessShell title="Verify before viewing" copy="Complete Portfolio access is private. Verify the same email address that received this link.">
+      <AccessShell title="Verify before viewing" copy="Private details need approval. Verify the same email address that received this link.">
         <AccessVerificationClient grantId={grantId} />
       </AccessShell>
     );
@@ -32,13 +32,13 @@ export default async function CompletePortfolioAccessPage({ params }: { params: 
     return <AccessState title="This access link is unavailable" copy="It may have ended or belong to a different verified account." />;
   }
   if (resolution.data.status === "expired") {
-    return <AccessState title="This access has expired" copy="Complete Portfolio access lasts 15 days. Ask the portfolio owner to renew it." />;
+    return <AccessState title="This access has expired" copy="Approved access lasts up to 15 days. Ask the person who shared this introduction to renew it." />;
   }
   if (resolution.data.status === "signin_required") {
-    return <AccessShell title="Verify before viewing" copy="Complete Portfolio access is private. Sign in again to continue."><AccessVerificationClient grantId={grantId} /></AccessShell>;
+    return <AccessShell title="Verify before viewing" copy="Private details need approval. Sign in again to continue."><AccessVerificationClient grantId={grantId} /></AccessShell>;
   }
   if (resolution.data.status === "active") redirect(`/p/${encodeURIComponent(resolution.data.shareToken)}`);
-  return <AccessState title="This access link is unavailable" copy="Ask the portfolio owner to share a current access email." />;
+  return <AccessState title="This access link is unavailable" copy="Ask the person who shared this introduction to share a current access email." />;
 }
 
 function AccessState({ title, copy }: { title: string; copy: string }) {
