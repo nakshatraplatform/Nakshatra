@@ -15,3 +15,5 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 const limit = Math.min(Math.max(Number.parseInt(process.env.DELETION_BATCH_SIZE || "10", 10) || 10, 1), 50);
 const result = await createAccountDeletionWorker(supabase).run(limit);
 console.log(`Account deletion run complete: ${result.completed} completed, ${result.deferred} deferred.`);
+
+if (result.deferred > 0) throw new Error("ACCOUNT_DELETION_WORK_DEFERRED");

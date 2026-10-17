@@ -255,7 +255,7 @@ order by id
 limit 1;
 grant select on nak80_notification_job to service_role;
 update app_private.notification_outbox
-set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+set status='processing',attempt_count=1,first_attempt_at=pg_catalog.now(),lease_expires_at=pg_catalog.now()+interval '5 minutes'
 where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
@@ -283,7 +283,7 @@ select is(public.complete_relationship_notification_outbox((select notification_
 reset role;
 select ok((select status='processing' and attempt_count=2 from app_private.notification_outbox where notification_ref=(select notification_ref from nak80_notification_job)),'an expired completion leaves the job available for a fresh claim');
 update app_private.notification_outbox
-set status='processing',attempt_count=1,lease_expires_at=pg_catalog.now()+interval '5 minutes'
+set status='processing',attempt_count=1,first_attempt_at=pg_catalog.now(),lease_expires_at=pg_catalog.now()+interval '5 minutes'
 where notification_ref=(select notification_ref from nak80_notification_job);
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';

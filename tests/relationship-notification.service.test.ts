@@ -26,7 +26,7 @@ describe("relationship notification delivery", () => {
       }], error: null })
       .mockResolvedValueOnce({ data: "sent", error: null });
     const rows = {
-      reveal_grants: { data: { id: grantId, expires_at: "2026-10-05T12:00:00.000Z", portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
+      reveal_grants: { data: { id: grantId, expires_at: new Date(Date.now() + 86_400_000).toISOString(), portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
       portfolios: { data: { draft_data: { personal: { name: "Aditi Rao" } } }, error: null },
     };
     const from = vi.fn((table: keyof typeof rows) => {
@@ -180,7 +180,7 @@ describe("relationship notification delivery", () => {
       }], error: null })
       .mockResolvedValueOnce({ data: "sent", error: null });
     const rows = {
-      reveal_grants: { data: { id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-10-05T12:00:00.000Z", portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
+      reveal_grants: { data: { id: "22222222-2222-4222-8222-222222222222", expires_at: new Date(Date.now() + 86_400_000).toISOString(), portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
       portfolios: { data: { draft_data: {} }, error: null },
     };
     const from = vi.fn((table: keyof typeof rows) => {

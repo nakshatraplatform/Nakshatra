@@ -10,6 +10,15 @@ import {
   type ResolvedPortfolio,
 } from "./public-portfolio.contract";
 import { PublicPortfolioRepository } from "./public-portfolio.repository";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
+
+type SigningOptions = { createSigningClient?: () => SupabaseClient };
+
+/** Stored descriptors must not change object identity when the SDK constructs a URL. */
+function canonicalStoragePath(path: string) {
+  return /^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+$/.test(path)
+    && path.split("/").every(segment => segment !== "." && segment !== "..");
+}
 
 export interface PortfolioView extends ResolvedPortfolio {
   accessMode: "public" | "approved";
@@ -57,7 +66,8 @@ export async function resolvePublicPortfolioAvailability(
 export async function resolvePortfolioView(
   supabase: SupabaseClient,
   token: string,
-  authenticated: boolean
+  authenticated: boolean,
+  { createSigningClient = createServiceRoleClient }: SigningOptions = {}
 ): Promise<PortfolioView | null> {
   const repository = new PublicPortfolioRepository(supabase);
   const publicPortfolio = await resolvePublicPortfolio(supabase, token);
@@ -80,7 +90,7 @@ export async function resolvePortfolioView(
     identityVerified,
     accessMode,
     photos: await createSafePhotoUrls(
-      repository,
+      accessMode === "approved" ? new PublicPortfolioRepository(createSigningClient()) : repository,
       resolved.media,
       accessMode === "approved" && resolved.accessExpiresAt
         ? privateCapabilityTtl(resolved.accessExpiresAt)
@@ -113,16 +123,19 @@ export async function isPortfolioOwner(
 /** Resolves and signs an approved horoscope for five minutes. */
 export async function resolveApprovedHoroscope(
   supabase: SupabaseClient,
-  token: string
+  token: string,
+  { createSigningClient = createServiceRoleClient }: SigningOptions = {}
 ): Promise<(ApprovedHoroscope & { signedUrl: string }) | null> {
   const repository = new PublicPortfolioRepository(supabase);
   const { data, error } = await repository.resolveApprovedHoroscope(token);
   if (error || !data) return null;
   const parsed = approvedHoroscopeSchema.safeParse(data);
-  if (!parsed.success) return null;
+  if (!parsed.success || !canonicalStoragePath(parsed.data.accessPath)) return null;
   const ttl = privateCapabilityTtl(parsed.data.accessExpiresAt);
   if (!ttl) return null;
-  const signed = await repository.createHoroscopeUrl(
+  // Authorization stays on the viewer client. Privilege is used only for the
+  // exact descriptor returned above, never for a path supplied by a browser.
+  const signed = await new PublicPortfolioRepository(createSigningClient()).createHoroscopeUrl(
     parsed.data.accessPath,
     ttl,
     undefined
@@ -138,6 +151,7 @@ async function createSafePhotoUrls(
 ): Promise<PortfolioPhoto[]> {
   if (!expiresInSeconds) return [];
   const photos = await Promise.all(media.map(async (item): Promise<PortfolioPhoto | null> => {
+    if (!canonicalStoragePath(item.accessPath)) return null;
     const signed = await repository.createPhotoUrl(item.accessPath, expiresInSeconds);
     if (!signed.data?.signedUrl) return null;
     return {
