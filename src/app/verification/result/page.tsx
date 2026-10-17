@@ -9,7 +9,7 @@ import { IdentityVerificationDashboard } from "@/features/identity-verification/
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const metadata: Metadata = {
-  title: "Verification submitted · VivIntro",
+  title: "Verification submitted",
   robots: { index: false, follow: false },
 };
 
@@ -25,7 +25,7 @@ export default async function VerificationResultPage() {
       <div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
       <p className="site-eyebrow">Liveness check</p>
       <h1>Your liveness result</h1>
-      <p>Returning from Didit does not confirm approval. We check the result securely before updating your portfolio.</p>
+      <p>Returning from Didit does not mean the check is complete. We check the result securely before updating your introduction.</p>
       {candidateId ? <IdentityVerificationDashboard candidateId={candidateId} checkResultOnLoad /> : <p>{auth.status === "authenticated" || auth.status === "service_unavailable"
         ? "We could not load your check here. Open your dashboard to check its status."
         : "Sign in to view your private result. If you used another device for the camera check, return to your signed-in dashboard."}</p>}

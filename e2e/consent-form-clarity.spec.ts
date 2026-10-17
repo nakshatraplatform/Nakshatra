@@ -9,6 +9,8 @@ test("portfolio home links and aligned interest fields preserve both themes", as
     const header = page.getByRole("banner");
     const logo = header.getByRole("link", { name: "VivIntro home" });
     await expect(logo).toHaveAttribute("href", "/");
+    await expect(logo).toHaveAttribute("target", "_blank");
+    await expect(logo).toHaveAttribute("rel", "noopener noreferrer");
     await logo.focus();
     await expect(logo).toHaveCSS("outline-style", "solid");
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "VivIntro home" })).toHaveAttribute("href", "/");

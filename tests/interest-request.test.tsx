@@ -49,7 +49,7 @@ function fillDecisionDetails() {
     fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "+1 617 555 0123" } });
   }
 }
-describe("interest request flow", () => {
+describe("interest flow", () => {
   it("focuses and describes an incomplete existing-profile location before sending", async () => {
     const request = vi.fn();
     vi.stubGlobal("fetch", request);
@@ -84,7 +84,7 @@ describe("interest request flow", () => {
     expect(payload.candidate).toEqual({ name: "Arun Mehta", relationship: "Parent" });
     expect(payload.message).toBeNull();
     complete(new Response(JSON.stringify({ ok: true }), { status: 201 }));
-    expect(await screen.findByText(/Request sent to Ananya/)).toBeInTheDocument();
+    expect(await screen.findByText(/Interest sent to Ananya/)).toBeInTheDocument();
   });
 
   it("starts Google without a redundant registered-email field", async () => {
@@ -145,13 +145,13 @@ describe("interest request flow", () => {
     fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
 
-    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
     expect(screen.getByText(/Ananya can review your interest and decide whether to share private details/i)).toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 1900));
-    expect(screen.getByRole("dialog", { name: "Request sent" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Interest sent" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Return to introduction" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("The owner will decide whether to share private details.");
+    expect(screen.getByRole("status")).toHaveTextContent("They’ll share more if they’d like to continue.");
     const request = vi.mocked(fetch).mock.calls[0];
     const submitted = JSON.parse(String((request[1] as RequestInit).body));
     expect(submitted).toMatchObject({
@@ -191,7 +191,7 @@ describe("interest request flow", () => {
       token: "123456",
       redirect: "/p/portfolio-token",
     }));
-    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
   });
 
   it("keeps verification disabled until six digits and resets an invalid code", async () => {
@@ -443,7 +443,7 @@ expect(screen.getByRole("textbox", { name: "Phone number" })).toBeRequired();
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it("requires a verified session before accepting an interest request", async () => {
+  it("requires a verified session before accepting an interest", async () => {
     getApiUser.mockResolvedValue({ status: "missing_session" });
     const response = await POST(new Request("http://local/api/interest", {
       method: "POST",

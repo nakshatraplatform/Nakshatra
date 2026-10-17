@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s | VivIntro",
   },
   description:
-    "Share one current marriage introduction link. Keep contact details and documents protected until you approve access.",
+    "Share one current marriage introduction link. Keep contact details and documents private until you choose to share them.",
   openGraph: {
     type: "website",
     siteName: "VivIntro",

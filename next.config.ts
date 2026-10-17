@@ -59,6 +59,8 @@ export function resolveOutputMode(vercel = process.env.VERCEL): NextConfig["outp
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: resolveOutputMode(),
+  serverExternalPackages: ["pdfkit", "svg-to-pdfkit", "fontkit"],
+  outputFileTracingIncludes: { "/api/portfolio/pdf": ["./assets/portfolio-pdf/**/*", "./node_modules/pdfkit/js/data/**/*"] },
   // Keep unrelated page styles out of the first-load portfolio stylesheet.
   experimental: {
     cssChunking: { type: "graph", requestCost: 5000 },
@@ -83,6 +85,7 @@ const nextConfig: NextConfig = {
       { source: "/preview/:path*", headers: privateNoStoreHeaders },
       { source: "/approved-preview/:path*", headers: privateNoStoreHeaders },
       { source: "/p/:path*", headers: privateNoStoreHeaders },
+      { source: "/i/:path*", headers: [...privateNoStoreHeaders, { key: "Referrer-Policy", value: "no-referrer" }, { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }] },
       { source: "/verify/:path*", headers: privateNoStoreHeaders },
       { source: "/invite/:path*", headers: privateNoStoreHeaders },
       { source: "/verification/:path*", headers: privateNoStoreHeaders },

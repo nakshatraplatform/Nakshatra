@@ -5,7 +5,7 @@ export function PortfolioFooter({ livenessChecked, appearance = "light" }: { liv
   return (
     <footer className={styles.footer} data-portfolio-footer>
       <div className={styles.footerIdentity}>
-        <VivIntroBrand href="/" variant="horizontal" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={132} />
+        <VivIntroBrand href="/" openInNewTab variant="horizontal" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={132} />
         <p>One introduction, shared with care.</p>
       </div>
       <nav className={styles.policies} aria-label="Portfolio help and policies">

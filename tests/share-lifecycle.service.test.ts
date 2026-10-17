@@ -41,6 +41,18 @@ describe("portfolio share lifecycle", () => {
     await unpublishPortfolio({ supabase: {} as never });
     expect(repository.unpublishPortfolioTransaction).toHaveBeenCalledOnce();
   });
+  it("retries a reserved-token collision without treating a failed transaction as success", async () => {
+    repository.rotatePortfolioTransaction.mockResolvedValueOnce({ data: null, error: { code: "23505" } });
+    const result = await rotatePortfolioLink({ supabase: {} as never });
+    expect(repository.rotatePortfolioTransaction).toHaveBeenCalledTimes(2);
+    expect(result.shareToken).toBe(repository.rotatePortfolioTransaction.mock.calls[1][0]);
+    expect(repository.rotatePortfolioTransaction.mock.calls[0][0]).not.toBe(result.shareToken);
+  });
+  it("bounds repeated collision retries", async () => {
+    repository.rotatePortfolioTransaction.mockResolvedValue({ data: null, error: { code: "23505" } });
+    await expect(rotatePortfolioLink({ supabase: {} as never })).rejects.toBeInstanceOf(PortfolioShareLifecycleError);
+    expect(repository.rotatePortfolioTransaction).toHaveBeenCalledTimes(3);
+  });
 
   it("returns safe errors when lifecycle persistence fails", async () => {
     repository.rotatePortfolioTransaction.mockResolvedValue({ data: { status: "not_published" }, error: null });

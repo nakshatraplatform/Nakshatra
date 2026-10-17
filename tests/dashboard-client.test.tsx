@@ -692,7 +692,7 @@ describe("dashboard client", () => {
     expect(metrics.children).toHaveLength(4);
     expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
-    expect(within(metrics).getByText("Current approvals")).toBeInTheDocument();
+    expect(within(metrics).getByText("Currently sharing with")).toBeInTheDocument();
     expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
     expect(within(metrics).getByText("All recorded opens")).toBeInTheDocument();
     expect(within(metrics).queryByText("Public link")).not.toBeInTheDocument();
@@ -705,9 +705,9 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /share on whatsapp/i }));
     expect(window.open).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank", "noopener,noreferrer");
     const whatsappUrl = String(vi.mocked(window.open).mock.calls[0][0]);
-    expect(decodeURIComponent(whatsappUrl)).toContain("Sharing Aditi Rao's VivIntro marriage introduction");
-    expect(decodeURIComponent(whatsappUrl)).toContain("This link opens the public introduction");
-    expect(decodeURIComponent(whatsappUrl)).toContain("Private details are shared only if the owner approves a request");
+    expect(new URL(whatsappUrl).searchParams.get("text")).toMatch(/^Here’s my marriage introduction 🙏\n\n/);
+    expect(new URL(whatsappUrl).searchParams.get("text")).toContain("If you’d like to know more, tap “Show interest” on the page.");
+    expect(new URL(whatsappUrl).searchParams.get("text")).not.toMatch(/latest|up to date|always/i);
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
@@ -866,23 +866,23 @@ describe("dashboard client", () => {
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
     expect(within(metrics).getByText("Latest interests").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByText("Needs review").closest(".dashboard-stat-card")).toHaveTextContent("1");
-    expect(within(metrics).getByRole("link", { name: "Review requests" })).toHaveAttribute("href", "#introductions-and-access");
+    expect(within(metrics).getByRole("link", { name: "Review interests" })).toHaveAttribute("href", "#introductions-and-access");
 
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Grant private details access" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share details" }));
 
-    const approval = screen.getByRole("dialog", { name: /Grant private details access to Rohan Mehta/i });
-    expect(within(approval).getByText(/Access expires 15 days after approval/i)).toBeInTheDocument();
+    const approval = screen.getByRole("dialog", { name: /Share details with Rohan Mehta/i });
+    expect(within(approval).getByText(/Details are shared for 15 days/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Personal profile, location, and story details/i)).toBeInTheDocument();
     expect(within(approval).getByText("Exact date of birth")).toBeInTheDocument();
     expect(within(approval).getByText(/Education, employer, career/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Family members, origins/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Lifestyle, languages/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Partner preferences/i)).toBeInTheDocument();
-    expect(within(approval).getByText("Protected contact details")).toBeInTheDocument();
+    expect(within(approval).getByText("Private contact details")).toBeInTheDocument();
     expect(decisionFetch).not.toHaveBeenCalled();
-    fireEvent.click(within(approval).getByRole("button", { name: "Confirm private details for 15 days" }));
+    fireEvent.click(within(approval).getByRole("button", { name: "Share details for 15 days" }));
 
     await waitFor(() => expect(decisionFetch).toHaveBeenCalledWith(
       "/api/interest/interest-1",
@@ -918,21 +918,21 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Currently sharing with").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Manage access" })).toHaveAttribute("href", "#introductions-and-access");
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    fireEvent.click(screen.getByRole("button", { name: "Renew 15 days" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share for another 15 days" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "renew"));
     expect(await screen.findByText("Active until Feb 1, 2099")).toBeInTheDocument();
 
     mocks.manageAccess.mockResolvedValueOnce({ ok: true, status: "revoked" });
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    fireEvent.click(screen.getByRole("button", { name: "End access" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stop sharing" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
-    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
-    expect(screen.getByText("Private details access granted to Rohan Mehta")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
+    expect(screen.getByText("Private details shared with Rohan Mehta")).toBeInTheDocument();
   });
 
   it("distinguishes an existing approval from currently available viewing", () => {
@@ -956,11 +956,11 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Current approvals").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Currently sharing with").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Viewing unavailable · Manage" })).toHaveAttribute("href", "#introductions-and-access");
-    expect(screen.getByText("Viewing unavailable · Approval ends Jan 1, 2099")).toBeInTheDocument();
+    expect(screen.getByText("Viewing paused · Sharing ends Jan 1, 2099")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    expect(screen.getByText(/Approval remains on record, but this viewer cannot open/)).toBeInTheDocument();
+    expect(screen.getByText(/Your sharing choice remains on record, but this person cannot open/)).toBeInTheDocument();
     expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
   });
 
@@ -975,7 +975,7 @@ describe("dashboard client", () => {
     expect(portrait.parentElement).toHaveClass("h-36", "sm:h-40");
     expect(screen.getByRole("button", { name: /add photos/i })).toHaveClass("h-36", "w-36", "sm:h-40", "sm:w-40");
     const visibility = screen.getByLabelText("Photo visibility");
-    expect(within(visibility).getByRole("option", { name: "Blurred until approval" })).toBeInTheDocument();
+    expect(within(visibility).getByRole("option", { name: "Blurred until shared" })).toBeInTheDocument();
     expect(within(visibility).getByRole("option", { name: "Visible to all" })).toBeInTheDocument();
     expect(within(visibility).queryByRole("option", { name: "Approved interest only" })).not.toBeInTheDocument();
     expect(within(visibility).queryByRole("option", { name: "Only me" })).not.toBeInTheDocument();
@@ -1219,7 +1219,7 @@ describe("dashboard client", () => {
     expect(screen.getByText("Active Viewer")).toBeInTheDocument();
     expect(screen.queryByText("Expired Viewer")).not.toBeInTheDocument();
     expect(screen.queryByText("Ended Viewer")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
     const history = screen.getByRole("dialog", { name: "Relationship history" });
     expect(within(history).getByText("Expired Viewer")).toBeInTheDocument();
     expect(within(history).getByText("Ended Viewer")).toBeInTheDocument();
@@ -1238,7 +1238,7 @@ describe("dashboard client", () => {
     });
 
     expect(screen.queryByText("Sangam Matchmakers")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
     const history = screen.getByRole("dialog", { name: "Relationship history" });
     expect(within(history).getByText("Priya Shah")).toBeInTheDocument();
     expect(within(history).getByText("Broker introduction")).toBeInTheDocument();
@@ -1274,7 +1274,7 @@ describe("dashboard client", () => {
     expect(mocks.publish).not.toHaveBeenCalled();
   });
 
-  it("keeps interests, access history, and stats visible while unpublished", () => {
+  it("keeps interests, sharing history, and stats visible while unpublished", () => {
     renderDashboard({
       portfolio: { ...portfolio, is_published: false, share_token: null },
       shareUrl: null,
@@ -1311,7 +1311,7 @@ describe("dashboard client", () => {
     expect(screen.getByRole("heading", { name: "Introductions and access" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Awaiting review/i })).toBeInTheDocument();
     expect(screen.getByText("Maya Shah")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Access history/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
     expect(screen.getByText("Introduction unpublished")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
@@ -1323,7 +1323,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "privacy" } });
     fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "work" } });
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Employer or organisation")).toHaveAccessibleDescription(/Shown after your approval/);
+    expect(screen.getByLabelText("Employer or organisation")).toHaveAccessibleDescription(/Shared only when you choose/);
   });
 
   it("requires explicit sharing-setup update for a historical draft before review", () => {

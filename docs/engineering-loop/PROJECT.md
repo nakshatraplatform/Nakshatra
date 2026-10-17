@@ -17,6 +17,20 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Public introduction PDF](features/public-introduction-pdf.md): approved editorial
+  template, owner-only generation and separate revocable public QR channel under
+  local implementation. Uses canonical public projections and existing publication
+  gates; rotation also invalidates PDF references. Migration, database replay and
+  production release remain separate. No assigned Linear issue number yet.
+
+- [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md): local
+  follow-up on PR105/main `d99e14c`. Portfolio home marks open separate tabs;
+  consumer wording uses Share details/Interest/Private details/Stop sharing;
+  WhatsApp uses the full public name and public-resolver summary with no upkeep
+  promise; consumer tab titles are consistent. No design, eligibility, consent,
+  permission, migration or provider-configuration change. Verification and review
+  evidence are in the feature record; nothing pushed or deployed.
+
 - [NAK-106 consent-first publishing follow-up](features/nak-106-consent-publishing-followup.md): implemented locally on latest main `888b70e`. Portfolio logo home links, concise/aligned interest fields, consent-driven publication with optional previews, and account JSON download UI removal. Full 1,354-test coverage/59 feature gates, lint/type/build, 66 affected Chromium cases across two runs and eight WebKit cases pass. Independent correction review resolved focus/selector defects. Completeness, liveness, account, stale-revision and protected-access safeguards remain. No schema/API change, commit/push or production action; physical iPhone and future hosted CI remain release checks.
 - [NAK-106 welcoming introduction journey](features/nak-106-welcoming-introduction-journey.md): revised landing copy within the existing structure/themes, familiar consumer terms, optional message disclosure, page-session answer retention, and safe sign-in/password-recovery continuation. Required fields and publication/access eligibility remain unchanged. Full 1,367-test coverage/59 feature gates, lint/type/build, and 89 browser cases pass across the broad batch and corrected-case rechecks; initial fresh-context source review found no material issues and final delta review is recorded with the delivery. No waitlist, migration, commit/push or release action; real-provider/physical-device checks remain separate.
 

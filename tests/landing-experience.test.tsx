@@ -44,16 +44,16 @@ describe("LandingExperience consent-led messaging", () => {
     expect(viewer?.querySelector('a[href="/received-a-link"]')).toBeInTheDocument();
   });
 
-  it("keeps the guided lifecycle and 15-day approved access distinct", () => {
+  it("keeps the guided lifecycle and 15-day shared details distinct", () => {
     render(<LandingExperience variant="clarity" />);
-    expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Review and consent.*Share.*Approve/i);
+    expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toHaveTextContent(/Create.*Review and consent.*Share.*Share details/i);
     expect(screen.getByRole("heading", { name: /how vivintro works/i })).toBeInTheDocument();
     expect(document.body).toHaveTextContent(/previews are optional/i);
     expect(document.body).toHaveTextContent(/Creating and sharing is free/i);
     expect(document.body).not.toHaveTextContent(/broker-sponsored/i);
-    const controls = screen.getByText("What happens after I approve someone?").closest("details");
+    const controls = screen.getByText("What happens after I share details?").closest("details");
     expect(controls).toHaveTextContent(/unpublishing pauses viewing/i);
-    expect(controls).toHaveTextContent(/hasn’t expired or been revoked can resume/i);
+    expect(controls).toHaveTextContent(/hasn’t ended or been stopped can resume/i);
     expect(controls).toHaveTextContent(/end access early or renew it/i);
     const family = screen.getByText("Can a parent or sibling create my profile?").closest("details");
     expect(family).toHaveTextContent(/family member to create a profile on your behalf is coming soon/i);
@@ -70,7 +70,7 @@ describe("LandingExperience consent-led messaging", () => {
     fireEvent.click(withinSummary(faq));
     expect(trust).toHaveAttribute("open");
     expect(faq).toHaveAttribute("open");
-    expect(faq).toHaveTextContent("Private details still need your approval");
+    expect(faq).toHaveTextContent("You choose who sees your private details");
   });
 
   it("keeps the audience boundaries and current liveness limits explicit", () => {
@@ -79,7 +79,7 @@ const publicView = screen.getByRole("heading", { name: "Your introduction" }).cl
     const completeView = screen.getByRole("heading", { name: "Private details" }).closest("article");
     const ownerView = screen.getByRole("heading", { name: "Private notes" }).closest("article");
     expect(publicView).toHaveTextContent(/anyone with your link/i);
-    expect(completeView).toHaveTextContent(/after you approve/i);
+    expect(completeView).toHaveTextContent(/when you choose to share/i);
     expect(completeView).toHaveTextContent(/confirms their email/i);
     expect(ownerView).toHaveTextContent(/aren’t included in either shared view/i);
     expect(document.querySelector("#privacy")).toHaveTextContent(/keep phone numbers and other private details out of your public story/i);

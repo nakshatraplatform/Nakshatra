@@ -67,7 +67,7 @@ test("inverse demo and landing examples retain readable text in both themes", as
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
-    const approval = page.getByText("Approve 15 days", { exact: true });
+    const approval = page.locator('[data-visual="approve"]').getByText("Share details", { exact: true });
     // The established compact layout omits decorative tour illustrations.
     // Retain the same contrast threshold, including their computed mobile tokens.
     if (await page.evaluate(() => matchMedia("(max-width: 620px)").matches)) {

@@ -35,16 +35,21 @@ export async function rotatePortfolioLink({
   supabase: SupabaseClient;
 }) {
   const repository = new DashboardRepository(supabase);
-  const shareToken = nanoid(21);
-  const { data, error } = await repository.rotatePortfolioTransaction(shareToken);
-  const result = rotateResultSchema.safeParse(data);
-  if (error || !result.success) {
-    throw new PortfolioShareLifecycleError("We could not rotate your portfolio link. Please try again.", "PORTFOLIO_LINK_ROTATION_FAILED");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const shareToken = nanoid(21);
+    const { data, error } = await repository.rotatePortfolioTransaction(shareToken);
+    // Unique failures roll back the entire SQL transaction, including QR/grant invalidation.
+    if (error?.code === "23505" && attempt < 2) continue;
+    const result = rotateResultSchema.safeParse(data);
+    if (error || !result.success) {
+      throw new PortfolioShareLifecycleError("We could not rotate your portfolio link. Please try again.", "PORTFOLIO_LINK_ROTATION_FAILED");
+    }
+    if (result.data.status !== "rotated" || !result.data.shareToken) {
+      throw new PortfolioShareLifecycleError("Generate your portfolio before rotating its link.", "PORTFOLIO_NOT_PUBLISHED", 400);
+    }
+    return { shareToken: result.data.shareToken, shareUrl: createShareUrl(result.data.shareToken) };
   }
-  if (result.data.status !== "rotated" || !result.data.shareToken) {
-    throw new PortfolioShareLifecycleError("Generate your portfolio before rotating its link.", "PORTFOLIO_NOT_PUBLISHED", 400);
-  }
-  return { shareToken: result.data.shareToken, shareUrl: createShareUrl(result.data.shareToken) };
+  throw new PortfolioShareLifecycleError("We could not rotate your portfolio link. Please try again.", "PORTFOLIO_LINK_ROTATION_FAILED");
 }
 
 /**

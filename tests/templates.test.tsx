@@ -208,7 +208,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Marriage introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
     const heroLine = document.querySelector(".portfolio-hero-line");
     expect(heroLine).toHaveTextContent("Engineer, Boston");
     expect(heroLine).not.toHaveTextContent(/\d+ years/);
@@ -304,7 +304,7 @@ describe("celestial union portfolio", () => {
     const { rerender } = render(
       <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
-    expect(screen.getByLabelText("Protected access details")).toBeInTheDocument();
+    expect(screen.getByLabelText("Private sharing details")).toBeInTheDocument();
     expect(screen.queryByText("private details", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
@@ -326,7 +326,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
   });
 
-  it("shows approved access context with an explicit expiry", () => {
+  it("shows shared details context with an explicit expiry", () => {
     render(
       <CelestialUnion
         data={createApprovedPortfolioSnapshot(complete)}
@@ -337,8 +337,8 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const context = screen.getByLabelText("Protected access details");
-    expect(within(context).getByText("Protected access")).toBeInTheDocument();
+    const context = screen.getByLabelText("Private sharing details");
+    expect(within(context).getByText("Private sharing")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Liveness checked\. A live person/)).toBeInTheDocument();
@@ -359,11 +359,11 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("link", { name: "Show Interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
   });
 
-  it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
+  it("offers portfolio creation to people you’ve shared with without showing it in owner preview", () => {
     const { rerender } = render(
       <CelestialUnion
         data={createApprovedPortfolioSnapshot(complete)}
@@ -395,9 +395,9 @@ describe("celestial union portfolio", () => {
 
     const family = document.getElementById("family");
     expect(family).toBeTruthy();
-    expect(within(family!).getByText("Family shared after approval")).toBeInTheDocument();
+    expect(within(family!).getByText("Family shared privately")).toBeInTheDocument();
     expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
+    expect(screen.getByText("When they choose to share, everything listed above is available for up to 15 days.")).toBeInTheDocument();
   });
 
   it("does not promise another approval when a private details has no details in a restricted chapter", () => {
@@ -407,14 +407,14 @@ describe("celestial union portfolio", () => {
       visibility: { journey: "restricted" as const, family: "restricted" as const, astrology: "restricted" as const },
     };
     const { rerender } = render(<CelestialUnion data={sparseData} sunSign={null} accessMode="approved" />);
-    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/shared privately/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/can be requested after a respectful introduction/i)).not.toBeInTheDocument();
 
     rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="owner" />);
-    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/shared privately/i)).not.toBeInTheDocument();
 
     rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="public" interestAction={<button type="button">Show interest</button>} />);
-    expect(screen.getByText("Family shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Family shared privately")).toBeInTheDocument();
   });
 
   it("keeps protected gallery slots visible in the Brief Introduction", () => {
@@ -433,10 +433,10 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared after approval" });
+    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared privately" });
     expect(protectedPhoto).toBeInTheDocument();
     fireEvent.click(protectedPhoto);
-    expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
     expect(screen.getByText("3 photos")).toBeInTheDocument();
     const gallery = document.querySelector(".portfolio-gallery");
     const astrology = document.getElementById("astrology");
@@ -533,7 +533,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Minimal" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Family" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "More can be shared after approval." })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "More can be shared privately." })).not.toBeInTheDocument();
   });
 
   it("clears stale fields while rerendering Private and Balanced modes", () => {
@@ -699,13 +699,13 @@ describe("adaptive portfolio media", () => {
     const { container } = render(<AdaptivePortfolioGallery photos={[protectedPhoto]} />);
 
     expect(screen.queryByAltText(protectedPhoto.alt)).not.toBeInTheDocument();
-    expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
     expect(
       container.querySelector('.portfolio-gallery-feature[data-presentation="blurred"]')
     ).toBeTruthy();
   });
 
-  it("shows visible-to-all photos before protected photos while preserving each group order", () => {
+  it("shows visible-to-all photos before private photos while preserving each group order", () => {
     const protectedFirst: PortfolioPhoto = {
       ...photos[1],
       id: "protected-first",
@@ -731,7 +731,7 @@ describe("adaptive portfolio media", () => {
     expect(screen.getByText("1 of 3")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show photo 1" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "Show photo 2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Photo 3, shared after approval" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 3, shared privately" })).toBeInTheDocument();
   });
 
   it("detects orientation for legacy photos without stored dimensions", () => {

@@ -330,6 +330,11 @@ const server = createServer((request, response) => {
     } : request.headers.authorization === `Bearer ${legacyOwnerToken}` ? { ...ownerPortfolio, user_id: legacyOwnerUser.id, published_data: legacyPublishedData } : ownerPortfolio;
     const readiness = { portfolioExists: true, lastEditorSection: "foundation", previewedAt: "2026-09-30T00:00:00Z", reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: true, selectedPlanCode: "launch_30", verificationStatus: draftOwner ? "required" : "test_exempt", paymentStatus: "paid", paymentExpiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(), paymentActive: true, disclosureConfirmed: !draftOwner, published: !draftOwner, missingRequired: [] };
     if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 200, { portfolio: dashboardPortfolio, media: [publicMedia[0]], horoscope: null, readiness });
+    if (url.pathname === "/rest/v1/rpc/prepare_portfolio_pdf") {
+      if (draftOwner || request.headers.authorization === `Bearer ${legacyOwnerToken}`) return sendJson(response, 200, { status: "unavailable" });
+      return sendJson(response, 200, { status: "ready", code: "q".repeat(32), shareToken: "e2e-portfolio-token", projection: { ...resolvedPortfolio(false), media: [] } });
+    }
+    if (url.pathname === "/rest/v1/rpc/validate_portfolio_pdf") return sendJson(response, 200, true);
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
     if (url.pathname === "/rest/v1/portfolios") return sendJson(response, 200, dashboardPortfolio);
     if (url.pathname === "/rest/v1/portfolio_views") {
@@ -381,6 +386,11 @@ const server = createServer((request, response) => {
       }
       return sendJson(response, 200, portfolio);
     });
+  }
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_portfolio_pdf_link") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").p_code === "q".repeat(32) ? "e2e-portfolio-token" : null));
   }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_identity_verified") {
     return sendJson(response, 200, true);

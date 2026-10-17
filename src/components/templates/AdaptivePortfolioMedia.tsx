@@ -331,7 +331,7 @@ export function AdaptivePortfolioGallery({
               data-active={index === activeIndex}
               data-presentation={photo.presentation || "clear"}
               onClick={() => setActivePhotoIndex(index)}
-              aria-label={photo.presentation === "blurred" ? `Photo ${index + 1}, shared after approval` : `Show photo ${index + 1}`}
+              aria-label={photo.presentation === "blurred" ? `Photo ${index + 1}, shared privately` : `Show photo ${index + 1}`}
               aria-current={index === activeIndex ? "true" : undefined}
             >
               {photo.presentation === "blurred" ? (
@@ -427,7 +427,7 @@ function meaningfulCaption(alt: string) {
 function ProtectedGalleryTile() {
   return (
     <div className="portfolio-gallery-protected">
-      <ProtectedDataVault title="Photo shared after approval" detail="This photo stays private until access is approved." />
+      <ProtectedDataVault title="Photo shared privately" detail="This photo stays private until they choose to share it." />
     </div>
   );
 }
@@ -436,7 +436,7 @@ function ProtectedPhotoLabel() {
   return (
     <span className="portfolio-protected-photo-label">
       <LockKeyhole aria-hidden="true" />
-      <span>Photo shared after approval</span>
+      <span>Photo shared privately</span>
     </span>
   );
 }
