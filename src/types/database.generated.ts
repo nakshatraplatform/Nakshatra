@@ -1019,6 +1019,9 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+            "prepare_portfolio_pdf": { Args: Record<PropertyKey, never>; Returns: Json },
+            "validate_portfolio_pdf": { Args: { p_code: string; p_projection: Json }; Returns: boolean },
+            "resolve_portfolio_pdf_link": { Args: { p_code: string }; Returns: string | null },
             "accept_b2c_creator_invite":
 { Args: { "p_token_hash": string }; Returns: Json
                            },
