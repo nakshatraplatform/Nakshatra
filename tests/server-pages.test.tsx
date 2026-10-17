@@ -63,6 +63,7 @@ vi.mock("@/lib/auth", () => ({
   getAuthenticatedUser: async () => ({ supabase: databaseClient(), user: { id: "user-1", email: "user@example.com" } }),
   getApiUser: async () => ({ status: mocks.apiAuthStatus }),
 }));
+vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => databaseClient() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => databaseClient() }));
 vi.mock("@/features/media/server/photo-url.service", () => ({ createPortfolioPhotoUrls: mocks.photoUrls }));
 vi.mock("@/features/portfolio/server/dashboard-view.service", () => ({
@@ -285,8 +286,8 @@ describe("public portfolio pages", () => {
 
   it("names generic authorized photos without replacing meaningful alternative text", async () => {
     mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, media: [
-      { key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" },
-      { key: "gallery", accessPath: "gallery.webp", mediaType: "gallery", sortOrder: 1, presentation: "clear", altText: "Walking in the garden" },
+      { key: "hero", accessPath: "owner/portfolio/hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" },
+      { key: "gallery", accessPath: "owner/portfolio/gallery.webp", mediaType: "gallery", sortOrder: 1, presentation: "clear", altText: "Walking in the garden" },
     ] } };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
     expect(JSON.parse(screen.getByTestId("template").getAttribute("data-photo-alts")!)).toEqual(["Photo of Aditi, 1 of 2", "Walking in the garden"]);
@@ -315,7 +316,7 @@ describe("public portfolio pages", () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
     await OpenGraphImage({ params: Promise.resolve({ token: "missing" }) });
     expect(mocks.imageResponse).toHaveBeenLastCalledWith(expect.anything(), { width: 1200, height: 630 });
-    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
+    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "owner/portfolio/hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
     await OpenGraphImage({ params: Promise.resolve({ token: "token" }) });
     expect(mocks.signedUrl).not.toHaveBeenCalled();
   });
