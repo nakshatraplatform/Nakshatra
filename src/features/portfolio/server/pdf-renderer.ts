@@ -241,4 +241,3 @@ function drawText(doc: Doc, value: string, x: number, y: number, width: number, 
   if (!value) return;
   doc.font(font).fontSize(size).fillColor(color).text(value, x, y, { width, height, lineGap: 2, ...options });
 }
-
