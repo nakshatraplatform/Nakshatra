@@ -128,3 +128,37 @@ Current extraction checks (not inherited from the combined branch):
 No database deployment or PDF generated-type artifact is needed for this
 branch. Hosted CI, real email/provider flows and physical-device checks are not
 asserted by local fixtures. No merge or deployment is authorized here.
+
+## PR #108 CI correction
+
+The remote branch merged main's security work (`d1e08f8`) as `00cab11` after
+the extraction. Preserve that merge; do not revert the security fixes or restore
+the paused PDF feature. Standard-risk, test-only correction with self-review.
+
+CI run `39067014724` reports five failed checks, from three underlying causes:
+
+- All three browser projects fail the dashboard hydration test because its
+  exact selector still says `Review requests`, not the approved `Review interests`.
+- The same projects fail the trust-page disclosure test because its heading
+  and paragraph expectations use the old wording. Match the new exact heading
+  through its accessible role and approved paragraph, retaining closed/open,
+  visible-content and liveness-limit assertions. Add 15-day sharing and old-link
+  invalidation assertions rather than dropping coverage.
+- The quality job passed audit, lint, typecheck, unit tests/coverage and build
+  configuration validation, then GitHub ArtifactService `CreateArtifact` timed
+  out after five attempts. Build was skipped as a consequence. Leave artifact
+  upload and the fail-closed aggregate unchanged; a new push reruns them.
+
+The fifth failure is the aggregate correctly reporting the failed jobs. These
+are not five production-code defects. The failed CI annotations provide the red
+evidence; no runtime source, styling, workflow, timeout, retries, threshold or
+security checks are modified by this correction.
+
+Local focused Playwright run on the merged source: 10 passed, two unchanged
+viewport-matrix skips (the width matrix still executes on mobile Chromium).
+Both previously failed tests pass on desktop, tablet and mobile. Focused ESLint,
+`npm run typecheck`, `npm run build` (81 static pages with loopback configuration)
+and `git diff --check` passed on the merged source. Self-review confirms all
+date/hydration, disclosure-open state, content visibility and liveness assertions
+remain; two sharing-limit assertions were added. Pending normal commit/push
+hooks and full hosted rerun. No workflow modification or deployment performed.

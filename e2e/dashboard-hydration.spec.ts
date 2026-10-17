@@ -8,7 +8,7 @@ test("dashboard hydrates request dates in a different viewer timezone", async ({
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/dashboard");
-  await page.getByRole("link", { name: "Review requests", exact: true }).click();
+  await page.getByRole("link", { name: "Review interests", exact: true }).click();
   await expect(page.getByText("Oct 3 · Verified email", { exact: true })).toBeVisible();
   // Interaction proves hydration completed before inspecting recoverable React errors.
   await page.getByRole("button", { name: "Edit details", exact: true }).click();

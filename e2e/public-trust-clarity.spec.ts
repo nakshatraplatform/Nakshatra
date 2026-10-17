@@ -41,10 +41,12 @@ test("public trust explanation matches the publication exception and link contro
   await expect(page.getByText(/These checks do not establish identity or photo ownership/i)).toBeVisible();
   await expect(page.getByText(/limited pilot test exemption can allow publication without that check/i)).toBeVisible();
   await expect(page.getByText(/exempt introductions do not receive the Liveness checked badge/i)).toBeVisible();
-  const accessControls = page.getByText("Access and control").locator("xpath=ancestor::details");
+  const accessControls = page.getByRole("heading", { name: "Sharing and control", exact: true }).locator("xpath=ancestor::details");
   await expect(accessControls).not.toHaveAttribute("open", "");
   await accessControls.locator("summary").click();
-  await expect(accessControls).toContainText(/Owners can unpublish or rotate a personal public link at any time/i);
-  await expect(accessControls.getByText(/Owners can unpublish or rotate a personal public link at any time/i)).toBeVisible();
+  await expect(accessControls).toContainText(/You can unpublish or replace your personal public link at any time/i);
+  await expect(accessControls.getByText(/You can unpublish or replace your personal public link at any time/i)).toBeVisible();
+  await expect(accessControls).toContainText(/Private details are shared for up to 15 days, and you can stop sharing earlier/i);
+  await expect(accessControls).toContainText(/replacing the link also stops the old URL from working/i);
   await page.screenshot({ path: testInfo.outputPath("trust-375-final.png"), fullPage: true, animations: "disabled" });
 });
