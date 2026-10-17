@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(40);
+select plan(43);
 
 select has_function('public', 'is_current_session_active', array[]::text[], 'live Auth session predicate exists');
 select has_function('app_private', 'require_current_session', array[]::text[], 'internal live-session guard exists');
@@ -100,6 +100,8 @@ select ok(
         'public.can_read_approved_photo(text)'::regprocedure,
         'public.is_published_portfolio(uuid)'::regprocedure,
         'public.resolve_public_portfolio(text)'::regprocedure,
+        -- Opaque QR lookup returns only a currently public share token, never private data.
+        'public.resolve_portfolio_pdf_link(text)'::regprocedure,
         'public.resolve_public_portfolio_status(text)'::regprocedure,
         'public.resolve_public_portfolio_identity_verified(text)'::regprocedure,
         'public.record_public_portfolio_view(text)'::regprocedure,
@@ -119,6 +121,9 @@ select ok(
 );
 
 select ok(has_function_privilege('anon', 'public.resolve_public_portfolio(text)', 'EXECUTE'), 'public portfolio resolution remains anonymous');
+select ok(has_function_privilege('anon', 'public.resolve_portfolio_pdf_link(text)', 'EXECUTE'), 'public QR resolution remains anonymous');
+select is(pg_catalog.pg_get_function_result('public.resolve_portfolio_pdf_link(text)'::regprocedure), 'text', 'public QR lookup returns only a token, not a private record');
+select ok(pg_catalog.obj_description('public.resolve_portfolio_pdf_link(text)'::regprocedure, 'pg_proc') is not null, 'the public QR exception has an explicit security rationale');
 select ok(has_function_privilege('anon', 'public.record_public_portfolio_view(text)', 'EXECUTE'), 'public view recording remains anonymous');
 select ok(
   pg_catalog.obj_description('public.is_public_portfolio_media_path(text,text)'::regprocedure, 'pg_proc') is not null,

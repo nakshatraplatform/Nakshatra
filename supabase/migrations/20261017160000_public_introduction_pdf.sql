@@ -114,5 +114,8 @@ from public, anon, authenticated;
 grant execute on function public.prepare_portfolio_pdf(), public.validate_portfolio_pdf(text,jsonb) to authenticated;
 grant execute on function public.resolve_portfolio_pdf_link(text) to anon, authenticated;
 
+comment on function public.resolve_portfolio_pdf_link(text) is
+'Public bearer lookup: resolves only an active opaque PDF code to its currently published public share token. No private data or owner privileges; canonical publication eligibility still applies.';
+
 comment on table app_private.portfolio_pdf_channels is
 'Separate public-only PDF references. Never delete retired codes. Deletion removes the portfolio association; no identity or profile content is retained here.';
