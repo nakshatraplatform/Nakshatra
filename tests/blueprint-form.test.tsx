@@ -106,8 +106,8 @@ describe("blueprint form", () => {
     expect(screen.getByText(/Fields marked with a lock/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     const employer = screen.getByLabelText("Employer or organisation", { exact: true });
-    expect(employer).toHaveAccessibleDescription(/Shown after your approval/);
-    expect(screen.queryByText("Shown after approval", { exact: true })).not.toBeInTheDocument();
+    expect(employer).toHaveAccessibleDescription(/Shared only when you choose/);
+    expect(screen.queryByText("Shared when you choose", { exact: true })).not.toBeInTheDocument();
   });
   beforeEach(() => {
     vi.stubGlobal(
@@ -280,7 +280,7 @@ describe("blueprint form", () => {
       siblings: [{}],
     }));
     fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Add a protected contact" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a private contact" }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({
       contacts: [expect.objectContaining({ relationship: "self" })],
     }));
@@ -399,17 +399,17 @@ describe("blueprint form", () => {
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
     expect(screen.getByText("No guessing required")).toBeInTheDocument();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shown after your approval/);
+    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shared only when you choose/);
   });
 
   it("labels protected contact visibility once at the section level", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
 
-    const sectionNotice = screen.getByText("Protected contact").parentElement;
-    expect(sectionNotice).toHaveTextContent("Shown after approval");
+    const sectionNotice = screen.getByText("Private contact").parentElement;
+    expect(sectionNotice).toHaveTextContent("Shared when you choose");
     for (const label of ["Who is this?", "Name of contact", "Phone number", "Email"]) {
-      expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shown after approval");
+      expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shared when you choose");
     }
     expect(screen.getByLabelText("Country calling code")).toHaveValue("91");
     expect(screen.getByLabelText("Phone number")).toHaveValue("90000 00000");

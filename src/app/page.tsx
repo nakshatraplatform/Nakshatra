@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LandingExperience, landingFaqs } from "@/components/landing/LandingExperience";
 
-const description = "Share your marriage biodata as one link you can update anytime. Your phone number and horoscope file stay hidden until you approve.";
+const description = "Share your marriage biodata as one link you can update anytime. Your phone number and horoscope file stay hidden until you choose to share them.";
 
 export const metadata: Metadata = {
   title: { absolute: "Marriage biodata link you control | VivIntro" },

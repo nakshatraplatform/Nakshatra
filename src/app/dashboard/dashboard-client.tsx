@@ -69,6 +69,8 @@ import {
   X,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
+import { interestStatusLabel } from "@/features/interest/presentation";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
@@ -90,6 +92,7 @@ interface Props {
   viewCount: number;
   userEmail: string;
   shareUrl: string | null;
+  whatsappMessage?: string | null;
   isExpired: boolean;
   daysLeft: number | null;
   media: PortfolioMedia[];
@@ -114,6 +117,7 @@ export default function DashboardClient({
   viewCount,
   userEmail,
   shareUrl,
+  whatsappMessage = null,
   isExpired,
   media,
   mediaUrls: initialMediaUrls = {},
@@ -359,14 +363,7 @@ export default function DashboardClient({
 
   async function shareWhatsApp() {
     if (!shareUrl || !viewerAccessAvailable) return;
-    const profileName = portfolio?.published_data?.personal?.name
-      || portfolio?.draft_data?.personal?.name
-      || "this profile";
-    const text = encodeURIComponent(
-      `Sharing ${profileName}'s VivIntro marriage introduction.\n\n`
-      + `View the introduction: ${shareUrl}\n\n`
-      + "This link opens the public introduction. Private details are shared only if the owner approves a request."
-    );
+    const text = encodeURIComponent(whatsappMessage || buildWhatsAppShareMessage(shareUrl));
     window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
   }
 
@@ -452,7 +449,7 @@ export default function DashboardClient({
 
   /** Replaces the active public URL after the owner confirms that the previous link should stop working. */
   async function rotateLink() {
-    if (!confirm("Rotate this link? The existing introduction URL will stop working immediately.")) return;
+    if (!confirm("Rotate this link? The existing introduction URL will stop working immediately. Existing private-detail sharing will also stop.")) return;
     setRotatingLink(true);
     setDraftError(null);
     try {
@@ -854,7 +851,7 @@ export default function DashboardClient({
   }
 
   async function removeHoroscope() {
-    if (!portfolioHoroscope || !confirm("Remove this horoscope attachment? Approved viewers will lose access immediately.")) return;
+    if (!portfolioHoroscope || !confirm("Remove this horoscope attachment? People you’ve shared with will lose access immediately.")) return;
     setRemovingHoroscope(true);
     setDraftError(null);
     try {
@@ -985,7 +982,7 @@ export default function DashboardClient({
             {viewerAccessAvailable ? (
               <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Share this link for your public introduction. Private details still need your approval.</p>
+                <p className="dashboard-sharing-description">Share this link for your public introduction. You choose who sees your private details.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1035,7 +1032,7 @@ export default function DashboardClient({
                     : isExpired ? "This Introduction link has expired. Reactivate it above before copying or sharing it. Your saved introduction and activity remain available."
                     : readinessState.verificationStatus === "test_exempt"
                     ? "Review and publish your self-created introduction to activate its link. Test publishing access does not confirm identity."
-                    : "Your saved introduction, interests, access history, and view totals remain available here. Public sharing requires your own introduction and current verification."}
+                    : "Your saved introduction, interests, sharing history, and view totals remain available here. Public sharing requires your own introduction and current verification."}
                 </p>
                 {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
                   if (completion.readyToPublish) void openFinalReview();
@@ -1075,17 +1072,17 @@ export default function DashboardClient({
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
                 <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
-                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 requests" : "Requests received"}</span>
+                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 interests" : "Interests received"}</span>
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                 <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
                 <p className="dashboard-stat-value">{pendingInterestCount}</p>
                 {pendingInterestCount > 0
-                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review requests</a>
+                  ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review interests</a>
                   : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Current approvals</span></div>
+                <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Currently sharing with</span></div>
                 <p className="dashboard-stat-value">{activeAccessCount}</p>
                 {activeAccessCount > 0
                   ? viewerAccessAvailable
@@ -1174,7 +1171,7 @@ export default function DashboardClient({
                 <>
                   <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                     <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
-                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public introduction link; private details still require your approval.</p>
+                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public introduction link; you still choose who sees your private details.</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Required details complete" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
                       <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness checks complete"} pendingLabel="Complete the liveness checks" />
@@ -1184,7 +1181,7 @@ export default function DashboardClient({
                   </section>
                   {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
                     <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
-                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. Contact information, exact birth details, and other private details require my approval. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
+                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. Contact information, exact birth details, and other private details are shared only when I choose. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
                   </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Complete the required details, liveness check and account setup to give publication consent here. Consent for the liveness check is requested separately.</p>}
                   <h3 className="mt-6 font-semibold">Optional previews</h3>
                   <div id="review-preview-links" className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -1194,7 +1191,7 @@ export default function DashboardClient({
                         <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible to anyone with your active link.</p>
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
-                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check your primary photo and the details people can see without requesting access.</p>
+                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check your primary photo and the details people can see without showing interest.</p>
                         <a id="review-public-preview" href="/preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("public")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Review public introduction
@@ -1203,11 +1200,11 @@ export default function DashboardClient({
                     </article>
                     <article className="flex flex-col rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                       <div className="border-b border-[var(--workspace-border)] pb-4">
-                        <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · Approved people only</h3>
-                        <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible only to a verified viewer you approve.</p>
+                        <h3 className="font-semibold">{PORTFOLIO_VIEW_LABELS.complete} · People you choose to share with</h3>
+                        <p className="mt-2 text-xs text-[var(--workspace-muted)]">Visible only to someone whose email is verified and you choose to share with.</p>
                       </div>
                       <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
-                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check the additional details and photos you are willing to share after approving a request.</p>
+                        <p className="text-sm leading-6 text-[var(--workspace-muted)]">Check the additional details and photos you are willing to share when you choose to share.</p>
                         <a id="review-complete-preview" href="/approved-preview" target="_blank" rel="noreferrer" onClick={() => recordReviewPreview("complete")} className="dashboard-secondary-action w-full justify-center sm:w-fit">
                           <ExternalLink className="h-4 w-4" />
                           Review private details
@@ -1222,7 +1219,7 @@ export default function DashboardClient({
             <footer className="dashboard-review-footer flex-none border-t border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-4 py-4 sm:px-6">
               <div>
                 <p className="text-sm font-semibold">{readyForPublicationConsent ? "Ready to confirm publication." : "Your saved changes are not public yet."}</p>
-                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">Private details stay private until you approve a verified interest request.</p>
+                <p className="dashboard-review-footer-note mt-2 text-xs text-[var(--workspace-muted)]">Private details stay hidden until you choose to share them with someone whose email is verified.</p>
                 {draftError && <p className="dashboard-action-error mt-2" role="alert">{draftError}</p>}
                 {reviewPreviewSaving && !publishing && <LoadingStatus compact title="Saving your preview progress" />}
               </div>
@@ -1549,7 +1546,7 @@ function HoroscopeManager({
           Horoscope attachment
         </h3>
         <p className="mt-2 text-xs leading-5 text-[var(--workspace-ink-muted)]">
-          One private scanned image. It appears only to signed-in viewers you approve and opens separately from the introduction.
+          One private scanned image. It appears only to signed-in people you choose to share with and opens separately from the introduction.
         </p>
       </div>
 
@@ -1577,12 +1574,12 @@ function HoroscopeManager({
                   {horoscope.file_extension !== "webp"
                     ? "Legacy document — replace it with a scanned image before sharing"
                     : horoscope.published_at
-                      ? "Published for approved viewers"
+                      ? "Published for people you’ve shared with"
                       : "Ready — publish or update the introduction to share it"}
                 </p>
               </div>
             </div>
-            <LockKeyhole className="h-4 w-4 shrink-0 text-[var(--workspace-ink-muted)]" aria-label="Approved viewers only" />
+            <LockKeyhole className="h-4 w-4 shrink-0 text-[var(--workspace-ink-muted)]" aria-label="People you choose to share with" />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" onClick={onReview} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--workspace-border)] px-4 text-xs font-medium text-[var(--workspace-ink)] hover:bg-[var(--workspace-surface-muted)]">
@@ -1790,8 +1787,8 @@ function RelationshipLifecycle({
 
   async function manage(grant: AccessGrant, action: "renew" | "revoke") {
     const prompt = action === "revoke"
-      ? `End access for ${grant.viewerName || "this viewer"}? They will no longer be able to open the private details.`
-      : `Renew private details access for ${grant.viewerName || "this viewer"} for 15 days?`;
+      ? `Stop sharing with ${grant.viewerName || "this person"}? They will no longer be able to open the private details.`
+      : `Share private details with ${grant.viewerName || "this person"} for another 15 days?`;
     if (!confirm(prompt)) return;
     setWorkingId(grant.id);
     setActionError(null);
@@ -1847,9 +1844,9 @@ function RelationshipLifecycle({
   const listTitle = listModal === "awaiting"
     ? "Awaiting review"
     : listModal === "set-aside"
-      ? "Requests set aside"
+      ? "Interests set aside"
       : listModal === "access"
-        ? "Current private details approvals"
+        ? "People you’re sharing with"
         : "Relationship history";
 
   return (
@@ -1861,13 +1858,13 @@ function RelationshipLifecycle({
         </div>
         <span>{waitingInterests.length} waiting</span>
       </div>
-      {workingId && !recordDetail && !approvalCandidate && <LoadingStatus compact className="my-4" title="Updating this request" />}
+      {workingId && !recordDetail && !approvalCandidate && <LoadingStatus compact className="my-4" title="Updating this interest" />}
       {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
 
       <CompactRelationshipStage
         stage="awaiting"
         title="Awaiting review"
-        description="New requests ready for your decision. Check each person's verification status before sharing more."
+        description="New interests ready for your decision. Check each person's verification status before sharing more."
         count={waitingInterests.length}
         expanded={!isMobileDashboard || expandedStages.awaiting}
         onToggle={() => onToggleStage("awaiting")}
@@ -1881,13 +1878,13 @@ function RelationshipLifecycle({
 
       <CompactRelationshipStage
         stage="set-aside"
-        title="Requests set aside"
-        description="Requests you can reopen when you are ready."
+        title="Interests set aside"
+        description="Interests you can revisit when you are ready."
         count={setAsideInterests.length}
         expanded={!isMobileDashboard || expandedStages["set-aside"]}
         onToggle={() => onToggleStage("set-aside")}
         onViewAll={() => openList("set-aside")}
-        empty="No requests are currently set aside."
+        empty="No interests are currently set aside."
       >
         {setAsideInterests.slice(0, 3).map((interest) => (
           <InterestSummaryCard key={interest.id} interest={interest} statusLabel="Set aside" primaryLabel={workingId === interest.id ? "Reopening…" : "Reopen"} disabled={workingId === interest.id} onPrimary={() => void decide(interest, "reopened")} />
@@ -1896,13 +1893,13 @@ function RelationshipLifecycle({
 
       <CompactRelationshipStage
         stage="access"
-        title="Private details approvals"
-        description={viewerAccessAvailable ? "Approved viewers can open private details until their grants end." : "Existing approvals remain on record, but viewers cannot open private details while the Introduction is unavailable."}
+        title="People you’re sharing with"
+        description={viewerAccessAvailable ? "People you’ve shared with can open private details until their sharing period ends." : "Sharing choices remain on record, but private details cannot be opened while your introduction is unavailable."}
         count={activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
         onToggle={() => onToggleStage("access")}
         onViewAll={() => openList("access")}
-        empty="No current approvals."
+        empty="You’re not sharing private details with anyone yet."
       >
         {activeGrants.slice(0, 3).map((grant) => (
           <GrantSummaryCard key={grant.id} grant={grant} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail({ kind: "grant", item: grant })} />
@@ -1911,7 +1908,7 @@ function RelationshipLifecycle({
 
       <button type="button" className="dashboard-history-action" onClick={() => openList("history")}>
         <History className="h-4 w-4" aria-hidden="true" />
-        Access history
+        Sharing history
       </button>
       <InterestHistoryPanel />
 
@@ -1931,7 +1928,7 @@ function RelationshipLifecycle({
                 <option value="broker">Broker introductions</option>
                 <option value="verified">Verified email</option>
                 <option value="pending">Pending review</option>
-                <option value="active">Current approvals</option>
+                <option value="active">Currently sharing with</option>
                 <option value="ended">Ended access</option>
               </select>
             </label>
@@ -1962,7 +1959,7 @@ function RelationshipLifecycle({
       )}
 
       {recordDetail && (
-        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Access details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail inactive={Boolean(approvalCandidate)}>
+        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Sharing details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail inactive={Boolean(approvalCandidate)}>
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
@@ -1972,7 +1969,7 @@ function RelationshipLifecycle({
           )}
           {recordDetail.kind !== "broker-response" && <InterestDetailsPanel requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
           <div className="dashboard-modal-sticky-actions">
-            {workingId && !approvalCandidate && <LoadingStatus compact title="Updating protected access" />}
+            {workingId && !approvalCandidate && <LoadingStatus compact title="Updating sharing" />}
             {recordDetail.kind === "interest" ? (
               <InterestActions
                 interest={recordDetail.item}
@@ -1983,8 +1980,8 @@ function RelationshipLifecycle({
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
-                <button type="button" className="dashboard-secondary-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "renew")}>Renew 15 days</button>
-                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "revoke")}>End access</button>}
+                <button type="button" className="dashboard-secondary-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "renew")}>Share for another 15 days</button>
+                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "revoke")}>Stop sharing</button>}
               </>
             ) : null}
           </div>
@@ -2001,9 +1998,9 @@ function RelationshipLifecycle({
           >
             <div className="min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">Confirm controlled disclosure</p>
-              <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Grant private details access to {approvalCandidate.viewer_name || "this viewer"}?</h3>
+              <h3 id={approvalTitleId} className="mt-2 text-2xl font-semibold">Share details with {approvalCandidate.viewer_name || "this person"}?</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
-                Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Access expires 15 days after approval.
+                Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Details are shared for 15 days.
               </p>
               <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
                 <p className="text-sm font-semibold">You will share:</p>
@@ -2012,14 +2009,14 @@ function RelationshipLifecycle({
                     {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-[var(--workspace-muted)]">No additional protected information has been added yet.</p>
+                  <p className="mt-2 text-sm text-[var(--workspace-muted)]">No additional private information has been added yet.</p>
                 )}
               </div>
               <p className="mt-4 text-sm leading-6 text-[var(--workspace-muted)]">
                 You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
               </p>
               {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
-              {workingId && <LoadingStatus compact className="mt-4" title="Granting private details access" />}
+              {workingId && <LoadingStatus compact className="mt-4" title="Sharing private details" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
               <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
@@ -2032,7 +2029,7 @@ function RelationshipLifecycle({
                   if (approved) setApprovalCandidate(null);
                 })}
               >
-                {workingId === approvalCandidate.id ? "Granting access..." : "Confirm private details for 15 days"}
+                {workingId === approvalCandidate.id ? "Sharing details…" : "Share details for 15 days"}
               </button>
             </div>
           </section>
@@ -2105,7 +2102,7 @@ function GrantSummaryCard({ grant, renderedAt, viewerAccessAvailable, onPrimary 
       <div className="dashboard-summary-main">
         <div className="dashboard-summary-heading"><strong>{grant.viewerName || "Verified viewer"}</strong><span className={`dashboard-source-tag is-${sourceType}`}>{sourceType === "broker" ? "Broker introduction" : "Direct introduction"}</span></div>
         <p>{grant.viewerEmail || "Verified viewer"}</p>
-        <p className="dashboard-message-preview">{grant.status === "active" ? viewerAccessAvailable ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : `Viewing unavailable · Approval ends ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Access ended"}</p>
+        <p className="dashboard-message-preview">{grant.status === "active" ? viewerAccessAvailable ? `${urgent ? "Expires soon" : "Active"} until ${formatAccessDate(grant.expiresAt)}` : `Viewing paused · Sharing ends ${formatAccessDate(grant.expiresAt)}` : grant.status === "expired" ? `Expired ${formatAccessDate(grant.expiresAt)}` : "Sharing ended"}</p>
       </div>
       <div className="dashboard-summary-actions"><span className="dashboard-interest-status">{grant.status === "active" && !viewerAccessAvailable ? "Viewing unavailable" : urgent ? "Expiring soon" : grant.status === "active" ? "Active" : grant.status === "expired" ? "Expired" : "Ended"}</span><button type="button" className="dashboard-primary-action" onClick={onPrimary}>Manage</button></div>
     </article>
@@ -2163,7 +2160,7 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
       {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
       {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
       {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro introduction</Link>}
-      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Reopen request</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Grant private details access</button> : <span className="dashboard-action-note">A verified VivIntro account is required before private details can be shared.</span>}</> : null}
+      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Revisit interest</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Share details</button> : <span className="dashboard-action-note">A verified VivIntro account is required before private details can be shared.</span>}</> : null}
     </>
   );
 }
@@ -2172,14 +2169,14 @@ function GrantDetail({ grant, viewerAccessAvailable }: { grant: AccessGrant; vie
   return (
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
-      {grant.status === "active" && !viewerAccessAvailable && <p>Approval remains on record, but this viewer cannot open the private details while your Introduction is unavailable.</p>}
+      {grant.status === "active" && !viewerAccessAvailable && <p>Your sharing choice remains on record, but this person cannot open private details while your introduction is unavailable.</p>}
       <dl className="dashboard-detail-grid">
         <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
-        <div><dt>Access ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
+        <div><dt>Sharing ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
         <div><dt>Last opened</dt><dd>{grant.lastAccessedAt ? formatAccessDate(grant.lastAccessedAt) : "Not opened yet"}</dd></div>
         <div><dt>Last renewed</dt><dd>{grant.renewedAt ? formatAccessDate(grant.renewedAt) : "Not renewed"}</dd></div>
       </dl>
-      <p>Open interest details below for this viewer’s submitted information and access history.</p>
+      <p>Open interest details below for this viewer’s submitted information and sharing history.</p>
     </div>
   );
 }
@@ -2208,13 +2205,6 @@ function daysUntil(value: string, referenceTime: number) {
   return Number.isFinite(difference) ? Math.ceil(difference / 86_400_000) : Number.POSITIVE_INFINITY;
 }
 
-function interestStatusLabel(status: string) {
-  if (status === "new" || status === "pending_review") return "Awaiting review";
-  if (status === "rejected") return "Set aside";
-  if (status === "approved" || status === "revealed") return "Access granted";
-  return "Closed";
-}
-
 function formatAccessDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "recently";
@@ -2229,13 +2219,13 @@ function formatAccessDate(value: string) {
 function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: string | null) {
   const viewer = viewerName || "A viewer";
   const labels: Record<AccessAuditEvent["eventType"], string> = {
-    request_submitted: `${viewer} submitted a request`,
-    request_reopened: `${viewer}'s request was reopened`,
-    request_rejected: `${viewer}'s request was set aside`,
-    grant_created: `Private details access granted to ${viewer}`,
+    request_submitted: `${viewer} showed interest`,
+    request_reopened: `${viewer}'s interest was revisited`,
+    request_rejected: `${viewer}'s interest was set aside`,
+    grant_created: `Private details shared with ${viewer}`,
     grant_renewed: `Private details access renewed for ${viewer}`,
     grant_accessed: `${viewer} opened the private details`,
-    grant_revoked: `Access ended for ${viewer}`,
+    grant_revoked: `Sharing ended for ${viewer}`,
     grant_expired: `Private details access expired for ${viewer}`,
     portfolio_rotated: "Introduction link rotated",
     portfolio_unpublished: "Introduction unpublished",
@@ -2333,12 +2323,12 @@ function fullViewDisclosureCategories(
     contacts.length > 0
     || Boolean(data.contact?.contact_person?.trim() && (data.contact.phone?.trim() || data.contact.email?.trim()))
   ) {
-    categories.push("Protected contact details");
+    categories.push("Private contact details");
   }
   if (media.length > 0) {
     const protectedPhotoCount = media.filter((item) => item.visibility !== "public").length;
     const protectedCopy = protectedPhotoCount > 0
-      ? `, including ${protectedPhotoCount} protected ${protectedPhotoCount === 1 ? "photo" : "photos"}`
+      ? `, including ${protectedPhotoCount} private ${protectedPhotoCount === 1 ? "photo" : "photos"}`
       : "";
     categories.push(`${media.length} introduction ${media.length === 1 ? "photo" : "photos"}${protectedCopy}`);
   }
@@ -2433,7 +2423,7 @@ function PhotoManager({
   onDelete: (id: string) => void;
 }) {
   const visibilityLabels: { value: PortfolioMediaVisibility; label: string }[] = [
-    { value: "interest_required", label: "Blurred until approval" },
+    { value: "interest_required", label: "Blurred until shared" },
     { value: "public", label: "Visible to all" },
   ];
 

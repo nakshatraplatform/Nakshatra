@@ -40,10 +40,10 @@ const tourSteps = [
   },
   {
     number: "04",
-    label: "Approve",
+    label: "Share details",
     title: "Decide when to share more.",
-    body: "When someone taps Show interest, they confirm their email. Approve them for up to 15 days, or quietly set it aside.",
-    points: ["Show interest", "Your approval", "Access can end early"],
+    body: "When someone taps Show interest, they confirm their email. Share details for up to 15 days, or quietly set their interest aside.",
+    points: ["Show interest", "Your choice", "Access can end early"],
     icon: UserCheck,
   },
 ] as const;
@@ -79,7 +79,7 @@ export function GuidedTour() {
         <div className={styles.guidedTourIntro}>
           <p className={styles.eyebrow}>A guided tour</p>
           <h2>How VivIntro works</h2>
-          <p>Create. Share. Approve. No app needed.</p>
+          <p>Create. Share. You decide. No app needed.</p>
           <p className={styles.tourExampleNote}>Illustrations below use fictional details.</p>
           <nav className={styles.tourNavigation} aria-label="Guided tour steps">
             {tourSteps.map((step) => (
@@ -159,10 +159,10 @@ function TourVisual({ step }: { step: string }) {
   }
 
   return (
-    <div className={styles.tourVisual} data-visual="approve" aria-label="Illustrated email-confirmed interest request">
-      <div className={styles.tourWindowBar}><span /><span /><span /><small>Interest request</small></div>
+    <div className={styles.tourVisual} data-visual="approve" aria-label="Illustrated email-confirmed interest">
+      <div className={styles.tourWindowBar}><span /><span /><span /><small>Interest</small></div>
       <div className={styles.tourRequestCard}><ShieldCheck aria-hidden="true" /><span><small>Email confirmed</small><strong>Interest received</strong></span></div>
-      <div className={styles.tourDecision}><span>Set aside</span><strong>Approve 15 days</strong></div>
+      <div className={styles.tourDecision}><span>Set aside</span><strong>Share details</strong></div>
     </div>
   );
 }

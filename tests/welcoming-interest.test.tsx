@@ -91,7 +91,7 @@ fireEvent.change(location.getByRole("combobox", { name: "State" }), { target: { 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
     complete(new Response('{"ok":true}', { status: 201 }));
-    expect(await screen.findByRole("heading", { name: "Request sent", level: 2 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Interest sent", level: 2 })).toBeInTheDocument();
     expect(screen.queryByLabelText("Family context")).not.toBeInTheDocument();
   });
 });

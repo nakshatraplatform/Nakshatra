@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const portfolio = await resolvePublicPortfolio(supabase, token);
 
   if (!portfolio?.data) {
-    return { title: "Introduction not found", robots: { index: false, follow: false, noarchive: true } };
+    return { title: "Introduction unavailable", robots: { index: false, follow: false, noarchive: true } };
   }
 
   const data = portfolio.data;

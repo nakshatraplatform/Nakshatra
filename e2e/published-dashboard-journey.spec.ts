@@ -25,24 +25,24 @@ test("published creator can understand sharing, requests, and Complete access", 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Your publishing journey" })).toHaveCount(0);
-  await page.getByRole("link", { name: "Review requests" }).click();
+  await page.getByRole("link", { name: "Review interests" }).click();
   const awaiting = page.locator('[data-stage="awaiting"]');
   await expect(awaiting.getByRole("button", { name: /Awaiting review/ })).toHaveAttribute("aria-expanded", "true");
   await expect(awaiting.getByText("Verification pending")).toBeVisible();
   await awaiting.getByRole("button", { name: "Review", exact: true }).last().click();
   const details = page.getByRole("dialog", { name: /A long family name/ });
   await expect(details.getByText("A verified VivIntro account is required before private details can be shared.")).toBeVisible();
-  await expect(details.getByRole("button", { name: "Grant private details access" })).toHaveCount(0);
+  await expect(details.getByRole("button", { name: "Share details" })).toHaveCount(0);
   await details.getByRole("button", { name: "Close details" }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();
-  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant private details access" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Share details" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("published-request-detail-mobile.png"), animations: "disabled" });
-  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Grant private details access" }).click();
-  await expect(page.getByRole("dialog", { name: /Grant private details access to Maya Shah/ })).toContainText("Access expires 15 days after approval.");
+  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Share details" }).click();
+  await expect(page.getByRole("dialog", { name: /Share details with Maya Shah/ })).toContainText("Details are shared for 15 days.");
   await expect(page.locator(".dashboard-modal-backdrop")).toHaveAttribute("inert", "");
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  for (const name of ["Cancel", "Confirm private details for 15 days"]) {
+  for (const name of ["Cancel", "Share details for 15 days"]) {
     const box = await page.getByRole("dialog").getByRole("button", { name }).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y).toBeGreaterThanOrEqual(0);
@@ -51,12 +51,12 @@ test("published creator can understand sharing, requests, and Complete access", 
   }
   await page.screenshot({ path: testInfo.outputPath("published-approval-mobile.png"), animations: "disabled" });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Grant private details access to Maya Shah/ })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: /Share details with Maya Shah/ })).toHaveCount(0);
   await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Close details" }).click();
   await page.getByRole("link", { name: "Manage access" }).click();
   const access = page.locator('[data-stage="access"]');
-  await expect(access.getByRole("button", { name: /private details approvals/i })).toHaveAttribute("aria-expanded", "true");
+  await expect(access.getByRole("button", { name: /People you’re sharing with/i })).toHaveAttribute("aria-expanded", "true");
   await access.getByRole("button", { name: "Manage" }).click();
-  await expect(page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "End access" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "Stop sharing" })).toBeVisible();
   await page.getByRole("dialog", { name: "Rohan" }).getByRole("button", { name: "Close details" }).click();
 });

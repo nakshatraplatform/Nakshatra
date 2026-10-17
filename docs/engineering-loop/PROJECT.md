@@ -17,6 +17,15 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
+  extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab
+  portfolio logo links, warm display terminology, full-name public-only WhatsApp
+  summaries and consistent tab titles. Preserves the existing design and all
+  publication/access safeguards. PDF development is deferred; this branch has
+  no PDF feature, dependencies or schema changes and needs no database deployment.
+  Extraction verification passes 1,383 unit tests, 59 coverage gates, 66 browser
+  cases, lint/typecheck/build and fresh review. Hosted CI remains pending.
+
 - [NAK-106 consent-first publishing follow-up](features/nak-106-consent-publishing-followup.md): implemented locally on latest main `888b70e`. Portfolio logo home links, concise/aligned interest fields, consent-driven publication with optional previews, and account JSON download UI removal. Full 1,354-test coverage/59 feature gates, lint/type/build, 66 affected Chromium cases across two runs and eight WebKit cases pass. Independent correction review resolved focus/selector defects. Completeness, liveness, account, stale-revision and protected-access safeguards remain. No schema/API change, commit/push or production action; physical iPhone and future hosted CI remain release checks.
 - [NAK-106 welcoming introduction journey](features/nak-106-welcoming-introduction-journey.md): revised landing copy within the existing structure/themes, familiar consumer terms, optional message disclosure, page-session answer retention, and safe sign-in/password-recovery continuation. Required fields and publication/access eligibility remain unchanged. Full 1,367-test coverage/59 feature gates, lint/type/build, and 89 browser cases pass across the broad batch and corrected-case rechecks; initial fresh-context source review found no material issues and final delta review is recorded with the delivery. No waitlist, migration, commit/push or release action; real-provider/physical-device checks remain separate.
 
