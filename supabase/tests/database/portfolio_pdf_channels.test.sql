@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(35);
+select plan(38);
 
 select pg_temp.create_auth_actor('f7100000-0000-4000-8000-000000000001','f7200000-0000-4000-8000-000000000001','pdf-owner@example.test');
 select pg_temp.create_auth_actor('f7100000-0000-4000-8000-000000000002','f7200000-0000-4000-8000-000000000002','pdf-viewer@example.test');
@@ -73,9 +73,31 @@ select ok(public.resolve_public_portfolio('pdf_replace_token_001') is not null,'
 reset role;
 select ok(exists(select 1 from app_private.portfolio_web_token_reservations where token='pdf_original_token_01'),'old web token stays reserved');
 select throws_ok(format('insert into app_private.portfolio_pdf_channels(code,portfolio_id,active) values(%L,null,false)',current_setting('test.pdf_code')),'23505',null,'retired QR cannot be reused');
-delete from public.portfolios where id='f7400000-0000-4000-8000-000000000001';
-select is(public.resolve_portfolio_pdf_link(current_setting('test.pdf_new')),null,'deletion closes current QR');
-select ok(exists(select 1 from app_private.portfolio_pdf_channels where code=current_setting('test.pdf_new') and portfolio_id is null and not active),'deleted profile leaves only an unassociated retired code');
+-- Rotation/unpublication created immutable audit history. Do not disable that
+-- guard or alter those records to test the independent PDF deletion trigger.
+select throws_ok($$delete from public.portfolios where id='f7400000-0000-4000-8000-000000000001'$$,'55000','access audit events are immutable','audited lifecycle history remains immutable');
+
+-- A separate published fixture exercises actual FK deletion and tombstones
+-- without claiming end-to-end account-deletion/audit compatibility.
+insert into public.candidates(id,primary_owner_user_id,display_name,created_by)
+values('f7300000-0000-4000-8000-000000000002','f7100000-0000-4000-8000-000000000002','Deletion Person','f7100000-0000-4000-8000-000000000002');
+update app_private.identity_verification_subjects set status='verified',verified_at=now()-interval '1 day',expires_at=now()+interval '365 days'
+where candidate_id='f7300000-0000-4000-8000-000000000002';
+insert into public.portfolios(id,user_id,candidate_id,draft_data)
+values('f7400000-0000-4000-8000-000000000002','f7100000-0000-4000-8000-000000000002','f7300000-0000-4000-8000-000000000002',pg_temp.complete_portfolio_draft());
+insert into public.portfolio_media(portfolio_id,candidate_id,media_type,storage_path,visibility)
+values('f7400000-0000-4000-8000-000000000002','f7300000-0000-4000-8000-000000000002','hero','f7100000-0000-4000-8000-000000000002/pdf/hero.webp','public');
+select pg_temp.prime_paid_publication('f7400000-0000-4000-8000-000000000002',pg_temp.complete_portfolio_draft());
+set local role authenticated;
+select pg_temp.set_authenticated_claims('f7100000-0000-4000-8000-000000000002','f7200000-0000-4000-8000-000000000002');
+select is(pg_temp.publish_portfolio_as_owner('f7400000-0000-4000-8000-000000000002',pg_temp.complete_portfolio_draft(),'{}'::jsonb,'{}'::jsonb,'pdf_deletion_token_01',now()+interval '90 days',1,'#f7f5ef',null)->>'status','ok','deletion fixture publishes through canonical rules');
+select set_config('test.pdf_delete_ticket',public.prepare_portfolio_pdf()::text,true);
+select is(current_setting('test.pdf_delete_ticket')::jsonb->>'status','ready','deletion fixture has a live PDF channel');
+select set_config('test.pdf_delete_code',current_setting('test.pdf_delete_ticket')::jsonb->>'code',true);
+reset role;
+delete from public.portfolios where id='f7400000-0000-4000-8000-000000000002';
+select is(public.resolve_portfolio_pdf_link(current_setting('test.pdf_delete_code')),null,'deletion closes current QR');
+select ok(exists(select 1 from app_private.portfolio_pdf_channels where code=current_setting('test.pdf_delete_code') and portfolio_id is null and not active),'deleted profile leaves only an unassociated retired code');
 select pg_temp.set_authenticated_claims('f7100000-0000-4000-8000-000000000001','f7200000-0000-4000-8000-000000000001');
 delete from auth.sessions where id='f7200000-0000-4000-8000-000000000001';
 -- Keep the formerly valid JWT claims, but remove its backing session first.
