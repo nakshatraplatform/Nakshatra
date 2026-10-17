@@ -13,7 +13,7 @@ describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
     expect(metadata.title).toEqual({ absolute: "Marriage biodata link you control | VivIntro" });
     expect(metadata.description).toMatch(/marriage biodata/i);
-    expect(metadata.description).toMatch(/until you approve/i);
+    expect(metadata.description).toMatch(/until you choose to share them/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
       title: "Your biodata, as one link you control.",

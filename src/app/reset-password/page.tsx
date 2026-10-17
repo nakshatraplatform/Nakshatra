@@ -1,7 +1,7 @@
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export const metadata = {
-  title: "Reset password · VivIntro",
+  title: "Reset password",
   description: "Choose a new password for your VivIntro account.",
   robots: { index: false, follow: false },
 };

@@ -5,7 +5,7 @@ import AccountClient from "./account-client";
 import { accountSignInMethods, readAccountProfile } from "@/features/account/profile";
 
 export const metadata: Metadata = {
-  title: "Account and Privacy",
+  title: "Settings",
 };
 
 /** Loads only the signed-in user's deletion status before rendering account controls. */

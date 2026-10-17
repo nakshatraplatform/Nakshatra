@@ -40,7 +40,7 @@ export function Pill({ children }: { children: ReactNode }) {
 }
 
 /** A presentation gate, never an authorization decision or a source of data. */
-export function ProtectedDataVault({ title = "More details shared after approval", detail = "Names, occupations, and exact locations stay protected.", showAction = false }: {
+export function ProtectedDataVault({ title = "More details shared privately", detail = "Names, occupations, and exact locations stay private.", showAction = false }: {
   title?: string; detail?: string; showAction?: boolean;
 }) {
   return <div className={styles.vault}>

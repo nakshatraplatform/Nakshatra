@@ -5,10 +5,15 @@ import DashboardClient from "./dashboard-client";
 import { loadDashboardView } from "@/features/portfolio/server/dashboard-view.service";
 import { isProfileFullyComplete } from "@/features/portfolio/readiness";
 import { isShareablePrimaryPhoto } from "@/features/media/portfolio-photo";
+import { resolvePublicPortfolio } from "@/features/portfolio/server/public-portfolio.service";
+import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-};
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<{ edit?: string | string[] }>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  return { title: query.edit === "1" ? "Edit introduction" : "Dashboard" };
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -33,6 +38,10 @@ export default async function DashboardPage({
   }
 
   let isExpired = false;
+  // Use the same public-only projection as a recipient, not draft or owner-only data.
+  const publicIntroduction = shareUrl && portfolio?.share_token
+    ? await resolvePublicPortfolio(supabase, portfolio.share_token) : null;
+  const whatsappMessage = shareUrl ? buildWhatsAppShareMessage(shareUrl, publicIntroduction?.data) : null;
   let daysLeft: number | null = null;
   if (portfolio?.expires_at) {
     const expiresAt = new Date(portfolio.expires_at).getTime();
@@ -61,6 +70,7 @@ export default async function DashboardPage({
       viewCount={dashboard.viewCount}
       userEmail={user.email ?? ""}
       shareUrl={shareUrl}
+      whatsappMessage={whatsappMessage}
       isExpired={isExpired}
       daysLeft={daysLeft}
       media={dashboard.media}

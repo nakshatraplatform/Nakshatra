@@ -1,0 +1,164 @@
+# NAK-107 consumer touchpoint polish
+
+## Contract — October 17, 2026
+
+Compact, Standard-risk follow-up on merged `d99e14c`. User approved portfolio
+logo home links opening a new tab, warm terminology, WhatsApp text and consistent
+tab titles. Full published name is preferred. Omit all promises that the link
+is continually maintained or includes unpublished edits.
+
+Preserve CSS, layout, font/palette tokens, required fields, publication consent,
+readiness/liveness checks, account binding, permission decisions, expiry and
+revocation. Keep internal enum/API/route names and precise legal text unchanged.
+Google branding/custom domains, paid services and production changes are excluded.
+Preserve the unrelated local NAK-102 document edit. Commit/push and PR preparation
+are authorized; merging, deployment and production mutation are not.
+
+## Evaluations and implementation context
+
+1. Portfolio navbar/footer/modal home links open a safe new tab and announce it;
+   ordinary application home links remain same-tab. Unit and browser checks must
+   reject missing `_blank`/`noopener` and navigation away from the introduction.
+2. WhatsApp summary is generated on the server from the canonical public projection
+   of published data only: full name, age, public profession/location if present.
+   Never fall back to draft or include contact, birth date, street/postal details.
+   Unit checks cover missing/private fields, full name and no maintenance promise.
+3. Consumer copy uses Share details/Interest/Private details/Stop sharing without
+   changing statuses, action payloads, conditions or 15-day timing. Existing owner
+   decision and viewer-access tests retain their assertions with approved labels.
+4. Titles use the root `%s | VivIntro` template exactly once; public introductions
+   use first name and unavailable pages remain generic/noindex. Browser checks
+   verify rendered titles and unchanged responsive/theme presentation.
+
+Verified entry points: `VivIntroBrand.tsx`, `PortfolioNav.tsx`, `PortfolioFooter.tsx`,
+`InterestRequestModal.tsx`, dashboard server page/client, public portfolio metadata,
+landing/guides/editor/viewer copy. Reuse `resolvePublicPortfolio` rather than
+adding a second disclosure policy. Pure share formatting lives at the portfolio
+boundary; no new database or external API contract.
+
+Status: implemented and verified locally on `fix/nak-107-consumer-touchpoint-polish`.
+Regression-first brand navigation and share-message
+checks failed on the old behavior as intended. Account title browser coverage now
+uses the account fixture and requires real account content rather than accepting
+an error page that happens to retain metadata.
+Canonical public resolver output supplies full name, age, public career/location;
+the client fallback contains only the link and neutral text, never draft identity.
+The additional dashboard RPC reads public data only. Customer display status labels
+are shared by dashboard and retained-interest panels; stored statuses are unchanged.
+No CSS, palette/font configuration, migration or provider settings changed.
+Actual email/provider/physical-device and hosted release checks are outside this
+local task. There is no migration to apply for this change.
+
+## Verification and review
+
+- Initial full coverage run: 1,381 tests passed, global statements 85.84%, branches
+  80.80%, functions 84.71%, lines 89.45%; all 59 feature gates passed unchanged.
+  Two subsequently added dashboard-boundary tests also passed, using distinct
+  unpublished, stored-private and public-resolver identities. Focused 35 tests
+  passed after the final marketing/metadata copy delta.
+- Final complete run after all copy and assertion updates: 1,383 tests passed in
+  181 files, zero failures; statements 85.87%, branches 80.82%, functions 84.76%,
+  lines 89.48%. All 59 feature gates passed again. One old Didit-return sentence
+  expectation was updated to the new non-authoritative wording, and an additional
+  assertion retains secure result-checking semantics. No verification rule changed.
+- Browser batch 1: 39 passed; three expired-heading expectations still used old
+  wording. Corrected to “Sharing period ended”, keeping expiry, recipient binding,
+  unavailable-state and guide-link assertions. The expanded batch then passed all
+  75 cases on desktop/tablet/mobile, covering the corrected paths, authentication,
+  publication refusal, public/private boundaries, focus and draft recovery.
+- Final editor/shared-brand batch: all 27 cases passed with the existing contrast,
+  keyboard, responsive, hover, focus and modal thresholds. Earlier new touchpoint
+  cases passed in all projects, exercising a real separate-tab home navigation,
+  rendered titles and locally intercepted WhatsApp popup text (nothing sent).
+- Lint and typecheck passed. Production `npm run build` passed, including typecheck
+  and generation of all 81 static pages. CSS/font/palette and API/SQL diffs are empty.
+- Fresh-context `touchpoint_review` reviewed source and tests read-only from packet
+  `8a4a0ad63f2386afd129abae0e28617e1802cf2d53255998e41d09ce7e2c4687`, base
+  `d99e14c`; core, test-strengthening and final copy-delta rounds found no material
+  findings. Actual model identifier unavailable; not a cross-model review. The
+  reviewer’s minor remaining tour-caption wording was subsequently corrected by
+  the coordinator; final browser contrast/layout checks include that correction.
+- Graphify code update completed; SQL extraction remains unavailable because the
+  optional `tree_sitter_sql` dependency is absent. No SQL changed in this task.
+- The unrelated NAK-102 document remains byte-identical to its initial dirty
+  snapshot (SHA256 `70427AFB1F6B15FC5A45F374AB3934CCDED3F2D235F2ECBCA256F50AF8A24DF4`).
+
+## Current scope: PDF excluded — October 17, 2026
+
+The user deferred PDF development because static downloads conflict with the
+live-introduction product vision. This supersedes the earlier combined package.
+Create a clean `fix/nak-107-touchpoints-only` branch from current main `d99e14c`.
+Retain only the approved touchpoint changes described above. No PDF components,
+routes, assets, dependencies, RPC declarations, migrations, fixture endpoints,
+schema-reservation retries or PDF rollout records belong in this branch.
+Existing horoscope-attachment PDF support is unrelated and remains unchanged.
+PR #106 and the earlier combined branch remain paused and unmerged; do not
+delete them or deploy their migration. Prior form/optional-preview work is
+already in main and must not be reapplied. Google branding/custom domains,
+pricing and the separately observed account-deletion/audit interaction remain
+out of scope. Do not treat old combined test results as proof of this extraction.
+
+Current extraction checks (not inherited from the combined branch):
+
+- `npm run lint`, `npm run typecheck`: passed.
+- `npx vitest run --coverage --maxWorkers=2 --reporter=dot`: 1,383 tests in
+  181 files passed. Statements 85.87%, branches 80.82%, functions 84.76%,
+  lines 89.48%; unchanged thresholds. All 59 feature coverage gates passed.
+- `npm run build`: passed, 81 static pages, using loopback test configuration;
+  built route manifest has no PDF-generation or QR-entry routes.
+- `npm run db:smoke`, `npm run security:audit`, `git diff --check`: passed.
+  Dependency audit: zero affected packages, no exceptions.
+- Playwright batch: `touchpoint-polish`, `shared-brand-system`,
+  `editor-portfolio-accessibility`, `consent-form-clarity`,
+  `complete-access-journey`, `interest-viewer-experience`, and
+  `published-dashboard-journey`, `--workers=1`: all 66 passed on desktop,
+  tablet and mobile. Both themes, consent/server refusal, recipient-only
+  contact, expired/revoked states, navigation/focus/contrast and intercepted
+  WhatsApp output remain covered. No messages were sent. Desktop/mobile
+  portfolio and interest-form screenshots inspected.
+- Fresh-context read-only `/root/touchpoints_extraction_review` reviewed
+  snapshot `1ec3fd06376dd45020c0cc61409984f4043d5ebc0e4353d74ace8ce21cf6d40a`
+  against `d99e14c`: no material findings; 26 focused tests independently
+  passed. Actual model identity unavailable; not a cross-model claim. This
+  subsequent documentation update does not change reviewed runtime source.
+- Source diff confirms no CSS/fonts, configuration, dependencies, API routes,
+  schema/generated types or migration changes. Original unrelated NAK-102
+  document retains its recorded SHA256 in the original worktree.
+
+No database deployment or PDF generated-type artifact is needed for this
+branch. Hosted CI, real email/provider flows and physical-device checks are not
+asserted by local fixtures. No merge or deployment is authorized here.
+
+## PR #108 CI correction
+
+The remote branch merged main's security work (`d1e08f8`) as `00cab11` after
+the extraction. Preserve that merge; do not revert the security fixes or restore
+the paused PDF feature. Standard-risk, test-only correction with self-review.
+
+CI run `39067014724` reports five failed checks, from three underlying causes:
+
+- All three browser projects fail the dashboard hydration test because its
+  exact selector still says `Review requests`, not the approved `Review interests`.
+- The same projects fail the trust-page disclosure test because its heading
+  and paragraph expectations use the old wording. Match the new exact heading
+  through its accessible role and approved paragraph, retaining closed/open,
+  visible-content and liveness-limit assertions. Add 15-day sharing and old-link
+  invalidation assertions rather than dropping coverage.
+- The quality job passed audit, lint, typecheck, unit tests/coverage and build
+  configuration validation, then GitHub ArtifactService `CreateArtifact` timed
+  out after five attempts. Build was skipped as a consequence. Leave artifact
+  upload and the fail-closed aggregate unchanged; a new push reruns them.
+
+The fifth failure is the aggregate correctly reporting the failed jobs. These
+are not five production-code defects. The failed CI annotations provide the red
+evidence; no runtime source, styling, workflow, timeout, retries, threshold or
+security checks are modified by this correction.
+
+Local focused Playwright run on the merged source: 10 passed, two unchanged
+viewport-matrix skips (the width matrix still executes on mobile Chromium).
+Both previously failed tests pass on desktop, tablet and mobile. Focused ESLint,
+`npm run typecheck`, `npm run build` (81 static pages with loopback configuration)
+and `git diff --check` passed on the merged source. Self-review confirms all
+date/hydration, disclosure-open state, content visibility and liveness assertions
+remain; two sharing-limit assertions were added. Pending normal commit/push
+hooks and full hosted rerun. No workflow modification or deployment performed.

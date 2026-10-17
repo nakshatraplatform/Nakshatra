@@ -88,7 +88,7 @@ describe("landing and shared frontend components", () => {
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
     expect(screen.getByRole("heading", { name: /keep personal details personal/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Approval required/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Shared by choice/i).length).toBeGreaterThan(0);
 
     rerender(<LandingExperience variant="story" />);
     expect(screen.getByRole("heading", { name: /more human way to make a marriage introduction/i })).toBeInTheDocument();

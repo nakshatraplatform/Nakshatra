@@ -60,7 +60,7 @@ export default async function OpenGraphImage({
           <div style={{ color: foreground, display: "flex", fontFamily: "serif", fontSize: 78, marginTop: 18 }}>
             {firstName}’s introduction
           </div>
-          <div style={{ color: foreground, display: "flex", fontSize: 28, marginTop: 18, opacity: 0.86 }}>Private details require the owner’s approval</div>
+          <div style={{ color: foreground, display: "flex", fontSize: 28, marginTop: 18, opacity: 0.86 }}>Private details shared by choice</div>
         </div>
       </div>
     ),

@@ -27,7 +27,7 @@ export default async function HoroscopePage({ params }: { params: Promise<{ toke
             <ArrowLeft className="h-4 w-4" /> Back to portfolio
           </Link>
           <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--workspace-border)]/25 bg-[color:var(--workspace-canvas)]/10 px-3 py-1.5 text-xs font-semibold text-[color:var(--workspace-ink)]">
-            <ShieldCheck className="h-3.5 w-3.5" /> Approved access
+            <ShieldCheck className="h-3.5 w-3.5" /> Shared with you
           </span>
         </div>
       </header>
@@ -43,7 +43,7 @@ export default async function HoroscopePage({ params }: { params: Promise<{ toke
                 .join(" · ")}
             </p>
           </div>
-          <p className="inline-flex items-center gap-2 text-xs text-[color:var(--workspace-muted)]"><LockKeyhole className="h-3.5 w-3.5" /> Access expires when approval is revoked.</p>
+          <p className="inline-flex items-center gap-2 text-xs text-[color:var(--workspace-muted)]"><LockKeyhole className="h-3.5 w-3.5" /> Viewing ends when they stop sharing.</p>
         </div>
 
         <section className="flex min-h-[60vh] items-start justify-center overflow-auto rounded-2xl border border-[color:var(--ui-on-action)]/10 bg-[color:var(--workspace-canvas)] p-3 sm:p-6" aria-label="Horoscope image viewer">

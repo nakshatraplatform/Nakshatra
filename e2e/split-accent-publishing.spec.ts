@@ -72,7 +72,7 @@ test(`gold metadata and split interest panes remain legible through OTP and succ
     }
     await dialog.getByLabel("Six-digit code").fill("123456");
     await dialog.getByRole("button", { name: "Verify email", exact: true }).click();
-    await expect(dialog.getByRole("heading", { name: "Request sent", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Interest sent", exact: true })).toBeVisible();
     await dialog.getByRole("button", { name: "Return to introduction" }).click();
     await expect(dialog).toHaveCount(0);
     await expect(page.locator("body")).not.toHaveCSS("position", "fixed");

@@ -23,6 +23,7 @@ export type VivIntroBrandProps = {
   variant?: VivIntroBrandVariant;
   tone?: VivIntroBrandTone;
   href?: string;
+  openInNewTab?: boolean;
   className?: string;
   decorative?: boolean;
   priority?: boolean;
@@ -38,6 +39,7 @@ export function VivIntroBrand({
   variant = "full-symbol",
   tone = "adaptive",
   href,
+  openInNewTab = false,
   className,
   decorative = false,
   priority = false,
@@ -49,7 +51,9 @@ export function VivIntroBrand({
     "--vivintro-brand-width": `${displayWidth ?? metrics.defaultDisplayWidth}px`,
     "--vivintro-brand-ratio": `${metrics.width} / ${metrics.height}`,
   } as CSSProperties;
-  const accessibleLabel = decorative ? undefined : href ? "VivIntro home" : "VivIntro";
+  const accessibleLabel = decorative ? undefined : href
+    ? openInNewTab ? "VivIntro home — opens in a new tab" : "VivIntro home"
+    : "VivIntro";
 
   const artwork = (
     <span
@@ -74,7 +78,7 @@ export function VivIntroBrand({
 
   if (href) {
     return (
-      <Link href={href} className={rootClassName} aria-label={accessibleLabel}>
+      <Link href={href} target={openInNewTab ? "_blank" : undefined} rel={openInNewTab ? "noopener noreferrer" : undefined} className={rootClassName} aria-label={accessibleLabel}>
         {artwork}
       </Link>
     );

@@ -6,7 +6,7 @@ import { getApiUser } from "@/lib/auth";
 import { sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 export const metadata = {
-  title: "Create an account · VivIntro",
+  title: "Create your introduction",
   description: "Create your private VivIntro portfolio.",
   robots: { index: false, follow: false },
 };

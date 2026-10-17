@@ -45,22 +45,22 @@ describe("retained owner interest details", () => {
     vi.stubGlobal("fetch", fetch);
     render(<InterestDetailsPanel requestId={id} />);
     expect(fetch).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "View Interest Details" }));
+    fireEvent.click(screen.getByRole("button", { name: "View interest details" }));
     expect(await screen.findByText("A thoughtful family introduction.")).toBeVisible();
     expect(screen.getByText("Arun Rao")).toBeVisible();
     expect(screen.getByText("Viewer’s relationship to candidate").nextElementSibling).toHaveTextContent("Parent");
     expect(screen.getByText("Boston, Massachusetts, United States")).toBeVisible();
-    expect(screen.getByText("revoked")).toBeVisible();
+    expect(screen.getByText("Sharing stopped")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Hide interest details" }));
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({ details }), { status: 200 }));
-    fireEvent.click(screen.getByRole("button", { name: "View Interest Details" }));
+    fireEvent.click(screen.getByRole("button", { name: "View interest details" }));
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   });
   it("keeps historical single-string submitted locations visible", async () => {
     const historical = { ...details, metadata: { profile_for: "self", location: "Boston, Massachusetts, United States" } };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ details: historical }), { status: 200 })));
     render(<InterestDetailsPanel requestId={id} />);
-    fireEvent.click(screen.getByRole("button", { name: "View Interest Details" }));
+    fireEvent.click(screen.getByRole("button", { name: "View interest details" }));
     expect(await screen.findByText("Boston, Massachusetts, United States")).toBeVisible();
   });
   it("bounds history pages, uses owner projection and keeps old submissions reachable", async () => {
@@ -75,7 +75,7 @@ describe("retained owner interest details", () => {
     render(<InterestHistoryPanel />);
     fireEvent.click(screen.getByRole("button", { name: "View all interest submissions" }));
     expect(await screen.findByText("Mira Rao")).toBeVisible();
-    expect(screen.getByRole("button", { name: "View Interest Details" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "View interest details" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });

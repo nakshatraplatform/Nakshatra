@@ -230,7 +230,7 @@ describe("public portfolio pages", () => {
 
   it("builds missing and complete metadata", async () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
-    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction not found", robots: { index: false } });
+    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction unavailable", robots: { index: false } });
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     const metadata = await generateMetadata({ params: Promise.resolve({ token: "token" }) });
     expect(metadata.title).toBe("Aditi’s marriage introduction");
@@ -350,7 +350,7 @@ describe("complete portfolio access landing", () => {
     mocks.authUser = { id: "viewer-1", email: "viewer@example.com" };
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "expired" } };
     const { rerender } = render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
-    expect(screen.getByRole("heading", { name: /access has expired/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Sharing period ended/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
 
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "revoked" } };

@@ -126,10 +126,10 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
     return { to, subject: "Update on your VivIntro introduction", text: "The person you contacted is not sharing private details at this time. The details you sent remain subject to VivIntro’s privacy and retention rules." };
   }
   if (job.notification_type === "full_view_revoked") {
-    return { to, subject: "Your access to private details has ended", text: "The person who shared their introduction has ended your access. The access link will no longer open their private details." };
+    return { to, subject: "Sharing has stopped", text: "The person who shared their introduction has stopped sharing private details. The link will no longer open those details." };
   }
   if (job.notification_type === "full_view_access_expiring") {
-    return { to, subject: "Approved access expires soon", text: `Someone’s access to your private details expires within 24 hours.\n\nReview access in your VivIntro dashboard: ${origin}/dashboard` };
+    return { to, subject: "Sharing period ends soon", text: `Someone’s sharing period for your private details ends within 24 hours.\n\nReview sharing in your VivIntro dashboard: ${origin}/dashboard` };
   }
 
   if (!job.grant_id) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
@@ -151,14 +151,14 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   const expiry = formatExpiry(grant.expires_at);
 
   if (job.notification_type === "full_view_expiring") {
-    return { to, subject: "Your access to private details expires soon", text: `Your access${ownerName ? ` to ${ownerName}'s private details` : ""} expires on ${expiry}.\n\nOpen the introduction using the same verified email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
+    return { to, subject: "Your sharing period ends soon", text: `Your sharing period${ownerName ? ` for ${ownerName}'s private details` : ""} ends on ${expiry}.\n\nOpen the introduction using the same verified email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
   }
 
   const renewed = job.notification_type === "full_view_renewed";
   return {
     to,
-    subject: renewed ? "Your access to private details was renewed" : "You can now view private details",
-    text: `${ownerName || "The person you contacted"} has ${renewed ? "renewed" : "granted"} your access to private details for 15 days.\n\nView the introduction: ${accessUrl}\n\nAccess expires on ${expiry}. Verify the same email address that received this message. Forwarding this email does not transfer access. The person sharing may end access early.`,
+    subject: renewed ? "Private details shared for another 15 days" : "Private details shared with you",
+    text: `${ownerName || "The person you contacted"} has shared private details with you for ${renewed ? "another " : ""}15 days.\n\nView the introduction: ${accessUrl}\n\nSharing ends on ${expiry}. Verify the same email address that received this message. Forwarding this email does not transfer access. The person sharing may stop sharing early.`,
   };
 }
 

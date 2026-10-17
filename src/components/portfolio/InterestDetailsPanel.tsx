@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { interestStatusLabel, sharingStatusLabel } from "@/features/interest/presentation";
 import { interestDetailsSchema, type InterestDetails } from "@/features/interest/server/interest-dashboard.contract";
 
 function timestamp(value: string | null) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not recorded"; }
@@ -13,7 +14,7 @@ function location(value: unknown) {
 
 export function InterestDetailsPanel({ requestId }: { requestId: string }) {
   const [expanded, setExpanded] = useState(false);
-  return <section><button type="button" className="dashboard-secondary-action" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Hide interest details" : "View Interest Details"}</button>{expanded && <SubmittedInterestDetails requestId={requestId} />}</section>;
+  return <section><button type="button" className="dashboard-secondary-action" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Hide interest details" : "View interest details"}</button>{expanded && <SubmittedInterestDetails requestId={requestId} />}</section>;
 }
 
 function SubmittedInterestDetails({ requestId }: { requestId: string }) {
@@ -33,14 +34,14 @@ function SubmittedInterestDetails({ requestId }: { requestId: string }) {
   const details = result.details;
   const metadata = details.metadata || {};
   const candidate = metadata.candidate && typeof metadata.candidate === "object" && !Array.isArray(metadata.candidate) ? metadata.candidate as Record<string, unknown> : null;
-  return <section className="dashboard-record-detail" aria-label="View Interest Details">
+  return <section className="dashboard-record-detail" aria-label="View interest details">
     <h3>Submitted interest details</h3>
     <dl className="dashboard-detail-grid">
-      {[ ["Name", details.name], ["Email", details.email], ["Phone", details.phone], ["Contacting for", metadata.profile_for], ["Location", location(metadata.location_details || metadata)], ["Submitted at", timestamp(details.submittedAt)], ["Email verified at", timestamp(details.verifiedAt)], ["Access granted at", timestamp(details.accessGrantedAt)], ["Current access status", details.accessStatus.replaceAll("_", " ")], ["Request status", details.requestStatus], ["Profession", metadata.profession], ["Core values", metadata.coreValues] ].map(([label, value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{text(value)}</dd></div>)}
+      {[ ["Name", details.name], ["Email", details.email], ["Phone", details.phone], ["Contacting for", metadata.profile_for], ["Location", location(metadata.location_details || metadata)], ["Submitted at", timestamp(details.submittedAt)], ["Email verified at", timestamp(details.verifiedAt)], ["Details shared at", timestamp(details.accessGrantedAt)], ["Current sharing status", sharingStatusLabel(details.accessStatus)], ["Interest status", interestStatusLabel(details.requestStatus)], ["Profession", metadata.profession], ["Core values", metadata.coreValues] ].map(([label, value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{text(value)}</dd></div>)}
     </dl>
     {candidate && <section><h3>Candidate details</h3><dl className="dashboard-detail-grid">{[["Name",candidate.name],["Email",candidate.email],["Phone",candidate.phone],["Viewer’s relationship to candidate",candidate.relationship],["Location",location(candidate.location)]].map(([label,value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{text(value)}</dd></div>)}</dl></section>}
     <section><h3>Family context</h3><p>{details.familyContext || "Not provided"}</p></section>
     <section><h3>Message</h3><p>{details.message || "Not provided"}</p></section>
-    {details.history.length > 0 && <section><h3>Access history</h3><ol className="dashboard-detail-history">{details.history.map(event => <li key={event.id}><span>{event.eventType.replaceAll("_", " ")}</span><time dateTime={event.createdAt}>{timestamp(event.createdAt)}</time></li>)}</ol></section>}
+    {details.history.length > 0 && <section><h3>Sharing history</h3><ol className="dashboard-detail-history">{details.history.map(event => <li key={event.id}><span>{event.eventType.replaceAll("_", " ")}</span><time dateTime={event.createdAt}>{timestamp(event.createdAt)}</time></li>)}</ol></section>}
   </section>;
 }

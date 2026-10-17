@@ -323,7 +323,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> The owner will decide whether to share private details.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> They’ll share more if they’d like to continue.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -337,7 +337,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
         <div className="interest-modal-backdrop" hidden={!open} data-appearance={appearance}>
           <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <aside className="interest-context" aria-label="About this introduction">
-              <VivIntroBrand href="/" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} />
+              <VivIntroBrand href="/" openInNewTab variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} />
               <div className="interest-context-profile">
                 <p className="portfolio-eyebrow">A thoughtful introduction</p>
                 <h3>{profileName}</h3>
@@ -351,14 +351,14 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                   <li>{firstName(profileName)} reviews your interest.</li>
                 </ol>
               </div>
-              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />Private details are shared only after approval.</p>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />They’ll share more if they’d like to continue.</p>
             </aside>
             <div className="interest-main-pane">
-            <div className="interest-brand-lockup"><VivIntroBrand href="/" className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
+            <div className="interest-brand-lockup"><VivIntroBrand href="/" openInNewTab className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
                 <p>{step === "choice" ? "Sign in to reuse your details, or continue with email. You don’t need to create an introduction." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : sessionEmail && existingViewerProfile ? "Check your location and add a short introduction. Your signed-in details are already filled in." : "A few details help the family understand who is getting in touch."}</p>
               </div>
               <button type="button" className="interest-modal-close" disabled={pending} onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
@@ -397,7 +397,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
             {step === "success" && (
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
-                <h3>Request sent to {firstName(profileName)}.</h3>
+                <h3>Interest sent to {firstName(profileName)}.</h3>
                 <p>{firstName(profileName)} can review your interest and decide whether to share private details. There’s nothing else to send now.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
@@ -465,7 +465,7 @@ function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, existingView
         )}
         <p className="interest-verification-help">Your answers stay here while this page is open. {sessionEmail ? "Sending shares them with this family." : "Next, confirm your email to send your interest."}</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
-        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Sending interest shares these details with the introduction owner. Private details are available only if they approve your request. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
+        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Showing interest shares these details with the person you’re contacting. They’ll share more if they’d like to continue. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
       </div>
       <div className="interest-form-footer">
         <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? sessionEmail ? "Sending interest" : "Sending verification code" : undefined}>{pending ? <InterestActionProgress label={sessionEmail ? "Sending interest" : "Sending verification code"} /> : sessionEmail ? "Send interest" : "Verify email and continue"}</button>

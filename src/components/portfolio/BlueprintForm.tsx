@@ -316,7 +316,7 @@ export function BlueprintForm({
               </div>
             </fieldset>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in public introduction · Exact date in private details" hint="You must be at least 18. Only your age is public; your exact date requires approval." min="1920-01-01" max={latestAdultBirthDate()} autoComplete="bday" />
+              <TextInput label="Date of birth" type="date" value={data.personal.dob || ""} onChange={(value) => updatePersonal({ dob: value })} required requirement="Required" audience="Age in public introduction · Exact date in private details" hint="You must be at least 18. Only your age is public; your exact date is shared only when you choose." min="1920-01-01" max={latestAdultBirthDate()} autoComplete="bday" />
               <SelectInput label="Gender" value={data.personal.gender || ""} options={GENDER_OPTIONS} onChange={(value) => updatePersonal({ gender: value ? value as PortfolioData["personal"]["gender"] : undefined })} required requirement="Required" audience="Public introduction and private details" />
               <SelectInput label="Marital Status" value={data.personal.marital_status || ""} options={withLegacyMaritalStatus(data.personal.marital_status)} onChange={(value) => updatePersonal({ marital_status: value })} required requirement="Required" audience="Public introduction and private details" />
               <SelectInput label="Height" value={data.vitals?.height || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("vitals", { ...(data.vitals || {}), height: value })} required requirement="Required" audience="All introduction views" />
@@ -418,28 +418,28 @@ export function BlueprintForm({
         )}
 
         {activeSection === "preferences" && (
-          <FormSection eyebrow="Compatibility" title="Partner preferences" description="Lead with values rather than a checklist. Detailed filters stay visible only to people you approve.">
+          <FormSection eyebrow="Compatibility" title="Partner preferences" description="Lead with values rather than a checklist. Detailed filters stay visible only to people you choose to share with.">
             <TextArea label="What qualities would support a good partnership?" value={data.preferences?.narrative || ""} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), narrative: value })} maxLength={1200} requirement="Recommended" audience="Public introduction and private details" hint="Describe the relationship dynamic that matters to you." placeholder="For example: kindness, emotional maturity, honest communication, and the ability to balance family connection with independence." />
             <div className="grid gap-4 sm:grid-cols-2">
-              <RangeSelectInput label="Preferred age range" value={data.preferences?.age_range || ""} options={AGE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), age_range: value })} audience="Approved people" />
-              <RangeSelectInput label="Preferred height range" value={data.preferences?.height_range || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), height_range: value })} audience="Approved people" />
-              <SelectInput label="Community preference" value={data.preferences?.caste_preference || ""} options={CASTE_PREFERENCE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), caste_preference: value, ...(value !== "specific" && { specific_communities: "" }) })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="Horoscope matching preference" value={data.preferences?.horoscope_preference || ""} options={HOROSCOPE_PREFERENCE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), horoscope_preference: value })} requirement="Optional" audience="Approved people" />
+              <RangeSelectInput label="Preferred age range" value={data.preferences?.age_range || ""} options={AGE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), age_range: value })} audience="People you choose to share with" />
+              <RangeSelectInput label="Preferred height range" value={data.preferences?.height_range || ""} options={HEIGHT_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), height_range: value })} audience="People you choose to share with" />
+              <SelectInput label="Community preference" value={data.preferences?.caste_preference || ""} options={CASTE_PREFERENCE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), caste_preference: value, ...(value !== "specific" && { specific_communities: "" }) })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="Horoscope matching preference" value={data.preferences?.horoscope_preference || ""} options={HOROSCOPE_PREFERENCE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), horoscope_preference: value })} requirement="Optional" audience="People you choose to share with" />
             </div>
-            {data.preferences?.caste_preference === "specific" && <MultiSelectInput label="Specific communities" value={data.preferences?.specific_communities || ""} options={COMMUNITY_OPTIONS.filter((item) => item.value)} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), specific_communities: value })} audience="Approved people" />}
-            <MultiSelectInput label="Preferred visa or residency statuses" value={data.preferences?.visa_preferences || ""} options={VISA_OPTIONS.filter((item) => item.value)} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), visa_preferences: value })} audience="Approved people" hint="Useful only when international location compatibility matters." />
+            {data.preferences?.caste_preference === "specific" && <MultiSelectInput label="Specific communities" value={data.preferences?.specific_communities || ""} options={COMMUNITY_OPTIONS.filter((item) => item.value)} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), specific_communities: value })} audience="People you choose to share with" />}
+            <MultiSelectInput label="Preferred visa or residency statuses" value={data.preferences?.visa_preferences || ""} options={VISA_OPTIONS.filter((item) => item.value)} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), visa_preferences: value })} audience="People you choose to share with" hint="Useful only when international location compatibility matters." />
           </FormSection>
         )}
 
         {activeSection === "preferences" && (
           <FormSection eyebrow="Looking ahead" title="Future plans" description="These are conversation starters, not commitments. Choose only what you are comfortable sharing.">
             <div className="grid gap-4 sm:grid-cols-2">
-              <SelectInput label="When would you ideally like to marry?" value={data.preferences?.marriage_timeline || ""} options={MARRIAGE_TIMELINE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), marriage_timeline: value })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="How do you feel about having children?" value={data.preferences?.children_preference || ""} options={CHILDREN_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), children_preference: value })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="Would you consider relocating after marriage?" value={data.personal.relocation_preference || ""} options={RELOCATION_OPTIONS} onChange={(value) => updatePersonal({ relocation_preference: value })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="How should careers be supported after marriage?" value={data.preferences?.career_after_marriage || ""} options={CAREER_AFTER_MARRIAGE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), career_after_marriage: value })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="What living arrangement feels comfortable?" value={data.preferences?.living_arrangement || ""} options={LIVING_ARRANGEMENT_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), living_arrangement: value })} requirement="Optional" audience="Approved people" />
-              <SelectInput label="How should family responsibilities be handled?" value={data.preferences?.family_responsibilities || ""} options={FAMILY_RESPONSIBILITY_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), family_responsibilities: value })} requirement="Optional" audience="Approved people" />
+              <SelectInput label="When would you ideally like to marry?" value={data.preferences?.marriage_timeline || ""} options={MARRIAGE_TIMELINE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), marriage_timeline: value })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="How do you feel about having children?" value={data.preferences?.children_preference || ""} options={CHILDREN_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), children_preference: value })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="Would you consider relocating after marriage?" value={data.personal.relocation_preference || ""} options={RELOCATION_OPTIONS} onChange={(value) => updatePersonal({ relocation_preference: value })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="How should careers be supported after marriage?" value={data.preferences?.career_after_marriage || ""} options={CAREER_AFTER_MARRIAGE_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), career_after_marriage: value })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="What living arrangement feels comfortable?" value={data.preferences?.living_arrangement || ""} options={LIVING_ARRANGEMENT_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), living_arrangement: value })} requirement="Optional" audience="People you choose to share with" />
+              <SelectInput label="How should family responsibilities be handled?" value={data.preferences?.family_responsibilities || ""} options={FAMILY_RESPONSIBILITY_OPTIONS} onChange={(value) => onUpdate("preferences", { ...(data.preferences || {}), family_responsibilities: value })} requirement="Optional" audience="People you choose to share with" />
             </div>
           </FormSection>
         )}
@@ -458,12 +458,12 @@ export function BlueprintForm({
               <TextInput label="Maternal gotra" maxLength={100} value={data.astrology?.maternal_gotra || ""} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), maternal_gotra: value })} requirement="Optional" audience="Public introduction and private details" />
               <SelectInput label="Manglik status" value={data.astrology?.manglik_status || ""} options={MANGLIK_OPTIONS} onChange={(value) => onUpdate("astrology", { ...(data.astrology || {}), manglik_status: value })} requirement="Optional" audience="Private details" />
             </div>
-            {horoscopeManager && <EmbeddedPanel title="Original horoscope attachment" description="Only approved viewers can open it as a separate document.">{horoscopeManager}</EmbeddedPanel>}
+            {horoscopeManager && <EmbeddedPanel title="Original horoscope attachment" description="Only people you’ve shared with can open it as a separate document.">{horoscopeManager}</EmbeddedPanel>}
           </FormSection>
         )}
 
         {activeSection === "privacy" && (
-          <FormSection eyebrow="You stay in control" title="Appearance and contact" description="Choose your introduction appearance and optionally add protected contact details. Contact details are shared only after your approval.">
+          <FormSection eyebrow="You stay in control" title="Appearance and contact" description="Choose your introduction appearance and optionally add private contact details. Contact details are shared only when you choose.">
             <InfoCard title="Sensitive details stay protected" audience="Never public" text="Exact birth details, contact information, income, and the horoscope are not shown in the public introduction." />
             <div>
               <p className="mb-2 text-base font-semibold text-[color:var(--workspace-ink)]">Introduction appearance</p>
@@ -483,11 +483,11 @@ export function BlueprintForm({
               {data.privacy_mode === "private" && <div className="mt-4 rounded-xl border border-[color:var(--workspace-border)] p-4"><p className="text-sm leading-6 text-[color:var(--workspace-ink)]">This saved draft uses an older sharing setup. Your current published link will not change until you review and publish again. To publish changes, update this draft to the current sharing setup, then confirm publication consent.</p><button type="button" className="workspace-focus mt-4 min-h-11 rounded-lg border border-[color:var(--workspace-teal)] px-4 text-sm font-semibold" onClick={() => onUpdate("privacy_mode", "balanced")}>Update sharing setup</button></div>}
             </div>
             <div className="space-y-4 border-t border-[color:var(--workspace-border)] pt-6">
-              <InfoCard title="Protected contact" audience="Optional · private details" text="These contacts stay out of the public introduction and unlock only for a viewer you approve. Approved viewers may save the details they receive." />
+              <InfoCard title="Private contact" audience="Optional · private details" text="These contacts stay out of the public introduction and unlock only for someone you choose to share with. People you’ve shared with may save the details they receive." />
               {contacts.map((contact, index) => (
                 <div key={index} className="rounded-xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface-muted)] p-4">
                   <div className="mb-4 flex items-center justify-between gap-4">
-                    <p className="text-base font-semibold text-[color:var(--workspace-ink)]">Protected contact {index + 1}</p>
+                    <p className="text-base font-semibold text-[color:var(--workspace-ink)]">Private contact {index + 1}</p>
                     <button type="button" onClick={() => updateContacts(contacts.filter((_, itemIndex) => itemIndex !== index))} className="workspace-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-[var(--ui-danger)] hover:bg-[var(--workspace-canvas)]"><Trash2 className="h-4 w-4" aria-hidden="true" /> Remove</button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -498,12 +498,12 @@ export function BlueprintForm({
                   </div>
                 </div>
               ))}
-              {contacts.length < 5 && <button type="button" onClick={() => updateContacts([...contacts, { relationship: contacts.length ? "other" : "self", name: "", phone: "", email: "" }])} className="workspace-focus min-h-12 rounded-lg border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)]">{contacts.length ? "Add another protected contact" : "Add a protected contact"}</button>}
+              {contacts.length < 5 && <button type="button" onClick={() => updateContacts([...contacts, { relationship: contacts.length ? "other" : "self", name: "", phone: "", email: "" }])} className="workspace-focus min-h-12 rounded-lg border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)]">{contacts.length ? "Add another private contact" : "Add a private contact"}</button>}
             </div>
           </FormSection>
         )}
 
-        <p className="mt-6 flex items-start gap-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-2 h-4 w-4 shrink-0" aria-hidden="true" /><span>Fields marked with a lock are shared only after your approval. Next, confirm consent in Review and publish. Previews are optional.</span></p>
+        <p className="mt-6 flex items-start gap-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-2 h-4 w-4 shrink-0" aria-hidden="true" /><span>Fields marked with a lock are shared only when you choose. Next, confirm consent in Review and publish. Previews are optional.</span></p>
 
         <div className="mt-6 hidden flex-wrap items-center justify-between gap-4 border-t border-[color:var(--workspace-border)] pt-6 sm:flex">
           <button type="button" disabled={activeIndex === 0} onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
@@ -523,7 +523,7 @@ function FormSection({ eyebrow, title, description, children }: { eyebrow: strin
 
 function InfoCard({ title, text, audience }: { title: string; text: string; audience: string }) {
   const protectedAudience = audience === "Never public" || audience.toLowerCase().includes("private details");
-  return <div className="rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4"><div className="flex items-start gap-4"><ShieldCheck className="mt-2 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p>{protectedAudience && <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />{audience === "Never public" ? "Never public" : "Shown after approval"}</span>}</div></div></div>;
+  return <div className="rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4"><div className="flex items-start gap-4"><ShieldCheck className="mt-2 h-5 w-5 shrink-0 text-[color:var(--workspace-teal)]" aria-hidden="true" /><div><p className="text-base font-semibold text-[color:var(--workspace-ink)]">{title}</p><p className="mt-2 text-sm leading-6 text-[color:var(--workspace-ink-muted)]">{text}</p>{protectedAudience && <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--workspace-teal)]"><LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />{audience === "Never public" ? "Never public" : "Shared when you choose"}</span>}</div></div></div>;
 }
 
 function EmbeddedPanel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
@@ -531,7 +531,7 @@ function EmbeddedPanel({ title, description, children }: { title: string; descri
 }
 
 function approvalOnlyAudience(audience?: string) {
-  return audience === "Private details" || audience === "Approved people";
+  return audience === "Private details" || audience === "People you choose to share with";
 }
 
 function FieldLabel({ label, required, audience }: { label: string; hint?: string; required?: boolean; requirement?: string; audience?: string }) {
@@ -539,7 +539,7 @@ function FieldLabel({ label, required, audience }: { label: string; hint?: strin
 }
 
 function FieldHelp({ id, hint, audience }: { id: string; hint?: string; audience?: string }) {
-  return <>{hint && <span id={`${id}-hint`} className="text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}{approvalOnlyAudience(audience) && <span id={`${id}-privacy`} className="sr-only">Shown after your approval, never in your public introduction.</span>}</>;
+  return <>{hint && <span id={`${id}-hint`} className="text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}{approvalOnlyAudience(audience) && <span id={`${id}-privacy`} className="sr-only">Shared only when you choose, never in your public introduction.</span>}</>;
 }
 
 function fieldDescriptionIds(id: string, hint: string | undefined, audience: string | undefined, errorId?: string) {

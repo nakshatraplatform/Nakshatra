@@ -58,13 +58,13 @@ test("new visitor fields have usable mobile space, required context and conditio
   }
 });
 
-test("owners can reopen full retained details after approval and from history", async ({ page,context }) => {
+test("owners can reopen full retained details when shared and from history", async ({ page,context }) => {
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard");
   await page.getByRole("button",{name:"View all interest submissions"}).click();
   const history=page.locator(".dashboard-interest-history");
   await expect(history.getByText("Maya Shah",{exact:true})).toBeVisible();
-  await history.getByRole("button",{name:"View Interest Details"}).first().click();
+  await history.getByRole("button",{name:"View interest details"}).first().click();
   await expect(history.getByText("Our families have spoken once.")).toBeVisible();
   await expect(history.getByText("Email verified at",{exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Hide interest history"}).click();
@@ -73,9 +73,9 @@ test("owners can reopen full retained details after approval and from history", 
   if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
   await stage.getByRole("button",{name:/manage/i}).first().click();
   const dialog=page.getByRole("dialog");
-  await dialog.getByRole("button",{name:"View Interest Details"}).click();
+  await dialog.getByRole("button",{name:"View interest details"}).click();
   await expect(dialog.getByText("Our family values kindness, honesty and mutual respect.")).toBeVisible();
-  await expect(dialog.getByText("Access granted at",{exact:true})).toBeVisible();
+  await expect(dialog.getByText("Details shared at",{exact:true})).toBeVisible();
 });
 
 test("long submitted context stays readable in retained history and access dialogs", async ({ page, context }) => {
@@ -91,7 +91,7 @@ test("long submitted context stays readable in retained history and access dialo
     await route.fulfill({ response, json: body });
   });
   async function expectReadable(container: ReturnType<typeof page.locator>) {
-    const panel = container.locator('.dashboard-record-detail[aria-label="View Interest Details"]');
+    const panel = container.locator('.dashboard-record-detail[aria-label="View interest details"]');
     await expect(panel.getByText("x".repeat(600), { exact: true })).toBeVisible();
     for (const value of ["x".repeat(600), "y".repeat(600)]) {
       const paragraph = panel.getByText(value, { exact: true });
@@ -105,7 +105,7 @@ test("long submitted context stays readable in retained history and access dialo
     await page.goto("/dashboard");
     await page.getByRole("button", { name: "View all interest submissions" }).click();
     const history = page.locator(".dashboard-interest-history");
-    await history.getByRole("button", { name: "View Interest Details" }).first().click();
+    await history.getByRole("button", { name: "View interest details" }).first().click();
     await expectReadable(history);
     await page.getByRole("button", { name: "Hide interest history" }).click();
     const stage = page.locator('[data-stage="access"]');
@@ -113,7 +113,7 @@ test("long submitted context stays readable in retained history and access dialo
     if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
     await stage.getByRole("button", { name: /manage/i }).first().click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByRole("button", { name: "View Interest Details" }).click();
+    await dialog.getByRole("button", { name: "View interest details" }).click();
     await expectReadable(dialog);
   }
 });

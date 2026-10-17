@@ -86,7 +86,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
     /does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "More can be shared privately." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
   await expect(page.getByText("Ramesh Rao", { exact: true })).toHaveCount(0);
   await expect(page.getByText("family@example.com", { exact: true })).toHaveCount(0);
@@ -138,7 +138,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(1);
   await expect(gallery.getByRole("button", { name: "Show photo 1" })).toBeVisible();
-  await expect(gallery.getByRole("button", { name: "Photo 8, shared after approval" })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Photo 8, shared privately" })).toBeVisible();
   await expect(gallery.getByAltText("Protected portrait")).toHaveCount(0);
   const galleryColumns = await gallery.locator(".portfolio-gallery-viewer").evaluate(
     (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length
@@ -181,7 +181,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   });
   expect(accents.gold).not.toBe(accents.primary);
 
-  const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home", exact: true });
+  const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home — opens in a new tab", exact: true });
   await expect(privacyControl).toBeVisible();
   await expect(privacyControl).toHaveAttribute("href", "/");
   await privacyControl.focus();

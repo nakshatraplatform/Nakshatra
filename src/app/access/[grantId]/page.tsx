@@ -20,7 +20,7 @@ export default async function CompletePortfolioAccessPage({ params }: { params: 
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) {
     return (
-      <AccessShell title="Verify before viewing" copy="Private details need approval. Verify the same email address that received this link.">
+      <AccessShell title="Verify before viewing" copy="Private details are shared with a specific person. Verify the same email address that received this link.">
         <AccessVerificationClient grantId={grantId} />
       </AccessShell>
     );
@@ -32,10 +32,10 @@ export default async function CompletePortfolioAccessPage({ params }: { params: 
     return <AccessState title="This access link is unavailable" copy="It may have ended or belong to a different verified account." />;
   }
   if (resolution.data.status === "expired") {
-    return <AccessState title="This access has expired" copy="Approved access lasts up to 15 days. Ask the person who shared this introduction to renew it." />;
+    return <AccessState title="Sharing period ended" copy="Details are shared for up to 15 days. Ask the person who shared this introduction to share them again." />;
   }
   if (resolution.data.status === "signin_required") {
-    return <AccessShell title="Verify before viewing" copy="Private details need approval. Sign in again to continue."><AccessVerificationClient grantId={grantId} /></AccessShell>;
+    return <AccessShell title="Verify before viewing" copy="Sign in with the same email address to view the details shared with you."><AccessVerificationClient grantId={grantId} /></AccessShell>;
   }
   if (resolution.data.status === "active") redirect(`/p/${encodeURIComponent(resolution.data.shareToken)}`);
   return <AccessState title="This access link is unavailable" copy="Ask the person who shared this introduction to share a current access email." />;
