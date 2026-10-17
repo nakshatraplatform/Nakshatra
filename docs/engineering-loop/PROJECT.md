@@ -78,3 +78,14 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [Candidate liveness recovery](features/candidate-liveness-recovery.md): owner-only status/resume/cancel, bounded expiry and cleanup-gated replacement; local implementation and review evidence, with authoritative Supabase CI and live-provider rollout gates kept distinct.
 
 `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run test:db:local`, `npm run build`, and `npm run test:e2e` are repository commands. Focused tests run with `vitest run <path>`. Docker was unavailable during the first NAK-60 implementation pass, so local pgTAP was not established. A source inspection or mocked unit test does not certify a Didit Sandbox session, provider deletion, production deployment or jurisdiction-specific biometric compliance.
+
+
+## NAK-74 production remediation (October 17, 2026)
+
+Critical work on `security/nak-74-production-readiness-fixes` is recorded in
+[the feature evaluation](features/nak-74-production-readiness-fixes.md) and
+[activation runbook](../operations/production-maintenance.md). Independent provider
+cleanup, server-only protected signing, durable email retry fences and dormant
+maintenance/health scheduling require coordinated migration/application rollout.
+Do not infer production closure from local tests. Repository controls need an
+administrator; the connected account has push but not admin access.

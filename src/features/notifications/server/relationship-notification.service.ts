@@ -139,7 +139,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
     .eq("id", job.grant_id)
     .maybeSingle();
   if (grantError) throw new NotificationRenderError("GRANT_LOOKUP_FAILED", true);
-  if (!grant || grant.revoked_at) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
+  if (!grant || grant.revoked_at || Date.parse(grant.expires_at) <= Date.now()) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
   const { data: portfolio } = await supabase
     .from("portfolios")
     .select("draft_data")
@@ -163,7 +163,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
 }
 
 /** Claims and delivers durable relationship notifications without mixing in pilot-access jobs. */
-export async function processRelationshipNotifications(supabase: Client, limit = 10) {
+export async function processRelationshipNotifications(supabase: Client, limit = 10, transport?: typeof fetch) {
   const origin = appOrigin.parse(process.env.NEXT_PUBLIC_APP_URL);
   const { data, error } = await supabase.rpc("claim_relationship_notification_outbox", { p_limit: limit });
   if (error) throw error;
@@ -177,7 +177,8 @@ export async function processRelationshipNotifications(supabase: Client, limit =
     let retryable = false;
     try {
       const message = await renderJob(supabase, job, origin);
-      const result = await sendResendEmail({ deliveryId: deliveryId(job.notification_ref), ...message });
+      const input = { deliveryId: deliveryId(job.notification_ref), ...message };
+      const result = transport ? await sendResendEmail(input, transport) : await sendResendEmail(input);
       succeeded = result.status === "accepted";
       errorCode = result.status === "failed" ? result.code : null;
       retryable = result.status === "failed" && result.retryable;
@@ -200,7 +201,8 @@ export async function processRelationshipNotifications(supabase: Client, limit =
       : retryable && job.attempt_count < 5
         ? "queued"
         : "failed";
-    if (completion !== expectedCompletion) {
+    // The database may close the retry window while this send is in flight.
+    if (completion !== expectedCompletion && !(expectedCompletion === "queued" && completion === "failed")) {
       throw new Error(`notification completion was ${completion || "unavailable"}; expected ${expectedCompletion}`);
     }
     if (succeeded) sent += 1;

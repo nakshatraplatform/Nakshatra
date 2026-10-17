@@ -1,0 +1,38 @@
+import { describe, expect, it, vi } from "vitest";
+import { processDeletedProviderCleanup } from "../scripts/deleted-provider-cleanup.mjs";
+
+const job = { id: "cleanup", claim_token: "lease", provider_session_ref: "ae740000-1111-4111-8111-111111111111", provider_vendor_data: "correlation", provider_workflow_id: "ad740000-1111-4111-8111-111111111111", provider_workflow_version: 1 };
+function fixture(responses: Response[]) {
+  const rpc = vi.fn(async (name: string) => ({ data: name === "claim_deleted_provider_cleanup" ? [job] : true, error: null }));
+  const transport = vi.fn(async () => responses.shift()!);
+  return { rpc, transport, client: { rpc } };
+}
+const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
+const decision = { session_id: job.provider_session_ref, workflow_id: job.provider_workflow_id, workflow_version: 1, vendor_data: job.provider_vendor_data, status: "Approved", liveness_checks: [{ status: "Approved" }] };
+
+describe("deleted-account provider cleanup", () => {
+  it("keeps independent work when the provider is unavailable", async () => {
+    const f = fixture([json({}, 503)]);
+    expect(await processDeletedProviderCleanup(f.client, { apiKey: "test", fetchImpl: f.transport })).toEqual({ completed: 0, deferred: 1 });
+    expect(f.rpc).toHaveBeenLastCalledWith("finish_deleted_provider_cleanup", expect.objectContaining({ p_id: job.id, p_claim_token: job.claim_token, p_error_code: expect.any(String) }));
+  });
+  it("never deletes a foreign session", async () => {
+    const f = fixture([json({ ...decision, vendor_data: "someone-else" })]);
+    expect((await processDeletedProviderCleanup(f.client, { apiKey: "test", fetchImpl: f.transport })).deferred).toBe(1);
+    expect(f.transport).toHaveBeenCalledTimes(1);
+  });
+  it("requires explicit purge proof rather than treating 404 as success", async () => {
+    const f = fixture([json(decision), json({}, 404)]);
+    expect((await processDeletedProviderCleanup(f.client, { apiKey: "test", fetchImpl: f.transport })).deferred).toBe(1);
+  });
+  it("removes correlation only after a matching no-retention purge response", async () => {
+    const f = fixture([json(decision), json({ session_id: job.provider_session_ref, face_retention_outcome: "deleted", biometric_template_uuid: null })]);
+    expect(await processDeletedProviderCleanup(f.client, { apiKey: "test", fetchImpl: f.transport })).toEqual({ completed: 1, deferred: 0 });
+    expect(f.transport).toHaveBeenLastCalledWith(expect.stringContaining("/delete/"), expect.objectContaining({ method: "DELETE", body: JSON.stringify({ retain_face_embeddings: false }) }));
+    expect(f.rpc).toHaveBeenLastCalledWith("finish_deleted_provider_cleanup", { p_id: job.id, p_claim_token: job.claim_token, p_error_code: null });
+  });
+  it("fails if completion cannot be persisted", async () => {
+    const f = fixture([]); f.rpc.mockResolvedValueOnce({ data: [job], error: null }).mockResolvedValueOnce({ data: false, error: null });
+    await expect(processDeletedProviderCleanup(f.client, { apiKey: "" })).rejects.toThrow("DELETED_PROVIDER_COMPLETION_FAILED");
+  });
+});

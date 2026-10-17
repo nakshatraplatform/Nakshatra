@@ -41,7 +41,7 @@ select ok(not exists(select 1 from pg_policies where schemaname = 'public' and t
 select ok(exists(select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Active portfolio protected previews are readable'), 'only active generated protected previews are publicly readable');
 select ok(exists(select 1 from pg_policies where schemaname = 'public' and tablename = 'portfolio_horoscopes' and policyname = 'Approved viewers can read published horoscope attachments'), 'approved viewers have an identity-bound horoscope policy');
 select ok(not exists(select 1 from pg_policies where schemaname = 'public' and tablename = 'portfolio_horoscopes' and roles @> array['anon'::name]), 'anonymous users have no horoscope table policy');
-select ok(exists(select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Approved viewers can read horoscope files'), 'approved viewers have a private storage policy');
+select ok(not exists(select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Approved viewers can read horoscope files'), 'protected horoscope signing requires the trusted server');
 select ok(exists(select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Active portfolio protected previews are readable' and qual like '%is_public_portfolio_media_path%'), 'protected previews use the active public-media allowlist');
 select ok(exists(select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Active portfolio public photos are readable' and qual like '%is_public_portfolio_media_path%'), 'public originals use the active public-media allowlist');
 

@@ -1063,6 +1063,9 @@ isOneToOne: false
               "attempt_id": string,"birth_date": string,"legal_name": string,"provider_subject_ref": string
             }[]
                            },
+"begin_production_maintenance":
+{ Args: { "p_dispatch_id"?: string }; Returns: string
+                           },
 "broker_notification_recipient_is_current":
 { Args: { "p_broker_introduction_id": string,"p_notification_type": string,"p_recipient_user_id": string }; Returns: boolean
                            },
@@ -1112,6 +1115,11 @@ isOneToOne: false
                            },
 "claim_candidate_liveness_result":
 { Args: { "p_attempt_id": string,"p_candidate_id": string,"p_owner_session_id": string,"p_owner_user_id": string }; Returns: Json
+                           },
+"claim_deleted_provider_cleanup":
+{ Args: { "p_limit"?: number }; Returns: {
+              "claim_token": string,"id": string,"provider_session_ref": string,"provider_vendor_data": string,"provider_workflow_id": string,"provider_workflow_version": number
+            }[]
                            },
 "claim_identity_verification_work":
 { Args: { "p_limit"?: number }; Returns: {
@@ -1165,6 +1173,9 @@ isOneToOne: false
 "complete_relationship_notification_outbox":
 { Args: { "p_attempt_count": number,"p_error_code"?: string,"p_notification_ref": string,"p_retryable"?: boolean,"p_succeeded": boolean }; Returns: string
                            },
+"configure_production_worker_schedule":
+{ Args: { "p_enabled"?: boolean,"p_secret": string }; Returns: undefined
+                           },
 "consume_account_deletion_reauth":
 { Args: { "p_proof_hash": string }; Returns: Json
                            },
@@ -1212,6 +1223,12 @@ isOneToOne: false
                            },
 "fail_account_deletion":
 { Args: { "p_claim_token": string,"p_error_code": string,"p_request_id": string }; Returns: boolean
+                           },
+"finish_deleted_provider_cleanup":
+{ Args: { "p_claim_token": string,"p_error_code"?: string,"p_id": string }; Returns: boolean
+                           },
+"finish_production_maintenance":
+{ Args: { "p_claim_token": string,"p_succeeded": boolean }; Returns: boolean
                            },
 "flag_broker_portfolio_update":
 { Args: { "p_notice_ref": string,"p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
@@ -1314,6 +1331,9 @@ isOneToOne: false
                            },
 "prepare_broker_introduction":
 { Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"production_worker_health":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
@@ -1492,6 +1512,9 @@ isOneToOne: false
                            },
 "submit_public_interest":
 { Args: { "p_city"?: string,"p_country"?: string,"p_email": string,"p_family_context"?: string,"p_location"?: string,"p_message"?: string,"p_name": string,"p_phone": string,"p_portfolio_url"?: string,"p_profile_for": string,"p_share_token": string,"p_state"?: string }; Returns: boolean
+                           },
+"suppress_failed_relationship_notification":
+{ Args: { "p_notification_ref": string }; Returns: boolean
                            },
 "suspend_brokerdesk_team_member":
 { Args: { "p_idempotency_key": string,"p_member_ref": string,"p_proof_hash": string,"p_workspace_ref": string }; Returns: Json

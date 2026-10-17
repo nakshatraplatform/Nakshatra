@@ -95,7 +95,7 @@ See [CLAUDE.md](CLAUDE.md) for the full sitemap and domain-module map.
 
 ## Local setup
 
-Requirements: Node.js 20+, npm, and a Supabase project for provider-backed flows.
+Requirements: Node.js 24 LTS (Node.js 22 or later is required by the locked Supabase SDK), npm, and a Supabase project for provider-backed flows.
 
 ```bash
 npm ci
