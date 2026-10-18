@@ -1,5 +1,13 @@
 # VivIntro / Nakshatra project map
 
+- [Frontend integration with main](features/frontend-hardening-integration.md):
+  October 18 integration with main `46540e5` preserves onboarding/Didit/security
+  work alongside component loading and hybrid lint. Six conflicts resolved;
+  skip-focus regression fixed and independently reviewed. Final local checks:
+  1,529 unit tests, 61 coverage gates, 159 browser cases plus corrected 27-case
+  loading rerun, production build and 27 repeated production history cases pass.
+  Hosted CI/Preview and real-provider/physical-device checks remain separate.
+
 - [Component loading and navigation](features/component-loading-navigation.md):
   removes root-wide loading on ready public pages; authenticated customer
   headers and preview navigation stay outside their data waits. Existing orbs
@@ -31,6 +39,19 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 ## Relevant feature status
 
 - [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
+- [Onboarding foundations](features/onboarding-foundations.md): local increments
+  on merged PR108/main `fc7f55c` fix multi-word name typing, routine refresh
+  closing the editor and Basics-only progress labeling. Adds actionable errors,
+  forward-navigation/publication checks, saved self-created Account names and
+  removal of address/narrative minimum requirements with a forward migration.
+  Family/Astrology remain optional; incomplete private saves and all publication
+  safeguards remain. [Dropdown inventory and feedback ledger](features/onboarding-options-and-feedback.md)
+  separates proposals from implementation. Responsive Chromium covers five widths
+  and both themes. Database execution/deployment and release remain pending.
+  [Options and save efficiency](features/onboarding-options-and-save-efficiency.md)
+  adds familiar stable-value dropdowns, bounded Other recovery, currency/count
+  confirmations, debounced/coalesced saves and serialized resume-position writes.
+
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab
   portfolio logo links, warm display terminology, full-name public-only WhatsApp
@@ -39,6 +60,9 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
   no PDF feature, dependencies or schema changes and needs no database deployment.
   Extraction verification passes 1,383 unit tests, 59 coverage gates, 66 browser
   cases, lint/typecheck/build and fresh review. Hosted CI remains pending.
+
+- [NAK-74 expanded readiness fixes](features/nak-74-expanded-readiness-fixes.md): stable anonymous quota keys, common database interest quota, reserved/CAS horoscope uploads with independent durable object cleanup, account-modal keyboard lifecycle, skip targets, photo confirmation, deletion timing copy, protected-route noindex, and scheduled per-class retention health. Integrated fetched main `fc7f55c` after initial work on `d1e08f8`. OPS-VERIFY-01 duplicate-message erasure is corrected, including legacy partial scrubs and real account-deletion preparation. Fresh checks pass 1,412 unit tests/61 gates and two scoped independent reviews; focused Supabase 63 assertions and independent PostgreSQL 24 checks pass. Docker recovery cleared the remaining database gate: full clean Supabase replay, 57 suites/1,534 assertions, DB lint and exact generated public-type comparison pass; security advisors return no issues. Production build and 48 distinct browser cases pass across the initial batch and two unchanged isolated reruns; first-run timing/teardown failures remain documented. Production migration, scheduler activation and actual backlog cleanup are separate release steps. Email authentication/DMARC excluded.
+
 
 - [NAK-106 consent-first publishing follow-up](features/nak-106-consent-publishing-followup.md): implemented locally on latest main `888b70e`. Portfolio logo home links, concise/aligned interest fields, consent-driven publication with optional previews, and account JSON download UI removal. Full 1,354-test coverage/59 feature gates, lint/type/build, 66 affected Chromium cases across two runs and eight WebKit cases pass. Independent correction review resolved focus/selector defects. Completeness, liveness, account, stale-revision and protected-access safeguards remain. No schema/API change, commit/push or production action; physical iPhone and future hosted CI remain release checks.
 - [NAK-106 welcoming introduction journey](features/nak-106-welcoming-introduction-journey.md): revised landing copy within the existing structure/themes, familiar consumer terms, optional message disclosure, page-session answer retention, and safe sign-in/password-recovery continuation. Required fields and publication/access eligibility remain unchanged. Full 1,367-test coverage/59 feature gates, lint/type/build, and 89 browser cases pass across the broad batch and corrected-case rechecks; initial fresh-context source review found no material issues and final delta review is recorded with the delivery. No waitlist, migration, commit/push or release action; real-provider/physical-device checks remain separate.
@@ -87,7 +111,18 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Checks and limits
 
-- [NAK-73 liveness completion](features/nak-73-liveness-completion.md): owner-requested canonical result lookup, authenticated return/dashboard confirmation and transactional Resend completion outbox. Local checks and fresh review are recorded separately from pending authoritative Supabase and real-provider release gates.
+- [NAK-73 liveness completion](features/nak-73-liveness-completion.md): current
+  2026-10-17 follow-up fixes first-click handoff through overlapping status reads
+  and Safari parent-refresh races, adds a one-time accessible completion dialog,
+  bounded return checks and owner-scoped durable after-response confirmation mail.
+  Latest-main integration now preserves PR109 retention/horoscope jobs alongside
+  the single reconciliation-before-email promise; NAK73-VERIFY-01 is resolved
+  locally against main aeeaecc. Combined validation passes 1,442 unit tests,
+  61 coverage gates, 48 browser cases (including one ordinary-limit retry),
+  all 105 migrations / 1,552 SQL assertions, types/build/audit and independent
+  integration review. Earlier lease-contention evidence remains in the feature.
+  New migration must precede matching app rollout; hosted runtime, real provider
+  delivery, physical-device and Linear synchronization checks remain separate.
 
 - [Candidate liveness recovery](features/candidate-liveness-recovery.md): owner-only status/resume/cancel, bounded expiry and cleanup-gated replacement; local implementation and review evidence, with authoritative Supabase CI and live-provider rollout gates kept distinct.
 

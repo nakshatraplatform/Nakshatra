@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { themeTestCookie } from "./support/theme-session.mjs";
+import { publishedOwnerCookie, themeTestCookie } from "./support/theme-session.mjs";
 
 test.beforeEach(async ({ context }) => { await context.addCookies([themeTestCookie]); });
 
@@ -34,6 +34,8 @@ test("deletion confirmation contains keyboard focus and restores it without a re
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Schedule account deletion?" });
   const close = dialog.getByRole("button", { name: "Close deletion confirmation" });
+  await expect(dialog.getByRole("heading", { name: "Schedule account deletion?" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
   expect(await trigger.evaluate(element => Boolean(element.closest("[inert]")))).toBe(true);
   await page.keyboard.press("Shift+Tab");
@@ -69,7 +71,9 @@ test("editor Escape preserves the dirty-draft decision in reduced motion", async
   expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
 });
 
-test("Escape closes an expanded editor dropdown before the editor", async ({ page }) => {
+test("Escape closes an expanded editor dropdown before the editor", async ({ page, context }) => {
+  // Story navigation now requires valid Basics; exercise Escape, not that separate guard.
+  await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard?edit=1");
   const dialog = page.getByRole("dialog", { name: "Introduction details" });
   await expect(dialog).toBeVisible();

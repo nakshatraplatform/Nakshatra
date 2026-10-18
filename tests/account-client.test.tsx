@@ -88,6 +88,32 @@ describe("account privacy screen", () => {
     expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
   });
 
+  it("shows saved introduction names as read-only with one clear editing route", () => {
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} profileManagedByPortfolio
+      initialProfile={{ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" }} />);
+    expect(screen.getByLabelText("First name")).toHaveValue("Mary Jane");
+    expect(screen.getByLabelText("First name")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Middle name (optional)")).toHaveValue("Anne");
+    expect(screen.getByLabelText("Last name")).toHaveValue("Rao");
+    expect(screen.queryByRole("button", { name: "Save names" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit introduction names" })).toHaveAttribute("href", "/dashboard?edit=1");
+    expect(mocks.profile).not.toHaveBeenCalled();
+  });
+
+  it("keeps failure recovery inside the active dialog", async () => {
+    mocks.deletion.mockResolvedValueOnce({ ok: false, message: "Please try scheduling again." });
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("heading")).toHaveFocus();
+    fireEvent.change(within(dialog).getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Schedule deletion" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Please try scheduling again.");
+    expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete account" })).toHaveFocus();
+  });
+
   it("saves separate account names with an optional middle name and shows linked methods", async () => {
     const profile = { firstName: "Rahul", middleName: "", lastName: "Ranganatha" };
     mocks.profile.mockResolvedValue({ ok: true, data: profile });

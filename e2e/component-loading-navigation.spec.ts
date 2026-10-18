@@ -10,6 +10,10 @@ for (const [path, title] of [["/dashboard", "Getting your portfolio and requests
     await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
     await expect(page.locator("html")).toHaveClass(/\blenis\b/);
     await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
+    await page.getByRole("link", { name: "Skip to main content", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("main")).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
     await header.getByRole("button", { name: "Switch to Dark theme" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     if (path === "/dashboard" && testInfo.project.name !== "tablet-chromium") {
@@ -71,13 +75,20 @@ test("anonymous customer routes still require sign-in before rendering account d
 });
 
 test("completed account data replaces its orb without replacing the header", async ({ page, context }) => {
+  const hydrationWarnings: string[] = [];
+  page.on("console", message => {
+    if (/hydration|hydrated/i.test(message.text())) hydrationWarnings.push(message.text());
+  });
   await context.addCookies([loadingTestCookie]);
   await page.goto("/account", { waitUntil: "commit" });
   const header = page.getByRole("banner");
   await expect(header).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Loading your account controls" })).toBeVisible();
-  await header.evaluate(element => element.setAttribute("data-test-frame-identity", "retained"));
+  // Track the actual node without mutating server HTML before header hydration.
+  const originalHeader = await header.elementHandle();
   await expect(page.getByRole("heading", { name: "Account settings", exact: true })).toBeVisible({ timeout: 15000 });
-  await expect(header).toHaveAttribute("data-test-frame-identity", "retained");
+  expect(await header.evaluate((element, original) => element === original, originalHeader)).toBe(true);
   await expect(page.getByRole("status").filter({ hasText: "Loading your account controls" })).toHaveCount(0);
+  expect(hydrationWarnings).toEqual([]);
+  await originalHeader.dispose();
 });

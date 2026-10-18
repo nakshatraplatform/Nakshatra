@@ -174,13 +174,16 @@ set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","r
 reset role;
 set local role authenticated;
 select pg_temp.set_authenticated_claims('a1000000-0000-4000-8000-000000000001','a1100000-0000-4000-8000-000000000001');
-select throws_ok($$insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002/private-victim-horoscope.webp','image/webp','webp',10,now())$$,'23514','horoscope_storage_namespace_invalid','owner cannot attach another account file');
+select throws_ok($$insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002/private-victim-horoscope.webp','image/webp','webp',10,now())$$,'42501','permission denied for table portfolio_horoscopes','owner cannot attach another account file');
 select throws_ok($$insert into public.portfolio_media(portfolio_id,storage_path,visibility,media_type) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001/../a1000000-0000-4000-8000-000000000002/private.webp','approved_only','gallery')$$,'23514','media_storage_path_invalid','owner cannot store a photo path that changes identity during URL parsing');
 select throws_ok($$update public.portfolio_media set thumbnail_path='a1000000-0000-4000-8000-000000000001/%2e%2e/foreign/file.webp' where id='a4000000-0000-4000-8000-000000000001'$$,'23514','media_storage_path_invalid','encoded normalization is rejected for derived paths');
 select throws_ok($$update public.portfolio_media set metadata=jsonb_build_object('blurPath','a1000000-0000-4000-8000-000000000001/./file.webp') where id='a4000000-0000-4000-8000-000000000001'$$,'23514','media_storage_path_invalid','blur derivatives also require canonical paths');
-select throws_ok($$insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/%2e%2e/foreign.webp','image/webp','webp',10,now())$$,'23514','horoscope_storage_namespace_invalid','horoscope cannot store an encoded normalization path');
-select lives_ok($$insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/chart.webp','image/webp','webp',10,now())$$,'owner can attach a file in their portfolio namespace');
-select throws_ok($$update public.portfolio_horoscopes set storage_path='a1000000-0000-4000-8000-000000000002/private-victim-horoscope.webp' where portfolio_id='a3000000-0000-4000-8000-000000000001'$$,'23514','horoscope_storage_namespace_invalid','owner cannot replace an attachment with a foreign path');
+select throws_ok($$insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at) values('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/%2e%2e/foreign.webp','image/webp','webp',10,now())$$,'42501','permission denied for table portfolio_horoscopes','horoscope cannot store an encoded normalization path');
+select public.reserve_horoscope_upload('a3000000-0000-4000-8000-000000000001') as reserved_path \gset
+select lives_ok(format('select public.replace_horoscope(%L,null,%L::jsonb)',
+  'a3000000-0000-4000-8000-000000000001',jsonb_build_object('storage_path',:'reserved_path',
+  'mime_type','image/webp','file_extension','webp','byte_size',10,'page_count',1)::text),'owner can attach through reserved CAS command');
+select throws_ok($$update public.portfolio_horoscopes set storage_path='a1000000-0000-4000-8000-000000000002/private-victim-horoscope.webp' where portfolio_id='a3000000-0000-4000-8000-000000000001'$$,'42501','permission denied for table portfolio_horoscopes','owner cannot replace an attachment with a foreign path');
 reset role;
 -- Simulate an invalid row predating this migration; the resolver must fail closed.
 alter table public.portfolio_horoscopes disable trigger enforce_horoscope_storage_namespace;
@@ -190,7 +193,7 @@ set local role authenticated;
 select pg_temp.set_authenticated_claims('a1000000-0000-4000-8000-000000000003','a1100000-0000-4000-8000-000000000003');
 select is(public.resolve_approved_horoscope('phase2_secure_token_1'),null::jsonb,'approved viewer cannot resolve preexisting foreign descriptor');
 reset role;
-update public.portfolio_horoscopes set storage_path='a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/chart.webp' where portfolio_id='a3000000-0000-4000-8000-000000000001';
+update public.portfolio_horoscopes set published_at=now(),storage_path='a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/chart.webp' where portfolio_id='a3000000-0000-4000-8000-000000000001';
 set local role authenticated;
 select pg_temp.set_authenticated_claims('a1000000-0000-4000-8000-000000000003','a1100000-0000-4000-8000-000000000003');
 select is(public.resolve_approved_horoscope('phase2_secure_token_1')->>'accessPath','a1000000-0000-4000-8000-000000000001/a3000000-0000-4000-8000-000000000001/chart.webp','valid approved horoscope still resolves');

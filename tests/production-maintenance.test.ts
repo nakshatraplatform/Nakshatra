@@ -1,8 +1,11 @@
 import { createHmac } from "node:crypto";
+vi.mock("@/features/operations/server/retention.service", () => ({ processRetention: mocks.retention }));
+vi.mock("@/features/horoscope/server/horoscope-cleanup.service", () => ({ processHoroscopeCleanup: mocks.horoscopeCleanup }));
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), retention: vi.fn(), horoscopeCleanup: vi.fn(), factory: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => ({ rpc: mocks.rpc }) }));
-vi.mock("../scripts/identity-verification-worker.mjs", () => ({ createIdentityVerificationWorker: () => ({ run: mocks.identity }) }));
+vi.mock("../scripts/identity-verification-worker.mjs", () => ({ createIdentityVerificationWorker: mocks.factory }));
 vi.mock("../scripts/deleted-provider-cleanup.mjs", () => ({ processDeletedProviderCleanup: mocks.cleanup }));
 vi.mock("../scripts/candidate-liveness-email-worker.mjs", () => ({ processCandidateLivenessEmails: mocks.email }));
 vi.mock("../scripts/account-deletion-worker.mjs", () => ({ createAccountDeletionWorker: () => ({ run: mocks.deletion }) }));
@@ -15,10 +18,43 @@ const request = () => new Request("https://app.test/internal", { headers: { auth
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubEnv("PRODUCTION_WORKER_ENABLED", "true"); vi.stubEnv("PRODUCTION_WORKER_SECRET", secret);
   mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : true, error: null }));
+  mocks.retention.mockReset().mockResolvedValue(true); mocks.horoscopeCleanup.mockReset().mockResolvedValue({ deferred: 0 });
+  mocks.factory.mockReset().mockReturnValue({ run: mocks.identity });
   mocks.identity.mockResolvedValue({ deferred: 0 }); mocks.cleanup.mockResolvedValue({ deferred: 0 });
   mocks.email.mockResolvedValue({ failed: 0 }); mocks.relationship.mockResolvedValue({ failed: 0 }); mocks.deletion.mockResolvedValue({ deferred: 0 });
 });
 describe("production maintenance", () => {
+  it("waits for the proof commit before claiming confirmation emails without delaying unrelated queues", async () => {
+    let finish!: (value: { deferred: number }) => void;
+    mocks.identity.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const running = runProductionMaintenance();
+    await vi.waitFor(() => expect(mocks.identity).toHaveBeenCalledOnce());
+    expect(mocks.email).not.toHaveBeenCalled();
+    expect(mocks.retention).toHaveBeenCalledOnce();
+    expect(mocks.horoscopeCleanup).toHaveBeenCalledOnce();
+    expect(mocks.cleanup).toHaveBeenCalledOnce();
+    expect(mocks.relationship).toHaveBeenCalledOnce();
+    finish({ deferred: 0 });
+    await running;
+    expect(mocks.factory).toHaveBeenCalledOnce();
+    expect(mocks.identity).toHaveBeenCalledOnce();
+    expect(mocks.email).toHaveBeenCalledOnce();
+  });
+  it.each(["retention", "horoscopeCleanup"] as const)("isolates %s failure without duplicating verification or starving email", async task => {
+    mocks[task].mockRejectedValueOnce(new Error("private cleanup detail"));
+    const result = await runProductionMaintenance();
+    expect(result.failed).toBe(true);
+    expect(result.tasks?.[task]).toBe("deferred");
+    expect(result.tasks?.identity).toBe("completed");
+    expect(result.tasks?.livenessEmail).toBe("completed");
+    expect(mocks.factory).toHaveBeenCalledOnce();
+    expect(mocks.identity).toHaveBeenCalledOnce();
+    for (const work of [mocks.retention, mocks.horoscopeCleanup, mocks.cleanup, mocks.email, mocks.relationship, mocks.deletion]) {
+      expect(work).toHaveBeenCalledOnce();
+    }
+    expect(JSON.stringify(result)).not.toContain("private cleanup detail");
+    expect(mocks.rpc).toHaveBeenLastCalledWith("finish_production_maintenance", { p_claim_token: "lease", p_succeeded: false });
+  });
   it("conceals both endpoints until enabled and authenticated, including unicode credentials", async () => {
     expect(workerAuthorized(request())).toBe(true);
     expect(workerAuthorized(new Request("https://app.test", { headers: { authorization: `Bearer ${"é".repeat(32)}` } }))).toBe(false);
@@ -48,14 +84,24 @@ describe("production maintenance", () => {
     mocks.rpc.mockResolvedValue({ data: null, error: null });
     expect(await runProductionMaintenance()).toEqual({ skipped: true, failed: false });
     expect(mocks.identity).not.toHaveBeenCalled();
+    expect(mocks.retention).not.toHaveBeenCalled();
+    expect(mocks.horoscopeCleanup).not.toHaveBeenCalled();
   });
   it("continues independent email and cleanup queues after identity provider failure", async () => {
     mocks.identity.mockRejectedValue(new Error("secret provider detail"));
     const result = await runProductionMaintenance();
     expect(result.failed).toBe(true); expect(result.tasks?.identity).toBe("deferred");
-    for (const task of [mocks.cleanup, mocks.email, mocks.relationship, mocks.deletion]) expect(task).toHaveBeenCalledOnce();
+    for (const task of [mocks.retention, mocks.horoscopeCleanup, mocks.cleanup, mocks.email, mocks.relationship, mocks.deletion]) expect(task).toHaveBeenCalledOnce();
     expect(mocks.rpc).toHaveBeenLastCalledWith("finish_production_maintenance", { p_claim_token: "lease", p_succeeded: false });
     expect(JSON.stringify(result)).not.toContain("secret provider detail");
+  });
+  it("keeps independent queues running when provider factory configuration is missing", async () => {
+    mocks.factory.mockImplementationOnce(() => { throw new Error("private configuration"); });
+    const result = await runProductionMaintenance();
+    expect(result.tasks?.identity).toBe("deferred");
+    expect(result.failed).toBe(true);
+    for (const task of [mocks.retention, mocks.horoscopeCleanup, mocks.cleanup, mocks.email, mocks.relationship, mocks.deletion]) expect(task).toHaveBeenCalledOnce();
+    expect(JSON.stringify(result)).not.toContain("private configuration");
   });
   it("reports aggregate deferrals as an unhealthy HTTP result", async () => {
     mocks.relationship.mockResolvedValue({ failed: 1 });

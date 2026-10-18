@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(24);
+select plan(26);
 
 select pg_temp.create_auth_actor('e6100000-0000-4000-8000-000000000001', 'e6200000-0000-4000-8000-000000000001', 'published-owner@example.test');
 select pg_temp.create_auth_actor('e6100000-0000-4000-8000-000000000002', 'e6200000-0000-4000-8000-000000000002', 'published-viewer@example.test');
@@ -32,7 +32,7 @@ select is((select count(*)::integer from storage.objects where name='e6100000-00
 reset role;
 
 -- Draft edits do not revoke an intact, previously reviewed published snapshot.
-update public.portfolios set draft_data = jsonb_set(draft_data, '{personal,address_line_1}', '""')
+update public.portfolios set draft_data = jsonb_set(draft_data, '{personal,postal_code}', '""')
 where id='e6400000-0000-4000-8000-000000000001';
 select ok(app_private.pilot_public_portfolio_allowed('published_snapshot_01'), 'incomplete draft does not invalidate the complete published snapshot');
 update public.portfolios set draft_data=pg_temp.complete_portfolio_draft()
@@ -71,7 +71,13 @@ select is(public.rotate_portfolio_transaction('replacement_token_001')->>'status
 select is(public.renew_portfolio_transaction(now()+interval '90 days')->>'status', 'not_published', 'renewal cannot unlock an incomplete snapshot');
 reset role;
 select pg_temp.legacy_published_fixture(pg_temp.complete_portfolio_draft() #- '{personal,address_line_1}');
-select ok(not app_private.pilot_public_portfolio_allowed('published_snapshot_01'), 'missing private address line 1 blocks the old token');
+select ok(app_private.pilot_public_portfolio_allowed('published_snapshot_01'), 'optional private address line 1 does not block the old token');
+set local role anon;
+select pg_temp.set_anon_claims();
+select ok(public.resolve_public_portfolio('published_snapshot_01') is not null, 'the public URL remains usable without an optional street address');
+reset role;
+select pg_temp.legacy_published_fixture(pg_temp.complete_portfolio_draft() #- '{career,title}');
+select ok(not app_private.pilot_public_portfolio_allowed('published_snapshot_01'), 'a missing required profession still blocks the old token');
 select pg_temp.legacy_published_fixture(jsonb_set(pg_temp.complete_portfolio_draft(), '{personal,dob}', '"1990-99-99"'));
 select ok(not app_private.pilot_public_portfolio_allowed('published_snapshot_01'), 'malformed legacy dates fail closed without raising');
 select pg_temp.legacy_published_fixture(pg_temp.complete_portfolio_draft() #- '{personal,address_line_2}');

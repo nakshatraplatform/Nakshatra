@@ -1,0 +1,24 @@
+.dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 30px;
+  overflow-y: auto;
+  border: 1px solid var(--workspace-border);
+  border-radius: 20px;
+  background: var(--workspace-surface);
+  color: var(--workspace-ink);
+  box-shadow: var(--ui-shadow-dialog);
+}
+.dialog::backdrop { background: color-mix(in srgb, var(--ui-scrim) 62%, transparent); }
+.dialog h2 { margin: 8px 0 14px; font-family: var(--font-portfolio-display), sans-serif; font-size: clamp(26px, 6vw, 32px); line-height: 1.15; }
+.dialog p { line-height: 1.6; }
+.check { width: 44px; height: 44px; color: var(--workspace-ink); }
+.eyebrow { margin: 18px 0 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--workspace-muted); }
+.note { margin: 18px 0 24px; font-size: 14px; color: var(--workspace-muted); }
+.dismiss { display: block; margin-top: 14px; padding: 8px 0; border: 0; background: none; color: var(--workspace-ink); font: inherit; cursor: pointer; }
+.dialog :is(button,a):focus-visible { outline: 2px solid var(--workspace-ink); outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] { animation: appear 180ms ease-out; }
+  @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}

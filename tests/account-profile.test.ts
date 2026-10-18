@@ -1,11 +1,19 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { accountProfileSchema, readAccountProfile } from "@/features/account/profile";
+import { accountProfileSchema, readAccountProfile, readPortfolioAccountProfile } from "@/features/account/profile";
 
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), limit: vi.fn(), update: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getApiUser: mocks.auth }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit: mocks.limit }));
 import { PATCH } from "@/app/api/account/profile/route";
 const names = { firstName: "李", middleName: "", lastName: "O’Connor" };
+it("uses explicit complete self-created names without guessing or accepting a relative's name", () => {
+  const personal = { profile_for: "self", first_name: "Mary Jane", middle_name: "Anne", last_name: "Rao" };
+  expect(readPortfolioAccountProfile({ personal })).toEqual({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" });
+  for (const draft of [null, {}, { personal: { ...personal, profile_for: "daughter" } },
+    { personal: { ...personal, last_name: "" } }, { personal: { name: "Do not infer parts", profile_for: "self" } }]) {
+    expect(readPortfolioAccountProfile(draft)).toBeNull();
+  }
+});
 const request = (body: unknown, origin = "https://www.vivintro.com") => new Request("https://www.vivintro.com/api/account/profile", { method: "PATCH", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(body) });
 beforeEach(() => {
   vi.clearAllMocks();

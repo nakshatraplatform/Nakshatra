@@ -105,9 +105,115 @@ test("a status outage after Start offers recovery without creating another sessi
   await page.screenshot({ path: testInfo.outputPath("created-status-outage.png"), fullPage: true });
   statusUnavailable = false;
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Resume check" })).toBeVisible();
-  await expect(page.getByText("Status temporarily unavailable")).toHaveCount(0);
-  await page.getByRole("link", { name: "Continue to Didit verification" }).click();
   await expect(page).toHaveURL("https://verify.didit.me/session/attached");
   expect(starts).toBe(1);
+});
+
+// Provider traffic is intercepted: these assertions never create a live Didit session.
+test("confirmed completion owns focus, reports queued mail and stays dismissed on reload", async ({ page, context }, testInfo) => {
+  await context.addCookies([recoveryTestCookie]);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  if (testInfo.project.name === "mobile-chromium") await page.setViewportSize({ width: 320, height: 640 });
+  if (testInfo.project.name === "tablet-chromium") await page.addInitScript(() => localStorage.setItem("nakshatra-app-theme", "dark"));
+  const attemptId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  let checks = 0;
+  await context.route("**/api/identity-verification/**", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    expect(["current", "check-result"]).toContain(action);
+    if (action === "check-result") checks++;
+    await route.fulfill({ json: { state: "verified", attemptId, deadline: null,
+      cleanupPending: false, canResume: false, canCancel: false, canStart: false, emailStatus: "queued" } });
+  });
+  await page.goto("/verification/result");
+  const dialog = page.getByRole("dialog", { name: "Liveness check complete" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(/confirmation email is queued/)).toBeVisible();
+  await expect.poll(() => checks).toBe(1);
+  expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Tab");
+  expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  expect(await dialog.evaluate(el => getComputedStyle(el).animationName)).toBe("none");
+  await page.screenshot({ path: testInfo.outputPath("liveness-complete.png"), fullPage: true });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator("#liveness-check")).toBeFocused();
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
+  await page.reload();
+  await expect(page.getByText("Your liveness check is complete.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("return automatically retries a pending result before showing completion", async ({ page, context }) => {
+  await context.addCookies([recoveryTestCookie]);
+  await page.clock.install();
+  const attemptId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  let checks = 0;
+  await context.route("**/api/identity-verification/**", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    expect(["current", "check-result"]).toContain(action);
+    if (action === "check-result") checks++;
+    await route.fulfill({ json: { state: checks > 1 ? "verified" : "awaiting_result", attemptId,
+      deadline: null, cleanupPending: false, canResume: false, canCancel: true, canStart: false,
+      emailStatus: checks > 1 ? "accepted" : null } });
+  });
+  await page.goto("/verification/result?status=Approved");
+  await expect.poll(() => checks).toBe(1);
+  await expect(page.getByText(/We are confirming your liveness result/)).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.clock.runFor(15_100);
+  await expect(page.getByRole("dialog", { name: "Liveness check complete" })).toBeVisible();
+  await expect(page.getByText(/accepted by our email provider/)).toBeVisible();
+  expect(checks).toBe(2);
+});
+
+test("an overlapping visibility read preserves the first-click provider handoff", async ({ page, context }) => {
+  await context.addCookies([recoveryTestCookie]);
+  const attemptId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  let starts = 0, postStartReads = 0;
+  let releaseFirst!: () => Promise<void>;
+  const active = { state: "active", attemptId, deadline: "2099-10-06T08:00:00Z", cleanupPending: false,
+    canResume: true, canCancel: true, canStart: false };
+  await context.route("https://verify.didit.me/**", route => route.fulfill({ contentType: "text/html", body: "<h1>Loopback hosted check</h1>" }));
+  await context.route("**/api/identity-verification/**", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    if (action === "start") {
+      starts++;
+      return route.fulfill({ json: { attemptId, url: "https://verify.didit.me/session/race", managementUrl: "http://localhost/verify/fixture" } });
+    }
+    expect(action).toBe("current");
+    if (starts && ++postStartReads === 1) {
+      releaseFirst = () => route.fulfill({ json: active });
+      return;
+    }
+    await route.fulfill({ json: starts ? active : { ...active, state: "not_started", attemptId: null, canResume: false, canCancel: false, canStart: true } });
+  });
+  await page.goto("/dashboard");
+  await page.getByRole("checkbox", { name: /I consent to Didit/ }).check();
+  await page.getByRole("button", { name: "Start liveness check" }).click();
+  await expect.poll(() => postStartReads).toBe(1);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page).toHaveURL("https://verify.didit.me/session/race");
+  await releaseFirst().catch(() => {}); // Navigation can abort the deliberately obsolete response.
+  expect(starts).toBe(1);
+});
+
+test("a background-confirmed result requests its queued email after an earlier pending lookup", async ({ page, context }) => {
+  await context.addCookies([recoveryTestCookie]);
+  const attemptId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  let verified = false, checks = 0;
+  await context.route("**/api/identity-verification/**", async route => {
+    const action = new URL(route.request().url()).pathname.split("/").at(-1);
+    expect(["current", "check-result"]).toContain(action);
+    if (action === "check-result") checks++;
+    await route.fulfill({ json: { state: verified ? "verified" : "awaiting_result", attemptId,
+      deadline: null, cleanupPending: false, canResume: false, canCancel: !verified, canStart: false,
+      emailStatus: verified ? "queued" : null } });
+  });
+  await page.goto("/verification/result");
+  await expect.poll(() => checks).toBe(1);
+  verified = true;
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByRole("dialog", { name: "Liveness check complete" })).toBeVisible();
+  await expect.poll(() => checks).toBe(2);
 });

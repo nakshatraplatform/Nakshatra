@@ -163,6 +163,28 @@ describe("database-backed rate limits", () => {
     });
   });
 
+  it("does not reset the anonymous quota when User-Agent rotates", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("RATE_LIMIT_SUBJECT_HMAC_KEY", "rotation-test-hmac-key-at-least-32-characters");
+    const counts = new Map<string, number>();
+    const rpc = vi.fn(async (_action, params) => {
+      const count = (counts.get(params.p_subject_hash) ?? 0) + 1;
+      counts.set(params.p_subject_hash, count);
+      return { data: { allowed: count <= 5, retryAfter: count > 5 ? 60 : 0 }, error: null };
+    });
+    for (let index = 0; index < 20; index++) {
+      const result = await consumeRateLimit({ rpc } as never, new Request("https://app.test", {
+        headers: { "x-vercel-forwarded-for": "203.0.113.4", "user-agent": `rotated-${index}` },
+      }), "auth_email");
+      expect(result.allowed).toBe(index < 5);
+    }
+    expect(counts.size).toBe(1);
+    expect([...counts.keys()][0]).not.toContain("203.0.113.4");
+    expect((await consumeRateLimit({ rpc } as never, new Request("https://app.test", {
+      headers: { "x-vercel-forwarded-for": "203.0.113.5" },
+    }), "auth_email")).allowed).toBe(true);
+  });
+
   it("keys anonymous subjects and ignores untrusted production forwarding headers", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("RATE_LIMIT_SUBJECT_HMAC_KEY", "first-rate-limit-key-with-more-than-32-characters");

@@ -4,8 +4,9 @@ import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
 
 
 
-import { useRef, useState } from "react";
-import { useModalFocus } from "@/components/useModalFocus";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import Link from "next/link";
+import { activateModalLifecycle } from "@/lib/ui/modal-lifecycle";
 import { KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
 import { emptyAccountProfile, type AccountProfile } from "@/features/account/profile";
@@ -22,13 +23,14 @@ interface Props {
   initialDeletion: AccountDeletionStatus;
   reauthComplete?: boolean;
   initialProfile?: AccountProfile;
+  profileManagedByPortfolio?: boolean;
   signInMethods?: string[];
 }
 
 type Action = "profile" | "sessions" | "delete" | "cancel" | "reauth" | null;
 
 /** Presents browser-safe account controls while all privileged work remains in authenticated APIs. */
-export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, signInMethods = [], reauthComplete = false }: Props) {
+export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, profileManagedByPortfolio = false, signInMethods = [], reauthComplete = false }: Props) {
   const [profile, setProfile] = useState(initialProfile);
   const [savedProfile, setSavedProfile] = useState(initialProfile);
   const [deletion, setDeletion] = useState(initialDeletion);
@@ -38,13 +40,21 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reauthMethod, setReauthMethod] = useState<"google" | "email" | null>(null);
-  const confirmationRef = useRef<HTMLElement>(null);
   function closeConfirmation() {
     if (action !== null) return;
     setConfirmationOpen(false);
     setConfirmation("");
   }
-  useModalFocus(confirmationOpen, confirmationRef, closeConfirmation);
+  const dialogRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeWithEscape = useEffectEvent(closeConfirmation);
+  useEffect(() => {
+    if (!confirmationOpen || !dialogRef.current) return;
+    const release = activateModalLifecycle(dialogRef.current, closeWithEscape, deleteTriggerRef.current);
+    headingRef.current?.focus();
+    return release;
+  }, [confirmationOpen]);
 
   function beginAction(next: Exclude<Action, null>) {
     setAction(next);
@@ -54,7 +64,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
 
   async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (action !== null) return;
+    if (action !== null || profileManagedByPortfolio) return;
     beginAction("profile");
     const result = await saveAccountProfileRequest(profile);
     if (!result.ok) setError(result.message);
@@ -138,35 +148,35 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
   return (
     <div className="contents">
 
-      <main id="main-content" className="account-privacy-main">
+      <main id="main-content" tabIndex={-1} className="account-privacy-main">
         <div className="account-privacy-heading">
           <p className="site-eyebrow">Account controls</p>
           <h1>Account settings</h1>
           <p>Signed in as {userEmail}</p>
         </div>
 
-        {!confirmationOpen && <div aria-live="polite" aria-atomic="true">
-          {message ? <p className="account-notice is-success">{message}</p> : null}
-          {error ? <p className="account-notice is-error">{error}</p> : null}
-        </div>}
+        <div aria-live="polite" aria-atomic="true" hidden={confirmationOpen}>
+          {message && !confirmationOpen ? <p className="account-notice is-success">{message}</p> : null}
+          {error && !confirmationOpen ? <p className="account-notice is-error">{error}</p> : null}
+        </div>
 
         {action && !confirmationOpen && <LoadingStatus compact className="my-4" title={action === "profile" ? "Saving your account names" : action === "sessions" ? "Signing out other devices" : action === "reauth" ? "Preparing secure sign-in" : action === "cancel" ? "Cancelling scheduled deletion" : "Scheduling account deletion"} />}
 
         <section className="account-settings-group" aria-labelledby="account-profile-heading">
           <h2 id="account-profile-heading">Your account profile</h2>
-          <p>These names identify the account holder. Edit your portfolio separately from the dashboard.</p>
+          <p>{profileManagedByPortfolio ? "These names follow your saved introduction. Update them in Basics to keep both places consistent." : "These names identify the account holder. Edit your portfolio separately from the dashboard."}</p>
           <form onSubmit={saveProfile} className="account-profile-form">
             <div className="account-profile-fields">
               {(["firstName", "middleName", "lastName"] as const).map((key) => (
                 <label key={key} htmlFor={`account-${key}`}>
                   {key === "firstName" ? "First name" : key === "middleName" ? "Middle name (optional)" : "Last name"}
-                  <input className="biodata-field" id={`account-${key}`} name={key} autoComplete={key === "firstName" ? "given-name" : key === "middleName" ? "additional-name" : "family-name"} required={key !== "middleName"} maxLength={80} value={profile[key]} disabled={action !== null || deletionProcessing} onChange={(event) => setProfile({ ...profile, [key]: event.target.value })} />
+                  <input className="biodata-field" id={`account-${key}`} name={key} autoComplete={key === "firstName" ? "given-name" : key === "middleName" ? "additional-name" : "family-name"} required={key !== "middleName"} readOnly={profileManagedByPortfolio} maxLength={80} value={profile[key]} disabled={action !== null || deletionProcessing} onChange={(event) => setProfile({ ...profile, [key]: event.target.value })} />
                 </label>
               ))}
             </div>
-            <button className="dashboard-secondary-action" type="submit" disabled={action !== null || deletionProcessing || JSON.stringify(profile) === JSON.stringify(savedProfile)}>
+            {profileManagedByPortfolio ? <Link href="/dashboard?edit=1" className="dashboard-secondary-action">Edit introduction names</Link> : <button className="dashboard-secondary-action" type="submit" disabled={action !== null || deletionProcessing || JSON.stringify(profile) === JSON.stringify(savedProfile)}>
               {action === "profile" ? "Saving…" : "Save names"}
-            </button>
+            </button>}
           </form>
           <dl className="account-sign-in-details">
             <div><dt>Email address</dt><dd>{userEmail || "Not available"}</dd></div>
@@ -196,11 +206,11 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               <h3 id="delete-heading">Delete account</h3>
               {deletionPending ? (
                 <p>
-                  Deletion is scheduled for {new Date(deletion.scheduledFor).toLocaleString()}.
+                  The recovery window ends {new Date(deletion.scheduledFor).toLocaleString()}. Deletion processing can begin after that time.
                   Public and approved portfolio access is already disabled.
                 </p>
               ) : (
-                <p>Public access is revoked immediately. Permanent deletion begins after a 24-hour recovery window.</p>
+                <p>When you confirm deletion, public and approved access are revoked. A 24-hour recovery window follows; permanent deletion is processed afterward.</p>
               )}
             </div>
             {deletionPending ? (
@@ -211,7 +221,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
             ) : deletionProcessing ? (
               <p className="account-notice is-error">Deletion is being processed and can no longer be canceled.</p>
             ) : (
-              <button className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={action !== null}>
+              <button ref={deleteTriggerRef} className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={action !== null}>
                 <Trash2 />
                 Delete account
               </button>
@@ -222,18 +232,18 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
 
       {confirmationOpen ? (
         <div className="account-confirm-backdrop" role="presentation">
-          <section ref={confirmationRef} tabIndex={-1} className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
+          <section ref={dialogRef} tabIndex={-1} className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
             <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={action !== null} onClick={closeConfirmation}>
               <X />
             </button>
             <p className="site-eyebrow">Permanent action</p>
-            <h2 id="confirm-delete-heading">Schedule account deletion?</h2>
-            <div aria-live="polite" aria-atomic="true">
-              {message ? <p className="account-notice is-success">{message}</p> : null}
-              {error ? <p className="account-notice is-error">{error}</p> : null}
-            </div>
+            <h2 ref={headingRef} tabIndex={-1} id="confirm-delete-heading">Schedule account deletion?</h2>
             {action && <LoadingStatus compact className="my-4" title={action === "reauth" ? "Preparing secure sign-in" : "Scheduling account deletion"} />}
-            <p>Your links and approved access stop working now. After 24 hours, your account and stored files are permanently removed.</p>
+            <p>When you confirm deletion, your public links and approved access stop working. You can cancel during the 24-hour recovery window. After it ends, deletion becomes eligible for processing; removal of your account, stored files and provider data may take longer.</p>
+            <div aria-live="polite" aria-atomic="true">
+              {error && <p className="account-notice is-error" role="alert">{error}</p>}
+              {message && <p className="account-notice is-success">{message}</p>}
+            </div>
             <p>First complete a fresh sign-in. Your confirmation is submitted only after that sign-in succeeds.</p>
             <fieldset>
               <legend>Reauthenticate with</legend>

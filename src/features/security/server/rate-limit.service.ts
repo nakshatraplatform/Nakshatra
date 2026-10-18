@@ -118,11 +118,10 @@ async function anonymousSubjectHash(request: Request) {
     false,
     ["sign"]
   );
-  const userAgent = (request.headers.get("user-agent") || "unknown").slice(0, 256);
   const digest = await crypto.subtle.sign(
     "HMAC",
     key,
-    encoder.encode(`${trustedNetworkHint(request)}|${userAgent}`)
+    encoder.encode(trustedNetworkHint(request))
   );
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0")

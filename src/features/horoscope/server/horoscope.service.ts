@@ -87,7 +87,8 @@ export async function uploadHoroscope({ supabase, userId, portfolioId, file, lan
   const { data: previous, error: previousError } = await repository.findByPortfolio(portfolioId);
   if (previousError) throw new HoroscopeError("Could not check the current horoscope attachment", 500);
 
-  const storagePath = `${userId}/${portfolioId}/${crypto.randomUUID()}.${detected.extension}`;
+  const { data: storagePath, error: reservationError } = await repository.reserveUpload(portfolioId);
+  if (reservationError || typeof storagePath !== "string") throw new HoroscopeError("Could not prepare the horoscope upload", 503);
   const { error: storageError } = await repository.upload(storagePath, output, detected.mimeType);
   if (storageError) throw new HoroscopeError("Horoscope upload failed", 500);
 
@@ -100,19 +101,12 @@ export async function uploadHoroscope({ supabase, userId, portfolioId, file, lan
     language_label: parsedLanguage.data,
     page_count: pageCount,
     published_at: null,
-  });
+  }, previous?.storage_path ?? null);
   if (saveError || !horoscope) {
-    await repository.remove([storagePath]);
-    throw new HoroscopeError("Could not save the horoscope attachment", 500);
-  }
-
-  if (previous?.storage_path && previous.storage_path !== storagePath) {
-    const { error: removeError } = await repository.remove([previous.storage_path]);
-    if (removeError) {
-      await repository.save({ ...(previous as PortfolioHoroscope) });
-      await repository.remove([storagePath]);
-      throw new HoroscopeError("Could not safely replace the previous horoscope", 500);
-    }
+    // An RPC response can be lost after commit. The reservation owns cleanup;
+    // never delete a possibly committed object or restore stale metadata here.
+    if (saveError?.code === "PT409") throw new HoroscopeError("Your horoscope changed in another window. Refresh before uploading again", 409);
+    throw new HoroscopeError("Could not confirm the horoscope attachment. Refresh to check its current status", 503);
   }
 
   return horoscope as PortfolioHoroscope;
@@ -123,8 +117,7 @@ export async function deleteHoroscope({ supabase, horoscopeId }: { supabase: Sup
   const repository = new HoroscopeRepository(supabase);
   const { data: horoscope, error } = await repository.delete(horoscopeId);
   if (error || !horoscope) throw new HoroscopeError("Horoscope attachment not found", 404);
-  const { error: storageError } = await repository.remove([horoscope.storage_path]);
-  if (storageError) throw new HoroscopeError("The attachment was revoked, but storage cleanup is still pending", 500);
+  // The database transaction queues private object cleanup before returning success.
 }
 
 /** Makes the current ready attachment visible to active approved viewers on publish. */

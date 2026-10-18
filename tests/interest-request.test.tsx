@@ -567,13 +567,15 @@ expect(screen.getByRole("textbox", { name: "Phone number" })).toBeRequired();
     }));
     expect(unavailable.status).toBe(404);
 
-    enforceRateLimit.mockResolvedValueOnce(new Response(null, { status: 429 }));
+    rpc.mockResolvedValueOnce({ data: null, error: { code: "P0429", message: "quota exceeded", details: "60" } });
     const limited = await POST(new Request("http://local/api/interest", {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: payload,
     }));
     expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBe("60");
+    expect(enforceRateLimit).not.toHaveBeenCalled();
 
     enforceRateLimit.mockResolvedValue(null);
     rpc.mockRejectedValueOnce(new Error("database unavailable"));

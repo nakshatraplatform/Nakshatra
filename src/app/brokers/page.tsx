@@ -13,7 +13,7 @@ export const metadata = { title: "My brokers · VivIntro", robots: { index: fals
 export default async function CustomerBrokersPage() {
   const { supabase, user } = await getAuthenticatedUser();
   return <CustomerAppFrame currentPage="brokers" userEmail={user.email} className={styles.shell} loadingTitle="Loading your broker relationships">
-    <main id="main-content">
+    <main id="main-content" tabIndex={-1}>
       <p className={styles.eyebrow}>Privacy controls</p>
       <h1>My brokers</h1>
       <p className={styles.lead}>You can work with more than one broker. Each broker sees only its own relationship and never learns which other brokers you use.</p>

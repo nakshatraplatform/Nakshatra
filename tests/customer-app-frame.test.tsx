@@ -17,6 +17,8 @@ it("keeps the same working header while pending data resolves", async () => {
   render(<AppThemeProvider><CustomerAppFrame currentPage="account" userEmail="owner@example.test" loadingTitle="Loading account controls" className="account-privacy-shell"><DataRegion /></CustomerAppFrame></AppThemeProvider>);
   const header = screen.getByRole("banner");
   expect(screen.getByRole("status")).toHaveTextContent("Loading account controls");
+  screen.getByRole("main").focus();
+  expect(screen.getByRole("main")).toHaveFocus();
   expect(screen.getByRole("navigation", { name: "Customer pages" }).querySelector('a[href="/dashboard"]')).not.toBeNull();
   screen.getByRole("button", { name: "Switch to Dark theme" }).click();
   expect(document.documentElement).toHaveAttribute("data-app-theme", "dark");

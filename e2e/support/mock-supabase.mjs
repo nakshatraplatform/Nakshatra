@@ -3,7 +3,7 @@ import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, published
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
-const port = 54329;
+const port = Number(process.env.E2E_SUPABASE_PORT || 54329);
 const portfolioId = "11111111-1111-4111-8111-111111111111";
 const authenticatedAccessToken = "e2e-authenticated-user-token";
 const authenticatedUser = {

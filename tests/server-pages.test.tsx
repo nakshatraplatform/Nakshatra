@@ -8,7 +8,7 @@ import { resolveServerTree } from "./resolve-server-tree";
 import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
 
 const mocks = vi.hoisted(() => ({
-  outcomes: {} as Record<string, { data?: unknown; count?: number | null }>,
+  outcomes: {} as Record<string, { data?: unknown; count?: number | null; error?: { message: string } }>,
   redirect: vi.fn((path: string) => { throw new Error(`REDIRECT:${path}`); }),
   notFound: vi.fn(() => { throw new Error("NOT_FOUND"); }),
   photoUrls: vi.fn(async () => [{
@@ -173,6 +173,8 @@ describe("authenticated server pages", () => {
     render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
+    screen.getByRole("main").focus();
+    expect(screen.getByRole("main")).toHaveFocus();
     expect(screen.queryByTestId("account-props")).not.toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
@@ -184,6 +186,8 @@ describe("authenticated server pages", () => {
     const header = screen.getByRole("banner");
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your dashboard.");
+    screen.getByRole("main").focus();
+    expect(screen.getByRole("main")).toHaveFocus();
     expect(screen.queryByTestId("dashboard-props")).not.toBeInTheDocument();
     expect(screen.queryByText(/private database failure/)).not.toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -193,6 +197,26 @@ describe("authenticated server pages", () => {
     expect(screen.getByRole("banner")).toBe(header);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByTestId("dashboard-props")).toBeInTheDocument();
+  });
+
+  it("passes only the saved self-created name parts to Account settings", async () => {
+    mocks.outcomes.portfolios = { data: { draft_data: { personal: { profile_for: "self",
+      first_name: "Mary Jane", middle_name: "Anne", last_name: "Rao", address_line_1: "Never serialize this" } } } };
+    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    const props = JSON.parse(screen.getByTestId("account-props").textContent || "{}");
+    expect(props.initialProfile).toEqual({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" });
+    expect(props.profileManagedByPortfolio).toBe(true);
+    expect(screen.getByTestId("account-props")).not.toHaveTextContent("Never serialize this");
+  });
+
+  it("withholds editable account controls when the portfolio name source cannot be read", async () => {
+    mocks.outcomes.portfolios = { data: null, error: { message: "private account lookup failure" } };
+    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
+    expect(screen.queryByTestId("account-props")).not.toBeInTheDocument();
+    expect(screen.queryByText(/private account lookup failure/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
   });
 
   it("loads an empty dashboard", async () => {
@@ -418,7 +442,7 @@ describe("static app surfaces", () => {
 
   it("publishes canonical crawler metadata for public routes only", () => {
     expect(robots().rules).toEqual(expect.arrayContaining([
-      expect.objectContaining({ disallow: expect.arrayContaining(["/api/", "/dashboard/"]) }),
+      expect.objectContaining({ disallow: ["/api/"] }),
     ]));
     expect(sitemap()).toEqual(expect.arrayContaining([
       expect.objectContaining({ url: "https://www.vivintro.com", priority: 1 }),

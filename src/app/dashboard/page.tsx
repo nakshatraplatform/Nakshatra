@@ -35,7 +35,7 @@ async function DashboardContent({ session: { supabase, user }, initialEditorOpen
   initialEditorOpen: boolean;
 }) {
   const dashboard = await loadDashboardView({ supabase, userId: user.id }).catch(() => null);
-  if (!dashboard) return <main id="main-content"><DataLoadError title="We could not load your dashboard." /></main>;
+  if (!dashboard) return <main id="main-content" tabIndex={-1}><DataLoadError title="We could not load your dashboard." /></main>;
   const { portfolio } = dashboard;
   // One request clock keeps expiry labels identical during server rendering and hydration.
   // eslint-disable-next-line react-hooks/purity -- evaluated once per server request

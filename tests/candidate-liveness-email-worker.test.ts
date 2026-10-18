@@ -4,6 +4,17 @@ const delivery = { delivery_id: "11111111-1111-4111-8111-111111111111", claim_to
 const providerMessageId = "33333333-3333-4333-8333-333333333333";
 function database() { return { rpc: vi.fn().mockResolvedValueOnce({ data: [delivery], error: null }).mockResolvedValue({ data: true, error: null }) }; }
 describe("durable liveness confirmation dispatch", () => {
+  it("scopes an owner-triggered claim to the current candidate, attempt, owner and live session", async () => {
+    const supabase = database();
+    const owner = { candidateId: delivery.delivery_id, attemptId: delivery.claim_token, userId: providerMessageId, sessionId: providerMessageId };
+    const send = vi.fn().mockResolvedValue({ status: "accepted", providerMessageId });
+    await processCandidateLivenessEmails(supabase, { send, owner });
+    expect(supabase.rpc).toHaveBeenNthCalledWith(1, "claim_owner_candidate_liveness_email", {
+      p_candidate_id: owner.candidateId, p_attempt_id: owner.attemptId,
+      p_owner_user_id: owner.userId, p_owner_session_id: owner.sessionId,
+    });
+    expect(send).toHaveBeenCalledOnce();
+  });
   it("sends only the leased recipient with a stable delivery ID and completes accepted (not delivered)", async () => {
     const supabase = database();
     const send = vi.fn().mockResolvedValue({ status: "accepted", providerMessageId });

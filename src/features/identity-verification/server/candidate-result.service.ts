@@ -5,6 +5,7 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createIdentityVerificationWorker } from "../../../../scripts/identity-verification-worker.mjs";
 import { getCurrentCandidateVerification } from "./candidate-recovery.service";
 import { IdentityVerificationSessionError } from "./session.service";
+import { processCandidateLivenessEmails } from "../../../../scripts/candidate-liveness-email-worker.mjs";
 
 const resultClaimSchema = z.object({
   subject_type: z.literal("candidate"), verification_method: z.literal("candidate_liveness_only"),
@@ -13,6 +14,17 @@ const resultClaimSchema = z.object({
   provider_workflow_version: z.number().int().positive(), provider_vendor_data: z.string().min(1),
   work_attempts: z.number().int().positive(),
 }).passthrough();
+
+/** Runs after the result response; the database rechecks owner, session and proof. */
+export async function dispatchOwnerLivenessConfirmation(candidateId: string, attemptId: string,
+  owner: { id: string; sessionId: string }) {
+  const admin = createServiceRoleClient((input, init) => fetch(input, {
+    ...init, signal: AbortSignal.any([AbortSignal.timeout(15_000), ...(init?.signal ? [init.signal] : [])]),
+  }));
+  return processCandidateLivenessEmails(admin, {
+    owner: { candidateId, attemptId, userId: owner.id, sessionId: owner.sessionId },
+  });
+}
 
 /** One owner-authorized provider lookup; the existing worker owns all approval rules. */
 export async function checkCandidateResult(supabase: SupabaseClient, candidateId: string, attemptId: string,

@@ -12,7 +12,7 @@ export function CustomerAppFrame({ currentPage, userEmail, loadingTitle, classNa
 }) {
   return <div className={className}>
     <CustomerAppHeader currentPage={currentPage} userEmail={userEmail} />
-    <Suspense fallback={<main id="main-content" aria-busy="true" className="flex-1 px-4 py-16">
+    <Suspense fallback={<main id="main-content" tabIndex={-1} aria-busy="true" className="flex-1 px-4 py-16">
       <LoadingStatus title={loadingTitle} state="connecting" />
     </main>}>
       {children}

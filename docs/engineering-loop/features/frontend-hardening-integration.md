@@ -1,6 +1,137 @@
 # Frontend hardening and hybrid lint integration
 
-## Contract and scope
+## Current integration — 2026-10-18
+
+User approved merging current main into the published feature branch, resolving
+the conflicts, validating the combined source and pushing the integration commit.
+Full record retained for this Significant shared-UI/security-consumer integration.
+Starting feature HEAD: `2dce19c`; target main: `46540e5` (PR112), re-fetched unchanged
+after verification. **Combined-source local validation complete**, with final
+evidence below. No force push,
+PR merge, deployment, remote schema operation, credentials or provider testing.
+
+Preserve both approved contracts: component-scoped loading/navigation and hybrid
+lint from this branch; account-name projection, validation/autosave, deletion
+accessibility, publication/privacy safeguards and Didit completion from main.
+Consolidate the overlapping account modal lifecycles instead of running two
+focus/scroll owners. Keep all test expectations unless their setup must compose
+the intentionally moved server/client boundary. Do not accept ours/theirs wholesale.
+
+| ID | Acceptance / wrong integration rejected | Evaluation |
+| --- | --- | --- |
+| MI1 | Stable authenticated frame plus own/self-only account names; no draft/client leakage or unknown-deletion controls | Server-page/account profile tests, delayed-data browser test, ownership query inspection |
+| MI2 | Exactly one modal lifecycle, focus/scroll restoration, guarded Escape and single in-dialog feedback | Modal/account/dashboard units, keyboard/short-screen/review browser tests |
+| MI3 | Onboarding validation/autosave and authoritative Didit completion retain their current main contracts | Existing full unit suite, onboarding/readiness/Didit browser consumers; compare auto-merged call sites |
+| MI4 | Prior Back/native/enhanced and framework-navigation requirements still hold | Affected browser matrix plus repeated production-mode history cases |
+| MI5 | Combined source has no conflict markers and retains strict lint/audit/security boundaries | lint/typecheck, coverage/feature gates, build, secret scan, independent review; no SQL delta against target main |
+
+Baseline evidence: dry-run merge reproduced six textual conflicts in project map,
+account page/client, dashboard client and their two test files. Existing standalone
+branch passes are historical, not combined-source validation. Next: resolve these
+paths and inspect semantic auto-merges, then run fresh checks and bounded review.
+Graphify graph/executable unavailable. Main's migrations/types remain unchanged;
+database execution and real provider delivery remain hosted/release evidence.
+
+Resolution implementation: retain main's existing `activateModalLifecycle` as
+the single account-dialog owner, including heading-first entry and explicit
+Delete-trigger return after reauthentication. Route both Escape and close-button
+dismissal through the branch's busy guard/typed-confirmation reset. Keep exactly
+one in-dialog live region and main's focusable main landmark. Editor/final review
+continue using their existing hook; no application-wide modal rewrite is implied.
+Move the authenticated, explicitly owner-filtered name read into AccountControls;
+only validated name parts enter client props. Failed name-source reads now use
+the same safe regional retry instead of enabling a separate editable name source.
+
+Initial integrated focused run: 151 passed, two failed because old Escape
+fixtures tried to enter Story with incomplete Basics. Use a valid existing draft
+and shareable photo for that independent keyboard scenario; retain main's forward
+validation guard and every Escape assertion. The corrected six-suite run passed
+153 tests. Older deletion browser setup now follows main's intentional heading
+entry before testing the original Tab wrap. Full combined validation is pending.
+
+Whitespace check against the pre-merge feature HEAD reports main's inherited
+blank EOF line in `20261017203833_schedule_retention_with_health.sql:157`.
+The migration blob exactly matches target main and is not rewritten. The actual
+PR delta's `git diff --check origin/main` passes; no SQL delta is introduced.
+
+### Main-integration independent review and correction
+
+Round 1: fresh-context `/root/latest_main_frontend_integration_review`, exact
+model unknown, instruction-based read-only shared-source access. Packet
+`4b2e50f1e847eaf38780a1b2f03357602e3eadf038c755298f7e9d4b99cc4647`,
+target base `46540e5`; freshness passed at both boundaries. Verdict changes_required.
+
+MI-R1 (confirmed, introduced integration regression, medium/material): pending
+CustomerAppFrame and Account/Dashboard error landmarks were not programmatically
+focusable, violating main's skip-link contract outside the successful loaded
+state. Independent isolated Chrome reproduced BODY versus MAIN focus with/without
+tabindex. Reviewer independently verified the extracted-frame modal's normal and
+reauthentication focus/scroll restoration and found no other material issue in
+the inspected integration paths.
+
+Correction: tabIndex=-1 on pending/error main targets, plus the existing customer
+broker main for consistent shared navigation. Three newly strengthened unit
+assertions failed before correction (`/tmp/nak74-main-integration-skip-red.log`);
+all 31 affected tests passed afterward (`/tmp/nak74-main-integration-skip-green.log`).
+Delayed-data browser tests now use the actual skip link before testing navigation.
+Correction review and integrated browser/build checks remain pending. The earlier
+1,529-test / 61-gate pass predates this attribute-only correction and is retained
+as historical integration evidence, not a final-source whole-suite claim.
+
+Round 2 packet `5795e0d2a467ed373dd9a62c598480be3b76a263ec1cda7813f6506f3fe96514`:
+scoped verdict no_material_findings, MI-R1 resolved. Reviewer independently passed
+four native Chrome skip-focus checks using current source tags and inspected the
+added pending/error tests. Freshness passed before/after; no runtime changed since.
+
+The broad integrated browser run passed all 159 cases in 9.3 minutes. It exposed
+test-induced header hydration warnings: the completed-account test wrote an HTML
+identity attribute before React hydration, and the warning named that exact
+attribute. Replace only that instrumentation with an actual element-handle
+identity comparison, retaining header-preservation assertions and adding a
+hydration-console guard. The other 132 browser cases are unaffected; rerun all
+27 loading/navigation cases for the corrected fixture. Final full coverage,
+production build/history and this affected rerun are still pending here.
+
+### Final combined-source evidence — 2026-10-18
+
+Round 3 (final allocated round), packet
+`5cace7de6e76e696d88376e703d34234cbe163593576ce0102a9e2ee760a201b`:
+scoped verdict no_material_findings, MI-R1 remains resolved. Reviewer verified
+the test-only element-reference correction and console guard, plus source
+freshness and target-main whitespace checks. The actual model remains unknown;
+this is fresh-context review, not claimed cross-model/human approval. Only these
+results/documentation changes followed the reviewed runtime/test snapshot.
+
+| Final check | Result / log |
+| --- | --- |
+| Full serial unit/coverage | 193 files / 1,529 tests passed; statements 86.57%, branches 81.67%, functions 85.65%, lines 90.21%; `/tmp/nak74-main-integration-coverage-final.log` |
+| Feature coverage | All 61 gates passed; `/tmp/nak74-main-integration-feature-gates-final.log` |
+| Broad affected browser matrix | 159 passed on desktop/tablet/mobile-sized Chromium; `/tmp/nak74-main-integration-browser.log`; retains the historical test-marker warnings described above |
+| Corrected loading/navigation browser matrix | All 27 passed; header identity retained with no hydration-mismatch warning; `/tmp/nak74-main-integration-browser-corrected.log`; other 132 cases unchanged on the same runtime |
+| Production build | Passed with loopback public configuration; `/tmp/nak74-main-integration-build.log` |
+| Repeated production-mode history | All 27 passed: original wheel/keyboard/anchor/Back plus native/enhanced full-document Back, three repetitions across all three viewport projects; `/tmp/nak74-main-integration-production-history.log` |
+| Lint and typecheck | Passed on final test/runtime source; `/tmp/nak74-main-integration-lint-reviewed.log`, `/tmp/nak74-main-integration-types-reviewed.log` |
+| Dependency audit | Full report zero affected packages, no exceptions; production no high/critical findings; `/tmp/nak74-main-integration-audit.log` |
+| Database fixture source smoke | Passed; `/tmp/nak74-main-integration-db-smoke.log`; not SQL execution |
+| Pre-commit staged-source secrets | TruffleHog 3.97.0, repository detectors, all result classes, no provider verification: zero findings in 1,331 chunks; `/tmp/nak74-main-integration-secret-scan.log` |
+| Merge/PR source integrity | No unmerged entries or conflict markers; whitespace against target main passes. SQL/types/auth/server/worker implementations remain identical to target main |
+
+MI1–MI5 pass within the listed local evidence. Desktop account confirmation and
+mobile dark pending-data screenshots were inspected together without a redesign.
+No claim of physical-device, assistive-technology, universal contrast/performance,
+provider delivery or production cleanup verification. Development logs retain
+expected aborted-stream messages from intentionally leaving pending routes and
+synthetic unavailable-provider cases; this is not a clean-production-log claim.
+Production-mode tests use the repository start script; its existing standalone
+output warning means deployment packaging is not certified by that invocation.
+
+Delivery: commit and push this integration on the existing branch, preserving
+both parents and all main safeguards. Hosted required CI and actual Vercel Preview
+remain before PR merge. No new SQL delta exists against main; main's existing
+migration rollout requirements remain authoritative. No PR merge, deployment,
+production mutation, real provider call or Linear write is authorized here.
+
+## Historical integration contract (fc7f55c)
 
 User authorized validating the conversation's outstanding implementation and
 creating a remote branch. Significant shared-browser-lifecycle and security-gate

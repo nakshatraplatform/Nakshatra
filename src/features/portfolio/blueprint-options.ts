@@ -18,7 +18,7 @@ export const PROFILE_FOR_OPTIONS = [
 
 export const MARITAL_STATUS_OPTIONS = [
   option("", "Select marital status"),
-  option("Single"),
+  option("Single", "Never married"),
   option("Married"),
   option("Divorced"),
   option("Widowed"),
@@ -83,6 +83,7 @@ export const RELIGION_OPTIONS = [
 export const JOB_TYPE_OPTIONS = [
   option("", "Select work status"),
   option("Full-time", "Employed full-time"),
+  option("Part-time", "Employed part-time"),
   option("Contract", "Contract employment"),
   option("Self-Employed", "Self-employed"),
   option("Business", "Business owner"),
@@ -116,26 +117,26 @@ export const VISA_OPTIONS = [
 
 export const QUALIFICATION_OPTIONS = [
   option("", "Select highest qualification"),
-  option("High School"),
-  option("Diploma/Associate Degree"),
+  option("High School", "Secondary / high school"),
+  option("Diploma/Associate Degree", "Diploma / associate degree"),
   option("Bachelor's Degree"),
   option("Master's Degree"),
-  option("Professional Specialization"),
-  option("Doctorate"),
+  option("Professional Specialization", "Professional qualification / specialization"),
+  option("Doctorate", "Doctorate / PhD"),
   option("Other"),
   option("Prefer not to say"),
 ];
 
 export const CURRENCY_OPTIONS = [
   option("", "Currency"),
-  option("INR"),
-  option("USD"),
-  option("CAD"),
-  option("GBP"),
-  option("AUD"),
-  option("EUR"),
-  option("AED"),
-  option("SGD"),
+  option("INR", "INR — Indian rupee"),
+  option("USD", "USD — US dollar"),
+  option("CAD", "CAD — Canadian dollar"),
+  option("GBP", "GBP — British pound"),
+  option("AUD", "AUD — Australian dollar"),
+  option("EUR", "EUR — Euro"),
+  option("AED", "AED — UAE dirham"),
+  option("SGD", "SGD — Singapore dollar"),
   option("Other"),
 ];
 
@@ -154,6 +155,21 @@ export const INCOME_RANGE_OPTIONS = [
   option("Prefer not to say"),
 ];
 
+/** Stored historical ranges stay untouched; the select retains unknown values. */
+export function incomeRangeOptions(currency: string): BlueprintOption[] {
+  if (currency === "INR") return [
+    option("", "Select an income range"),
+    ...["Under 5 lakh", "5–10 lakh", "10–15 lakh", "15–20 lakh", "20–30 lakh", "30–50 lakh", "50 lakh–1 crore", "1 crore or more"]
+      .map(value => option(value, `${value} INR per year`)),
+    option("Prefer not to say"),
+  ];
+  return INCOME_RANGE_OPTIONS.map(item => {
+    if (!item.value || item.value === "Prefer not to say") return item;
+    const amount = item.label.replace(/(\d+)k/g, (_, number: string) => (Number(number) * 1000).toLocaleString("en-US"));
+    return option(item.value, `${amount}${currency && currency !== "Other" ? ` ${currency}` : ""} per year`);
+  });
+}
+
 export const WEALTH_STAGE_OPTIONS = [
   option("", "Select financial stage"),
   option("Starting out"),
@@ -169,9 +185,9 @@ export const DIET_OPTIONS = [
   option("Vegetarian"),
   option("Non-Vegetarian"),
   option("Vegan"),
-  option("Flexitarian"),
-  option("Pescatarian"),
-  option("Lacto-ovo vegetarian"),
+  option("Flexitarian", "Flexitarian — mostly vegetarian"),
+  option("Pescatarian", "Pescatarian — fish, no other meat"),
+  option("Lacto-ovo vegetarian", "Vegetarian with eggs and dairy"),
   option("Other"),
   option("Prefer not to say"),
 ];
@@ -230,7 +246,7 @@ export const LANGUAGE_OPTIONS = [
 ].map((value) => option(value));
 
 export const COMMUNITY_OPTIONS = [
-  option("", "Select or enter your own"),
+  option("", "Select community or background"),
   "Not applicable", "Prefer not to say", "No caste", "Intercaste", "Arya Vysya", "Bestha", "Brahmin", "Goud",
   "Kamma", "Kalinga Vysya", "Kapu", "Kshatriya", "Lambadi", "Madiga", "Mala",
   "Mudaliyar", "Mudhiraj", "Nai Brahmin", "Padmasali", "Padmanayaka Velama",
@@ -251,7 +267,6 @@ export const SIBLING_POSITION_OPTIONS = [
   option("Middle"),
   option("Youngest"),
   option("Twin"),
-  option("Only Child"),
 ];
 
 export const MARRIAGE_TIMELINE_OPTIONS = [
@@ -315,9 +330,9 @@ export const FAMILY_RESPONSIBILITY_OPTIONS = [
 
 export const HOROSCOPE_PREFERENCE_OPTIONS = [
   option("", "Select horoscope preference"),
-  option("Yes"),
-  option("No"),
-  option("Flexible"),
+  option("Yes", "Important to me"),
+  option("No", "Not important to me"),
+  option("Flexible", "Open to discussing"),
   option("Not applicable"),
 ];
 
