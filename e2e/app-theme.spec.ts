@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { themeTestCookie } from "./support/theme-session.mjs";
+import { publishedOwnerCookie, themeTestCookie } from "./support/theme-session.mjs";
 
 const key = "nakshatra-app-theme";
 const brokerdeskTeamRoute = `/brokerdesk/w/wrk_${"e".repeat(32)}/settings/team`;
@@ -123,8 +123,24 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await noOverflow(page);
   await page.screenshot({ path: testInfo.outputPath("editor-dark.png"), fullPage: true, animations: "disabled" });
   const sectionSelect = editor.getByRole("combobox", { name: "Go to introduction section" });
-  if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
-  else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();
+  const goToAstrology = async () => {
+    if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
+    else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();
+  };
+  await goToAstrology();
+  await expect(editor.getByRole("heading", { name: "The essentials", exact: true })).toBeVisible();
+  await expect(editor.getByRole("alert", { name: "Check these answers" })).toContainText("First name: This field is required.");
+  await expect(editor.getByLabel("First name", { exact: true })).toBeFocused();
+  await expect(editor.getByRole("button", { name: "Attach horoscope", exact: true })).toHaveCount(0);
+
+  // Optional-section styling needs a complete account, not a bypass of Basics.
+  // Retain the empty-account checks above and reuse the existing local fixture.
+  await context.addCookies([publishedOwnerCookie]);
+  await page.goto("/dashboard?edit=1");
+  await expect(editor.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+  await goToAstrology();
+  await expect(editor.getByRole("heading", { name: "Astrology and horoscope", exact: true })).toBeVisible();
+  await expect(editor.getByRole("alert", { name: "Check these answers" })).toHaveCount(0);
   const attachment = editor.getByRole("button", { name: "Attach horoscope", exact: true });
   await expect(attachment).toHaveCSS("color", "rgb(237, 242, 239)");
   await expect(attachment).toHaveCSS("background-color", "rgb(38, 54, 64)");
