@@ -72,7 +72,6 @@ export function calculatePortfolioCompletion(
         && isValidPostalCode(countryCode, data.personal.postal_code)
         && hasValue(data.personal.location_source),
     },
-    { key: "private_address", label: "Street address line 1", editorSection: "foundation", group: "basics", complete: hasValue(data.personal.address_line_1) },
     { key: "career_title", label: "Current profession title", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
     {
       key: "introduction",
@@ -87,7 +86,7 @@ export function calculatePortfolioCompletion(
   const validation = portfolioEditorPublishSchema.safeParse(data);
   const requiredPaths = new Set([
     "personal.name", "personal.first_name", "personal.last_name", "personal.dob", "personal.gender",
-    "personal.country", "personal.country_code", "personal.region", "personal.region_code", "personal.city", "personal.postal_code", "personal.location_source", "personal.address_line_1", "personal.marital_status", "personal.short_bio", "vitals.height", "career.title",
+    "personal.country", "personal.country_code", "personal.region", "personal.region_code", "personal.city", "personal.postal_code", "personal.location_source", "personal.marital_status", "personal.short_bio", "vitals.height", "career.title",
   ]);
   const invalidAnswers = validation.success ? [] : validation.error.issues
     .map((issue) => ({ key: issue.path.join("."), label: issue.message, editorSection: editorSectionForPath(issue.path.join(".")) }))
@@ -113,7 +112,12 @@ export function calculatePortfolioCompletion(
   };
 }
 
-function editorSectionForPath(path: string) {
+export function editorSectionForPath(path: string) {
+  if (path === "career.title") return "foundation";
+  if (path === "personal.place_of_birth") return "astrology";
+  if (path === "personal.citizenship" || path === "personal.immigration_status") return "work";
+  if (["personal.religion", "personal.community", "personal.sub_community"].includes(path)) return "family";
+  if (path === "personal.relocation_preference") return "preferences";
   if (path.startsWith("personal.profile_summary") || path.startsWith("personal.long_term_goals") || path.startsWith("personal.shared_life_plans") || path.startsWith("lifestyle.")) return "story";
   if (path.startsWith("family.")) return "family";
   if (path.startsWith("astrology.")) return "astrology";

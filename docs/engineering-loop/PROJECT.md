@@ -17,6 +17,19 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Onboarding foundations](features/onboarding-foundations.md): local increments
+  on merged PR108/main `fc7f55c` fix multi-word name typing, routine refresh
+  closing the editor and Basics-only progress labeling. Adds actionable errors,
+  forward-navigation/publication checks, saved self-created Account names and
+  removal of address/narrative minimum requirements with a forward migration.
+  Family/Astrology remain optional; incomplete private saves and all publication
+  safeguards remain. [Dropdown inventory and feedback ledger](features/onboarding-options-and-feedback.md)
+  separates proposals from implementation. Responsive Chromium covers five widths
+  and both themes. Database execution/deployment and release remain pending.
+  [Options and save efficiency](features/onboarding-options-and-save-efficiency.md)
+  adds familiar stable-value dropdowns, bounded Other recovery, currency/count
+  confirmations, debounced/coalesced saves and serialized resume-position writes.
+
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab
   portfolio logo links, warm display terminology, full-name public-only WhatsApp

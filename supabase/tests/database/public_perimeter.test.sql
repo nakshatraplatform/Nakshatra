@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(38);
+select plan(43);
 
 -- Transaction-only access for legacy engine characterization, not a production
 -- grant. The new interest suite checks that real clients cannot use this RPC.
@@ -236,11 +236,30 @@ select ok(public.can_read_approved_photo('11111111-1111-4111-8111-111111111111/3
   'the bound approved viewer can read protected media before completeness changes');
 
 reset role;
--- A pre-existing approval must not bypass new published-snapshot requirements.
+-- Address is optional. Exercise the same already-approved viewer before and
+-- after removing a genuinely required published field; do not weaken the gate.
 create temporary table intact_publication as select published_data from public.portfolios
 where id='33333333-3333-4333-8333-333333333333';
 alter table public.portfolios disable trigger user;
-update public.portfolios set published_data=published_data #- '{personal,address_line_1}'
+update public.portfolios set published_data=published_data #- '{personal,address_line_1}' #- '{personal,address_line_2}'
+where id='33333333-3333-4333-8333-333333333333';
+alter table public.portfolios enable trigger user;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('22222222-2222-4222-8222-222222222222', '22222222-2222-4222-8222-222222222223');
+select ok(public.resolve_approved_portfolio('phase1_secure_token_1') is not null,
+  'optional street addresses do not revoke an existing approval');
+select is(public.resolve_complete_portfolio_access((select id from public.reveal_grants limit 1))->>'status',
+  'active', 'an approved destination stays active without street addresses');
+select ok(public.resolve_approved_horoscope('phase1_secure_token_1') is not null,
+  'optional street addresses do not block the approved horoscope');
+select ok(public.can_read_approved_photo('11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/protected.webp'),
+  'optional street addresses do not block approved media');
+select is((select count(*)::integer from public.approved_portfolio_snapshots
+  where portfolio_id='33333333-3333-4333-8333-333333333333'), 1,
+  'approved snapshot RLS retains authorized access without street addresses');
+reset role;
+alter table public.portfolios disable trigger user;
+update public.portfolios set published_data=published_data #- '{personal,postal_code}'
 where id='33333333-3333-4333-8333-333333333333';
 alter table public.portfolios enable trigger user;
 set local role authenticated;
