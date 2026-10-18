@@ -452,7 +452,7 @@
 .account-notice.is-success { border: 1px solid var(--workspace-border); background: var(--workspace-surface-muted); color: var(--workspace-ink); }
 .account-notice.is-error { border: 1px solid var(--workspace-border); background: var(--workspace-canvas); color: var(--ui-danger); }
 .account-confirm-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1rem; background: color-mix(in srgb, var(--ui-scrim) 62%, transparent); }
-.account-confirm-dialog { position: relative; width: min(470px, 100%); border: 1px solid var(--workspace-border); border-radius: 10px; padding: 1.5rem; background: var(--workspace-surface); box-shadow: 0 24px 70px color-mix(in srgb, var(--ui-ink) 14%, transparent); }
+.account-confirm-dialog { position: relative; max-height: calc(100dvh - 2rem); overflow-y: auto; overscroll-behavior: contain; width: min(470px, 100%); border: 1px solid var(--workspace-border); border-radius: 10px; padding: 1.5rem; background: var(--workspace-surface); box-shadow: 0 24px 70px color-mix(in srgb, var(--ui-ink) 14%, transparent); }
 .account-confirm-dialog h2 { color: var(--workspace-ink); font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 1.8rem; font-weight: 500; }
 .account-confirm-dialog > p:not(.site-eyebrow) { margin: 1rem 0 1rem; color: var(--workspace-muted); font-size: 0.9rem; line-height: 1.6; }
 .account-confirm-dialog label { display: block; margin-bottom: 0.5rem; color: var(--workspace-ink); font-size: 0.85rem; }

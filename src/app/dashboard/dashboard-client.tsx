@@ -947,6 +947,7 @@ export default function DashboardClient({
   }
 
   async function deletePhoto(mediaId: string) {
+    if (!confirm("Permanently delete this photo? It will be removed from your portfolio and cannot be restored.")) return;
     setMediaMutations((count) => count + 1);
     setDraftError(null);
     try {

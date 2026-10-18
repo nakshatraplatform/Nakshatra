@@ -4,10 +4,19 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(24);
+select plan(26);
 
 select pg_temp.create_auth_actor('61000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000001', 'delete-owner@worker.test');
 select pg_temp.create_auth_actor('61000000-0000-4000-8000-000000000002', '62000000-0000-4000-8000-000000000002', 'delete-stale@worker.test');
+
+-- Keep the receiving portfolio owned by another actor so requester erasure
+-- is exercised independently of deleting the owner's portfolio.
+insert into public.portfolios(id,user_id,draft_data)
+values('64000000-0000-4000-8000-000000000001','61000000-0000-4000-8000-000000000002','{}');
+insert into public.interest_requests(id,portfolio_id,status,requester_user_id,viewer_name,message,request_reason)
+values
+ ('65000000-0000-4000-8000-000000000001','64000000-0000-4000-8000-000000000001','new','61000000-0000-4000-8000-000000000001','Deleting requester','Private message','Private message'),
+ ('65000000-0000-4000-8000-000000000002','64000000-0000-4000-8000-000000000001','approved','61000000-0000-4000-8000-000000000002','Other requester','Keep message','Keep message');
 
 select has_function('public', 'claim_account_deletion_batch', array['integer'], 'worker claim RPC exists');
 select has_function('public', 'complete_account_deletion', array['uuid', 'uuid'], 'worker receipt RPC exists');
@@ -110,6 +119,16 @@ select lives_ok(
     (select claim_token from owner_claim)
   )$$,
   'database cleanup validates and advances the owned claim'
+);
+select ok(
+  (select message is null and request_reason is null and requester_user_id is null
+   from public.interest_requests where id='65000000-0000-4000-8000-000000000001'),
+  'real deletion preparation clears both copies on the deleting requester row'
+);
+select is(
+  (select request_reason from public.interest_requests where id='65000000-0000-4000-8000-000000000002'),
+  'Keep message',
+  'real deletion preparation preserves another requester text'
 );
 select ok(
   public.advance_account_deletion_stage(

@@ -1,4 +1,6 @@
 import "server-only";
+import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-cleanup.service";
+import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { processRelationshipNotifications } from "@/features/notifications/server/relationship-notification.service";
@@ -41,6 +43,8 @@ export async function runProductionMaintenance(dispatchId?: string) {
   const transport = boundedFetch(AbortSignal.timeout(150_000));
   const client = createServiceRoleClient(transport);
   const tasks = {
+    retention: () => processRetention(client),
+    horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
     identity: async () => {
       const result = await createIdentityVerificationWorker(client, { candidateOnly: true, fetchImpl: transport }).run(2);
       return result.deferred === 0;

@@ -5,6 +5,7 @@ const repository = vi.hoisted(() => ({
   findPortfolioForOwner: vi.fn(),
   findByPortfolio: vi.fn(),
   findById: vi.fn(),
+  reserveUpload: vi.fn(),
   save: vi.fn(),
   delete: vi.fn(),
   publish: vi.fn(),
@@ -101,6 +102,7 @@ describe("horoscope lifecycle service", () => {
     repository.findOwnedPortfolio.mockResolvedValue({ data: { id: portfolioId }, error: null });
     repository.findPortfolioForOwner.mockResolvedValue({ data: { id: portfolioId }, error: null });
     repository.findByPortfolio.mockResolvedValue({ data: null, error: null });
+    repository.reserveUpload.mockImplementation(async () => ({ data: `owner/${portfolioId}/${crypto.randomUUID()}.webp`, error: null }));
     repository.upload.mockResolvedValue({ error: null });
     repository.save.mockImplementation(async (payload) => ({ data: { id: "new-id", created_at: "now", updated_at: "now", ...payload }, error: null }));
     repository.remove.mockResolvedValue({ error: null });
@@ -129,7 +131,7 @@ describe("horoscope lifecycle service", () => {
       Buffer.from("sanitized-webp"),
       "image/webp"
     );
-    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ published_at: null, page_count: 1, language_label: "Kannada" }));
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ published_at: null, page_count: 1, language_label: "Kannada" }), null);
     expect(result).toMatchObject({ file_extension: "webp", published_at: null });
   });
 
@@ -142,8 +144,8 @@ describe("horoscope lifecycle service", () => {
       file: file(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), "new.jpg", "image/jpeg"),
       language: "",
     });
-    expect(repository.remove).toHaveBeenCalledWith([previous.storage_path]);
-    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ file_extension: "webp", published_at: null }));
+    expect(repository.remove).not.toHaveBeenCalled();
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ file_extension: "webp", published_at: null }), previous.storage_path);
   });
 
   it("rejects empty and oversized uploads before touching storage", async () => {
@@ -188,31 +190,43 @@ describe("horoscope lifecycle service", () => {
     })).rejects.toMatchObject({ status: 500 });
   });
 
-  it("cleans up failed writes and rolls back an unsafe replacement", async () => {
-    repository.save.mockResolvedValueOnce({ data: null, error: { message: "database" } });
-    await expect(uploadHoroscope({
-      supabase: {} as never, userId: "owner", portfolioId,
-      file: file(new Uint8Array([0xff, 0xd8, 0xff]), "scan.jpg"), language: "",
-    })).rejects.toMatchObject({ status: 500 });
-    expect(repository.remove).toHaveBeenCalled();
+  it("leaves cleanup to the reservation on an ambiguous commit and never restores stale metadata", async () => {
+    repository.save.mockResolvedValueOnce({ data: null, error: { message: "response lost" } });
+    await expect(uploadHoroscope({ supabase: {} as never, userId: "owner", portfolioId,
+      file: file(new Uint8Array([0xff, 0xd8, 0xff]), "scan.jpg"), language: "" })).rejects.toMatchObject({ status: 503 });
+    expect(repository.remove).not.toHaveBeenCalled();
+    expect(repository.save).toHaveBeenCalledTimes(1);
+  });
 
-    vi.clearAllMocks();
-    repository.findOwnedPortfolio.mockResolvedValue({ data: { id: portfolioId }, error: null });
+  it("rejects the late writer while retaining a concurrent successful attachment", async () => {
     repository.findByPortfolio.mockResolvedValue({ data: previous, error: null });
-    repository.upload.mockResolvedValue({ error: null });
-    repository.save.mockImplementation(async (payload) => ({ data: { id: "new-id", ...payload }, error: null }));
-    repository.remove.mockResolvedValueOnce({ error: { message: "storage" } }).mockResolvedValue({ error: null });
-    await expect(uploadHoroscope({
-      supabase: {} as never, userId: "owner", portfolioId,
-      file: file(new Uint8Array([0xff, 0xd8, 0xff]), "scan.jpg"), language: "",
-    })).rejects.toMatchObject({ status: 500 });
-    expect(repository.save).toHaveBeenCalledWith(previous);
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let current = previous.storage_path;
+    let calls = 0;
+    repository.save.mockImplementation(async (payload, expected) => {
+      if (++calls === 1) await gate;
+      if (current !== expected) return { data: null, error: { code: "PT409" } };
+      current = payload.storage_path;
+      return { data: { id: "winner", ...payload }, error: null };
+    });
+    const input = { supabase: {} as never, userId: "owner", portfolioId,
+      file: file(new Uint8Array([0xff, 0xd8, 0xff]), "scan.jpg"), language: "" };
+    const late = uploadHoroscope(input);
+    // Wait until the first actual service call reaches its persistence boundary.
+    await vi.waitFor(() => expect(calls).toBe(1));
+    const winner = await uploadHoroscope(input);
+    release();
+    await expect(late).rejects.toMatchObject({ status: 409 });
+    expect(current).toBe(winner.storage_path);
+    expect(repository.save).toHaveBeenCalledTimes(2);
+    expect(repository.remove).not.toHaveBeenCalled();
   });
 
   it("revokes on delete and publishes only through the explicit publish lifecycle", async () => {
     await deleteHoroscope({ supabase: {} as never, horoscopeId: "old-id" });
     expect(repository.delete).toHaveBeenCalledWith("old-id");
-    expect(repository.remove).toHaveBeenCalledWith([previous.storage_path]);
+    expect(repository.remove).not.toHaveBeenCalled();
 
     await publishHoroscope({ supabase: {} as never, portfolioId, publishedAt: "2026-08-04T00:00:00.000Z" });
     expect(repository.publish).toHaveBeenCalledWith(portfolioId, "2026-08-04T00:00:00.000Z");
@@ -237,13 +251,13 @@ describe("horoscope lifecycle service", () => {
       .rejects.toMatchObject({ status: 500 });
   });
 
-  it("surfaces delete, storage cleanup, and publish failures", async () => {
+  it("surfaces delete and publish failures", async () => {
     repository.delete.mockResolvedValueOnce({ data: null, error: { message: "missing" } });
     await expect(deleteHoroscope({ supabase: {} as never, horoscopeId: "missing" })).rejects.toMatchObject({ status: 404 });
 
     repository.delete.mockResolvedValueOnce({ data: previous, error: null });
     repository.remove.mockResolvedValueOnce({ error: { message: "storage" } });
-    await expect(deleteHoroscope({ supabase: {} as never, horoscopeId: "old-id" })).rejects.toMatchObject({ status: 500 });
+    await expect(deleteHoroscope({ supabase: {} as never, horoscopeId: "old-id" })).resolves.toBeUndefined();
 
     repository.publish.mockResolvedValueOnce({ error: { message: "database" } });
     await expect(publishHoroscope({ supabase: {} as never, portfolioId, publishedAt: "now" })).rejects.toMatchObject({ status: 500 });

@@ -208,7 +208,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <div className="app-header-actions"><ThemeSwitch /><Link href="/" className="account-home">Back to home</Link></div>
       </header>
 
-      <main className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined} data-mode={mode}>
+      <main id="main-content" tabIndex={-1} className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined} data-mode={mode}>
         {!brokerdeskContinuation && (
           <aside className="account-context" aria-label="VivIntro access model">
             <p className="account-context-kicker">One current introduction</p>

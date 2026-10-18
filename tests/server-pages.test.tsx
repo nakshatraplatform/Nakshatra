@@ -398,7 +398,7 @@ describe("static app surfaces", () => {
 
   it("publishes canonical crawler metadata for public routes only", () => {
     expect(robots().rules).toEqual(expect.arrayContaining([
-      expect.objectContaining({ disallow: expect.arrayContaining(["/api/", "/dashboard/"]) }),
+      expect.objectContaining({ disallow: ["/api/"] }),
     ]));
     expect(sitemap()).toEqual(expect.arrayContaining([
       expect.objectContaining({ url: "https://www.vivintro.com", priority: 1 }),

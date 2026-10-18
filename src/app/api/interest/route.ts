@@ -44,8 +44,6 @@ export async function POST(request: Request) {
     requireSameOrigin(request);
     const auth = await getApiUser();
     if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
-    const rateLimited = await enforceRateLimit(auth.supabase, request, "interest_submit");
-    if (rateLimited) return rateLimited;
     const parsed = interestSubmissionSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) {
       return NextResponse.json(
@@ -104,6 +102,11 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof RequestSecurityError) {
       return requestSecurityErrorResponse(error);
+    }
+    if (error instanceof InterestSubmissionError && error.reason === "rate_limited") {
+      return NextResponse.json({ code: "RATE_LIMITED", error: error.message }, {
+        status: 429, headers: { "Retry-After": String(error.retryAfter ?? 3600) },
+      });
     }
     if (error instanceof InterestSubmissionError && error.reason === "own_portfolio") {
       return NextResponse.json(

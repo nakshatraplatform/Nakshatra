@@ -5,6 +5,7 @@ import type { InterestRequestInput } from "./interest.contract";
 import { InterestRepository } from "./interest.repository";
 
 export type InterestSubmissionFailureReason =
+  | "rate_limited"
   | "own_portfolio"
   | "existing_request"
   | "verification_required"
@@ -16,7 +17,8 @@ export class InterestSubmissionError extends Error {
   constructor(
     message: string,
     readonly reason: InterestSubmissionFailureReason = "persistence_failed",
-    readonly databaseCode?: string
+    readonly databaseCode?: string,
+    readonly retryAfter?: number
   ) {
     super(message);
     this.name = "InterestSubmissionError";
@@ -30,6 +32,11 @@ export async function submitInterestRequest(
 ): Promise<"created" | "unavailable"> {
   const { data, error } = await new InterestRepository(supabase).submit(input);
   if (error) {
+    if (error.code === "P0429") {
+      const retry = Number("details" in error ? error.details : undefined);
+      throw new InterestSubmissionError("Too many requests. Please wait and try again.", "rate_limited", error.code,
+        Number.isInteger(retry) && retry > 0 && retry <= 3600 ? retry : 3600);
+    }
     const message = error.message.toLowerCase();
     if (error.code === "22023" && message.includes("portfolio owner cannot request own portfolio")) {
       throw new InterestSubmissionError("Portfolio owners cannot request their own portfolio", "own_portfolio", error.code);
