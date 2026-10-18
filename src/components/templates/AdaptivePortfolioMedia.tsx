@@ -73,7 +73,7 @@ export function AdaptivePortfolioHero({
       data-orientation={activeOrientation}
       data-presentation={activePhoto.presentation || "clear"}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* oxlint-disable-next-line nextjs/no-img-element */}
       <img
         src={activePhoto.src}
         alt={activePhoto.alt}
@@ -378,7 +378,7 @@ function GalleryImage({
     : photo.orientation;
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
+    // oxlint-disable-next-line nextjs/no-img-element
     <img
       src={photo.src}
       alt={decorative ? "" : photo.alt}

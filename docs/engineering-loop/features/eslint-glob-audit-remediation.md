@@ -1,5 +1,10 @@
 # Next ESLint dependency audit investigation
 
+> Historical record: superseded on 2026-10-17 by
+> [hybrid lint tooling](hybrid-lint-tooling.md). The affected dependency chain and
+> exception file are removed; audits pass without exceptions. The original
+> investigation/results below are preserved, not current configuration guidance.
+
 Date: 2026-10-02. Status: user-approved temporary risk acceptance implemented and
 locally verified; hosted CI pending. Risk: critical (CI security gate). No
 vulnerability repair claimed.

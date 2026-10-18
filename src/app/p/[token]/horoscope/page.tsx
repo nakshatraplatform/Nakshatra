@@ -48,7 +48,7 @@ export default async function HoroscopePage({ params }: { params: Promise<{ toke
 
         <section className="flex min-h-[60vh] items-start justify-center overflow-auto rounded-2xl border border-white/10 bg-[#e7e1d5] p-3 sm:p-6" aria-label="Horoscope image viewer">
           {/* The image is served from a grant-bounded owner/approved-viewer signed URL. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* oxlint-disable-next-line nextjs/no-img-element */}
           <img src={horoscope.signedUrl} alt="Scanned original horoscope" className="h-auto max-w-full rounded-sm shadow-xl" referrerPolicy="no-referrer" />
         </section>
       </div>

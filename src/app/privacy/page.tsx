@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PolicyLayout, PolicySection } from "@/components/legal/PolicyLayout";
 
 export const metadata: Metadata = { title: "Privacy", alternates: { canonical: "/privacy" } };
@@ -36,7 +37,7 @@ export default function PrivacyPage() {
 
       <PolicySection id="corrections" title="Your choices and requests">
         <p>You can edit a draft, change appearance, unpublish an introduction, or replace its public link. Public introductions remain active until you unpublish them; approved access to protected details lasts 15 days and can be ended earlier.</p>
-        <p>To correct profile information, open Dashboard → Portfolio details, edit the original answer, save, then review and publish your changes. Signed-in users can download an account export or schedule account deletion from <a href="/account" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Account and Privacy</a> after a fresh sign-in. You can also request access, correction, deletion, consent withdrawal, or help with a privacy concern by emailing <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>.</p>
+        <p>To correct profile information, open Dashboard → Portfolio details, edit the original answer, save, then review and publish your changes. Signed-in users can download an account export or schedule account deletion from <Link href="/account" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Account and Privacy</Link> after a fresh sign-in. You can also request access, correction, deletion, consent withdrawal, or help with a privacy concern by emailing <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>.</p>
       </PolicySection>
 
       <PolicySection title="Privacy and grievance contact">

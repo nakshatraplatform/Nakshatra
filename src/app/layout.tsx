@@ -8,9 +8,11 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import "./app-theme.css";
+import "lenis/dist/lenis.css";
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { ThemeBootstrap } from "@/components/theme/ThemeBootstrap";
 import { PrivacySafeAnalytics } from "@/components/analytics/PrivacySafeAnalytics";
+import { ApplicationSmoothScroll } from "@/components/motion/ApplicationSmoothScroll";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,6 +71,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeBootstrap />
+        <ApplicationSmoothScroll />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <AppThemeProvider>{children}</AppThemeProvider>
         <PrivacySafeAnalytics />

@@ -3,10 +3,9 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { evaluateAudit, parseAuditResult } from "../scripts/security-audit.mjs";
+import { evaluateAudit, parseAuditResult, validateDependencyTree } from "../scripts/security-audit.mjs";
 
 const read = (file: string) => JSON.parse(readFileSync(new URL(file, import.meta.url), "utf8"));
-const beforeExpiry = new Date("2026-10-08T23:59:59-04:00");
 function fixture() {
   return {
     full: read("./fixtures/security-audit/braces-report.json"),
@@ -15,34 +14,26 @@ function fixture() {
       metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 } },
     },
     lock: read("../package-lock.json"),
-    exception: read("../security/audit-exception.json"),
   };
 }
 type Fixture = ReturnType<typeof fixture>;
-const evaluate = (f: Fixture, now = beforeExpiry) => evaluateAudit(f.full, f.production, f.lock, f.exception, now);
+const evaluate = (f: Fixture) => evaluateAudit(f.full, f.production, f.lock);
 
-describe("temporary npm audit risk acceptance", () => {
-  it("accepts the captured advisory and its inherited development findings before expiry", () => {
-    expect(evaluate(fixture())).toEqual({ accepted: 5, total: 5 });
+describe("strict npm audit without exceptions", () => {
+  it("rejects the previously accepted development advisory after retirement", () => {
+    expect(() => evaluate(fixture())).toThrow(/Unaccepted high/);
   });
-  it("accepts a clean audit without claiming that an exception was used", () => {
-    const f = fixture();
-    f.full = f.production;
+  it("accepts a clean report with no acceptance allowance", () => {
+    const f = fixture(); f.full = f.production;
     expect(evaluate(f)).toEqual({ accepted: 0, total: 0 });
   });
-  it.each(["2026-10-09T00:00:00-04:00", "2026-10-10T00:00:00Z"])("fails at or after expiry: %s", (date) => {
-    expect(() => evaluate(fixture(), new Date(date))).toThrow(/expired/);
-  });
-  it("fails on invalid expiry even when the report is clean", () => {
-    const f = fixture(); f.full = f.production; f.exception.expiresAt = "never";
-    expect(() => evaluate(f)).toThrow(/invalid expiry/);
-  });
-  it("never exempts production findings, including the approved advisory", () => {
+  it("never exempts production findings", () => {
     const f = fixture(); f.production = f.full;
     expect(() => evaluate(f)).toThrow(/Production dependencies/);
   });
-  it.each(["high", "critical"])("blocks an unrelated %s advisory", (severity) => {
+  it.each(["high", "critical"])("blocks new %s findings", severity => {
     const f = fixture();
+    f.full = structuredClone(f.production);
     f.full.vulnerabilities.other = {
       name: "other", severity, nodes: ["node_modules/other"],
       via: [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity }],
@@ -51,35 +42,34 @@ describe("temporary npm audit risk acceptance", () => {
     f.full.metadata.vulnerabilities.total++;
     expect(() => evaluate(f)).toThrow(/Unaccepted.*other/);
   });
-  it.each([
-    (f: Fixture) => { f.full.vulnerabilities.braces.via[0].url += "?other"; },
-    (f: Fixture) => { f.full.vulnerabilities.braces.via.push({ ...f.full.vulnerabilities.braces.via[0], url: "https://github.com/advisories/GHSA-1111-2222-3333" }); },
-    (f: Fixture) => { f.full.vulnerabilities.micromatch.via = ["fast-glob"]; },
-    (f: Fixture) => { f.full.vulnerabilities.braces.nodes.push("node_modules/other/node_modules/braces"); },
-    (f: Fixture) => { f.lock.packages["node_modules/braces"].version = "3.0.4"; },
-    (f: Fixture) => { f.lock.packages["node_modules/braces"].dev = false; },
-    (f: Fixture) => { delete f.lock.packages["node_modules/braces"]; },
-    (f: Fixture) => {
-      for (const name of Object.keys(f.full.vulnerabilities)) f.full.vulnerabilities[name].severity = "critical";
-      f.full.vulnerabilities.braces.via[0].severity = "critical";
-      f.full.metadata.vulnerabilities.high = 0;
-      f.full.metadata.vulnerabilities.critical = 5;
-    },
-  ])("rejects changes to advisory, graph, path, version or development scope %#", (mutate) => {
-    const f = fixture(); mutate(f);
-    expect(() => evaluate(f)).toThrow(/Unaccepted/);
-  });
-  it("retains the existing nonblocking threshold for unrelated moderate advisories", () => {
-    const f = fixture();
+  it("retains the nonblocking threshold for moderate advisories", () => {
+    const f = fixture(); f.full = structuredClone(f.production);
     f.full.vulnerabilities.other = {
       name: "other", severity: "moderate", nodes: ["node_modules/other"],
       via: [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity: "moderate" }],
     };
-    f.full.metadata.vulnerabilities.moderate = 1;
-    f.full.metadata.vulnerabilities.total++;
-    expect(evaluate(f)).toEqual({ accepted: 5, total: 6 });
+    f.full.metadata.vulnerabilities.moderate = 1; f.full.metadata.vulnerabilities.total = 1;
+    expect(evaluate(f)).toEqual({ accepted: 0, total: 1 });
   });
-  it.each(["direct", "inherited"])("rejects understated aggregate severity for %s findings", (kind) => {
+  it.each(["eslint-config-next", "@next/eslint-plugin-next", "fast-glob", "micromatch", "braces"])(
+    "rejects root and nested reintroduction of %s even with clean audit reports", name => {
+      for (const prefix of ["", "parent/node_modules/"]) {
+        const f = fixture(); f.full = f.production;
+        f.lock.packages[`node_modules/${prefix}${name}`] = { version: "999.0.0", dev: true };
+        expect(() => evaluate(f)).toThrow(/Retired lint dependency/);
+      }
+    },
+  );
+  it("fails closed on unsupported lockfiles", () => {
+    expect(() => validateDependencyTree({ lockfileVersion: 2, packages: {} })).toThrow(/lockfile/);
+    expect(() => validateDependencyTree({ lockfileVersion: 3 })).toThrow(/lockfile/);
+  });
+  it("rejects an npm alias of a retired dependency", () => {
+    const f = fixture(); f.full = f.production;
+    f.lock.packages["node_modules/disguised"] = { name: "braces", version: "3.0.3", dev: true };
+    expect(() => evaluate(f)).toThrow(/Retired lint dependency/);
+  });
+  it.each(["direct", "inherited"])("rejects understated aggregate severity for %s findings", kind => {
     const f = fixture();
     f.full.vulnerabilities.other = {
       name: "other", severity: "moderate", nodes: ["node_modules/other"],
@@ -87,21 +77,18 @@ describe("temporary npm audit risk acceptance", () => {
         ? [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity: "critical" }]
         : ["braces"],
     };
-    f.full.metadata.vulnerabilities.moderate = 1;
-    f.full.metadata.vulnerabilities.total++;
+    f.full.metadata.vulnerabilities.moderate = 1; f.full.metadata.vulnerabilities.total++;
     expect(() => parseAuditResult({ status: 1, stdout: JSON.stringify(f.full) })).toThrow(/severity/);
     expect(() => evaluate(f)).toThrow(/severity/);
-    f.production = f.full;
-    f.full = fixture().production;
+    f.production = f.full; f.full = fixture().production;
     expect(() => evaluate(f)).toThrow(/severity/);
   });
   it.each([
-    {},
-    { auditReportVersion: 2, vulnerabilities: {} },
+    {}, { auditReportVersion: 2, vulnerabilities: {} },
     { ...fixture().production, auditReportVersion: 3 },
     { ...fixture().production, error: { code: "E503" } },
     { ...fixture().full, vulnerabilities: {} },
-  ])("rejects missing, changed or inconsistent report data %#", (full) => {
+  ])("rejects missing, changed or inconsistent report data %#", full => {
     const f = fixture(); f.full = full;
     expect(() => evaluate(f)).toThrow();
   });

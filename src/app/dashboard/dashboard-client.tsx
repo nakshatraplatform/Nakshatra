@@ -4,6 +4,7 @@ import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardingFeedback";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { useModalFocus } from "@/components/useModalFocus";
 
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -163,6 +164,8 @@ export default function DashboardClient({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
   const reviewPublishRef = useRef<HTMLButtonElement>(null);
+  const editorDialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(canCreatePortfolio && formOpen && !reviewOpen, editorDialogRef, closePortfolioEditor);
   const draftRevisionRef = useRef(0);
   const lastAutosaveAttemptRevisionRef = useRef(-1);
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -265,7 +268,7 @@ export default function DashboardClient({
   function focusLivenessCheck() {
     const section = document.getElementById("liveness-check");
     if (section && typeof section.scrollIntoView === "function") {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      section.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     }
     section?.querySelector<HTMLElement>("h2")?.focus();
   }
@@ -1024,7 +1027,7 @@ export default function DashboardClient({
 
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[#18272e]/45 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden shadow-2xl">
+          <div ref={editorDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden shadow-2xl">
             <div className="flex-none border-b border-[light-dark(#e2e8f0,var(--app-dark-border))] px-4 py-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
@@ -2217,7 +2220,7 @@ function PhotoManager({
             <div className="relative h-36 bg-white/5 sm:h-40">
               {urls[item.id] ? (
                 // Signed URLs are created client-side for the portfolio owner only.
-                // eslint-disable-next-line @next/next/no-img-element -- Signed Supabase URLs cannot use Next's static optimizer.
+                // oxlint-disable-next-line nextjs/no-img-element -- Signed Supabase URLs cannot use Next's static optimizer.
                 <img src={urls[item.id]} alt={item.alt_text || "Profile photo"} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-white/35">Loading...</div>

@@ -3,7 +3,8 @@
 import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useModalFocus } from "@/components/useModalFocus";
 import { Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
 import {
@@ -31,6 +32,13 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reauthMethod, setReauthMethod] = useState<"google" | "email" | null>(null);
+  const confirmationRef = useRef<HTMLElement>(null);
+  function closeConfirmation() {
+    if (action !== null) return;
+    setConfirmationOpen(false);
+    setConfirmation("");
+  }
+  useModalFocus(confirmationOpen, confirmationRef, closeConfirmation);
 
   function beginAction(next: Exclude<Action, null>) {
     setAction(next);
@@ -137,10 +145,10 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
           <p>Signed in as {userEmail}</p>
         </div>
 
-        <div aria-live="polite" aria-atomic="true">
+        {!confirmationOpen && <div aria-live="polite" aria-atomic="true">
           {message ? <p className="account-notice is-success">{message}</p> : null}
           {error ? <p className="account-notice is-error">{error}</p> : null}
-        </div>
+        </div>}
 
         <section className="account-settings-group" aria-labelledby="data-devices-heading">
           <h2 id="data-devices-heading">Your data and devices</h2>
@@ -200,12 +208,16 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
 
       {confirmationOpen ? (
         <div className="account-confirm-backdrop" role="presentation">
-          <section className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
-            <button className="account-confirm-close" aria-label="Close deletion confirmation" onClick={() => setConfirmationOpen(false)}>
+          <section ref={confirmationRef} tabIndex={-1} className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
+            <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={action !== null} onClick={closeConfirmation}>
               <X />
             </button>
             <p className="site-eyebrow">Permanent action</p>
             <h2 id="confirm-delete-heading">Schedule account deletion?</h2>
+            <div aria-live="polite" aria-atomic="true">
+              {message ? <p className="account-notice is-success">{message}</p> : null}
+              {error ? <p className="account-notice is-error">{error}</p> : null}
+            </div>
             <p>Your links and approved access stop working now. After 24 hours, your account and stored files are permanently removed.</p>
             <p>First complete a fresh sign-in. Your confirmation is submitted only after that sign-in succeeds.</p>
             <fieldset>

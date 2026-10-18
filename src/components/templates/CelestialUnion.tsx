@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -727,10 +728,10 @@ export default function CelestialUnion({
               <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
               <p>Create your portfolio privately. When you are ready, share an Introduction and keep sensitive details behind your approval.</p>
             </div>
-            <a href="/signup">
+            <Link href="/signup">
               Create your portfolio
               <ArrowRight aria-hidden="true" />
-            </a>
+            </Link>
           </aside>
         )}
       </main>
@@ -741,10 +742,10 @@ export default function CelestialUnion({
           <p>One introduction, shared with care.</p>
         </div>
         <nav className="portfolio-footer-links" aria-label="Portfolio help and policies">
-          <a href="/received-a-link">Viewer guide</a>
-          <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/privacy#corrections">Report or correct information</a>
+          <Link href="/received-a-link">Viewer guide</Link>
+          <Link href="/terms#data-accuracy">Terms &amp; data accuracy</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/privacy#corrections">Report or correct information</Link>
         </nav>
       </footer>
       <PortfolioBackToTop />

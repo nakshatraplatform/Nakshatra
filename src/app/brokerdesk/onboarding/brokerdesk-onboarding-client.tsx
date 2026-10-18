@@ -48,7 +48,7 @@ export function BrokerdeskOnboardingClient({
       const result = await action();
       setOnboarding(result);
       setStep(next || (result.nextStage as Step));
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "We could not save your details.");
     } finally {

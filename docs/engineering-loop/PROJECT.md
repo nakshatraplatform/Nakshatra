@@ -1,5 +1,9 @@
 # VivIntro / Nakshatra project map
 
+- [Hybrid lint tooling](features/hybrid-lint-tooling.md): Oxlint owns native Next checks; official React/TypeScript/accessibility plugins stay on ESLint. Retired glob dependency chain and temporary exception removed; strict audit and anti-reintroduction guards added. Current verification is recorded in the feature record.
+
+- [Frontend priority hardening](features/frontend-priority-hardening.md): account/editor keyboard and focus lifecycle, safe popup Escape handling and corrected font inventory. See issue/resolution ledger for verification and the still-blocking expired dependency exception; no release approval implied.
+
 > Current candidate policy (2026-10-05): liveness only; no IP analysis, portfolio-photo
 > requirement or face matching. Workflow versions come from session responses, not env.
 > See [NAK-60 current contract](features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
@@ -17,6 +21,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
+
 - [NAK-73 Didit recovery contract repair](features/candidate-liveness-recovery.md): shared candidate expanded-decision boundary, nullable terminal URL handling, exact metadata correlation, contract-error deferral, same-tab Start/Resume, privacy-safe support references and worker failure categories. Post-Start status outages now retain a created/checking-status recovery state without duplicate creation or fabricated link eligibility; local checks and fresh independent correction review pass, resolving NAK73-V1. No schema or env change. Matching app/worker rollout, clean hosted database CI and real application-backed Sandbox validation remain release gates.
 
 - [Candidate-only verification worker](features/candidate-only-verification-worker.md): removes representative matching-key dependencies from the scheduled portfolio worker and filters candidate jobs before leasing. Local checks and independent review pass; additive migration and matching worker deployment remain pending.
@@ -24,7 +30,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [Open creator onboarding and feedback](features/open-creator-onboarding.md): owner-approved replacement for the invite-only waitlist. A local one-time, multi-select feedback follow-up adds private difficulty/liked-answer arrays with a first-write-wins migration; hosted database verification and release are pending. Rahul's Production pilot-admin grant was soft-revoked, leaving only the platform account active. Publication safeguards remain separate.
 
 - [NAK-103 signed-in UX clarity pass](features/nak-103-signed-in-ux-clarity.md): narrowly scoped dashboard, portfolio form/view, and account-settings presentation improvements; no landing-page or product-rule changes.
-- [Temporary ESLint audit risk acceptance](features/eslint-glob-audit-remediation.md): user-approved exception for one exact development advisory/graph until October 9, 2026 at 00:00 New York; all other high/critical findings remain blocking.
+- [Historical ESLint audit risk acceptance](features/eslint-glob-audit-remediation.md): superseded by hybrid lint tooling. The retired vulnerable dependency chain and expired exception are removed; all high/critical findings now block without exceptions.
 - [Membership anonymous grants](features/membership-anonymous-grants.md): forward revoke migration verified by hosted clean replay and all 924 pgTAP assertions at 283e78b; production application remains pending CD.
 - [Database-only CD](features/database-only-cd.md): production database deployment now defaults to preview-only; explicit confirmation permits application and final-history verification. The preview follow-up is local pending PR/release. Vercel deploys the application independently.
 - [Disclosure migration recovery](features/disclosure-migration-recovery.md): fixes the populated-upgrade reference-prefix prerequisite; all 70 migrations confirmed applied with zero pending; additional object/advisor queries are limited by intermittent CLI authentication. Supabase CLI is upgraded locally to 2.119.0.

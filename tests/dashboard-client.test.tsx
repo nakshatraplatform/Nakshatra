@@ -152,6 +152,35 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it.each(["input", "option"])("dismisses expanded combobox suggestions from %s before Escape can dismiss the editor", (target) => {
+    renderDashboard({ initialEditorOpen: true });
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story & lifestyle/ }));
+    const languages = screen.getByRole("combobox", { name: "Languages" });
+    fireEvent.focus(languages);
+    expect(languages).toHaveAttribute("aria-expanded", "true");
+    const focused = target === "option"
+      ? within(screen.getByRole("listbox", { name: "Languages suggestions" })).getAllByRole("option")[0]
+      : languages;
+    focused.focus();
+    fireEvent.keyDown(focused, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Portfolio details" })).toBeInTheDocument();
+    expect(languages).toHaveAttribute("aria-expanded", "false");
+    expect(languages).toHaveFocus();
+    expect(confirm).not.toHaveBeenCalled();
+    fireEvent.keyDown(languages, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Portfolio details" })).not.toBeInTheDocument();
+  });
+  it("closes the editor with Escape only after the existing unsaved-draft confirmation", () => {
+    renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+    vi.mocked(confirm).mockReturnValueOnce(false);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Portfolio details" })).toBeInTheDocument();
+    expect(confirm).toHaveBeenCalledOnce();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Portfolio details" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
   it("uses refreshed server verification without resetting an unsaved editor draft", () => {
     const props = { portfolio, viewCount: 12, userEmail: "aditi@example.com", canCreatePortfolio: true,
       shareUrl: "https://nakshatra.test/p/token", isExpired: false, daysLeft: 20, media: [media],

@@ -122,14 +122,19 @@ npm run test:e2e
 
 `db:verify` requires Docker or Podman because it starts local Supabase, resets all migrations, and runs the pgTAP security suite.
 
-`security:audit` checks both production and all dependencies at the high/critical
-threshold. A temporary, user-approved exception for the exact Next ESLint
-development chain affected by `GHSA-vfj7-8cjw-p6xm` expires **October 9, 2026 at
-00:00 America/New_York**. It remains visible as an accepted-risk warning; it is
-not a vulnerability fix. Other high/critical findings, changed dependency scope,
-audit failures and expiry block CI. See
-[the exception record](docs/engineering-loop/features/eslint-glob-audit-remediation.md)
-for verification and removal instructions.
+`npm run lint` runs Oxlint's native Next.js checks, then ESLint's official React
+Hooks/compiler, React, TypeScript, import and accessibility checks. Configure both
+editor integrations for the same coverage locally; CI and pre-commit run both.
+Oxlint does not yet implement one previous Next navigation rule, so an attributed
+local ESLint compatibility rule preserves it. Existing scoped native-image
+exceptions use `oxlint-disable-next-line nextjs/no-img-element`.
+
+`security:audit` checks production and all dependencies at the high/critical
+threshold, without exceptions. Registry/process errors and malformed reports
+fail closed. A lockfile guard rejects the retired Next ESLint/glob dependency
+chain, including nested or aliased entries. The previous temporary exception is
+removed. See [hybrid lint tooling](docs/engineering-loop/features/hybrid-lint-tooling.md)
+for rule mapping, verification and future upgrade requirements.
 
 ## Production releases
 
