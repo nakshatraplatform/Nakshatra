@@ -14,7 +14,7 @@ for (const [path, title] of [["/dashboard", "Getting your portfolio and requests
     await page.keyboard.press("Enter");
     await expect(page.getByRole("main")).toBeFocused();
     await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
-    await header.getByRole("button", { name: "Switch to Dark theme" }).click();
+    await header.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     if (path === "/dashboard" && testInfo.project.name !== "tablet-chromium") {
       await page.screenshot({ path: testInfo.outputPath("pending-data-dark.png"), animations: "disabled" });

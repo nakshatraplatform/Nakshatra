@@ -28,10 +28,11 @@ describe("customer application header", () => {
   it.each(["dashboard", "brokers", "account"] as const)("shows %s navigation and groups account actions in the avatar", (currentPage) => {
     const { container } = render(<CustomerAppHeader currentPage={currentPage} userEmail="owner@example.test" />);
     const navigation = screen.getByRole("navigation", { name: "Customer pages" });
-    expect(navigation.querySelectorAll("a")).toHaveLength(2);
+    expect(navigation.querySelectorAll("a")).toHaveLength(1);
     expect(navigation.querySelector('a[href="/account"]')).toBeNull();
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeVisible();
     openMenu();
+    expect(screen.queryByRole("link", { name: "My brokers" })).not.toBeInTheDocument();
     const settings = screen.getByRole("link", { name: "Account settings" });
     expect(settings).toHaveAttribute("href", "/account");
     if (currentPage === "account") expect(settings).toHaveAttribute("aria-current", "page");

@@ -26,20 +26,46 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  border: 1px solid var(--workspace-border);
-  border-radius: 9px;
-  background: var(--workspace-surface);
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--workspace-ink);
   cursor: pointer;
 }
-
-.app-theme-switch:hover { background: var(--workspace-surface-muted); }
 .app-theme-switch:focus-visible { outline: 3px solid var(--app-focus); outline-offset: 3px; }
-.app-theme-sun { display: none; }
-[data-app-theme="dark"] .app-theme-sun { display: block; }
-[data-app-theme="dark"] .app-theme-moon { display: none; }
+.app-theme-track {
+  display: block;
+  width: 48px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--workspace-border);
+  box-shadow: inset 0 0 0 1px var(--workspace-border);
+}
+.app-theme-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--workspace-surface);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--workspace-ink) 20%, transparent);
+  transform: translateX(0);
+  transition: transform 180ms cubic-bezier(.16, 1, .3, 1);
+}
+/* Root preference also paints the correct pose before React hydrates. */
+.app-theme-moon { display: none; }
+[data-app-theme="dark"] .app-theme-track { background: var(--ui-action); }
+[data-app-theme="dark"] .app-theme-thumb { transform: translateX(20px); }
+[data-app-theme="dark"] .app-theme-sun { display: none; }
+[data-app-theme="dark"] .app-theme-moon { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .app-theme-thumb { transition: none; }
+}
 .app-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; }
 .app-theme-navigation { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
 .app-theme-navigation a { text-underline-offset: 0.2em; }

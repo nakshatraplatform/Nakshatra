@@ -40,7 +40,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
   const faq = page.locator("#questions details").first();
   await faq.locator("summary").click();
   await expect(faq).toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
   await expect(trustSummary).toHaveCSS("outline-color", /rgb\(/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(376);
   await page.screenshot({ path: testInfo.outputPath("landing-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
@@ -58,7 +58,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
 test("landing copy fits supported widths in both themes", async ({ page }) => {
   await page.goto("/");
   for (const theme of ["light", "dark"] as const) {
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     for (const width of [320, 375, 414, 768, 1024, 1081, 1200, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

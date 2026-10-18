@@ -18,7 +18,7 @@ test("published horoscope status and remove action retain contrast in both theme
   const status = editor.getByText("Published for people you’ve shared with", { exact: true });
   const remove = editor.getByRole("button", { name: "Remove", exact: true });
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(status).toBeVisible();
     for (const element of [status, remove]) {
       const ratio = await element.evaluate(element => {
@@ -73,7 +73,7 @@ test("editor suggestions support virtual focus and dark contrast", async ({ page
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
   const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await editor.getByRole("button", { name: "Change", exact: true }).click();
     const city = editor.getByRole("combobox", { name: "ZIP or PIN code", exact: true });
     await city.fill("02108");

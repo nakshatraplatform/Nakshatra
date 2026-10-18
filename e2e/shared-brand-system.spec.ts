@@ -66,7 +66,7 @@ test("standalone and unavailable actions retain contrast on focus and hover", as
 test("inverse demo and landing examples retain readable text in both themes", async ({ page }) => {
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
     // The opened cover and the static mobile fallback share one illustration.
     // Measure the visible copy rather than the hidden alternate rendering.
@@ -84,7 +84,7 @@ test("approved horoscope navigation remains legible on focus and hover", async (
   await context.addCookies([approvedViewerCookie]);
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await page.goto("/p/e2e-portfolio-token/horoscope");
     await expect(page.getByRole("heading", { name: /Original horoscope/ })).toBeVisible();
     const back = page.getByRole("link", { name: "Back to portfolio" });
@@ -113,7 +113,7 @@ test("theme switches preserve link contrast on the first changed frame", async (
         resolve({ ink: getComputedStyle(link).color, background: getComputedStyle(document.body).backgroundColor });
       });
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-app-theme"] });
-      document.querySelector<HTMLButtonElement>(`button[aria-label="Switch to ${desired === "dark" ? "Dark" : "Light"} theme"]`)!.click();
+      document.querySelector<HTMLButtonElement>('button[role="switch"][aria-label="Dark mode"]')!.click();
     }), theme);
     const luminance = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => {
       const c = value / 255;

@@ -14,7 +14,7 @@ test("sign-in displays a real themed orb through pending work and clears it on f
   page.on("pageerror", (error) => hydrationErrors.push(error.message));
   for (const theme of ["light", "dark"]) {
     await page.goto("/login");
-    const themeButton = page.getByRole("button", { name: `Switch to ${theme === "dark" ? "Dark" : "Light"} theme` });
+    const themeButton = page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" });
     if (await themeButton.isVisible()) await themeButton.click();
     let release!: () => void;
     const wait = new Promise<void>((resolve) => { release = resolve; });

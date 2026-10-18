@@ -34,7 +34,7 @@ test("direct step links survive reload and motion preference changes", async ({ 
   await expect(book.locator("h3")).toBeInViewport();
   await page.reload();
   await expect(book).toHaveAttribute("data-active", "true");
-  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
   await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^03/ }).click();
   await expect(book).toHaveAttribute("data-active", "true");
   // Capture the resting pose after the 450ms scrub, not a page-turn intermediate.
@@ -63,7 +63,7 @@ test("signup shows the compact outlined Google control in both themes", async ({
   await button.focus();
   await expect(button).toHaveCSS("outline-style", "solid");
   await button.screenshot({ path: testInfo.outputPath("signup-google-light.png") });
-  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
   await button.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("signup-dark.png") });
 });

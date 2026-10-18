@@ -5,7 +5,7 @@ test("landing labels and keyboard indicators meet contrast in both themes", asyn
   for (const route of ["/", "/landing/control", "/landing/story"]) {
     await page.goto(route);
     for (const theme of ["light", "dark"]) {
-      if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("button", { name: `Switch to ${theme === "dark" ? "Dark" : "Light"} theme` }).click();
+      if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
       await expect(page.locator("main").getByRole("link", { name: "Create your introduction", exact: true }).first()).toHaveCSS("background-color", "rgb(35, 75, 104)");
       const measurements = await page.locator('[class*="controlGrid"] article > span, [class*="introduction"] strong, [class*="samplesHeading"] > p, nav[aria-label="Guided tour steps"] a > span').evaluateAll(elements => {
         const luminance = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => {

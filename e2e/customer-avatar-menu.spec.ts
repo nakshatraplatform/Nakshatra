@@ -9,7 +9,7 @@ test("avatar exposes account actions with keyboard, outside dismissal and respon
   const settings = header.getByRole("link", { name: "Account settings" });
   const signOut = header.getByRole("button", { name: "Sign out" });
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await header.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await header.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(avatar).toBeVisible();
     await expect(settings).not.toBeVisible();
     await expect(signOut).not.toBeVisible();
@@ -43,4 +43,38 @@ test("avatar exposes account actions with keyboard, outside dismissal and respon
   await settings.click();
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole("heading", { name: "Account settings" })).toBeVisible();
+});
+
+test("theme slider sits between Dashboard and avatar and retains its saved state", async ({ page, context }, testInfo) => {
+  await context.addCookies([themeTestCookie]);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/dashboard");
+  const header = page.getByRole("banner");
+  const toggle = header.getByRole("switch", { name: "Dark mode" });
+  await expect(toggle).not.toBeChecked();
+  await expect(toggle.locator(".app-theme-sun")).toBeVisible();
+  await expect(toggle.locator(".app-theme-moon")).not.toBeVisible();
+  await expect(toggle).toHaveCSS("width", "48px");
+  await expect(toggle).toHaveCSS("height", "44px");
+  await expect(toggle.locator(".app-theme-track")).toHaveCSS("height", "28px");
+  const dashboardBox = await header.getByRole("link", { name: "Dashboard", exact: true }).boundingBox();
+  const toggleBox = await toggle.boundingBox();
+  const avatarBox = await header.getByLabel("Account menu").boundingBox();
+  expect(dashboardBox!.x + dashboardBox!.width).toBeLessThan(toggleBox!.x);
+  expect(toggleBox!.x + toggleBox!.width).toBeLessThan(avatarBox!.x);
+  await expect(header.locator('a[href="/brokers"]')).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("theme-slider-light.png") });
+  await toggle.focus();
+  await page.keyboard.press("Space");
+  await expect(toggle).toBeChecked();
+  await expect(toggle.locator(".app-theme-moon")).toBeVisible();
+  await expect(toggle.locator(".app-theme-thumb")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 20, 0)");
+  await page.reload();
+  await expect(toggle).toBeChecked();
+  await page.screenshot({ path: testInfo.outputPath("theme-slider-dark.png") });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(toggle.locator(".app-theme-thumb")).toHaveCSS("transition-duration", "0s");
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await expect(toggle.locator(".app-theme-thumb")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 });

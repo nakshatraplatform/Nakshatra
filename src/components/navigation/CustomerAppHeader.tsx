@@ -14,7 +14,6 @@ type CustomerPage = "dashboard" | "brokers" | "account";
 
 const destinations = [
   { page: "dashboard", href: "/dashboard", label: "Dashboard" },
-  { page: "brokers", href: "/brokers", label: "My brokers" },
 ] as const;
 
 export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: CustomerPage; userEmail?: string }) {

@@ -143,4 +143,4 @@ maintenance/health scheduling require coordinated migration/application rollout.
 Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
 
-- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling.
+- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The shared theme control now uses a sun/moon slider before the avatar; My brokers navigation is deferred.
