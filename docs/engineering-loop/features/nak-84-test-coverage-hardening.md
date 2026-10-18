@@ -77,24 +77,26 @@ Evidence on the current working tree:
 | Expanded boundary regression set | 12 files, 79 tests passed |
 | Runtime/tooling instrumentation set | 12 files, 133 tests passed |
 | Protected-boundary coverage gate | 18 files, 0 failures |
-| Last complete full unit coverage before concurrent landing work | 194 files, 1,539 tests passed |
-| Statements | 86.88% (7,933/9,130) |
-| Branches | 81.77% (7,184/8,785) |
-| Functions | 86.78% (1,773/2,043) |
-| Lines | 90.53% (7,030/7,765) |
+| Clean full unit coverage | 194 files, 1,553 tests passed |
+| Statements | 86.49% (8,528/9,860) |
+| Branches | 81.76% (7,803/9,543) |
+| Functions | 87.24% (1,874/2,148) |
+| Lines | 90.03% (7,546/8,381) |
 | Feature coverage gate | 61 files passed at 80% per metric |
+| Protected-boundary gate | 18 files passed at their recorded floors |
+| TypeScript and full lint | passed on isolated commit `5afbe65` |
 
-Compared with the audited baseline, 23 additional functions and 25 additional
-lines are executed. Zero-function files fell from 20 to 17, and files with any
-uncovered function fell from 72 to 67. This is an incremental result, not
-completion of NAK-84. Those aggregate values predate the newly instrumented
-runtime/tooling scope; a fresh aggregate is pending a clean full-suite run.
+Compared with the original source-only baseline, 124 additional functions are
+now executed while 105 functions were added to the measured denominator by the
+new runtime/tooling scope. Function coverage increased from 85.65% to 87.24%.
+This is an incremental result, not completion of NAK-84.
 
 The current shared workspace also contains separate uncommitted landing/bookshelf
-work. A full run on that mixed working tree reached 1,547 passing tests but was
-blocked by two landing/brand failures from that work, and later high-load runs
-exposed existing dashboard focus/timing flakes. Those failures were not changed
-or attributed to NAK-84. Focused NAK-84 checks remain green.
+work. A full run on that mixed working tree was blocked by landing/brand syntax
+and mock incompatibilities, and high-load mixed runs exposed existing dashboard
+focus/timing flakes. Those failures were not changed or attributed to NAK-84.
+An isolated worktree at NAK-84 commit `5afbe65` passed the full 1,553-test suite,
+coverage gates, typecheck and lint.
 
 ## Remaining work
 
