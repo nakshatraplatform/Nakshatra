@@ -70,3 +70,17 @@ Final-source validation:
 No known material in-scope review finding remains. The initial dashboard timeout did not recur with bounded Vitest workers; no timeout setting or unrelated dashboard code was changed.
 
 Limits: live Google OAuth, physical devices, Safari and local database integration tests are not verified by this UI change. Hosted CI runs the wider browser/database matrix after PR creation. Graphify could not be updated because it is unavailable and no graph exists. No deployment or merge is included.
+
+
+## CI regression follow-up (18 October 2026)
+
+Standard-risk test maintenance on `810721b`; no application/runtime change. The supplied CI log is from `afd6b5f`. Its quality job (audit, lint, unit coverage and build) passed, while the aggregate required check failed because browser jobs failed. The same quality and database jobs also passed on `810721b`.
+
+Confirmed causes: the critical signup path retained the old “Continue with Google” selector after the requested “Sign up with Google” copy change; the visual text audit counted the fully clipped accessible wordmark label against its blue mask background; two chapter checks could click before the static tour became its enhanced shelf. The downloaded failing CI trace shows navigation still at `/` after the purported step click and the shelf in a different reading pose, consistent with the layout changing during click preparation.
+
+Corrections preserve the feature contract: assert the exact signup label while retaining login/continuation labels; omit only fully clipped `inset(50%)` text from painted-text calculations and explicitly assert the complete accessible tour heading on all four landing routes; await shelf enhancement and font readiness before desktop geometry/illustration interactions. Mobile static, no-JavaScript, contrast thresholds and actual active-chapter assertions remain intact. No retries, timeouts, CI gates or production styling were weakened.
+
+Validation in progress: the signup and contrast faults reproduced locally in CI's Chromium headless-shell version. Both timing cases passed locally before changes, so their failure evidence is the hosted trace, not a claimed local reproduction. All 21 targeted cases passed across desktop/tablet/mobile with retries disabled after corrections; lint and typecheck passed. Full browser matrix and remote update follow below.
+
+
+Final local evidence: all 27 stability cases passed without retries (three repetitions of the two timing checks plus the portfolio metadata check, on each Chromium viewport). The full local matrix reached 84 passes, then was blocked by host disk exhaustion; it is not counted as a full pass. One earlier portfolio metadata failure was caused by the local alternate port conflicting with that existing test's fixed 3100 URL; it passed unchanged on the CI-default port in all nine repetitions. Only this task's generated build cache and downloaded artifact archive were cleared. Hosted CI remains the full-matrix gate. No application code changed, so the existing passing production build/unit coverage evidence still applies; pre-push hooks rerun fixture, type and unit checks.

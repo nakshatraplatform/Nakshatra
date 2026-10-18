@@ -19,6 +19,9 @@ for (const route of [...publicRoutes, ...authenticatedRoutes]) {
       if (route === `${workspace}/dashboard`) await expect(page.getByRole("heading", { name: "Fixture agency", exact: true })).toBeVisible();
       if (route === `${workspace}/customers`) await expect(page.getByRole("heading", { name: "People you represent", exact: true })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
+      if (route === "/" || route.startsWith("/landing/")) {
+        await expect(page.getByRole("heading", { name: "How VivIntro works", exact: true })).toBeVisible();
+      }
       const audit = await page.evaluate(() => {
         const fontFailures: string[] = [], contrastFailures: string[] = [];
         let checked = 0, nonFlat = 0;
@@ -32,6 +35,9 @@ for (const route of [...publicRoutes, ...authenticatedRoutes]) {
           const text = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join("").trim();
           if (!text) continue;
           const style = getComputedStyle(element);
+          // Fully clipped screen-reader labels have no painted text to audit.
+          // Their accessible names remain covered by heading/navigation checks.
+          if (style.clipPath === "inset(50%)") continue;
           const expected = element.closest("h1,h2,h3,h4,h5,h6") ? "Plus Jakarta Sans" : "Inter";
           if (!style.fontFamily.includes(expected)) fontFailures.push(`${element.tagName} ${text.slice(0, 65)}: ${style.fontFamily}; expected ${expected}`);
           const ancestors: Element[] = [];

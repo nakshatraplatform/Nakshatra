@@ -64,6 +64,9 @@ test("tall tour spacing is bounded instead of growing with viewport height", asy
   for (const height of [1200, 1600]) {
     await page.setViewportSize({ width: 1440, height });
     await page.goto("/");
+    // Geometry assertions require the enhanced layout, not its pre-hydration fallback.
+    await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+    await page.evaluate(() => document.fonts.ready);
     await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^01/ }).click();
     const book = page.locator('[data-tour-step="01"]');
     await expect(book).toHaveAttribute("data-active", "true");

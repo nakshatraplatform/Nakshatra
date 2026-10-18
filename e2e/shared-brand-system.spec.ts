@@ -67,6 +67,11 @@ test("inverse demo and landing examples retain readable text in both themes", as
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
+    // Wait for the desktop shelf to replace its static fallback before clicking.
+    if (await page.evaluate(() => matchMedia("(min-width: 860px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)").matches)) {
+      await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+    }
+    await page.evaluate(() => document.fonts.ready);
     await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
     // The opened cover and the static mobile fallback share one illustration.
     // Measure the visible copy rather than the hidden alternate rendering.
