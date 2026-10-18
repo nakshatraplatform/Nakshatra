@@ -65,10 +65,12 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
     if (currentState) onStatusChange?.(currentState);
   }, [currentState, onStatusChange]);
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
+  const refresh = useCallback(async (signal?: AbortSignal, showFeedback = true) => {
     if (busy.current || (cooldownScope === "interaction" && Date.now() < cooldownUntil)) return;
     const version = ++requestVersion.current;
-    setStatusLoading(true);
+    // Quiet background reads must not replace an unchanged live status every
+    // fifteen seconds. Initial and explicitly requested reads retain feedback.
+    if (showFeedback || !snapshot.current) setStatusLoading(true);
     try {
       const result = await getCurrentCandidateVerificationRequest(candidateId, signal);
       if (signal?.aborted || version !== requestVersion.current) return;
@@ -105,7 +107,7 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => void refresh(controller.signal), 0);
-    const update = () => { if (document.visibilityState === "visible") void refresh(controller.signal); };
+    const update = () => { if (document.visibilityState === "visible") void refresh(controller.signal, false); };
     document.addEventListener("visibilitychange", update);
     return () => { clearTimeout(timer); controller.abort(); document.removeEventListener("visibilitychange", update); };
   }, [refresh]);
@@ -115,7 +117,7 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
   useEffect(() => {
     if (!unfinished) return;
     const controller = new AbortController();
-    const update = () => { if (document.visibilityState === "visible") void refresh(controller.signal); };
+    const update = () => { if (document.visibilityState === "visible") void refresh(controller.signal, false); };
     const timer = setInterval(update, 15_000);
     return () => { clearInterval(timer); controller.abort(); };
   }, [unfinished, refresh]);
@@ -282,9 +284,9 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
           <button type="button" className="dashboard-secondary-action" onClick={() => setConfirmCancel(false)}>Keep current check</button>
         </div>
       </fieldset> : null}
-      <div className="mt-4" aria-live="polite" aria-atomic="true">
+      <div className="mt-4">
         {error || statusError ? <p className="dashboard-action-error" role="alert">{error || statusError}</p> : null}
-        {cooldown > 0 ? <p className="dashboard-action-note">{cooldownScope === "creation" ? "New-check" : "Recovery"} cooldown: {Math.ceil(cooldown / 60)} minute(s). {cooldownScope === "creation" ? "You can still recover an existing check." : "Wait before checking status, resuming or cancelling."}</p> : null}
+        {cooldown > 0 ? <p className="dashboard-action-note" role="status" aria-atomic="true">{cooldownScope === "creation" ? "New-check" : "Recovery"} cooldown: {Math.ceil(cooldown / 60)} minute(s). {cooldownScope === "creation" ? "You can still recover an existing check." : "Wait before checking status, resuming or cancelling."}</p> : null}
         {(error || statusError || unfinished) && !pending ? <button type="button" disabled={statusLoading || (cooldownScope === "interaction" && cooldown > 0)} className="dashboard-secondary-action" onClick={() => void refresh()}>Refresh check status</button> : null}
         {managementLink && managementLink.attemptId === current?.attemptId ? <p className="dashboard-action-note">Save your private <Link href={managementLink.url} prefetch={false}>verification-management link</Link>.</p> : null}
         {providerLink && providerLink.attemptId === current?.attemptId && current.canResume ? <a className="dashboard-primary-action mt-3" href={providerLink.url}>Continue to Didit verification</a> : null}

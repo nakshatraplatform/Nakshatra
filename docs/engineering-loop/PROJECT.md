@@ -1,5 +1,11 @@
 # VivIntro / Nakshatra project map
 
+- [Accessible account entry](features/auth-accessibility-feedback.md): concise
+  signup guidance, same-route recovery focus, field-associated password/code
+  errors, truthful recovery advice and quiet background liveness reads. Isolated
+  follow-up to NAK-74; current validation and manual screen-reader limits are in
+  the feature record. No authentication/domain/API or database-policy changes.
+
 - [Frontend integration with main](features/frontend-hardening-integration.md):
   October 18 integration with main `46540e5` preserves onboarding/Didit/security
   work alongside component loading and hybrid lint. Six conflicts resolved;
