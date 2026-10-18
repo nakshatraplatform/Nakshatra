@@ -6,6 +6,7 @@ import { PortfolioImage } from "@/components/loading/PortfolioImage";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
 
@@ -69,12 +70,14 @@ import {
   X,
 } from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { portfolioEditorDraftSchema } from "@/features/portfolio/form-contract";
+import { editorFieldIssues, editorFieldLabel, editorFieldTarget, portfolioFieldAnchor, type EditorFieldIssue } from "@/features/portfolio/editor-validation";
 import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
 import { interestStatusLabel } from "@/features/interest/presentation";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
-import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, editorSectionForPath, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import {
   PORTFOLIO_VIEW_LABELS,
 } from "@/features/portfolio/template";
@@ -182,6 +185,25 @@ export default function DashboardClient({
       media.some(isShareablePrimaryPhoto)
     ).nextEditorSection) as PortfolioEditorSection
   ));
+  const [validationRequested, setValidationRequested] = useState(false);
+  const [pendingFieldFocus, setPendingFieldFocus] = useState<{ path: string } | null>(null);
+  const focusedFieldRequestRef = useRef(pendingFieldFocus);
+  const [serverFieldIssues, setServerFieldIssues] = useState<EditorFieldIssue[]>([]);
+  const validationIssues = validationRequested
+    ? editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto)) : [];
+
+  useEffect(() => {
+    if (!pendingFieldFocus || !formOpen || focusedFieldRequestRef.current === pendingFieldFocus) return;
+    focusedFieldRequestRef.current = pendingFieldFocus;
+    const target = document.getElementById(portfolioFieldAnchor(pendingFieldFocus.path));
+    const focusTarget = target?.matches("input, select, textarea, button") ? target
+      : target?.querySelector<HTMLElement>("[data-portfolio-error-focus='primary']:not(:disabled)")
+        || target?.querySelector<HTMLElement>("[data-portfolio-error-focus='visibility']:not(:disabled)")
+        || target?.querySelector<HTMLElement>("input:not([type=hidden]):not([type=file]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)") || target
+        || document.getElementById("blueprint-stage");
+    focusTarget?.focus();
+    focusTarget?.scrollIntoView?.({ block: "center", behavior: "auto" });
+  }, [pendingFieldFocus, editorSection, formOpen]);
   const accessEvents = accessSummary.events;
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
@@ -193,9 +215,37 @@ export default function DashboardClient({
   const versionedReviewRequiredRef = useRef(publicationReadiness.reviewFingerprint !== undefined);
   const lastAutosaveAttemptRevisionRef = useRef(-1);
   const sectionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightDraftSaveRef = useRef<Promise<boolean> | null>(null);
+  const progressWriteInFlightRef = useRef(false);
+  const pendingEditorSectionRef = useRef<PortfolioEditorSection | null>(null);
+  const persistedEditorSectionRef = useRef(publicationReadiness.lastEditorSection);
+  const currentEditorSectionRef = useRef(editorSection);
+  const editorMountedRef = useRef(true);
   const previewRequestQueue = useRef(Promise.resolve());
   const router = useRouter();
-  const refreshDashboard = useCallback(() => startRefresh(() => router.refresh()), [router]);
+  const workspaceActiveRef = useRef(initialEditorOpen && canCreatePortfolio);
+  const deferredRefreshRef = useRef(false);
+  const refreshDashboard = useCallback(() => {
+    // The server keys DashboardClient by saved revision. Refreshing mid-edit
+    // would remount it, close the editor and discard newer unsaved keystrokes.
+    // Mutation responses already update local draft/media state; reconcile the
+    // server projection once the user leaves both editor and final review.
+    if (workspaceActiveRef.current) {
+      deferredRefreshRef.current = true;
+      return;
+    }
+    startRefresh(() => router.refresh());
+  }, [router]);
+
+  useEffect(() => {
+    workspaceActiveRef.current = formOpen || reviewOpen;
+    if (!workspaceActiveRef.current && deferredRefreshRef.current) {
+      deferredRefreshRef.current = false;
+      startRefresh(() => router.refresh());
+    }
+  }, [formOpen, reviewOpen, router]);
+
+  useEffect(() => { currentEditorSectionRef.current = editorSection; }, [editorSection]);
 
   const onVerificationStatusChange = useCallback(() => refreshDashboard(), [refreshDashboard]);
   const disclosedCategories = fullViewDisclosureCategories(
@@ -296,20 +346,36 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (draftSaveState !== "unsaved" || !canCreatePortfolio || savingDraft) return;
+    // Intermediate dates/phones/names may be malformed while typing. Manual save
+    // still returns actionable errors; autosave need not send a known rejection.
+    if (!portfolioEditorDraftSchema.safeParse(draftData).success) return;
     const revision = draftRevisionRef.current;
     if (lastAutosaveAttemptRevisionRef.current === revision) return;
     const timer = window.setTimeout(() => {
       lastAutosaveAttemptRevisionRef.current = revision;
       void persistDashboardDraft({ refresh: false, silent: true });
-    }, 1400);
+    }, 2000);
     return () => window.clearTimeout(timer);
     // The save operation intentionally uses the latest render's draft snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftData, draftSaveState, canCreatePortfolio, savingDraft]);
 
-  useEffect(() => () => {
-    if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
+  useEffect(() => {
+    editorMountedRef.current = true;
+    return () => {
+      editorMountedRef.current = false;
+      pendingEditorSectionRef.current = null;
+      if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
+    };
   }, []);
+
+  function leaveEditorRoute() {
+    const url = new URL(window.location.href);
+    if (url.pathname === "/dashboard" && url.searchParams.has("edit")) {
+      url.searchParams.delete("edit");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }
 
   function closePortfolioEditor() {
     if (savingDraft) {
@@ -328,6 +394,9 @@ export default function DashboardClient({
       setDraftSaveState("saved");
       setDraftError(null);
     }
+    // A direct /dashboard?edit=1 entry must not reopen the editor when the
+    // deferred server refresh completes after this explicit exit.
+    leaveEditorRoute();
     setFormOpen(false);
   }
 
@@ -387,7 +456,21 @@ export default function DashboardClient({
       setReviewPreviewsOpened({ public: false, complete: false });
       setSensitiveDisclosureAccepted(false);
       setReviewOpen(false);
-      refreshDashboard();
+      // A stale saved revision is an explicit recovery path, not a routine
+      // autosave refresh. Do not defer its fail-closed authoritative reload.
+      deferredRefreshRef.current = false;
+      startRefresh(() => router.refresh());
+    }
+    if (failure.error.fieldErrors) {
+      const issueMap = new Map<string, EditorFieldIssue>();
+      for (const [sourcePath, messages] of Object.entries(failure.error.fieldErrors)) {
+        const path = editorFieldTarget(sourcePath);
+        if (!issueMap.has(path)) issueMap.set(path, { path, label: editorFieldLabel(path),
+          section: editorSectionForPath(path), message: messages[0] || "Check this answer." });
+      }
+      const issues = [...issueMap.values()];
+      setServerFieldIssues(issues);
+      if (issues[0]) showFieldIssue(issues[0]);
     }
     setDraftError(failure.error.message);
     return false;
@@ -416,6 +499,7 @@ export default function DashboardClient({
   /** Confirms the reviewed disclosure when needed, then atomically refreshes the public snapshot from the draft. */
   async function publishPortfolio() {
     if (!sensitiveDisclosureAccepted) return;
+    if (!validateEditor()) return;
     setPublishing(true);
     setDraftError(null);
     try {
@@ -485,6 +569,8 @@ export default function DashboardClient({
     key: K,
     value: PortfolioData[K]
   ) {
+    if (JSON.stringify(draftData[key]) === JSON.stringify(value)) return;
+    setServerFieldIssues([]);
     setDraftData((current) => ({ ...current, [key]: value }));
     setDraftSaveState("unsaved");
     invalidatePreviewReview();
@@ -502,7 +588,19 @@ export default function DashboardClient({
       publicPreviewReviewed: false, completePreviewReviewed: false, reviewFingerprint: null }));
   }
 
-  async function persistDashboardDraft({
+  function persistDashboardDraft(options: { refresh?: boolean; silent?: boolean } = {}): Promise<boolean> {
+    // A synchronous guard covers manual/autosave races before React renders the
+    // disabled button. Never race two full relational-sync transactions.
+    if (inFlightDraftSaveRef.current) return inFlightDraftSaveRef.current;
+    if (draftSaveState === "saved" && activePortfolioId) return Promise.resolve(true);
+    const operation = performDashboardDraftSave(options);
+    inFlightDraftSaveRef.current = operation;
+    return operation.finally(() => {
+      if (inFlightDraftSaveRef.current === operation) inFlightDraftSaveRef.current = null;
+    });
+  }
+
+  async function performDashboardDraftSave({
     refresh = true,
     silent = false,
   }: { refresh?: boolean; silent?: boolean } = {}) {
@@ -529,7 +627,16 @@ export default function DashboardClient({
       }
       setActivePortfolioId(result.data.portfolioId);
       if (result.data.candidateId) setSavedCandidateId(result.data.candidateId);
-      if (result.data.draftData && draftRevisionRef.current === savingRevision) setDraftData(result.data.draftData);
+      if (result.data.draftData && draftRevisionRef.current === savingRevision) {
+        setDraftData({ ...result.data.draftData, personal: {
+          ...result.data.draftData.personal,
+          // A server-normalized save is canonical for storage, not an instruction
+          // to remove the space the person is currently typing after a name part.
+          first_name: draftData.personal.first_name,
+          middle_name: draftData.personal.middle_name,
+          last_name: draftData.personal.last_name,
+        } });
+      }
       if (result.data.readiness && draftRevisionRef.current === savingRevision) {
         setReadinessState(result.data.readiness);
         setReviewPreviewsOpened({ public: result.data.readiness.publicPreviewReviewed ?? false,
@@ -555,6 +662,7 @@ export default function DashboardClient({
   }
 
   async function reviewPortfolio() {
+    if (!validateEditor()) return;
     if (draftData.privacy_mode === "private") {
       setDraftError("Update the saved sharing setup in Appearance & contact, then review the public introduction before publishing.");
       return;
@@ -568,7 +676,7 @@ export default function DashboardClient({
   async function openFinalReview(justSaved = false) {
     if (openingReviewRef.current) return;
     if (reviewNeedsReloadRef.current) {
-      refreshDashboard();
+      startRefresh(() => router.refresh());
       return;
     }
     openingReviewRef.current = true;
@@ -584,6 +692,7 @@ export default function DashboardClient({
         setReviewPreviewsOpened({ public: readiness.publicPreviewReviewed ?? false,
           complete: readiness.completePreviewReviewed ?? false });
       }
+      leaveEditorRoute();
       setFormOpen(false);
       setReviewOpen(true);
     } catch {
@@ -695,12 +804,28 @@ export default function DashboardClient({
   }
 
   function rememberEditorSection(section: PortfolioEditorSection) {
+    section = navigableSection(section);
+    if (section === editorSection) return;
+    const destination = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === navigableSection(section));
+    const current = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === editorSection);
+    if (destination > current && !validateEditor(destination)) return;
     setEditorSection(navigableSection(section));
+    currentEditorSectionRef.current = section;
     const editorScroll = document.querySelector<HTMLElement>(".dashboard-editor-scroll");
     if (editorScroll) editorScroll.scrollTop = 0;
     setReadinessState((current) => ({ ...current, lastEditorSection: section }));
     if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
-    sectionSaveTimerRef.current = setTimeout(async () => {
+    pendingEditorSectionRef.current = section;
+    sectionSaveTimerRef.current = setTimeout(() => { void persistEditorSection(); }, 800);
+  }
+
+  async function persistEditorSection() {
+    if (progressWriteInFlightRef.current || !editorMountedRef.current) return;
+    const section = pendingEditorSectionRef.current;
+    pendingEditorSectionRef.current = null;
+    if (!section || section === persistedEditorSectionRef.current) return;
+    progressWriteInFlightRef.current = true;
+    try {
       const { updatePublicationProgressRequest } = await import(
         "@/features/portfolio/client/portfolio-dashboard.api"
       );
@@ -709,16 +834,42 @@ export default function DashboardClient({
         value: section,
       });
       if (result.ok) {
+        persistedEditorSectionRef.current = section;
         savedReadinessRef.current = {
           ...savedReadinessRef.current,
-          lastEditorSection: result.data.readiness.lastEditorSection,
+          lastEditorSection: section,
         };
-        setReadinessState((current) => ({
+        if (editorMountedRef.current && currentEditorSectionRef.current === section) setReadinessState((current) => ({
           ...current,
-          lastEditorSection: result.data.readiness.lastEditorSection,
+          lastEditorSection: section,
         }));
       }
-    }, 300);
+    } catch {
+      // Resume-position persistence is best effort. Keep navigation usable and
+      // do not retry the same failed write in the background indefinitely.
+    } finally {
+      progressWriteInFlightRef.current = false;
+      if (editorMountedRef.current && pendingEditorSectionRef.current) {
+        if (sectionSaveTimerRef.current) clearTimeout(sectionSaveTimerRef.current);
+        sectionSaveTimerRef.current = setTimeout(() => { void persistEditorSection(); }, 800);
+      }
+    }
+  }
+
+  function showFieldIssue(issue: EditorFieldIssue) {
+    setReviewOpen(false);
+    setFormOpen(true);
+    setEditorSection(navigableSection(issue.section as PortfolioEditorSection));
+    setPendingFieldFocus({ path: issue.path });
+  }
+
+  function validateEditor(beforeSection = PORTFOLIO_EDITOR_SECTIONS.length) {
+    const issues = editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto)).filter(issue =>
+      PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === issue.section) < beforeSection);
+    setValidationRequested(true);
+    if (!issues.length) return true;
+    showFieldIssue(issues[0]);
+    return false;
   }
 
   async function uploadPhotos(files: FileList | null) {
@@ -1298,6 +1449,8 @@ export default function DashboardClient({
                   onUpdate={updateSection}
                   activeSection={editorSection}
                   onSectionChange={rememberEditorSection}
+                  validationIssues={[...validationIssues, ...serverFieldIssues.filter(issue => !validationIssues.some(local => local.path === issue.path))]}
+                  onErrorSelect={showFieldIssue}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
                   photoManager={
                     <>
@@ -2422,6 +2575,8 @@ function PhotoManager({
   ) => void;
   onDelete: (id: string) => void;
 }) {
+  const photoError = usePortfolioFieldError("media.primary_photo");
+  const photoErrorId = photoError ? `${portfolioFieldAnchor("media.primary_photo")}-error` : undefined;
   const visibilityLabels: { value: PortfolioMediaVisibility; label: string }[] = [
     { value: "interest_required", label: "Blurred until shared" },
     { value: "public", label: "Visible to all" },
@@ -2488,6 +2643,8 @@ function PhotoManager({
                 }
                 className="h-10 w-full rounded-md border border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-2 text-xs text-[var(--workspace-ink)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="Photo visibility"
+                data-portfolio-error-focus="visibility"
+                aria-describedby={photoErrorId}
               >
                 {!visibilityLabels.some((option) => option.value === item.visibility) && (
                   <option value="" disabled>Choose visibility</option>
@@ -2507,6 +2664,8 @@ function PhotoManager({
                 <button
                   type="button"
                   onClick={() => onUpdate(item.id, { media_type: "hero" })}
+                  data-portfolio-error-focus="primary"
+                  aria-describedby={photoErrorId}
                   className="min-h-10 w-full rounded-md border border-[var(--workspace-border)] px-2 py-2 text-xs font-medium text-[var(--workspace-ink-muted)] transition-[transform,box-shadow,filter] hover:bg-[var(--workspace-surface-muted)]"
                 >
                   Make primary photo
@@ -2519,6 +2678,7 @@ function PhotoManager({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
+            aria-describedby={photoErrorId}
             disabled={uploading}
             className="flex h-36 w-36 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--workspace-border)] bg-[var(--workspace-teal-soft)] px-4 text-center text-xs font-medium text-[var(--workspace-teal)] transition-[transform,box-shadow,filter] hover:bg-[var(--workspace-teal-soft)] disabled:opacity-50 sm:h-40 sm:w-40"
           >

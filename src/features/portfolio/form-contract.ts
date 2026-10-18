@@ -11,7 +11,6 @@ import {
 /** Pilot authoring rules. Stored historical snapshots retain the broader read schema. */
 export const NAME_PART_PATTERN = /^(?=.*[A-Za-z])[A-Za-z '-]+$/;
 export const NAME_PART_MAX_LENGTH = 50;
-export const NARRATIVE_MIN_LENGTH = 80;
 export const FORM_LIST_LIMITS = { languages: 10, hobbies: 6, values_statement: 5 } as const;
 
 export function formListValues(value?: string) {
@@ -96,7 +95,7 @@ function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, pu
     }
     const expectedLocation = [data.personal.city, data.personal.region, data.personal.country]
       .map((part) => part?.trim()).filter(Boolean).join(", ");
-    if (data.personal.current_location?.trim() !== expectedLocation) {
+    if (expectedLocation && data.personal.current_location?.trim() !== expectedLocation) {
       addIssue(ctx, ["personal", "current_location"], "Current location must match the city, region, and country selected above.");
     }
   }
@@ -104,16 +103,6 @@ function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, pu
     addIssue(ctx, ["vitals", "height"], "Choose a height from the list.");
   }
 
-  for (const [field, label] of [
-    ["profile_summary", "Personal story"],
-    ["long_term_goals", "Life goals"],
-    ["shared_life_plans", "Shared life plans"],
-  ] as const) {
-    const value = data.personal[field]?.trim();
-    if (publishing && value && value.length < NARRATIVE_MIN_LENGTH) {
-      addIssue(ctx, ["personal", field], `${label} needs at least 80 characters when answered.`);
-    }
-  }
   for (const [field, maximum] of Object.entries(FORM_LIST_LIMITS) as Array<[keyof typeof FORM_LIST_LIMITS, number]>) {
     if (formListValues(data.lifestyle?.[field]).length > maximum) {
       addIssue(ctx, ["lifestyle", field], `Choose no more than ${maximum} ${field === "hobbies" ? "interests" : field === "values_statement" ? "values" : "languages"}.`);

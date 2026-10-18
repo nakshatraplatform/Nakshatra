@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import { BlueprintForm } from "../src/components/portfolio/BlueprintForm";
 import type { PortfolioData } from "../src/types/portfolio";
+import { incomeRangeOptions, SIBLING_POSITION_OPTIONS } from "../src/features/portfolio/blueprint-options";
 
 const completeBlueprint: PortfolioData = {
   privacy_mode: "balanced",
@@ -60,6 +61,89 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("retains a self-described legacy answer and can clear it without any option lookup request", () => {
+    function Editor() {
+      const [data, setData] = useState({ ...completeBlueprint, personal: { ...completeBlueprint.personal, religion: "My own outlook" } });
+      return <BlueprintForm data={data} initialSection="family" onUpdate={(key, value) => setData(current => ({ ...current, [key]: value }))} />;
+    }
+    render(<Editor />);
+    expect(screen.getByLabelText("Describe your religion or outlook")).toHaveValue("My own outlook");
+    fireEvent.change(screen.getByLabelText("Religion or outlook"), { target: { value: "Hindu" } });
+    fireEvent.change(screen.getByLabelText("Religion or outlook"), { target: { value: "Other" } });
+    expect(screen.getByLabelText("Describe your religion or outlook")).toHaveValue("My own outlook");
+    fireEvent.change(screen.getByLabelText("Religion or outlook"), { target: { value: "" } });
+    expect(screen.getByLabelText("Religion or outlook")).toHaveValue("");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(SIBLING_POSITION_OPTIONS.some(option => option.value === "Only Child")).toBe(false);
+  });
+
+  it("uses readable currency-specific labels without rewriting stored ranges", () => {
+    expect(incomeRangeOptions("USD")).toContainEqual({ value: "100k-125k", label: "100,000-125,000 USD per year" });
+    expect(incomeRangeOptions("")).toContainEqual({ value: "Under 25k", label: "Under 25,000 per year" });
+    expect(incomeRangeOptions("INR")).toContainEqual({ value: "5–10 lakh", label: "5–10 lakh INR per year" });
+    render(<BlueprintForm data={{ ...completeBlueprint, career: { ...completeBlueprint.career, income_currency: "INR" } }} initialSection="work" onUpdate={vi.fn()} />);
+    expect(screen.getByLabelText("Annual income range")).toHaveValue("100k-125k");
+    expect(screen.getByRole("option", { name: "100k-125k (current)" })).toBeInTheDocument();
+  });
+  it("offers a bounded community self-description and remembers it across section changes", () => {
+    function Editor() {
+      const [data, setData] = useState(completeBlueprint);
+      return <BlueprintForm data={data} initialSection="family" onUpdate={(key, value) => setData(current => ({ ...current, [key]: value }))} />;
+    }
+    render(<Editor />);
+    const community = () => screen.getByRole("combobox", { name: "Community or cultural background" });
+    fireEvent.change(community(), { target: { value: "Other / self-describe" } });
+    const custom = screen.getByLabelText("Describe your community or background");
+    expect(custom).toHaveAttribute("maxlength", "150");
+    fireEvent.change(custom, { target: { value: "My cultural roots" } });
+    fireEvent.change(community(), { target: { value: "Prefer not to say" } });
+    expect(screen.queryByLabelText("Describe your community or background")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Family/ }));
+    fireEvent.change(community(), { target: { value: "Other / self-describe" } });
+    expect(screen.getByLabelText("Describe your community or background")).toHaveValue("My cultural roots");
+  });
+
+  it("requires confirmation before reinterpreting an existing income in a new currency", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    function Editor() {
+      const [data, setData] = useState(completeBlueprint);
+      return <BlueprintForm data={data} initialSection="work" onUpdate={(key, value) => setData(current => ({ ...current, [key]: value }))} />;
+    }
+    render(<Editor />);
+    fireEvent.change(screen.getByLabelText("Income currency"), { target: { value: "INR" } });
+    expect(screen.getByLabelText("Income currency")).toHaveValue("USD");
+    expect(screen.getByLabelText("Annual income range")).toHaveValue("100k-125k");
+    fireEvent.change(screen.getByLabelText("Income currency"), { target: { value: "INR" } });
+    expect(screen.getByLabelText("Income currency")).toHaveValue("INR");
+    expect(screen.getByLabelText("Annual income range")).toHaveValue("");
+    expect(screen.getByRole("option", { name: "5–10 lakh INR per year" })).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
+  it("confirms removal of populated sibling details and retains historical position answers", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const onUpdate = vi.fn();
+    render(<BlueprintForm data={{ ...completeBlueprint, family: { ...completeBlueprint.family, sibling_position: "Only Child" } }} initialSection="family" onUpdate={onUpdate} />);
+    expect(screen.getByLabelText("Your position among siblings")).toHaveValue("Only Child");
+    fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "0" } });
+    expect(onUpdate).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "0" } });
+    expect(onUpdate).toHaveBeenCalledWith("family", expect.objectContaining({ sibling_count: 0, siblings: [] }));
+    confirm.mockRestore();
+  });
+  it("preserves a space while typing a multi-word first name", () => {
+    function Editor() {
+      const [data, setData] = useState(completeBlueprint);
+      return <BlueprintForm data={data} onUpdate={(key, value) => setData(current => ({ ...current, [key]: value }))} />;
+    }
+    render(<Editor />);
+    const name = screen.getByLabelText("First name");
+    fireEvent.change(name, { target: { value: "Mary " } });
+    expect(name).toHaveValue("Mary ");
+    fireEvent.change(name, { target: { value: "Mary Jane" } });
+    expect(name).toHaveValue("Mary Jane");
+  });
   it("navigates tag suggestions with virtual focus and selects with Enter", () => {
     const onUpdate = vi.fn();
     render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} activeSection="story" onSectionChange={vi.fn()} />);
@@ -141,7 +225,7 @@ describe("blueprint form", () => {
     expect(screen.getByText(/Use letters, spaces, apostrophes or hyphens only/)).toBeInTheDocument();
   });
 
-  it("guides optional narrative answers with an accessible example and minimum length", () => {
+  it("guides optional narratives with an example and maximum but no minimum length", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story/ }));
     expect(screen.getByLabelText("How would your close friends describe you?")).toHaveAttribute("maxLength", "1600");
@@ -149,7 +233,8 @@ describe("blueprint form", () => {
     expect(screen.getByText(/brings friends together for a relaxed meal/)).toBeVisible();
     rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, profile_summary: "Good person" } }} onUpdate={vi.fn()} />);
     fireEvent.blur(screen.getByLabelText("How would your close friends describe you?"));
-    expect(screen.getByText(/If you answer, write at least 80 characters/)).toBeInTheDocument();
+    expect(screen.getByLabelText("How would your close friends describe you?")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.queryByText(/at least 80 characters/)).not.toBeInTheDocument();
   });
 
   it("explains ambiguous education and family fields without changing what is shared", () => {
@@ -184,9 +269,8 @@ describe("blueprint form", () => {
   it("offers clear Marital Status choices while retaining a prior saved answer", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     const maritalStatus = screen.getByLabelText("Marital Status");
-    expect(within(maritalStatus).getByRole("option", { name: "Single" })).toBeInTheDocument();
+    expect(within(maritalStatus).getByRole("option", { name: "Never married" })).toHaveValue("Single");
     expect(within(maritalStatus).getByRole("option", { name: "Married" })).toBeInTheDocument();
-    expect(within(maritalStatus).queryByRole("option", { name: /Never Married/ })).not.toBeInTheDocument();
 
     rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, marital_status: "Never Married" } }} onUpdate={vi.fn()} />);
     expect(within(screen.getByLabelText("Marital Status")).getByRole("option", { name: "Never Married (previous answer)" })).toBeInTheDocument();
@@ -197,10 +281,9 @@ describe("blueprint form", () => {
     const before = (first: HTMLElement, next: HTMLElement) => expect(first.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     before(screen.getByLabelText("Last name"), screen.getByLabelText("Date of birth"));
     before(screen.getByLabelText("Marital Status"), screen.getByText("Selected location"));
-    before(screen.getByText("Selected location"), screen.getByLabelText("Street address line 1"));
-    before(screen.getByLabelText("Street address line 2"), screen.getByLabelText("Current profession title"));
-    expect(screen.getByLabelText("Street address line 1")).toBeRequired();
-    expect(screen.getByLabelText("Street address line 2")).not.toBeRequired();
+    before(screen.getByText("Selected location"), screen.getByLabelText("Current profession title"));
+    expect(screen.queryByLabelText("Street address line 1")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Street address line 2")).not.toBeInTheDocument();
     before(screen.getByLabelText("Current profession title"), screen.getByLabelText("Short description"));
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     expect(within(screen.getByRole("group", { name: "Education" })).getByLabelText("Institution")).toBeInTheDocument();
@@ -217,8 +300,6 @@ describe("blueprint form", () => {
 
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Updated" } });
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "A concise new bio" } });
-    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "200 Beacon Street" } });
-    fireEvent.change(screen.getByLabelText("Street address line 2"), { target: { value: "Unit 4" } });
     fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
@@ -229,8 +310,7 @@ describe("blueprint form", () => {
 
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ first_name: "Updated", name: "Updated Rao" }));
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ short_bio: "A concise new bio" }));
-    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_1: "200 Beacon Street" }));
-    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_2: "Unit 4" }));
+    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_1: completeBlueprint.personal.address_line_1 }));
     expect(onUpdate).toHaveBeenCalledWith("astrology", expect.objectContaining({ rashi: "kumbha" }));
     expect(onUpdate).toHaveBeenCalledWith("family", expect.objectContaining({ sibling_count: 2 }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({
@@ -251,7 +331,7 @@ describe("blueprint form", () => {
     };
     const { rerender } = render(<BlueprintForm data={minimal} onUpdate={onUpdate} />);
 
-    expect(screen.getByText(/1 of 11 required details complete/)).toBeInTheDocument();
+    expect(screen.getByText("Basics: 1 of 10 checks complete")).toBeInTheDocument();
     expect(screen.getByText("Step 1 of 7 · Basics")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Continue: Personal story & lifestyle/ })).toHaveClass("dashboard-primary-action");
     fireEvent.click(screen.getByRole("button", { name: "Next section" }));
@@ -271,7 +351,7 @@ describe("blueprint form", () => {
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
     expect(screen.getByText(/contacts stay out of the public Introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
-    expect(screen.getByText(/Optional section/)).toBeInTheDocument();
+    expect(screen.getByText(/Optional section · Answer only/)).toBeInTheDocument();
     expect(screen.queryByText("Sibling 1")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "1" } });

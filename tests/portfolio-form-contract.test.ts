@@ -26,6 +26,25 @@ const validPortfolio = {
 };
 
 describe("portfolio editor contract", () => {
+  it("accepts concise optional narratives without a minimum while retaining maximum lengths", () => {
+    const concise = { ...validPortfolio, personal: { ...validPortfolio.personal,
+      profile_summary: "Quiet and kind.", long_term_goals: "A caring home.", shared_life_plans: "Evening walks.",
+    } };
+    expect(portfolioEditorPublishSchema.safeParse(concise).success).toBe(true);
+    expect(portfolioEditorPublishSchema.safeParse({ ...concise, personal: { ...concise.personal, profile_summary: "x".repeat(1601) } }).success).toBe(false);
+  });
+  it("does not report a contradictory location for an untouched empty draft", () => {
+    const result = portfolioEditorPublishSchema.safeParse({ personal: { name: "" } });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some(issue => issue.path.join(".") === "personal.current_location")).toBe(false);
+      expect(result.error.issues.some(issue => issue.path.join(".") === "personal.first_name")).toBe(true);
+    }
+    const inconsistent = portfolioEditorPublishSchema.safeParse({ ...validPortfolio,
+      personal: { ...validPortfolio.personal, current_location: "Wrong city" } });
+    expect(inconsistent.success).toBe(false);
+    if (!inconsistent.success) expect(inconsistent.error.issues.some(issue => issue.path.join(".") === "personal.current_location")).toBe(true);
+  });
   it.each(["24:00", "12:60", "99:99"])("rejects impossible optional birth time %s in drafts and publication", (time) => {
     const data = { ...validPortfolio, astrology: { time_of_birth: time } };
     for (const schema of [portfolioEditorDraftSchema, portfolioEditorPublishSchema]) {
@@ -101,23 +120,23 @@ describe("portfolio editor contract", () => {
     expect(portfolioEditorPublishSchema.safeParse({ ...validPortfolio, vitals: {} }).success).toBe(false);
   });
 
-  it("allows optional narratives to be blank, but rejects 79 characters and accepts 80 or 81", () => {
-    for (const length of [0, 79, 80, 81]) {
+  it("allows optional narratives to be blank or concise, up to the existing maximum", () => {
+    for (const length of [0, 1, 79, 80, 81, 1600, 1601]) {
       const result = portfolioEditorPublishSchema.safeParse({
         ...validPortfolio,
         personal: { ...validPortfolio.personal, profile_summary: "a".repeat(length) },
       });
-      expect(result.success).toBe(length !== 79);
+      expect(result.success).toBe(length <= 1600);
     }
   });
 
-  it("preserves unfinished narratives in autosaved drafts but blocks publication", () => {
+  it("preserves concise optional narratives in both draft and publication", () => {
     const partial = {
       ...validPortfolio,
       personal: { ...validPortfolio.personal, profile_summary: "Still composing this introduction." },
     };
     expect(portfolioEditorDraftSchema.safeParse(partial).success).toBe(true);
-    expect(portfolioEditorPublishSchema.safeParse(partial).success).toBe(false);
+    expect(portfolioEditorPublishSchema.safeParse(partial).success).toBe(true);
   });
 
   it("rejects more than six interests, five values, or ten languages", () => {

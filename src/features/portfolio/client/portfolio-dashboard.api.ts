@@ -6,7 +6,7 @@ import type {
 
 export type PortfolioApiFailure = {
   ok: false;
-  error: { code: string; message: string; status: number };
+  error: { code: string; message: string; status: number; fieldErrors?: Record<string, string[]> };
 };
 
 export type PortfolioApiSuccess<T> = { ok: true; data: T };
@@ -31,6 +31,7 @@ async function requestPortfolioApi<T>(url: string, init: RequestInit): Promise<P
             ? Object.entries(body.fieldErrors)[0]?.[1]?.[0] || body?.error || "Review your portfolio details."
             : body?.error || "We could not complete that portfolio action. Please try again.",
           status: response.status,
+          ...(body?.fieldErrors && { fieldErrors: body.fieldErrors }),
         },
       };
     }

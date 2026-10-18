@@ -63,6 +63,12 @@ describe("portfolio dashboard API client", () => {
     });
   });
 
+  it("preserves every field error rather than reducing the response to one message", async () => {
+    const fieldErrors = { "personal.dob": ["Enter an adult birth date."], "career.title": ["This field is required."] };
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "INVALID_INPUT", fieldErrors }), { status: 400 }));
+    await expect(saveDashboardDraftRequest(draft)).resolves.toMatchObject({ ok: false, error: { fieldErrors } });
+  });
+
   it.each([
     ["save", () => saveDashboardDraftRequest(draft), "/api/dashboard", "PUT"],
     ["rotate", () => rotatePortfolioLinkRequest(), "/api/portfolio/share/rotate", "POST"],

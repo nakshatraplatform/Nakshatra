@@ -138,11 +138,11 @@ select ok(app_private.public_snapshot_has_forbidden_key('{"personal":{"subdivisi
 select ok(app_private.approved_snapshot_has_forbidden_key('{"personal":{"subdivision_code":"US-MA","pin_zip":"02108"}}'::jsonb), 'approved snapshots reject canonical subdivision and postal aliases');
 select ok(app_private.broker_standard_profile_has_forbidden_key('{"personal":{"subdivision_code":"US-MA","pin_zip":"02108"}}'::jsonb), 'Broker Standard snapshots reject canonical subdivision and postal aliases');
 select ok(
-  array['structured_location','private_address']::text[] <@ app_private.portfolio_missing_required_details(
+  array['structured_location']::text[] <@ app_private.portfolio_missing_required_details(
     extensions.gen_random_uuid(),
     '{"personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12"},"career":{"title":"Engineer"}}'::jsonb
   ),
-  'publication readiness requires the hierarchy and private street address line 1'
+  'publication readiness still requires canonical geography without collecting a street address'
 );
 select ok(
   not ('private_address' = any(app_private.portfolio_missing_required_details(
@@ -152,11 +152,11 @@ select ok(
   'publication readiness accepts a blank optional street address line 2'
 );
 select ok(
-  'private_address' = any(app_private.portfolio_missing_required_details(
+  not ('private_address' = any(app_private.portfolio_missing_required_details(
     extensions.gen_random_uuid(),
     '{"personal":{"address_line_2":"Unit 12"}}'::jsonb
-  )),
-  'publication readiness still requires street address line 1'
+  ))),
+  'publication readiness does not require either street address line'
 );
 select ok(
   not ('structured_location' = any(app_private.portfolio_missing_required_details(

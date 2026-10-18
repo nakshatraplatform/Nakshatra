@@ -44,7 +44,7 @@ describe("portfolio completion", () => {
   it("checks current required published answers and a shareable primary photo", () => {
     expect(isProfileFullyComplete(completeDraft, true)).toBe(true);
     expect(isProfileFullyComplete(completeDraft, false)).toBe(false);
-    for (const field of ["postal_code", "address_line_1", "region_code"] as const) {
+    for (const field of ["postal_code", "region_code"] as const) {
       expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, [field]: "" } }, true)).toBe(false);
     }
     expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, address_line_2: "" } }, true)).toBe(true);
@@ -53,8 +53,8 @@ describe("portfolio completion", () => {
   it("uses one deterministic checklist for completion and publication readiness", () => {
     expect(calculatePortfolioCompletion(completeDraft, true)).toMatchObject({
       percentage: 100,
-      completedCount: 11,
-      totalCount: 11,
+      completedCount: 10,
+      totalCount: 10,
       basicsComplete: true,
       detailsComplete: true,
       readyToPublish: true,
@@ -62,7 +62,7 @@ describe("portfolio completion", () => {
     });
   });
 
-  it("requires street address line 1 but not line 2", () => {
+  it("does not require either legacy street address line", () => {
     const withoutLine2 = calculatePortfolioCompletion({
       ...completeDraft,
       personal: { ...completeDraft.personal, address_line_2: "" },
@@ -74,8 +74,8 @@ describe("portfolio completion", () => {
       ...completeDraft,
       personal: { ...completeDraft.personal, address_line_1: "", address_line_2: "Unit 2" },
     }, true);
-    expect(withoutLine1.readyToPublish).toBe(false);
-    expect(withoutLine1.missing.map((item) => item.key)).toContain("private_address");
+    expect(withoutLine1.readyToPublish).toBe(true);
+    expect(withoutLine1.missing).toEqual([]);
   });
 
   it("identifies the first incomplete editor section and all missing labels", () => {
@@ -90,7 +90,7 @@ describe("portfolio completion", () => {
       "First name",
       "Shareable primary photo",
     ]);
-    expect(result.percentage).toBe(82);
+    expect(result.percentage).toBe(80);
   });
 
   it("rejects an invalid or under-18 date of birth", () => {
@@ -107,12 +107,12 @@ describe("portfolio completion", () => {
   it("guides a fully complete draft back to an invalid optional answer", () => {
     const result = calculatePortfolioCompletion({
       ...completeDraft,
-      personal: { ...completeDraft.personal, profile_summary: "Too short" },
+      personal: { ...completeDraft.personal, profile_summary: "x".repeat(1601) },
     }, true);
-    expect(result.completedCount).toBe(11);
+    expect(result.completedCount).toBe(10);
     expect(result.missing).toEqual([]);
     expect(result.readyToPublish).toBe(false);
     expect(result.nextEditorSection).toBe("story");
-    expect(result.invalidAnswers[0].label).toContain("at least 80 characters");
+    expect(result.invalidAnswers[0].key).toBe("personal.profile_summary");
   });
 });

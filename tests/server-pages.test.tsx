@@ -165,6 +165,16 @@ describe("authenticated server pages", () => {
     expect(screen.getByTestId("account-props")).toHaveTextContent('"initialDeletion":null');
   });
 
+  it("passes only the saved self-created name parts to Account settings", async () => {
+    mocks.outcomes.portfolios = { data: { draft_data: { personal: { profile_for: "self",
+      first_name: "Mary Jane", middle_name: "Anne", last_name: "Rao", address_line_1: "Never serialize this" } } } };
+    render(await AccountPage({ searchParams: Promise.resolve({}) }));
+    const props = JSON.parse(screen.getByTestId("account-props").textContent || "{}");
+    expect(props.initialProfile).toEqual({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" });
+    expect(props.profileManagedByPortfolio).toBe(true);
+    expect(screen.getByTestId("account-props")).not.toHaveTextContent("Never serialize this");
+  });
+
   it("loads an empty dashboard", async () => {
     mocks.outcomes.portfolios = { data: null };
     render(await DashboardPage({ searchParams: Promise.resolve({}) }));
