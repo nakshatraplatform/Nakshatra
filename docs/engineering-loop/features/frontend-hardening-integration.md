@@ -83,7 +83,7 @@ as a final-source browser or release pass.
   editor heading could leave the modal. Include that starting-focus case in the
   shared focus trap; unit and actual browser regression cover both directions.
   Both findings were independently resolved in round 3.
-- FH-I3 / SS4 (unresolved): Privacy at scroll position 400 → Login → browser Back
+- FH-I3 / SS4 (historically unresolved; follow-up resolution below): Privacy at scroll position 400 → Login → browser Back
   can return to zero. The final-source repeated development check failed 2/6.
   Independent native/reduced-motion checks also failed, while static HTML
   controls passed. An existing production build reproduced zero in 8/8 enabled
@@ -104,16 +104,43 @@ Results-only documentation added afterwards does not change runtime inputs.
 The round-4 final verdict was `blocked` on FH-I3, with FH-I1/FH-I2 resolved;
 the final packet provenance and whitespace checks passed.
 
-## Current handoff / next incomplete step
+## Follow-up resolution / current handoff — 2026-10-18
 
-**Blocked, not merge-ready.** The authorized extra review and two attempted
-history corrections did not resolve SS4; stop speculative runtime changes.
-Before pushing as validated, establish an executable main baseline, isolate
-full-document versus client navigation and streamed-layout restoration, choose
-an evidence-backed minimal fix, retain the native/enhanced regression assertion,
-and obtain renewed review authorization for that correction. Then rerun affected
-browsers, final coverage/build/static/secret checks. Hosted CI/Preview and the
-previously stated physical-device/licensing limitations remain separate.
+The user subsequently approved component-scoped loading and a navigation audit.
+See [the follow-up contract and evidence](component-loading-navigation.md). This
+supersedes the earlier blocked handoff, not its recorded failed-run history.
+Root-wide loading was removed; authenticated customer headers and preview
+navigation now sit outside their data waits. The original SS4 assertion remains
+unchanged and passes alongside native/enhanced full-document history tests.
+The rebuilt production-mode app passed all 27 repeated history cases. This
+resolves FH-I3 in the tested conditions, without claiming universal restoration
+or proving every earlier timing hypothesis.
+
+Current local rerun: 1,464 unit tests, 59 coverage gates, 90 affected browser
+cases, lint/typecheck, production build, strict dependency audit and fixture
+source smoke all passed. The follow-up's bounded independent review resolved the
+moved-header modal isolation regression and ended with no material findings.
+Runtime/test snapshot `5c33f87656cd3ba112ae9f011987814a5b02ce8b9ec320817dfb91c1e752ea98`;
+only results documentation changed afterwards. This is not a rerun of every
+repository browser test, real database migration/pgTAP or release approval.
+
+Before any push, rescan the subsequent source delta for secrets. Hosted CI and
+Vercel Preview remain pre-merge checks; physical-device, assistive-technology and
+previously stated licensing limitations remain separate.
+
+### Publication preparation — 2026-10-18
+
+User authorized committing/pushing this branch and requested a description for
+manual PR creation. The staged-source TruffleHog 3.97.0 scan used repository
+detectors and all verified/unknown/unverified result classes, without contacting
+credential providers; 1,281 chunks scanned with zero findings. No allowlist or
+push-protection bypass was added. Git hooks remain enabled.
+
+Fetching before publication found `origin/main` advanced to `a5fcea6` (four new
+commits after integrated `fc7f55c`), including overlapping onboarding/security
+work. This push preserves the reviewed branch; it does not merge those newer
+changes or establish combined-source readiness. Integration with current main,
+conflict resolution if needed, and affected CI/Preview checks remain before merge.
 
 Local work is preserved on `chore/nak-74-frontend-hardening-hybrid-lint`;
 no remote branch, PR, deployment, database migration or Linear write has been

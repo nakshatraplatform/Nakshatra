@@ -1,5 +1,14 @@
 # VivIntro / Nakshatra project map
 
+- [Component loading and navigation](features/component-loading-navigation.md):
+  removes root-wide loading on ready public pages; authenticated customer
+  headers and preview navigation stay outside their data waits. Existing orbs
+  and safe regional retry are reused; ordinary internal navigation is audited
+  without changing provider/fresh-auth handoffs. October 18 rerun: 1,464 unit
+  tests, 59 coverage gates, 90 affected browser cases and 27 repeated
+  production-mode history cases passed. Earlier Back-restoration blocker is
+  resolved in these tested conditions, not a universal browser guarantee.
+
 - [Hybrid lint tooling](features/hybrid-lint-tooling.md): Oxlint owns native Next checks; official React/TypeScript/accessibility plugins stay on ESLint. Retired glob dependency chain and temporary exception removed; strict audit and anti-reintroduction guards added. Current verification is recorded in the feature record.
 
 - [Frontend priority hardening](features/frontend-priority-hardening.md): account/editor keyboard and focus lifecycle, safe popup Escape handling and corrected font inventory. The historical dependency blocker is replaced by hybrid lint tooling; latest-main integration validation is recorded separately. No release approval implied.

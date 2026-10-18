@@ -19,13 +19,15 @@ describe("dashboard public share projection", () => {
       media: [{}], interests: [], accessSummary: { events: [], grants: [] }, publicationReadiness: {},
     });
     mocks.publicView.mockResolvedValue({ data: { personal: { name: "Public Full Name", age: 28, current_location: "Quincy, MA, United States" }, career: { title: "Public profession" } } });
-    const result = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const result = await page.props.children.type(page.props.children.props);
     expect(mocks.complete).toHaveBeenCalledWith(privatePublished, true);
     expect(mocks.publicView).toHaveBeenCalledWith(mocks.supabase, "public-token");
     expect(result.props.whatsappMessage).toContain("Public Full Name · 28 · Public profession · Quincy, USA");
     expect(result.props.whatsappMessage).not.toMatch(/Owner-only|Unpublished|Private profession|Secret street|1998/);
     mocks.publicView.mockResolvedValue(null);
-    const unavailable = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const unavailablePage = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const unavailable = await unavailablePage.props.children.type(unavailablePage.props.children.props);
     expect(unavailable.props.whatsappMessage).not.toMatch(/Owner-only|Unpublished|Private profession/);
   });
 

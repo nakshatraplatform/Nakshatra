@@ -55,6 +55,8 @@ vi.mock("thinking-orbs", () => ({
 
 import DashboardClient from "../src/app/dashboard/dashboard-client";
 import DashboardPage from "../src/app/dashboard/page";
+import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
+import { resolveServerTree } from "./resolve-server-tree";
 
 const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", profile_for: "self" },
@@ -128,10 +130,10 @@ const shareablePublished = {
 };
 
 function renderDashboard(overrides: Partial<React.ComponentProps<typeof DashboardClient>> = {}) {
-  return render(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
+  return render(<CustomerAppFrame currentPage="dashboard" userEmail="aditi@example.com" className="dashboard-shell flex flex-1 flex-col" loadingTitle="Getting your portfolio ready"><DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
     canCreatePortfolio
     shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]}
-    mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} />);
+    mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} /></CustomerAppFrame>);
 }
 
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
@@ -157,7 +159,8 @@ it("does not serialize a share URL from the server page for an incomplete public
     publicationReadiness: readyPublicationReadiness,
   });
   const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-  expect(page.props.shareUrl).toBeNull();
+  const content = await page.props.children.type(page.props.children.props);
+  expect(content.props.shareUrl).toBeNull();
 });
 
 function goToFoundation() {
@@ -1571,7 +1574,7 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required", reviewFingerprint: "a".repeat(64) },
     };
     mocks.loadDashboardView.mockResolvedValue(dashboard);
-    const view = render(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
     expect(mocks.save).not.toHaveBeenCalled();
@@ -1579,7 +1582,7 @@ describe("dashboard client", () => {
       ...dashboard,
       publicationReadiness: { ...dashboard.publicationReadiness, verificationStatus: "verified" },
     });
-    view.rerender(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
     expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
     expect(mocks.save).not.toHaveBeenCalled();
   });

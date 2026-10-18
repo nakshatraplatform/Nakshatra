@@ -7,6 +7,7 @@ import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   getIdentityVerificationLinkRequest,
   retryIdentityVerificationRequest,
@@ -87,7 +88,7 @@ export function VerificationLinkClient({ token }: { token: string }) {
       <h1>{link.kind === "invitation" ? "Complete your liveness check" : "Verification management"}</h1>
       <div aria-live="polite" aria-atomic="true">
         {error ? <p className="account-notice is-error">{error}</p> : null}
-        {managementUrl ? <p className="account-notice is-success">Save your private management link: <a href={managementUrl}>verification management</a>.</p> : null}
+        {managementUrl ? <p className="account-notice is-success">Save your private management link: <Link href={managementUrl} prefetch={false}>verification management</Link>.</p> : null}
         {providerUrl ? <a className="dashboard-primary-action mt-4" href={providerUrl}>Continue to Didit verification</a> : null}
       </div>
 

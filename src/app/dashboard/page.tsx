@@ -7,6 +7,8 @@ import { isProfileFullyComplete } from "@/features/portfolio/readiness";
 import { isShareablePrimaryPhoto } from "@/features/media/portfolio-photo";
 import { resolvePublicPortfolio } from "@/features/portfolio/server/public-portfolio.service";
 import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
+import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
+import { DataLoadError } from "@/components/loading/DataLoadError";
 
 export async function generateMetadata({ searchParams }: {
   searchParams: Promise<{ edit?: string | string[] }>;
@@ -21,8 +23,19 @@ export default async function DashboardPage({
   searchParams: Promise<{ edit?: string | string[] }>;
 }) {
   const query = await searchParams;
-  const { supabase, user } = await getAuthenticatedUser();
-  const dashboard = await loadDashboardView({ supabase, userId: user.id });
+  const session = await getAuthenticatedUser();
+  return <CustomerAppFrame currentPage="dashboard" userEmail={session.user.email}
+    className="dashboard-shell flex flex-1 flex-col" loadingTitle="Getting your portfolio and requests ready">
+    <DashboardContent session={session} initialEditorOpen={query.edit === "1"} />
+  </CustomerAppFrame>;
+}
+
+async function DashboardContent({ session: { supabase, user }, initialEditorOpen }: {
+  session: Awaited<ReturnType<typeof getAuthenticatedUser>>;
+  initialEditorOpen: boolean;
+}) {
+  const dashboard = await loadDashboardView({ supabase, userId: user.id }).catch(() => null);
+  if (!dashboard) return <main id="main-content"><DataLoadError title="We could not load your dashboard." /></main>;
   const { portfolio } = dashboard;
   // One request clock keeps expiry labels identical during server rendering and hydration.
   // eslint-disable-next-line react-hooks/purity -- evaluated once per server request
@@ -76,7 +89,7 @@ export default async function DashboardPage({
       media={dashboard.media}
       mediaUrls={dashboard.mediaUrls}
       horoscope={dashboard.horoscope}
-      initialEditorOpen={query.edit === "1"}
+      initialEditorOpen={initialEditorOpen}
       interests={dashboard.interests}
       accessSummary={dashboard.accessSummary}
       publicationReadiness={dashboard.publicationReadiness}

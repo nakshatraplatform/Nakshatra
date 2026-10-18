@@ -3,6 +3,7 @@
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { BiodataTemplate } from "@/components/templates";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import type { PortfolioHoroscopeAttachment } from "@/types/portfolio";
@@ -71,7 +72,7 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
   }
 
   if (state === "loading") return <main className={styles.state}><h1>Opening this introduction…</h1><LoadingStatus title="Checking access to this introduction" detail="Only the two selected customers can open it." state="connecting" /></main>;
-  if (state === "signed-out") return <main className={styles.state}><h1>Sign in to view this introduction</h1><p>Broker introductions are visible only to the two customers selected by the broker. The URL alone never grants access.</p><a href={`/login?redirect=${encodeURIComponent(`/introductions/${introductionRef}`)}`}>Sign in to VivIntro</a></main>;
+  if (state === "signed-out") return <main className={styles.state}><h1>Sign in to view this introduction</h1><p>Broker introductions are visible only to the two customers selected by the broker. The URL alone never grants access.</p><Link href={`/login?redirect=${encodeURIComponent(`/introductions/${introductionRef}`)}`}>Sign in to VivIntro</Link></main>;
   if (state === "unavailable" || !introduction) return <main className={styles.state}><h1>This introduction is unavailable</h1><p>It may have expired or been withdrawn. Ask the broker who shared it for a current link.</p></main>;
 
   const photos: PortfolioPhoto[] = introduction.media.map((item) => ({

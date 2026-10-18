@@ -3,6 +3,8 @@ import { getAccountDeletionStatus } from "@/features/account/server/account.serv
 import { getAuthenticatedUser } from "@/lib/auth";
 import AccountClient from "./account-client";
 import { accountSignInMethods, readAccountProfile } from "@/features/account/profile";
+import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
+import { DataLoadError } from "@/components/loading/DataLoadError";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -14,9 +16,25 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ reauth?: string }>;
 }) {
-  const { supabase, user } = await getAuthenticatedUser();
-  const deletion = await getAccountDeletionStatus(supabase);
+  const session = await getAuthenticatedUser();
   const query = await searchParams;
+  return <CustomerAppFrame currentPage="account" userEmail={session.user.email}
+    className="account-privacy-shell" loadingTitle="Loading your account controls">
+    <AccountControls session={session} reauthComplete={query.reauth === "complete"} />
+  </CustomerAppFrame>;
+}
+
+async function AccountControls({ session: { supabase, user }, reauthComplete }: {
+  session: Awaited<ReturnType<typeof getAuthenticatedUser>>;
+  reauthComplete: boolean;
+}) {
+  let deletion;
+  try {
+    deletion = await getAccountDeletionStatus(supabase);
+  } catch {
+    // Unknown deletion state must never enable account mutation controls.
+    return <main id="main-content"><DataLoadError title="We could not load your account controls." /></main>;
+  }
 
   return (
     <AccountClient
@@ -24,7 +42,7 @@ export default async function AccountPage({
       initialProfile={readAccountProfile(user)}
       signInMethods={accountSignInMethods(user)}
       initialDeletion={deletion}
-      reauthComplete={query.reauth === "complete"}
+      reauthComplete={reauthComplete}
     />
   );
 }

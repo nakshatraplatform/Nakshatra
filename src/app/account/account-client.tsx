@@ -2,7 +2,6 @@
 
 import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
 
-import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useRef, useState } from "react";
@@ -137,10 +136,9 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
   const deletionProcessing = deletion?.status === "processing";
 
   return (
-    <div className="account-privacy-shell">
-      <CustomerAppHeader currentPage="account" userEmail={userEmail} />
+    <div className="contents">
 
-      <main className="account-privacy-main">
+      <main id="main-content" className="account-privacy-main">
         <div className="account-privacy-heading">
           <p className="site-eyebrow">Account controls</p>
           <h1>Account settings</h1>
