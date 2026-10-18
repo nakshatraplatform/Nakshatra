@@ -42,17 +42,21 @@ export async function runProductionMaintenance(dispatchId?: string) {
   if (!token) return { skipped: true, failed: false };
   const transport = boundedFetch(AbortSignal.timeout(150_000));
   const client = createServiceRoleClient(transport);
+  const identityRun = Promise.resolve().then(() =>
+    createIdentityVerificationWorker(client, { candidateOnly: true, fetchImpl: transport }).run(2));
   const tasks = {
     retention: () => processRetention(client),
     horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
-    identity: async () => {
-      const result = await createIdentityVerificationWorker(client, { candidateOnly: true, fetchImpl: transport }).run(2);
-      return result.deferred === 0;
-    },
+    identity: async () => (await identityRun).deferred === 0,
     providerCleanup: async () => (await processDeletedProviderCleanup(client, { fetchImpl: transport, limit: 2 })).deferred === 0,
-    livenessEmail: async () => (await processCandidateLivenessEmails(client, {
-      limit: 2, send: (input: unknown) => sendResendEmail(input, transport),
-    })).failed === 0,
+    livenessEmail: async () => {
+      // Newly verified proofs enqueue mail in the reconciliation transaction.
+      // A provider failure must still leave older email jobs eligible to send.
+      await identityRun.catch(() => undefined);
+      return (await processCandidateLivenessEmails(client, {
+        limit: 2, send: (input: unknown) => sendResendEmail(input, transport),
+      })).failed === 0;
+    },
     relationshipEmail: async () => (await processRelationshipNotifications(client, 5, transport)).failed === 0,
     accountDeletion: async () => (await createAccountDeletionWorker(client).run(1)).deferred === 0,
   };

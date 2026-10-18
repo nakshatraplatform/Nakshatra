@@ -760,6 +760,38 @@ describe("dashboard client", () => {
     expect(screen.getByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     expect(screen.getByRole("button", { name: "Save and publish" })).toBeDisabled();
   });
+  it("refreshes server readiness only when the liveness proof disagrees, leaving transient handoffs uninterrupted", async () => {
+    const attempt = { attemptId: "attempt", deadline: null, cleanupPending: false, canStart: true, canResume: false, canCancel: false };
+    let recovery = { ...attempt, state: "not_started" };
+    const statusFetch = vi.fn(async () => new Response(JSON.stringify(recovery), { status: 200 }));
+    vi.stubGlobal("fetch", statusFetch);
+    sessionStorage.clear();
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", { configurable: true, value: function () { this.setAttribute("open", ""); } });
+    Object.defineProperty(HTMLDialogElement.prototype, "close", { configurable: true, value: function () { this.removeAttribute("open"); } });
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    renderDashboard({ portfolio: { ...portfolio, candidate_id: "candidate-1", is_published: false },
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required" } });
+    await screen.findByRole("button", { name: "Start liveness check" });
+    await waitFor(() => expect(statusFetch).toHaveBeenCalled());
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    recovery = { ...attempt, state: "active", canStart: false, canResume: true, canCancel: true };
+    fireEvent(document, new Event("visibilitychange"));
+    await screen.findByRole("button", { name: "Resume check" });
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    recovery = { ...attempt, state: "verified", canStart: false };
+    fireEvent(document, new Event("visibilitychange"));
+    await screen.findByRole("dialog", { name: "Liveness check complete" });
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  });
+
+  it("refreshes stale verified server readiness when the authoritative check has expired", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ state: "expired", attemptId: "attempt",
+      deadline: null, cleanupPending: false, canStart: true, canResume: false, canCancel: false }), { status: 200 })));
+    renderDashboard({ portfolio: { ...portfolio, candidate_id: "candidate-1", is_published: false },
+      publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "verified" } });
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  });
+
   it("uses refreshed server verification without resetting an unsaved editor draft", () => {
     const props = { ...shareablePublished, viewCount: 12, userEmail: "aditi@example.com", canCreatePortfolio: true,
       shareUrl: "https://nakshatra.test/p/token", isExpired: false, daysLeft: 20,

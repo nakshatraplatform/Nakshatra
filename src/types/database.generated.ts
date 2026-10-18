@@ -1141,6 +1141,11 @@ isOneToOne: false
               "attempt_count": number,"grant_id": string,"interest_request_id": string,"notification_ref": string,"notification_type": string,"payload": Json,"recipient_user_id": string
             }[]
                            },
+"claim_owner_candidate_liveness_email":
+{ Args: { "p_attempt_id": string,"p_candidate_id": string,"p_owner_session_id": string,"p_owner_user_id": string }; Returns: {
+              "claim_token": string,"delivery_id": string,"recipient_email": string
+            }[]
+                           },
 "claim_relationship_notification_outbox":
 { Args: { "p_limit"?: number }; Returns: {
               "attempt_count": number,"broker_introduction_id": string,"grant_id": string,"interest_request_id": string,"notification_ref": string,"notification_type": string,"payload": Json,"recipient_user_id": string

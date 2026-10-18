@@ -3,10 +3,19 @@ import { sendResendEmail } from "../src/features/notifications/server/resend.run
 
 const claimSchema = z.object({ delivery_id: z.uuid(), claim_token: z.uuid(), recipient_email: z.email().max(254) });
 
-/** Only private, database-authorized jobs enter this isolated worker. Never logs addresses. */
-export async function processCandidateLivenessEmails(supabase, { send = sendResendEmail, limit = 5 } = {}) {
-  const batchLimit = Math.min(Math.max(Number.isInteger(limit) ? limit : 5, 1), 10);
-  const { data, error } = await supabase.rpc("claim_candidate_liveness_emails", { p_limit: batchLimit });
+/**
+ * Only private, database-authorized jobs enter this isolated worker. Never logs addresses.
+ * @param {object} supabase
+ * @param {{ send?: typeof sendResendEmail, limit?: number, owner?: { candidateId: string, attemptId: string, userId: string, sessionId: string } }} options
+ */
+export async function processCandidateLivenessEmails(supabase, { send = sendResendEmail, limit = 5, owner = undefined } = {}) {
+  const batchLimit = owner ? 1 : Math.min(Math.max(Number.isInteger(limit) ? limit : 5, 1), 10);
+  const { data, error } = owner
+    ? await supabase.rpc("claim_owner_candidate_liveness_email", {
+      p_candidate_id: owner.candidateId, p_attempt_id: owner.attemptId,
+      p_owner_user_id: owner.userId, p_owner_session_id: owner.sessionId,
+    })
+    : await supabase.rpc("claim_candidate_liveness_emails", { p_limit: batchLimit });
   const claims = z.array(claimSchema).max(batchLimit).safeParse(data);
   if (error || !claims.success) throw new Error("LIVENESS_EMAIL_CLAIM_FAILED");
   let accepted = 0;

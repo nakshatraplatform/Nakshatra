@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
+const email = vi.hoisted(() => vi.fn());
+vi.mock("../scripts/candidate-liveness-email-worker.mjs", () => ({ processCandidateLivenessEmails: email }));
 const current = vi.hoisted(() => vi.fn());
 const admin = vi.hoisted(() => ({ rpc: vi.fn() }));
 const processClaim = vi.hoisted(() => vi.fn());
@@ -7,7 +9,7 @@ const createAdmin = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: createAdmin }));
 vi.mock("@/features/identity-verification/server/candidate-recovery.service", () => ({ getCurrentCandidateVerification: current }));
 vi.mock("../scripts/identity-verification-worker.mjs", () => ({ createIdentityVerificationWorker: () => ({ process: processClaim }) }));
-import { checkCandidateResult } from "@/features/identity-verification/server/candidate-result.service";
+import { checkCandidateResult, dispatchOwnerLivenessConfirmation } from "@/features/identity-verification/server/candidate-result.service";
 const candidateId = "11111111-1111-4111-8111-111111111111", attemptId = "22222222-2222-4222-8222-222222222222";
 const owner = { id: "owner", sessionId: "live-session" }, supabase = {} as SupabaseClient;
 const claim = { subject_type: "candidate", verification_method: "candidate_liveness_only", candidate_id: candidateId, attempt_id: attemptId,
@@ -50,5 +52,28 @@ describe("owner-requested authoritative result check", () => {
     admin.rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "private" } });
     await expect(checkCandidateResult(supabase, candidateId, attemptId, owner)).rejects.toMatchObject({ status: 403 });
     expect(processClaim).not.toHaveBeenCalled();
+  });
+});
+
+describe("owner confirmation dispatch", () => {
+  beforeEach(() => { createAdmin.mockReset().mockReturnValue(admin); email.mockReset().mockResolvedValue({ accepted: 1, failed: 0 }); });
+  it("uses the same durable worker with one owner-scoped claim and bounded database requests", async () => {
+    expect(await dispatchOwnerLivenessConfirmation(candidateId, attemptId, owner)).toEqual({ accepted: 1, failed: 0 });
+    expect(email).toHaveBeenCalledWith(admin, { owner: { candidateId, attemptId, userId: owner.id, sessionId: owner.sessionId } });
+    const boundedFetch = createAdmin.mock.calls[0][0];
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("ok"));
+    try {
+      const controller = new AbortController();
+      await boundedFetch("https://database.test", { signal: controller.signal, method: "POST" });
+      const init = fetchMock.mock.calls[0][1];
+      expect(init?.method).toBe("POST");
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      controller.abort();
+      expect(init?.signal?.aborted).toBe(true);
+    } finally { fetchMock.mockRestore(); }
+  });
+  it("leaves dispatch errors to the response-independent scheduling boundary", async () => {
+    email.mockRejectedValue(new Error("unavailable"));
+    await expect(dispatchOwnerLivenessConfirmation(candidateId, attemptId, owner)).rejects.toThrow("unavailable");
   });
 });

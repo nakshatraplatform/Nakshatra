@@ -97,6 +97,10 @@ describe("identity-verification dashboard controls", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", { configurable: true, value: function () { this.setAttribute("open", ""); } });
+    Object.defineProperty(HTMLDialogElement.prototype, "close", { configurable: true, value: function () { this.removeAttribute("open"); } });
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     current.mockResolvedValue({ ok: true, data: { state: "not_started", attemptId: null, deadline: null, cleanupPending: false, canStart: true, canResume: false, canCancel: false } });
     resume.mockResolvedValue({ ok: true, data: { url: "https://verify.didit.me/session/existing" } });
     startSelf.mockResolvedValue({ ok: true, data: { attemptId: "attempt", url: "https://verify.didit.me/session/opaque", managementUrl: "https://nakshatra.test/verify/manage" } });
@@ -104,6 +108,103 @@ describe("identity-verification dashboard controls", () => {
   });
 
   afterEach(() => vi.useRealTimers());
+
+  it("keeps a new attempt's handoff when a visibility refresh overtakes the start status read", async () => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+    const user = userEvent.setup();
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+    await user.click(await screen.findByRole("checkbox"));
+    let first!: (value: unknown) => void, latest!: (value: unknown) => void;
+    current.mockImplementationOnce(() => new Promise(resolve => { first = resolve; }))
+      .mockImplementationOnce(() => new Promise(resolve => { latest = resolve; }));
+    await user.click(screen.getByRole("button", { name: "Start liveness check" }));
+    await waitFor(() => expect(first).toBeTypeOf("function"));
+    fireEvent(document, new Event("visibilitychange"));
+    await waitFor(() => expect(latest).toBeTypeOf("function"));
+    const active = { ok: true, data: { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true } };
+    await act(async () => { first(active); });
+    expect(navigate).not.toHaveBeenCalled();
+    await act(async () => { latest(active); });
+    await waitFor(() => expect(navigate).toHaveBeenCalledExactlyOnceWith("https://verify.didit.me/session/opaque"));
+  });
+
+  it("announces a new authoritative completion before hiding verified dashboard controls", async () => {
+    const active = { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    const view = render(<IdentityVerificationDashboard candidateId="candidate-id" hideWhenVerified />);
+    await screen.findByRole("button", { name: "Resume check" });
+    current.mockResolvedValue({ ok: true, data: { ...active, state: "verified", canResume: false, canCancel: false, emailStatus: "queued" } });
+    fireEvent(document, new Event("visibilitychange"));
+    const dialog = await screen.findByRole("dialog", { name: "Liveness check complete" });
+    expect(dialog).toHaveTextContent(/confirmation email is queued/i);
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    view.unmount();
+    const reads = current.mock.calls.length;
+    render(<IdentityVerificationDashboard candidateId="candidate-id" checkResultOnLoad hideWhenVerified />);
+    await waitFor(() => expect(current.mock.calls.length).toBeGreaterThan(reads));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("rechecks a returning pending result boundedly instead of waiting solely for cron", async () => {
+    vi.useFakeTimers();
+    const active = { state: "awaiting_result", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: false, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    checkResult.mockResolvedValue({ ok: true, data: active });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" checkResultOnLoad />);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    for (let i = 0; i < 8; i++) await act(() => vi.advanceTimersByTimeAsync(15_000));
+    expect(checkResult.mock.calls.length).toBeGreaterThan(1);
+    expect(checkResult.mock.calls.length).toBeLessThanOrEqual(4);
+    const calls = checkResult.mock.calls.length;
+    await act(() => vi.advanceTimersByTimeAsync(120_000));
+    expect(checkResult).toHaveBeenCalledTimes(calls);
+    expect(startSelf).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("dispatches a queued email when background verification finishes after an earlier pending lookup", async () => {
+    vi.useFakeTimers();
+    const active = { state: "awaiting_result", attemptId: "attempt", deadline: null, cleanupPending: false,
+      canStart: false, canResume: false, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    checkResult.mockResolvedValue({ ok: true, data: active });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" checkResultOnLoad />);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(checkResult).toHaveBeenCalledOnce();
+    const verified = { ...active, state: "verified", canCancel: false, emailStatus: "queued" };
+    current.mockResolvedValue({ ok: true, data: verified });
+    checkResult.mockResolvedValue({ ok: true, data: verified });
+    fireEvent(document, new Event("visibilitychange"));
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(screen.getByRole("dialog", { name: "Liveness check complete" })).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(checkResult).toHaveBeenCalledTimes(2);
+    expect(startSelf).not.toHaveBeenCalled();
+    expect(resume).not.toHaveBeenCalled();
+  });
+
+  it("honors the worker retry deadline and stops automatic checking for policy errors", async () => {
+    vi.useFakeTimers();
+    const active = { state: "awaiting_result", attemptId: "attempt", deadline: null, cleanupPending: false,
+      canStart: false, canResume: false, canCancel: true, nextRetryAt: new Date(Date.now() + 30_000).toISOString() };
+    current.mockResolvedValue({ ok: true, data: active });
+    checkResult.mockImplementation(async () => {
+      current.mockResolvedValue({ ok: true, data: { ...active, processingIssue: "policy_error" } });
+      return { ok: true, data: { ...active, processingIssue: "policy_error" } };
+    });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" checkResultOnLoad />);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await act(() => vi.advanceTimersByTimeAsync(29_000));
+    expect(checkResult).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1_001));
+    expect(checkResult).toHaveBeenCalledOnce();
+    // The next authoritative reads preserve the actionable policy failure.
+    current.mockResolvedValue({ ok: true, data: { ...active, processingIssue: "policy_error" } });
+    await act(() => vi.advanceTimersByTimeAsync(120_000));
+    expect(checkResult).toHaveBeenCalledOnce();
+  });
 
   it.each(["active", "cancelled", "expired", "replacement"])("recovers an attached Start after a status outage without another creation (%s)", async outcome => {
     const user = userEvent.setup();
@@ -134,7 +235,8 @@ describe("identity-verification dashboard controls", () => {
     }
     expect(startSelf).toHaveBeenCalledTimes(1);
     expect(resume).not.toHaveBeenCalled();
-    expect(navigate).not.toHaveBeenCalled();
+    if (outcome === "active") expect(navigate).toHaveBeenCalledExactlyOnceWith("https://verify.didit.me/session/opaque");
+    else expect(navigate).not.toHaveBeenCalled();
   });
 
   it("polls status after an attached Start outage, pauses while hidden and stops at a terminal state", async () => {
