@@ -19,38 +19,68 @@ beforeEach(() => {
 });
 
 describe("customer application header", () => {
-  it.each(["dashboard", "brokers", "account"] as const)("marks %s as the current customer page", (currentPage) => {
+  function openMenu() {
+    const trigger = screen.getByLabelText("Account menu");
+    fireEvent.click(trigger);
+    return trigger;
+  }
+
+  it.each(["dashboard", "brokers", "account"] as const)("shows %s navigation and groups account actions in the avatar", (currentPage) => {
     const { container } = render(<CustomerAppHeader currentPage={currentPage} userEmail="owner@example.test" />);
-    const expected = { dashboard: "Dashboard", brokers: "My brokers", account: "Account" }[currentPage];
     const navigation = screen.getByRole("navigation", { name: "Customer pages" });
-    expect(navigation.querySelectorAll("a")).toHaveLength(3);
-    expect(navigation.querySelector(`a[aria-current="page"]`)).toHaveTextContent(expected);
-    expect(container.querySelector("details summary")).toHaveTextContent("Menu");
+    expect(navigation.querySelectorAll("a")).toHaveLength(2);
+    expect(navigation.querySelector('a[href="/account"]')).toBeNull();
+    expect(screen.getByRole("button", { name: "Sign out" })).not.toBeVisible();
+    openMenu();
+    const settings = screen.getByRole("link", { name: "Account settings" });
+    expect(settings).toHaveAttribute("href", "/account");
+    if (currentPage === "account") expect(settings).toHaveAttribute("aria-current", "page");
+    expect(container.querySelector("details summary")).toHaveAttribute("aria-label", "Account menu");
     expect(screen.getByRole("button", { name: "Change theme" })).toBeInTheDocument();
   });
 
-  it("clears the local account session before returning home", async () => {
+  it("clears the session once before returning home, with pending feedback", async () => {
+    let finish!: () => void;
+    mocks.clearSession.mockReturnValueOnce(new Promise<void>(resolve => { finish = resolve; }));
     render(<CustomerAppHeader currentPage="dashboard" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Sign out" })[0]);
+    openMenu();
+    const button = screen.getByRole("button", { name: "Sign out" });
+    fireEvent.click(button);
     await waitFor(() => expect(mocks.clearSession).toHaveBeenCalledOnce());
-    expect(mocks.push).toHaveBeenCalledWith("/");
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("Signing out");
+    fireEvent.click(button);
+    expect(mocks.clearSession).toHaveBeenCalledOnce();
+    expect(mocks.push).not.toHaveBeenCalled();
+    finish();
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/"));
   });
 
-  it("shows a recoverable error instead of pretending sign-out succeeded", async () => {
+  it("keeps sign-out errors recoverable", async () => {
     mocks.clearSession.mockRejectedValueOnce(new Error("offline"));
     render(<CustomerAppHeader currentPage="account" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Sign out" })[0]);
+    openMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not sign out");
     expect(mocks.push).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/"));
   });
 
-  it("closes the mobile menu with Escape and returns focus to Menu", () => {
+  it("closes with Escape and restores avatar focus, then dismisses on outside interaction", () => {
     const { container } = render(<CustomerAppHeader currentPage="brokers" />);
-    const details = container.querySelector("details") as HTMLDetailsElement;
-    const summary = container.querySelector("summary") as HTMLElement;
-    details.open = true;
+    const trigger = openMenu();
+    const details = container.querySelector("details")!;
+    screen.getByRole("link", { name: "Account settings" }).focus();
     fireEvent.keyDown(details, { key: "Escape" });
     expect(details.open).toBe(false);
-    expect(summary).toHaveFocus();
+    expect(trigger).toHaveFocus();
+    openMenu();
+    fireEvent.pointerDown(document.body);
+    expect(details.open).toBe(false);
+    openMenu();
+    fireEvent.blur(details, { relatedTarget: screen.getByRole("button", { name: "Change theme" }) });
+    expect(details.open).toBe(false);
   });
 });

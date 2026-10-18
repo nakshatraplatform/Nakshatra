@@ -184,15 +184,21 @@ test("customer navigation fits phone, tablet and desktop widths across protected
         await page.screenshot({ path: testInfo.outputPath(`customer-${width}-${label.replaceAll(" ", "-")}.png`), fullPage: true, animations: "disabled" });
       }
       if (width <= 700) {
-        const menu = page.locator("summary[aria-label='Menu']");
+        const menu = page.locator("summary[aria-label='Account menu']");
         await expect(menu).toBeVisible();
         const box = await menu.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);
         expect(box!.height).toBeGreaterThanOrEqual(44);
         await menu.click();
-        await expect(page.getByRole("navigation", { name: "Customer pages mobile" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+        const current = route === "/account" ? page.getByRole("link", { name: "Account settings" })
+          : page.getByRole("navigation", { name: "Customer pages mobile" }).getByRole("link", { name: label });
+        await expect(current).toHaveAttribute("aria-current", "page");
         await page.keyboard.press("Escape");
         await expect(page.locator("details")).not.toHaveAttribute("open", "");
+      } else if (route === "/account") {
+        await page.getByLabel("Account menu").click();
+        await expect(page.getByRole("link", { name: "Account settings" })).toHaveAttribute("aria-current", "page");
+        await page.keyboard.press("Escape");
       } else {
         await expect(page.getByRole("navigation", { name: "Customer pages" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
       }
