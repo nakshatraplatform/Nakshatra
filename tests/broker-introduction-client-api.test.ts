@@ -29,4 +29,13 @@ describe("broker introduction client API", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "Unavailable" }), { status: 503, headers: { "Content-Type": "application/json" } })));
     await expect(createIntroduction("wrk_a", { relationshipRef: "bcr_b", recipientRelationshipRef: "bcr_c", idempotencyKey: "key" })).rejects.toThrow("Unavailable");
   });
+
+  it("uses a neutral fallback when an introduction error is not JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("not json", { status: 503 })));
+    await expect(createIntroduction("wrk_a", {
+      relationshipRef: "bcr_b",
+      recipientRelationshipRef: "bcr_c",
+      idempotencyKey: "key",
+    })).rejects.toThrow("The request could not be completed.");
+  });
 });

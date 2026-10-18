@@ -44,4 +44,14 @@ describe("BrokerDesk onboarding client API", () => {
     await expect(saveOnboarding(`wrk_${"a".repeat(32)}`, {}, 1, false, "save:brokerdesk:001"))
       .rejects.toThrow("Workspace unavailable.");
   });
+
+  it("uses a neutral fallback when a rejected command is not JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json", { status: 503 })));
+    await expect(createWorkspace({
+      legalName: "Trusted Matches",
+      businessType: "partnership",
+      primaryCity: "Pune",
+      primaryCountry: "IN",
+    }, "create:brokerdesk:2")).rejects.toThrow("We could not save your details. Please try again.");
+  });
 });

@@ -133,10 +133,18 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await expect(editor.getByLabel("First name", { exact: true })).toBeFocused();
   await expect(editor.getByRole("button", { name: "Attach horoscope", exact: true })).toHaveCount(0);
 
+  // Establish the next navigation's theme explicitly. When the persisted theme
+  // stays Dark, the streamed editor can be visible before its client controls
+  // hydrate, leaving the server-rendered Light-state label briefly observable.
+  await editor.getByRole("button", { name: "Switch to Light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
+
   // Optional-section styling needs a complete account, not a bypass of Basics.
   // Retain the empty-account checks above and reuse the existing local fixture.
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard?edit=1");
+  await expect(editor).toBeVisible();
+  await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
   await expect(editor.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
   await goToAstrology();
   await expect(editor.getByRole("heading", { name: "Astrology and horoscope", exact: true })).toBeVisible();

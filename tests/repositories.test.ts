@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { AccessRepository } from "../src/features/access/server/access.repository";
+import { IdentityVerificationWebhookRepository } from "../src/features/identity-verification/server/webhook.repository";
 import { PortfolioMediaRepository } from "../src/features/media/server/media.repository";
 import { DashboardRepository } from "../src/features/portfolio/server/dashboard.repository";
 import { HoroscopeRepository } from "../src/features/horoscope/server/horoscope.repository";
@@ -64,8 +66,10 @@ describe("DashboardRepository", () => {
 
     await repository.findPortfolioForUser("owner");
     await repository.findDashboardPortfolioForUser("owner");
+    await repository.findDashboardReviewSnapshot();
     await repository.findOwnerPreviewPortfolioForUser("owner");
     await repository.countPortfolioViews("portfolio");
+    await repository.probeStructuredLocationSchema();
     await repository.saveDashboardDraftTransaction({
       portfolio: { draft_data: {} },
       candidate: null,
@@ -96,11 +100,13 @@ describe("DashboardRepository", () => {
     expect(rpc).toHaveBeenCalledWith("save_dashboard_draft_transaction", {
       p_payload: expect.objectContaining({ portfolio: { draft_data: {} } }),
     });
+    expect(rpc).toHaveBeenCalledWith("get_owner_dashboard_review_snapshot");
     expect(rpc).toHaveBeenCalledWith("service_publish_portfolio_transaction", expect.objectContaining({
       p_actor_user_id: "owner", p_actor_session_id: "session", p_portfolio_id: "portfolio",
     }));
     expect(rpc).toHaveBeenCalledWith("renew_portfolio_transaction", { p_expires_at: "2099-01-01" });
     expect(q.in).toHaveBeenCalledWith("visibility", ["public", "interest_required"]);
+    expect(q.limit).toHaveBeenCalledWith(1);
   });
 
 });
@@ -138,5 +144,104 @@ describe("dashboard read repositories", () => {
       300,
       { download: "horoscope.webp" }
     );
+  });
+});
+
+describe("AccessRepository", () => {
+  it("uses only the owner-scoped access RPCs and forwards the requested lifecycle action", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { status: "ok" }, error: null });
+    const repository = new AccessRepository({ rpc } as never);
+
+    await repository.listPortfolioAccess();
+    await repository.manageGrant("grant-1", "renew");
+    await repository.manageGrant("grant-2", "revoke");
+
+    expect(rpc).toHaveBeenNthCalledWith(1, "list_portfolio_access");
+    expect(rpc).toHaveBeenNthCalledWith(2, "manage_reveal_grant", {
+      p_grant_id: "grant-1",
+      p_action: "renew",
+    });
+    expect(rpc).toHaveBeenNthCalledWith(3, "manage_reveal_grant", {
+      p_grant_id: "grant-2",
+      p_action: "revoke",
+    });
+  });
+});
+
+describe("IdentityVerificationWebhookRepository", () => {
+  it("persists only verified webhook identifiers and digests through the service-role RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { accepted: true }, error: null });
+    const repository = new IdentityVerificationWebhookRepository({ rpc } as never);
+    const event = {
+      attemptId: "11111111-1111-4111-8111-111111111111",
+      eventHash: "a".repeat(64),
+      payloadDigest: "b".repeat(64),
+      providerSessionRef: "22222222-2222-4222-8222-222222222222",
+      providerSubjectRef: "33333333-3333-4333-8333-333333333333",
+      workflowId: "44444444-4444-4444-8444-444444444444",
+    };
+
+    await repository.record(event);
+
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("record_identity_verification_webhook", {
+      p_attempt_id: event.attemptId,
+      p_payload_digest: event.payloadDigest,
+      p_provider_event_hash: event.eventHash,
+      p_provider_session_ref: event.providerSessionRef,
+      p_provider_subject_ref: event.providerSubjectRef,
+      p_workflow_id: event.workflowId,
+    });
+  });
+});
+
+describe("HoroscopeRepository", () => {
+  it("builds every database and private-storage operation", async () => {
+    const q = query({ data: { id: "horoscope" }, error: null });
+    const upload = vi.fn().mockResolvedValue({ error: null });
+    const remove = vi.fn().mockResolvedValue({ error: null });
+    const createSignedUrl = vi.fn().mockResolvedValue({ data: { signedUrl: "https://signed.test/horoscope" }, error: null });
+    const from = vi.fn(() => q);
+    const rpc = vi.fn(() => q);
+    const storageFrom = vi.fn(() => ({ upload, remove, createSignedUrl }));
+    const repository = new HoroscopeRepository({ from, rpc, storage: { from: storageFrom } } as never);
+    const body = Buffer.from("horoscope");
+    const attachment = { portfolio_id: "portfolio", storage_path: "owner/chart.webp" };
+
+    await repository.findOwnedPortfolio("portfolio", "owner");
+    await repository.findPortfolioForOwner("owner");
+    await repository.findByPortfolio("portfolio");
+    await repository.findById("horoscope");
+    await repository.reserveUpload("portfolio");
+    await repository.save(attachment, "owner/previous.webp");
+    await repository.delete("horoscope");
+    await repository.publish("portfolio", "2026-10-18T00:00:00.000Z");
+    await repository.upload("owner/chart.webp", body, "image/webp");
+    await repository.remove([]);
+    await repository.remove(["owner/chart.webp"]);
+    await repository.createSignedUrl("owner/chart.webp", 300, "horoscope.webp");
+
+    expect(from).toHaveBeenCalledWith("portfolios");
+    expect(from).toHaveBeenCalledWith("portfolio_horoscopes");
+    expect(rpc).toHaveBeenCalledWith("reserve_horoscope_upload", { p_portfolio_id: "portfolio" });
+    expect(rpc).toHaveBeenCalledWith("replace_horoscope", {
+      p_portfolio_id: "portfolio",
+      p_expected_path: "owner/previous.webp",
+      p_attachment: attachment,
+    });
+    expect(rpc).toHaveBeenCalledWith("delete_owned_horoscope", { p_id: "horoscope" });
+    expect(rpc).toHaveBeenCalledWith("publish_owned_horoscope", {
+      p_portfolio_id: "portfolio",
+      p_published_at: "2026-10-18T00:00:00.000Z",
+    });
+    expect(storageFrom).toHaveBeenCalledWith("horoscopes");
+    expect(upload).toHaveBeenCalledWith("owner/chart.webp", body, {
+      contentType: "image/webp",
+      cacheControl: "0",
+      upsert: false,
+    });
+    expect(remove).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledWith(["owner/chart.webp"]);
+    expect(createSignedUrl).toHaveBeenCalledWith("owner/chart.webp", 300, { download: "horoscope.webp" });
   });
 });

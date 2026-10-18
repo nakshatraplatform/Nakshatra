@@ -9,6 +9,8 @@ import {
   downloadAccountExportRequest,
   requestAccountDeletionRequest,
   revokeOtherSessionsRequest,
+  saveAccountProfileRequest,
+  startAccountDeletionReauthRequest,
 } from "../src/features/account/client/account.api";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -65,5 +67,69 @@ describe("account browser API", () => {
       }],
       ["/api/account/deletion", { method: "DELETE" }],
     ]);
+  });
+
+  it("validates the saved account profile returned by the server", async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        firstName: "Aditi",
+        middleName: "",
+        lastName: "Rao",
+      }), { status: 200, headers: { "Content-Type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ firstName: "" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }));
+    vi.stubGlobal("fetch", fetch);
+
+    const profile = { firstName: "Aditi", middleName: "", lastName: "Rao" };
+    await expect(saveAccountProfileRequest(profile)).resolves.toEqual({ ok: true, data: profile });
+    await expect(saveAccountProfileRequest(profile)).resolves.toMatchObject({
+      ok: false,
+      code: "PROFILE_RESPONSE_INVALID",
+      status: 502,
+    });
+    expect(fetch).toHaveBeenNthCalledWith(1, "/api/account/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    });
+  });
+
+  it("starts deletion reauthentication with only the selected method", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ sent: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(startAccountDeletionReauthRequest("email")).resolves.toEqual({
+      ok: true,
+      data: { sent: true },
+    });
+    expect(fetch).toHaveBeenCalledWith("/api/account/reauth/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method: "email" }),
+    });
+  });
+
+  it("uses neutral fallbacks when account endpoints return malformed bodies", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response("not json", { status: 503 }))
+      .mockResolvedValueOnce(new Response("not json", { status: 503 })));
+
+    await expect(revokeOtherSessionsRequest()).resolves.toEqual({
+      ok: false,
+      code: "ACCOUNT_REQUEST_FAILED",
+      message: "We could not complete that account action.",
+      status: 503,
+    });
+    await expect(downloadAccountExportRequest()).resolves.toEqual({
+      ok: false,
+      code: "ACCOUNT_EXPORT_FAILED",
+      message: "We could not prepare your account export.",
+      status: 503,
+    });
   });
 });
