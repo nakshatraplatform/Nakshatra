@@ -1121,6 +1121,11 @@ isOneToOne: false
               "claim_token": string,"id": string,"provider_session_ref": string,"provider_vendor_data": string,"provider_workflow_id": string,"provider_workflow_version": number
             }[]
                            },
+"claim_horoscope_cleanup":
+{ Args: { "p_limit"?: number }; Returns: {
+              "claim_token": string,"storage_path": string
+            }[]
+                           },
 "claim_identity_verification_work":
 { Args: { "p_limit"?: number }; Returns: {
               "attempt_id": string,"birth_date": string,"birth_date_hash": string,"candidate_id": string,"claim_token": string,"legal_name": string,"provider_session_ref": string,"provider_vendor_data": string,"provider_workflow_id": string,"provider_workflow_version": number,"subject_id": string,"subject_type": string,"task_type": string,"verification_method": string,"work_attempts": number
@@ -1212,6 +1217,26 @@ isOneToOne: false
 "defer_identity_verification_work":
 { Args: { "p_attempt_id": string,"p_claim_token": string,"p_delay_seconds"?: number,"p_error_code": string,"p_task_type": string }; Returns: boolean
                            },
+"delete_owned_horoscope":
+{ Args: { "p_id": string }; Returns: {
+              "byte_size": number,
+"created_at": string,
+"file_extension": string,
+"id": string,
+"language_label": string | null,
+"mime_type": string,
+"page_count": number | null,
+"portfolio_id": string,
+"published_at": string | null,
+"storage_path": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "portfolio_horoscopes"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "enqueue_due_full_view_expiry_reminders":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -1226,6 +1251,9 @@ isOneToOne: false
                            },
 "finish_deleted_provider_cleanup":
 { Args: { "p_claim_token": string,"p_error_code"?: string,"p_id": string }; Returns: boolean
+                           },
+"finish_horoscope_cleanup":
+{ Args: { "p_claim_token": string,"p_error_code"?: string,"p_storage_path": string }; Returns: boolean
                            },
 "finish_production_maintenance":
 { Args: { "p_claim_token": string,"p_succeeded": boolean }; Returns: boolean
@@ -1335,6 +1363,9 @@ isOneToOne: false
 "production_worker_health":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"publish_owned_horoscope":
+{ Args: { "p_portfolio_id": string,"p_published_at": string }; Returns: undefined
+                           },
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
                            },
@@ -1367,6 +1398,26 @@ isOneToOne: false
 "replace_candidate_relationships_and_timeline":
 { Args: { "p_candidate_id": string,"p_career": Json,"p_education": Json,"p_family_members": Json }; Returns: string
                            },
+"replace_horoscope":
+{ Args: { "p_attachment": Json,"p_expected_path": string,"p_portfolio_id": string }; Returns: {
+              "byte_size": number,
+"created_at": string,
+"file_extension": string,
+"id": string,
+"language_label": string | null,
+"mime_type": string,
+"page_count": number | null,
+"portfolio_id": string,
+"published_at": string | null,
+"storage_path": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "portfolio_horoscopes"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "request_account_deletion":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -1378,6 +1429,9 @@ isOneToOne: false
                            },
 "requeue_failed_relationship_notifications":
 { Args: { "p_limit"?: number }; Returns: number
+                           },
+"reserve_horoscope_upload":
+{ Args: { "p_portfolio_id": string }; Returns: string
                            },
 "resolve_approved_horoscope":
 { Args: { "p_share_token": string }; Returns: Json
@@ -1471,6 +1525,9 @@ isOneToOne: false
                            },
 "run_data_retention":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"run_retention_class":
+{ Args: { "p_class": string,"p_limit"?: number }; Returns: Json
                            },
 "save_brokerdesk_onboarding_profile":
 { Args: { "p_expected_version": number,"p_idempotency_key": string,"p_profile": Json,"p_submit_for_verification": boolean,"p_workspace_ref": string }; Returns: Json

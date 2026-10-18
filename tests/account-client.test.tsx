@@ -58,6 +58,20 @@ describe("account privacy screen", () => {
     expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
   });
 
+  it("keeps failure recovery inside the active dialog", async () => {
+    mocks.deletion.mockResolvedValueOnce({ ok: false, message: "Please try scheduling again." });
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("heading")).toHaveFocus();
+    fireEvent.change(within(dialog).getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Schedule deletion" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Please try scheduling again.");
+    expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete account" })).toHaveFocus();
+  });
+
   it("saves separate account names with an optional middle name and shows linked methods", async () => {
     const profile = { firstName: "Rahul", middleName: "", lastName: "Ranganatha" };
     mocks.profile.mockResolvedValue({ ok: true, data: profile });

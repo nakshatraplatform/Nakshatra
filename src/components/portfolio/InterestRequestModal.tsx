@@ -12,7 +12,7 @@ import type { ExistingViewerProfile } from "@/features/interest/server/existing-
 import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
 import type { LocationValue } from "@/components/portfolio/LocationFields";
 import { StructuredInterestLocation, interestLocationError } from "./StructuredInterestLocation";
-import { lockPageScroll } from "@/lib/ui/scroll-lock";
+import { activateModalLifecycle } from "@/lib/ui/modal-lifecycle";
 
 type ModalStep = "choice" | "details" | "verify" | "success";
 type InterestPayload = {
@@ -90,50 +90,9 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
   useEffect(() => {
     if (!open) return;
-    // Safari does not focus a button on pointer activation; retain its trigger explicitly.
-    const previous = triggerRef.current || document.activeElement as HTMLElement | null;
-    const unlockScroll = lockPageScroll(document);
-    const background = new Map<HTMLElement, boolean>();
-    for (const element of Array.from(document.body.children)) {
-      if (element instanceof HTMLElement && !element.contains(dialogRef.current)) { background.set(element, element.inert); element.inert = true; }
-    }
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        if (!inFlight.current) setOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !dialogRef.current) return;
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])'
-      )).filter(element => {
-        if (element.tabIndex < 0) return false;
-        for (let node: HTMLElement | null = element; node; node = node.parentElement) {
-          if (node.hidden || getComputedStyle(node).display === "none") return false;
-          if (node instanceof HTMLDetailsElement && !node.open && !node.querySelector("summary")?.contains(element)) return false;
-        }
-        return true;
-      });
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const index = focusable.indexOf(document.activeElement as HTMLElement);
-      if (event.shiftKey && (index <= 0)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (index < 0 || document.activeElement === last)) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      background.forEach((inert, element) => { element.inert = inert; });
-      unlockScroll();
-      previous?.focus({ preventScroll: true });
-    };
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    return activateModalLifecycle(dialog, () => { if (!inFlight.current) setOpen(false); }, triggerRef.current);
   }, [open]);
 
   useEffect(() => {
@@ -335,7 +294,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
       {hasOpened && createPortal(
         <div className="interest-modal-backdrop" hidden={!open} data-appearance={appearance}>
-          <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+          <div ref={dialogRef} tabIndex={-1} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <aside className="interest-context" aria-label="About this introduction">
               <VivIntroBrand href="/" openInNewTab variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} />
               <div className="interest-context-profile">

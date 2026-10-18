@@ -1,4 +1,7 @@
 import { createHmac } from "node:crypto";
+vi.mock("@/features/operations/server/retention.service", () => ({ processRetention: vi.fn(async () => true) }));
+vi.mock("@/features/horoscope/server/horoscope-cleanup.service", () => ({ processHoroscopeCleanup: vi.fn(async () => ({ deferred: 0 })) }));
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => ({ rpc: mocks.rpc }) }));

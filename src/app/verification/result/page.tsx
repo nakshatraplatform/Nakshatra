@@ -21,7 +21,7 @@ export default async function VerificationResultPage() {
     : null;
   const candidateId = portfolio?.error ? null : portfolio?.data?.candidate_id;
   return (
-    <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation />
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation />
       <div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} priority /></div>
       <p className="site-eyebrow">Liveness check</p>
       <h1>Your liveness result</h1>

@@ -77,11 +77,11 @@ export function VerificationLinkClient({ token }: { token: string }) {
     setAction(null);
   }
 
-  if (error && !link) return <main className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><h1>Verification link unavailable</h1><p>{error}</p></main>;
-  if (!link) return <main className="mx-auto max-w-xl px-6 py-20"><div className="mb-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><LoadingStatus title="Loading secure verification" detail="Checking this private link." state="connecting" /></main>;
+  if (error && !link) return <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-6 py-20"><ThemeNavigation /><div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><h1>Verification link unavailable</h1><p>{error}</p></main>;
+  if (!link) return <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-6 py-20"><div className="mb-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div><LoadingStatus title="Loading secure verification" detail="Checking this private link." state="connecting" /></main>;
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16"><ThemeNavigation />
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-6 py-16"><ThemeNavigation />
       <div className="my-8 flex justify-center"><VivIntroBrand variant="stacked" decorative displayWidth={146} /></div>
       <p className="site-eyebrow">VivIntro liveness check</p>
       <h1>{link.kind === "invitation" ? "Complete your liveness check" : "Verification management"}</h1>

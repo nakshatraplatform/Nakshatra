@@ -23,16 +23,21 @@ export class HoroscopeRepository {
     return this.supabase.from("portfolio_horoscopes").select(HOROSCOPE_COLUMNS).eq("id", id).single();
   }
 
-  save(payload: Record<string, unknown>) {
-    return this.supabase.from("portfolio_horoscopes").upsert(payload, { onConflict: "portfolio_id" }).select(HOROSCOPE_COLUMNS).single();
+  reserveUpload(portfolioId: string) {
+    return this.supabase.rpc("reserve_horoscope_upload", { p_portfolio_id: portfolioId });
+  }
+
+  save(payload: Record<string, unknown>, expectedPath: string | null) {
+    return this.supabase.rpc("replace_horoscope", { p_portfolio_id: payload.portfolio_id,
+      p_expected_path: expectedPath, p_attachment: payload }).single();
   }
 
   delete(id: string) {
-    return this.supabase.from("portfolio_horoscopes").delete().eq("id", id).select(HOROSCOPE_COLUMNS).single();
+    return this.supabase.rpc("delete_owned_horoscope", { p_id: id }).single();
   }
 
   publish(portfolioId: string, publishedAt: string) {
-    return this.supabase.from("portfolio_horoscopes").update({ published_at: publishedAt }).eq("portfolio_id", portfolioId);
+    return this.supabase.rpc("publish_owned_horoscope", { p_portfolio_id: portfolioId, p_published_at: publishedAt });
   }
 
   upload(path: string, body: Buffer, contentType: string) {
