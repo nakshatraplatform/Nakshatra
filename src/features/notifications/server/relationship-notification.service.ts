@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
@@ -59,6 +60,27 @@ function formatExpiry(value: string) {
   }).format(new Date(value));
 }
 
+const expiryContext = z.object({
+  schemaVersion: z.literal(1).optional(),
+  audience: z.enum(["owner", "viewer"]),
+  expiresAt: z.iso.datetime({ offset: true }),
+  portfolioId: z.uuid(),
+});
+const isExpiryReminder = (job: Job) => job.notification_type === "full_view_expiring" || job.notification_type === "full_view_access_expiring";
+
+function renderExpiryReminder(job: Job, to: string, origin: string) {
+  const context = expiryContext.safeParse(job.payload);
+  if (!context.success || !job.grant_id
+    || context.data.audience !== (job.notification_type === "full_view_expiring" ? "viewer" : "owner")) {
+    throw new NotificationRenderError("REMINDER_CONTEXT_INVALID", false);
+  }
+  const expiry = formatExpiry(context.data.expiresAt);
+  // No mutable portfolio name or personal details: retries keep the same text.
+  return context.data.audience === "owner"
+    ? { to, subject: "Sharing period ends soon", text: `A viewer's access to your private details ends on ${expiry}.\n\nReview sharing in your VivIntro dashboard: ${origin}/dashboard` }
+    : { to, subject: "Your sharing period ends soon", text: `Your access to the shared private details ends on ${expiry}.\n\nOpen the introduction using the same verified email: ${origin}/access/${encodeURIComponent(job.grant_id)}\n\nForwarding this email does not transfer access.` };
+}
+
 async function renderJob(supabase: Client, job: Job, origin: string) {
   const isBrokerNotification = brokerNotificationType.safeParse(job.notification_type).success;
   if (isBrokerNotification) {
@@ -85,6 +107,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   const to = recipient.user?.email?.trim().toLowerCase();
   if (recipientError) throw new NotificationRenderError("RECIPIENT_LOOKUP_FAILED", true);
   if (!to) throw new NotificationRenderError("RECIPIENT_UNAVAILABLE", false);
+  if (isExpiryReminder(job)) return renderExpiryReminder(job, to, origin);
 
   if (isBrokerNotification) {
     const payload = brokerPayload.safeParse(job.payload);
@@ -128,9 +151,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   if (job.notification_type === "full_view_revoked") {
     return { to, subject: "Sharing has stopped", text: "The person who shared their introduction has stopped sharing private details. The link will no longer open those details." };
   }
-  if (job.notification_type === "full_view_access_expiring") {
-    return { to, subject: "Sharing period ends soon", text: `Someone’s sharing period for your private details ends within 24 hours.\n\nReview sharing in your VivIntro dashboard: ${origin}/dashboard` };
-  }
+
 
   if (!job.grant_id) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
   const { data: grant, error: grantError } = await supabase
@@ -150,9 +171,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   const accessUrl = `${origin}/access/${encodeURIComponent(grant.id)}`;
   const expiry = formatExpiry(grant.expires_at);
 
-  if (job.notification_type === "full_view_expiring") {
-    return { to, subject: "Your sharing period ends soon", text: `Your sharing period${ownerName ? ` for ${ownerName}'s private details` : ""} ends on ${expiry}.\n\nOpen the introduction using the same verified email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
-  }
+
 
   const renewed = job.notification_type === "full_view_renewed";
   return {
@@ -170,6 +189,7 @@ export async function processRelationshipNotifications(supabase: Client, limit =
   const jobs = z.array(claimedJob).parse(data || []);
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const job of jobs) {
     let succeeded = false;
@@ -177,6 +197,17 @@ export async function processRelationshipNotifications(supabase: Client, limit =
     let retryable = false;
     try {
       const message = await renderJob(supabase, job, origin);
+      if (isExpiryReminder(job)) {
+        const { data: preparation, error: prepareError } = await supabase.rpc("prepare_full_view_expiry_email", {
+          p_notification_ref: job.notification_ref, p_attempt_count: job.attempt_count,
+          p_recipient_email_hash: createHash("sha256").update(message.to).digest("hex"),
+          p_message_digest: createHash("sha256").update(JSON.stringify(message)).digest("hex"),
+        });
+        if (prepareError) throw new NotificationRenderError("REMINDER_PREPARE_FAILED", true);
+        if (preparation === "skipped") { skipped += 1; continue; }
+        if (preparation === "unavailable") { failed += 1; continue; }
+        if (preparation !== "ready") throw new NotificationRenderError("REMINDER_PREPARE_FAILED", true);
+      }
       const input = { deliveryId: deliveryId(job.notification_ref), ...message };
       const result = transport ? await sendResendEmail(input, transport) : await sendResendEmail(input);
       succeeded = result.status === "accepted";
@@ -208,5 +239,5 @@ export async function processRelationshipNotifications(supabase: Client, limit =
     if (succeeded) sent += 1;
     else failed += 1;
   }
-  return { claimed: jobs.length, sent, failed };
+  return { claimed: jobs.length, sent, failed, skipped };
 }

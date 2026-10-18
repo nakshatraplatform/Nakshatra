@@ -1359,11 +1359,17 @@ isOneToOne: false
 "owns_candidate":
 { Args: { "p_candidate_id": string }; Returns: boolean
                            },
+"portfolio_expiry_reminder_health":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "prepare_account_deletion":
 { Args: { "p_claim_token": string,"p_request_id": string,"p_user_id": string }; Returns: Json
                            },
 "prepare_broker_introduction":
 { Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"prepare_full_view_expiry_email":
+{ Args: { "p_attempt_count": number,"p_message_digest": string,"p_notification_ref": string,"p_recipient_email_hash": string }; Returns: string
                            },
 "production_worker_health":
 { Args: Record<PropertyKey, never>; Returns: Json
