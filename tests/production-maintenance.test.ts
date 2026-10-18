@@ -17,7 +17,7 @@ const secret = "x".repeat(32);
 const request = () => new Request("https://app.test/internal", { headers: { authorization: `Bearer ${secret}` } });
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubEnv("PRODUCTION_WORKER_ENABLED", "true"); vi.stubEnv("PRODUCTION_WORKER_SECRET", secret);
-  mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : true, error: null }));
+  mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : name === "enqueue_due_full_view_expiry_reminders" ? 0 : true, error: null }));
   mocks.retention.mockReset().mockResolvedValue(true); mocks.horoscopeCleanup.mockReset().mockResolvedValue({ deferred: 0 });
   mocks.factory.mockReset().mockReturnValue({ run: mocks.identity });
   mocks.identity.mockResolvedValue({ deferred: 0 }); mocks.cleanup.mockResolvedValue({ deferred: 0 });
@@ -54,6 +54,37 @@ describe("production maintenance", () => {
     }
     expect(JSON.stringify(result)).not.toContain("private cleanup detail");
     expect(mocks.rpc).toHaveBeenLastCalledWith("finish_production_maintenance", { p_claim_token: "lease", p_succeeded: false });
+  });
+  it("enqueues once before relationship claims without delaying verification or cleanup", async () => {
+    let finish!: (value: { data: number; error: null }) => void;
+    mocks.rpc.mockImplementation(async (name: string) => name === "enqueue_due_full_view_expiry_reminders"
+      ? new Promise(resolve => { finish = resolve; }) : { data: name === "begin_production_maintenance" ? "lease" : true, error: null });
+    const running = runProductionMaintenance();
+    await vi.waitFor(() => expect(mocks.identity).toHaveBeenCalledOnce());
+    expect(mocks.relationship).not.toHaveBeenCalled();
+    expect(mocks.retention).toHaveBeenCalledOnce();
+    expect(mocks.horoscopeCleanup).toHaveBeenCalledOnce();
+    finish({ data: 2, error: null });
+    expect((await running).tasks?.expiryReminders).toBe("completed");
+    expect(mocks.relationship).toHaveBeenCalledOnce();
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "enqueue_due_full_view_expiry_reminders")).toHaveLength(1);
+  });
+  it.each([null, 51, -1, "2"])("isolates invalid enqueue result %s and still drains existing mail", async result => {
+    mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : name === "enqueue_due_full_view_expiry_reminders" ? result : true, error: null }));
+    const batch = await runProductionMaintenance();
+    expect(batch.failed).toBe(true);
+    expect(batch.tasks?.expiryReminders).toBe("deferred");
+    expect(batch.tasks?.relationshipEmail).toBe("completed");
+    expect(mocks.relationship).toHaveBeenCalledOnce();
+    expect(mocks.email).toHaveBeenCalledOnce();
+    expect(mocks.retention).toHaveBeenCalledOnce();
+  });
+  it("keeps enqueue RPC errors visible while old mail continues", async () => {
+    mocks.rpc.mockImplementation(async (name: string) => name === "enqueue_due_full_view_expiry_reminders"
+      ? { data: null, error: { message: "private database detail" } } : { data: name === "begin_production_maintenance" ? "lease" : true, error: null });
+    const batch = await runProductionMaintenance();
+    expect(batch.failed).toBe(true); expect(mocks.relationship).toHaveBeenCalledOnce();
+    expect(JSON.stringify(batch)).not.toContain("private database detail");
   });
   it("conceals both endpoints until enabled and authenticated, including unicode credentials", async () => {
     expect(workerAuthorized(request())).toBe(true);
@@ -108,10 +139,17 @@ describe("production maintenance", () => {
     expect((await POST(request())).status).toBe(503);
   });
   it("rejects unfenced persistence and concealed database health failures", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: "lease", error: null }).mockResolvedValueOnce({ data: false, error: null });
+    mocks.rpc.mockImplementationOnce(async () => ({ data: "lease", error: null })).mockImplementation(async (name: string) => ({ data: name === "enqueue_due_full_view_expiry_reminders" ? 0 : false, error: null }));
     await expect(runProductionMaintenance()).rejects.toThrow("MAINTENANCE_COMPLETION_FAILED");
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "database detail" } });
     expect((await GET(request())).status).toBe(503);
+    await expect(productionHealth()).rejects.toThrow("HEALTH_UNAVAILABLE");
+  });
+  it("reports missing expiry production even when other maintenance looks healthy", async () => {
+    mocks.rpc.mockImplementation(async (name: string) => ({ data: { healthy: name !== "portfolio_expiry_reminder_health" }, error: null }));
+    expect((await GET(request())).status).toBe(503);
+    mocks.rpc.mockImplementation(async (name: string) => name === "portfolio_expiry_reminder_health"
+      ? { data: null, error: { message: "private database detail" } } : { data: { healthy: true }, error: null });
     await expect(productionHealth()).rejects.toThrow("HEALTH_UNAVAILABLE");
   });
   it("returns unhealthy status when a run is missing even if queues are empty", async () => {

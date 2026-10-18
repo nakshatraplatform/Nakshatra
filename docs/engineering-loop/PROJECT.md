@@ -38,6 +38,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
+
 - [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
 - [Onboarding foundations](features/onboarding-foundations.md): local increments
   on merged PR108/main `fc7f55c` fix multi-word name typing, routine refresh
