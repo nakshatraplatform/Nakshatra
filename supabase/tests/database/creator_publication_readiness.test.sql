@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(41);
+select plan(47);
 
 select pg_temp.create_auth_actor(
   'a1000000-0000-4000-8000-000000000001',
@@ -63,7 +63,13 @@ select ok('structured_location' = any(app_private.portfolio_missing_required_det
 select ok('current_location' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"current_location":"Old City"}}'::jsonb))), 'stale headline location is rejected');
 select ok('date_of_birth' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"dob":"1919-12-31"}}'::jsonb))), 'birth year before 1920 is rejected');
 select ok('first_name' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"first_name":"Ana2"}}'::jsonb))), 'non-alphabetic first name is rejected');
-select ok('personal_story' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"profile_summary":"short"}}'::jsonb))), 'answered personal story shorter than 80 is rejected');
+select ok(not ('personal_story' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"profile_summary":"short"}}'::jsonb)))), 'concise optional personal story is accepted');
+select is(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"address_line_1":"","address_line_2":"","profile_summary":"","long_term_goals":"","shared_life_plans":""}}'::jsonb))::text, '{}'::text, 'no street address or optional narratives are needed for a complete introduction');
+select ok(not ('life_goals' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"long_term_goals":"A caring home."}}'::jsonb)))), 'concise optional life goals are accepted');
+select ok(not ('shared_life_plans' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"personal":{"shared_life_plans":"Evening walks."}}'::jsonb)))), 'concise optional shared plans are accepted');
+select ok('life_goals' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft(pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('long_term_goals', repeat('x', 1201)))))), 'life goals maximum remains enforced');
+select ok('shared_life_plans' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft(pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('shared_life_plans', repeat('x', 1201)))))), 'shared plans maximum remains enforced');
+select ok('date_of_birth' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft(pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('dob', (current_date + interval '1 day')::date::text))))), 'future birth date remains rejected');
 select ok('personal_story' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft(pg_catalog.jsonb_build_object('personal', pg_catalog.jsonb_build_object('profile_summary', repeat('x', 1601)))))), 'personal story over the editor maximum is rejected');
 select ok('interests' = any(app_private.portfolio_missing_required_details('a4000000-0000-4000-8000-000000000001', pg_temp.complete_portfolio_draft('{"lifestyle":{"hobbies":"one,two,three,four,five,six,seven"}}'::jsonb))), 'more than six interests are rejected');
 
