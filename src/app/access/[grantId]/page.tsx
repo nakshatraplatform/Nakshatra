@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod/v4";
 import { AccessVerificationClient } from "./access-verification-client";
 import { createClient } from "@/lib/supabase/server";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+
+export const metadata: Metadata = { robots: { index: false, follow: false, nocache: true } };
 
 const grantIdSchema = z.uuid();
 const resolutionSchema = z.discriminatedUnion("status", [

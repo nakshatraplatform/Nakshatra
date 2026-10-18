@@ -57,7 +57,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
         <VivIntroBrand href="/" variant="horizontal" priority />
         <div className="app-header-actions"><ThemeSwitch /><Link href={loginHref} className="account-home">Back to sign in</Link></div>
       </header>
-      <main className="account-main">
+      <main id="main-content" tabIndex={-1} className="account-main">
         <section className="account-panel">
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={142} priority /></div>
           <p className="account-eyebrow">Account security</p>
