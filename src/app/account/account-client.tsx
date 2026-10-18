@@ -2,7 +2,6 @@
 
 import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
 
-import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -41,11 +40,15 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reauthMethod, setReauthMethod] = useState<"google" | "email" | null>(null);
-
+  function closeConfirmation() {
+    if (action !== null) return;
+    setConfirmationOpen(false);
+    setConfirmation("");
+  }
   const dialogRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const deleteTriggerRef = useRef<HTMLButtonElement>(null);
-  const closeWithEscape = useEffectEvent(() => { if (action === null) setConfirmationOpen(false); });
+  const closeWithEscape = useEffectEvent(closeConfirmation);
   useEffect(() => {
     if (!confirmationOpen || !dialogRef.current) return;
     const release = activateModalLifecycle(dialogRef.current, closeWithEscape, deleteTriggerRef.current);
@@ -143,8 +146,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
   const deletionProcessing = deletion?.status === "processing";
 
   return (
-    <div className="account-privacy-shell">
-      <CustomerAppHeader currentPage="account" userEmail={userEmail} />
+    <div className="contents">
 
       <main id="main-content" tabIndex={-1} className="account-privacy-main">
         <div className="account-privacy-heading">
@@ -231,7 +233,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
       {confirmationOpen ? (
         <div className="account-confirm-backdrop" role="presentation">
           <section ref={dialogRef} tabIndex={-1} className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
-            <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={action !== null} onClick={() => setConfirmationOpen(false)}>
+            <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={action !== null} onClick={closeConfirmation}>
               <X />
             </button>
             <p className="site-eyebrow">Permanent action</p>

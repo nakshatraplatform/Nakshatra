@@ -110,8 +110,8 @@ test("tall desktop viewports keep fully visible sticky tour cards", async ({ pag
 
       const card = page.locator("#tour-step-01");
       await expect(card).toHaveCSS("position", "sticky");
-      const cardBottom = await card.evaluate((element) => element.getBoundingClientRect().bottom);
-      expect(cardBottom).toBeLessThan(height);
+      // Anchor navigation now eases into place; assert the settled geometry.
+      await expect.poll(() => card.evaluate((element) => element.getBoundingClientRect().bottom)).toBeLessThan(height);
     }
   }
 });
@@ -125,8 +125,7 @@ test("laptop tour cards remain readable and scroll-pinned", async ({ page }, tes
     const card = page.locator("#tour-step-01");
     if (width === 1366) await page.screenshot({ path: testInfo.outputPath("tour-laptop-1366.png"), animations: "disabled" });
     await expect(card).toHaveCSS("position", "sticky");
-    const bounds = await card.evaluate((element) => element.getBoundingClientRect().toJSON());
-    expect(bounds.bottom).toBeLessThanOrEqual(height - 8);
+    await expect.poll(() => card.evaluate((element) => element.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height - 8);
     await expect(card.getByText("Changes saved")).toBeInViewport();
   }
 });

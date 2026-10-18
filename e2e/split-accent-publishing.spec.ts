@@ -25,6 +25,9 @@ test(`gold metadata and split interest panes remain legible through OTP and succ
     await page.evaluate(theme => localStorage.setItem("nakshatra-app-theme", theme), appearance === "light" ? "dark" : "light");
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`/p/${token}`);
+    // Wait for the streamed page to replace its previous/loading branch before
+    // measuring selectors that intentionally cover the complete portfolio.
+    await expect(page.locator(".portfolio-root")).toHaveCount(1);
     const name = page.getByRole("heading", { level: 1 });
     const eyebrow = page.locator(".portfolio-hero .portfolio-eyebrow");
     const metadata = page.locator(".portfolio-hero-line");

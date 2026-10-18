@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BiodataTemplate } from "@/components/templates";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -19,15 +18,6 @@ export default async function ApprovedPreviewPage() {
 
   return (
     <div className="flex flex-1 flex-col" style={{ colorScheme: getCelestialAppearance(data.style) }}>
-      <div data-preview-bar="" className="border-b border-border bg-muted px-4 py-2">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
-          <span className="text-sm font-medium">Private details · Your preview</span>
-          <div className="flex gap-2">
-            <Link href="/dashboard?edit=1" className="rounded-lg border border-border px-3 py-1 text-sm transition-[transform,box-shadow,filter] hover:bg-background">Edit introduction</Link>
-            <Link href="/dashboard" className="rounded-lg border border-border px-3 py-1 text-sm transition-[transform,box-shadow,filter] hover:bg-background">Dashboard</Link>
-          </div>
-        </div>
-      </div>
       <div className="flex-1">
         <BiodataTemplate
           templateId={portfolio.template_id}

@@ -1,5 +1,26 @@
 # VivIntro / Nakshatra project map
 
+- [Frontend integration with main](features/frontend-hardening-integration.md):
+  October 18 integration with main `46540e5` preserves onboarding/Didit/security
+  work alongside component loading and hybrid lint. Six conflicts resolved;
+  skip-focus regression fixed and independently reviewed. Final local checks:
+  1,529 unit tests, 61 coverage gates, 159 browser cases plus corrected 27-case
+  loading rerun, production build and 27 repeated production history cases pass.
+  Hosted CI/Preview and real-provider/physical-device checks remain separate.
+
+- [Component loading and navigation](features/component-loading-navigation.md):
+  removes root-wide loading on ready public pages; authenticated customer
+  headers and preview navigation stay outside their data waits. Existing orbs
+  and safe regional retry are reused; ordinary internal navigation is audited
+  without changing provider/fresh-auth handoffs. October 18 rerun: 1,464 unit
+  tests, 59 coverage gates, 90 affected browser cases and 27 repeated
+  production-mode history cases passed. Earlier Back-restoration blocker is
+  resolved in these tested conditions, not a universal browser guarantee.
+
+- [Hybrid lint tooling](features/hybrid-lint-tooling.md): Oxlint owns native Next checks; official React/TypeScript/accessibility plugins stay on ESLint. Retired glob dependency chain and temporary exception removed; strict audit and anti-reintroduction guards added. Current verification is recorded in the feature record.
+
+- [Frontend priority hardening](features/frontend-priority-hardening.md): account/editor keyboard and focus lifecycle, safe popup Escape handling and corrected font inventory. The historical dependency blocker is replaced by hybrid lint tooling; latest-main integration validation is recorded separately. No release approval implied.
+
 > Current candidate policy (2026-10-05): liveness only; no IP analysis, portfolio-photo
 > requirement or face matching. Workflow versions come from session responses, not env.
 > See [NAK-60 current contract](features/nak-60-liveness-ip.md). The older photo-bound candidate guidance below is historical.
@@ -17,6 +38,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
 - [Onboarding foundations](features/onboarding-foundations.md): local increments
   on merged PR108/main `fc7f55c` fix multi-word name typing, routine refresh
   closing the editor and Basics-only progress labeling. Adds actionable errors,
@@ -72,7 +94,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [Open creator onboarding and feedback](features/open-creator-onboarding.md): owner-approved replacement for the invite-only waitlist. A local one-time, multi-select feedback follow-up adds private difficulty/liked-answer arrays with a first-write-wins migration; hosted database verification and release are pending. Rahul's Production pilot-admin grant was soft-revoked, leaving only the platform account active. Publication safeguards remain separate.
 
 - [NAK-103 signed-in UX clarity pass](features/nak-103-signed-in-ux-clarity.md): narrowly scoped dashboard, portfolio form/view, and account-settings presentation improvements; no landing-page or product-rule changes.
-- [Next ESLint dependency remediation](features/eslint-glob-audit-remediation.md): the expired exception is removed; a pinned, narrowly scoped root-discovery adapter removes the vulnerable chain. Clean install, both audits, full coverage/build and independent review pass locally; hosted CI remains pending.
+- [Historical ESLint audit risk acceptance](features/eslint-glob-audit-remediation.md): superseded by hybrid lint tooling. The retired vulnerable dependency chain and expired exception are removed; all high/critical findings now block without exceptions.
 - [CI browser-job isolation](features/ci-browser-job-isolation.md): separate validation/browser budgets, exact browser-download cache and always-run fail-closed aggregate preserving the existing required check name. Local syntax/gate checks and fresh review pass; hosted full E2E and cache behavior remain pending.
 - [Membership anonymous grants](features/membership-anonymous-grants.md): forward revoke migration verified by hosted clean replay and all 924 pgTAP assertions at 283e78b; production application remains pending CD.
 - [Database-only CD](features/database-only-cd.md): production database deployment now defaults to preview-only; explicit confirmation permits application and final-history verification. The preview follow-up is local pending PR/release. Vercel deploys the application independently.

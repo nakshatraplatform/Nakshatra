@@ -55,6 +55,8 @@ vi.mock("thinking-orbs", () => ({
 
 import DashboardClient from "../src/app/dashboard/dashboard-client";
 import DashboardPage from "../src/app/dashboard/page";
+import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
+import { resolveServerTree } from "./resolve-server-tree";
 
 const data: PortfolioData = {
   personal: { name: "Aditi Rao", dob: "1996-08-12", gender: "female", profile_for: "self" },
@@ -128,10 +130,10 @@ const shareablePublished = {
 };
 
 function renderDashboard(overrides: Partial<React.ComponentProps<typeof DashboardClient>> = {}) {
-  return render(<DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
+  return render(<CustomerAppFrame currentPage="dashboard" userEmail="aditi@example.com" className="dashboard-shell flex flex-1 flex-col" loadingTitle="Getting your portfolio ready"><DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
     canCreatePortfolio
     shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]}
-    mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} />);
+    mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} /></CustomerAppFrame>);
 }
 
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
@@ -157,7 +159,8 @@ it("does not serialize a share URL from the server page for an incomplete public
     publicationReadiness: readyPublicationReadiness,
   });
   const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-  expect(page.props.shareUrl).toBeNull();
+  const content = await page.props.children.type(page.props.children.props);
+  expect(content.props.shareUrl).toBeNull();
 });
 
 function goToFoundation() {
@@ -198,6 +201,7 @@ it("publishes a saved complete revision with fresh consent without mandatory pre
 });
 
 beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   vi.clearAllMocks();
   for (const mock of Object.values(mocks)) mock.mockReset();
   vi.stubGlobal("confirm", vi.fn(() => true));
@@ -227,6 +231,37 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it.each(["input", "option"])("dismisses expanded combobox suggestions from %s before Escape can dismiss the editor", (target) => {
+    renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData },
+      media: [{ ...media, media_type: "hero" }] });
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story & lifestyle/ }));
+    const languages = screen.getByRole("combobox", { name: "Languages" });
+    fireEvent.focus(languages);
+    expect(languages).toHaveAttribute("aria-expanded", "true");
+    const focused = target === "option"
+      ? within(screen.getByRole("listbox", { name: "Languages suggestions" })).getAllByRole("option")[0]
+      : languages;
+    focused.focus();
+    fireEvent.keyDown(focused, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Introduction details" })).toBeInTheDocument();
+    expect(languages).toHaveAttribute("aria-expanded", "false");
+    expect(languages).toHaveFocus();
+    expect(confirm).not.toHaveBeenCalled();
+    fireEvent.keyDown(languages, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Introduction details" })).not.toBeInTheDocument();
+  });
+  it("closes the editor with Escape only after the existing unsaved-draft confirmation", () => {
+    renderDashboard({ initialEditorOpen: true });
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
+    vi.mocked(confirm).mockReturnValueOnce(false);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Introduction details" })).toBeInTheDocument();
+    expect(confirm).toHaveBeenCalledOnce();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Introduction details" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
   it("batches rapid typing and skips malformed intermediate answers without losing them", async () => {
     vi.useFakeTimers();
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData } });
@@ -1822,7 +1857,7 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required", reviewFingerprint: "a".repeat(64) },
     };
     mocks.loadDashboardView.mockResolvedValue(dashboard);
-    const view = render(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
     expect(mocks.save).not.toHaveBeenCalled();
@@ -1830,7 +1865,7 @@ describe("dashboard client", () => {
       ...dashboard,
       publicationReadiness: { ...dashboard.publicationReadiness, verificationStatus: "verified" },
     });
-    view.rerender(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
     expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
     expect(mocks.save).not.toHaveBeenCalled();
   });

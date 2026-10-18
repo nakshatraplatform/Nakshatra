@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -742,10 +743,10 @@ export default function CelestialUnion({
               <h2 id="portfolio-creator-cta-title">Want an introduction like this?</h2>
               <p>Create yours privately. Share it when you’re ready, and choose who sees your private details.</p>
             </div>
-            <a href="/signup">
+            <Link href="/signup">
               Create your introduction
               <ArrowRight aria-hidden="true" />
-            </a>
+            </Link>
           </aside>
         )}
       </main>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { z } from "zod/v4";
 import { interestHistorySchema } from "@/features/interest/server/interest-dashboard.contract";
@@ -24,7 +25,7 @@ export function InterestHistoryPanel() {
   }, [open, offset, attempt]);
   const loading = !result || result.offset !== offset;
   return <section className="dashboard-interest-history"><button type="button" className="dashboard-secondary-action" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? "Hide interest history" : "View all interest submissions"}</button>{open && <div>
-    <h3>Interest history</h3><p>Ending a 15-day sharing period or stopping sharing does not delete the submitted interest. You can reopen details kept in your history; deleted or anonymized details are no longer available. <a href="/privacy#retention" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">How long interest details are kept</a>.</p>
+    <h3>Interest history</h3><p>Ending a 15-day sharing period or stopping sharing does not delete the submitted interest. You can reopen details kept in your history; deleted or anonymized details are no longer available. <Link href="/privacy#retention" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">How long interest details are kept</Link>.</p>
     {loading ? <p role="status">Loading interest history…</p> : result.error ? <p role="alert">{result.error} <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry</button></p> : <>
       {!result.items?.length && <p>No more submissions.</p>}
       {result.items?.map(item => <article key={item.id}><h4>{item.name || "Viewer"}</h4><p>{new Date(item.submittedAt).toLocaleString()} · {interestStatusLabel(item.status)}</p><InterestDetailsPanel requestId={item.id} /></article>)}

@@ -44,6 +44,7 @@ test("published link actions are explicit and reachable", async ({ page, context
 test("dashboard landmarks and photo controls stay usable across themes", async ({ page, context }, testInfo) => {
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard");
+  await expect(page.locator("main#main-content")).toHaveCount(1);
   await expect(page.locator("main#main-content")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await page.getByRole("button", { name: "Edit details", exact: true }).click();

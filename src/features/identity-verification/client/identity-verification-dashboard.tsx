@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { cancelCandidateVerificationRequest, checkCandidateResultRequest, getCurrentCandidateVerificationRequest, navigateToDiditVerification, resumeCandidateVerificationRequest, startSelfIdentityVerificationRequest, type IdentityVerificationApiFailure } from "./identity-verification.api";
 import type { CandidateRecovery } from "../candidate-recovery.types";
@@ -285,7 +286,7 @@ function CandidateRecoveryControls({ candidateId, onStatusChange, checkResultOnL
         {error || statusError ? <p className="dashboard-action-error" role="alert">{error || statusError}</p> : null}
         {cooldown > 0 ? <p className="dashboard-action-note">{cooldownScope === "creation" ? "New-check" : "Recovery"} cooldown: {Math.ceil(cooldown / 60)} minute(s). {cooldownScope === "creation" ? "You can still recover an existing check." : "Wait before checking status, resuming or cancelling."}</p> : null}
         {(error || statusError || unfinished) && !pending ? <button type="button" disabled={statusLoading || (cooldownScope === "interaction" && cooldown > 0)} className="dashboard-secondary-action" onClick={() => void refresh()}>Refresh check status</button> : null}
-        {managementLink && managementLink.attemptId === current?.attemptId ? <p className="dashboard-action-note">Save your private <a href={managementLink.url}>verification-management link</a>.</p> : null}
+        {managementLink && managementLink.attemptId === current?.attemptId ? <p className="dashboard-action-note">Save your private <Link href={managementLink.url} prefetch={false}>verification-management link</Link>.</p> : null}
         {providerLink && providerLink.attemptId === current?.attemptId && current.canResume ? <a className="dashboard-primary-action mt-3" href={providerLink.url}>Continue to Didit verification</a> : null}
       </div>
     </section>

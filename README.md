@@ -122,12 +122,19 @@ npm run test:e2e
 
 `db:verify` requires Docker or Podman because it starts local Supabase, resets all migrations, and runs the pgTAP security suite.
 
+`npm run lint` runs Oxlint's native Next.js checks, then ESLint's official React
+Hooks/compiler, React, TypeScript, import and accessibility checks. Configure both
+editor integrations for the same coverage locally; CI and pre-commit run both.
+Oxlint does not yet implement one previous Next navigation rule, so an attributed
+local ESLint compatibility rule preserves it. Existing scoped native-image
+exceptions use `oxlint-disable-next-line nextjs/no-img-element`.
+
 `security:audit` checks production and all dependencies at the high/critical
-threshold, with no exceptions. The pinned Next ESLint plugin uses a narrowly
-scoped, repository-owned app-root glob adapter instead of the vulnerable
-fast-glob chain. All Next lint rules remain enabled. See
-[the remediation record](docs/engineering-loop/features/eslint-glob-audit-remediation.md)
-for compatibility checks and upgrade requirements.
+threshold, without exceptions. Registry/process errors and malformed reports
+fail closed. A lockfile guard rejects the retired Next ESLint/glob dependency
+chain, including nested or aliased entries. The previous temporary exception is
+removed. See [hybrid lint tooling](docs/engineering-loop/features/hybrid-lint-tooling.md)
+for rule mapping, verification and future upgrade requirements.
 
 ## Production releases
 

@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser } from "./theme-session.mjs";
+import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser, loadingTestToken } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
@@ -233,7 +233,13 @@ function resolvedPortfolio(isPrivate) {
   };
 }
 
+const delayedResponses = new WeakSet();
+
 function sendJson(response, status, value) {
+  if (delayedResponses.delete(response)) {
+    setTimeout(() => { if (!response.destroyed) sendJson(response, status, value); }, 5000);
+    return;
+  }
   response.writeHead(status, {
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json",
@@ -259,6 +265,10 @@ function sendPortfolioImage(response, path) {
 
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${host}:${port}`);
+  if (request.headers.authorization === `Bearer ${loadingTestToken}`) {
+    request.headers.authorization = `Bearer ${themeTestToken}`;
+    if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests", "/rest/v1/rpc/resolve_customer_broker_relationships"].includes(url.pathname)) delayedResponses.add(response);
+  }
 
   if (request.method === "OPTIONS") {
     response.writeHead(204, {

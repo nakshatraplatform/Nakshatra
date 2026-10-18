@@ -19,6 +19,14 @@ export const themeTestCookie = {
   path: "/",
 };
 
+// Read-delay variant recognized only by mock-supabase; no production credentials.
+export const loadingTestToken = [
+  encode({ alg: "HS256", typ: "JWT" }),
+  encode({ sub: themeTestUser.id, role: themeTestUser.role, exp: 4102444800, session_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", fixture: "component-loading" }),
+  Buffer.from("not-a-signature-loading-local-fixture").toString("base64url"),
+].join(".");
+export const loadingTestCookie = { ...themeTestCookie, value: `base64-${encode({ access_token: loadingTestToken, refresh_token: "loading-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: themeTestUser })}` };
+
 // Local browser fixture for the recipient of an approved personal-link grant.
 // The loopback mock alone accepts this synthetic token; it cannot authenticate to Production.
 export const approvedViewerUser = {

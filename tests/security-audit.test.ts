@@ -3,30 +3,98 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { evaluateAudit, parseAuditResult } from "../scripts/security-audit.mjs";
-const affected = () => JSON.parse(readFileSync(new URL("./fixtures/security-audit/braces-report.json", import.meta.url), "utf8"));
-const clean = () => ({ auditReportVersion: 2, vulnerabilities: {}, metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 } } });
-describe("npm audit without exceptions", () => {
-  it("accepts clean reports", () => expect(evaluateAudit(clean(), clean())).toEqual({ total: 0 }));
-  it("blocks the formerly accepted development chain", () => expect(() => evaluateAudit(affected(), clean())).toThrow(/Unaccepted/));
-  it("never accepts production high findings", () => expect(() => evaluateAudit(clean(), affected())).toThrow(/Production dependencies/));
-  it.each(["moderate", "high", "critical"])("retains the severity threshold for %s", severity => {
-    const report = affected();
-    report.vulnerabilities = { other: { name: "other", severity, nodes: ["node_modules/other"], via: [{ url: "https://example.invalid/advisory", severity }] } };
-    report.metadata.vulnerabilities = { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 1, [severity]: 1 };
-    if (severity === "moderate") expect(evaluateAudit(report, clean())).toEqual({ total: 1 });
-    else expect(() => evaluateAudit(report, clean())).toThrow(/Unaccepted/);
+import { evaluateAudit, parseAuditResult, validateDependencyTree } from "../scripts/security-audit.mjs";
+
+const read = (file: string) => JSON.parse(readFileSync(new URL(file, import.meta.url), "utf8"));
+function fixture() {
+  return {
+    full: read("./fixtures/security-audit/braces-report.json"),
+    production: {
+      auditReportVersion: 2, vulnerabilities: {},
+      metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 } },
+    },
+    lock: read("../package-lock.json"),
+  };
+}
+type Fixture = ReturnType<typeof fixture>;
+const evaluate = (f: Fixture) => evaluateAudit(f.full, f.production, f.lock);
+const clean = () => fixture().production;
+const affected = () => fixture().full;
+
+describe("strict npm audit without exceptions", () => {
+  it("rejects the previously accepted development advisory after retirement", () => {
+    expect(() => evaluate(fixture())).toThrow(/Unaccepted high/);
   });
-  it.each(["direct", "inherited"])("rejects understated %s severity", kind => {
-    const report = affected();
-    report.vulnerabilities.other = { name: "other", severity: "moderate", nodes: ["node_modules/other"], via: kind === "direct" ? [{ url: "https://example.invalid/advisory", severity: "critical" }] : ["braces"] };
-    report.metadata.vulnerabilities.moderate++;
-    report.metadata.vulnerabilities.total++;
-    expect(() => evaluateAudit(report, clean())).toThrow(/severity/);
+  it("accepts a clean report with no acceptance allowance", () => {
+    const f = fixture(); f.full = f.production;
+    expect(evaluate(f)).toEqual({ accepted: 0, total: 0 });
   });
-  it.each([{}, { auditReportVersion: 2, vulnerabilities: {} }, { ...clean(), auditReportVersion: 3 }, { ...clean(), error: { code: "E503" } }, { ...affected(), vulnerabilities: {} }])("rejects invalid reports %#", report => {
-    expect(() => evaluateAudit(report, clean())).toThrow();
-    expect(() => evaluateAudit(clean(), report)).toThrow();
+  it("never exempts production findings", () => {
+    const f = fixture(); f.production = f.full;
+    expect(() => evaluate(f)).toThrow(/Production dependencies/);
+  });
+  it.each(["high", "critical"])("blocks new %s findings", severity => {
+    const f = fixture();
+    f.full = structuredClone(f.production);
+    f.full.vulnerabilities.other = {
+      name: "other", severity, nodes: ["node_modules/other"],
+      via: [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity }],
+    };
+    f.full.metadata.vulnerabilities[severity]++;
+    f.full.metadata.vulnerabilities.total++;
+    expect(() => evaluate(f)).toThrow(/Unaccepted.*other/);
+  });
+  it("retains the nonblocking threshold for moderate advisories", () => {
+    const f = fixture(); f.full = structuredClone(f.production);
+    f.full.vulnerabilities.other = {
+      name: "other", severity: "moderate", nodes: ["node_modules/other"],
+      via: [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity: "moderate" }],
+    };
+    f.full.metadata.vulnerabilities.moderate = 1; f.full.metadata.vulnerabilities.total = 1;
+    expect(evaluate(f)).toEqual({ accepted: 0, total: 1 });
+  });
+  it.each(["eslint-config-next", "@next/eslint-plugin-next", "fast-glob", "micromatch", "braces"])(
+    "rejects root and nested reintroduction of %s even with clean audit reports", name => {
+      for (const prefix of ["", "parent/node_modules/"]) {
+        const f = fixture(); f.full = f.production;
+        f.lock.packages[`node_modules/${prefix}${name}`] = { version: "999.0.0", dev: true };
+        expect(() => evaluate(f)).toThrow(/Retired lint dependency/);
+      }
+    },
+  );
+  it("fails closed on unsupported lockfiles", () => {
+    expect(() => validateDependencyTree({ lockfileVersion: 2, packages: {} })).toThrow(/lockfile/);
+    expect(() => validateDependencyTree({ lockfileVersion: 3 })).toThrow(/lockfile/);
+  });
+  it("rejects an npm alias of a retired dependency", () => {
+    const f = fixture(); f.full = f.production;
+    f.lock.packages["node_modules/disguised"] = { name: "braces", version: "3.0.3", dev: true };
+    expect(() => evaluate(f)).toThrow(/Retired lint dependency/);
+  });
+  it.each(["direct", "inherited"])("rejects understated aggregate severity for %s findings", kind => {
+    const f = fixture();
+    f.full.vulnerabilities.other = {
+      name: "other", severity: "moderate", nodes: ["node_modules/other"],
+      via: kind === "direct"
+        ? [{ url: "https://github.com/advisories/GHSA-1111-2222-3333", severity: "critical" }]
+        : ["braces"],
+    };
+    f.full.metadata.vulnerabilities.moderate = 1; f.full.metadata.vulnerabilities.total++;
+    expect(() => parseAuditResult({ status: 1, stdout: JSON.stringify(f.full) })).toThrow(/severity/);
+    expect(() => evaluate(f)).toThrow(/severity/);
+    f.production = f.full; f.full = fixture().production;
+    expect(() => evaluate(f)).toThrow(/severity/);
+  });
+  it.each([
+    {}, { auditReportVersion: 2, vulnerabilities: {} },
+    { ...fixture().production, auditReportVersion: 3 },
+    { ...fixture().production, error: { code: "E503" } },
+    { ...fixture().full, vulnerabilities: {} },
+  ])("rejects missing, changed or inconsistent report data %#", full => {
+    const f = fixture(); f.full = full;
+    expect(() => evaluate(f)).toThrow();
+    f.production = full; f.full = clean();
+    expect(() => evaluate(f)).toThrow();
   });
 });
 describe("npm audit execution boundary", () => {

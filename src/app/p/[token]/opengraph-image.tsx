@@ -54,7 +54,7 @@ export default async function OpenGraphImage({
         >
           <div style={{ display: "flex" }}>
             {/* next/image is not supported inside ImageResponse rendering. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {/* oxlint-disable-next-line nextjs/no-img-element */}
             <img src={isLightColor(snapshot?.themeColor) ? primaryLogoSrc : reverseLogoSrc} alt="" width={150} height={128} />
           </div>
           <div style={{ color: foreground, display: "flex", fontFamily: "serif", fontSize: 78, marginTop: 18 }}>

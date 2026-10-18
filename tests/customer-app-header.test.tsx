@@ -2,12 +2,13 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import Link from "next/link";
 
 const mocks = vi.hoisted(() => ({ push: vi.fn(), clearSession: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock("@/features/account/client/account.api", () => ({ clearLocalAccountSession: mocks.clearSession }));
-vi.mock("@/components/brand/VivIntroBrand", () => ({ VivIntroBrand: () => <a href="/dashboard">VivIntro</a> }));
+vi.mock("@/components/brand/VivIntroBrand", () => ({ VivIntroBrand: () => <Link href="/dashboard">VivIntro</Link> }));
 vi.mock("@/components/theme/ThemeSwitch", () => ({ ThemeSwitch: () => <button type="button">Change theme</button> }));
 
 import { CustomerAppHeader } from "../src/components/navigation/CustomerAppHeader";

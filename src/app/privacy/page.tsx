@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PolicyLayout, PolicySection } from "@/components/legal/PolicyLayout";
 
 export const metadata: Metadata = { title: "Privacy", alternates: { canonical: "/privacy" } };
@@ -117,7 +118,7 @@ export default function PrivacyPage() {
       <PolicySection id="corrections" title="Your choices and requests">
         <p>You can edit and save a draft, review and publish updates, change appearance, unpublish an Introduction, or replace its public link. Publishing an update does not cancel approvals that remain unexpired and unrevoked; those viewers can see the updated Complete Portfolio. Review what you are sharing before each publication.</p>
         <p>Unpublishing pauses public and approved viewing but preserves requests and approvals. If you publish again, approvals that remain unexpired and unrevoked can resume. Revoke an approval or replace the public link to end that access; replacing the link invalidates the old URL and revokes its existing approvals. Unpublishing is not the same as deleting your account or saved portfolio.</p>
-        <p>To correct profile information, open Dashboard → Introduction details, edit the original answer, save, then review and publish your changes. Manage your devices or request deletion from <a href="/account" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Account settings</a>; deletion requires a fresh sign-in and confirmation. To request a copy of your data, correction, deletion, consent withdrawal, or help with a privacy concern, email <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>. We may need to confirm that a request relates to your account before disclosing information or taking action. Do not send passwords, sign-in codes, camera captures, or another person&apos;s private details in a support message.</p>
+        <p>To correct profile information, open Dashboard → Introduction details, edit the original answer, save, then review and publish your changes. Manage your devices or request deletion from <Link href="/account" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Account settings</Link>; deletion requires a fresh sign-in and confirmation. To request a copy of your data, correction, deletion, consent withdrawal, or help with a privacy concern, email <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={`mailto:${grievanceEmail}`}>{grievanceEmail}</a>. We may need to confirm that a request relates to your account before disclosing information or taking action. Do not send passwords, sign-in codes, camera captures, or another person&apos;s private details in a support message.</p>
       </PolicySection>
 
       <PolicySection title="Privacy and grievance contact">

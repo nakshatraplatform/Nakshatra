@@ -38,7 +38,7 @@ export default function OpenGraphImage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               {/* next/image is not supported inside ImageResponse rendering. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* oxlint-disable-next-line nextjs/no-img-element */}
               <img src={logoSrc} alt="" width={120} height={102} />
             </div>
             <div style={{ display: "flex", border: "1px solid #8db7b1", borderRadius: "999px", padding: "10px 18px", background: "#e5efeb", color: "#174b55", fontFamily: "Arial, sans-serif", fontSize: 18, fontWeight: 700 }}>

@@ -166,7 +166,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[color:var(--workspace-muted)]">Location search sends your entry to a postal lookup provider or Google Places when enabled. Choose manual entry before searching to avoid external lookups. <a href="/privacy#location-search" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
+      <p className="text-sm text-[color:var(--workspace-muted)]">Location search sends your entry to a postal lookup provider or Google Places when enabled. Choose manual entry before searching to avoid external lookups. <a href="/privacy#location-search" target="_blank" rel="noopener noreferrer" aria-label="Location search privacy (opens in a new tab)" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
       <div className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.searchCountry ?? "Search country"}</span><select {...validationProps} aria-label={labels.searchCountry ?? "Search country"} value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
         <label className="relative flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"

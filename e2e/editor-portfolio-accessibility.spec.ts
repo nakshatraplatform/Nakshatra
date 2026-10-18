@@ -10,6 +10,7 @@ test("published horoscope status and remove action retain contrast in both theme
   } } }));
   await page.goto("/dashboard?edit=1");
   const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
+  await expect(editor).toBeVisible();
   const sectionSelect = editor.getByRole("combobox", { name: "Go to introduction section" });
   if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
   else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();

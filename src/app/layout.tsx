@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { portfolioBody, portfolioDisplay } from "@/lib/fonts";
 import "./globals.css";
 import "./app-theme.css";
+import "lenis/dist/lenis.css";
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { ThemeBootstrap } from "@/components/theme/ThemeBootstrap";
 import { PrivacySafeAnalytics } from "@/components/analytics/PrivacySafeAnalytics";
+import { ApplicationSmoothScroll } from "@/components/motion/ApplicationSmoothScroll";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -37,6 +39,7 @@ export default function RootLayout({
     >
       <body className="min-h-dvh" suppressHydrationWarning>
         <ThemeBootstrap />
+        <ApplicationSmoothScroll />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <AppThemeProvider>{children}</AppThemeProvider>
         <PrivacySafeAnalytics />

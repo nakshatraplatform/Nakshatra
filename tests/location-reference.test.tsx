@@ -9,6 +9,13 @@ import { getLocationReferences, resolveLocationSuggestion, searchLocationSuggest
 afterEach(() => vi.unstubAllGlobals());
 
 describe("location reference client", () => {
+  it("opens location privacy help separately so unsaved editor answers remain intact", () => {
+    render(<LocationFields value={{}} onChange={() => {}} />);
+    const help = screen.getByRole("link", { name: "Location search privacy (opens in a new tab)" });
+    expect(help).toHaveAttribute("href", "/privacy#location-search");
+    expect(help).toHaveAttribute("target", "_blank");
+    expect(help).toHaveAttribute("rel", "noopener noreferrer");
+  });
   it("normalizes legacy and structured API responses without throwing", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ options: [{ country_code: "US", name: "United States" }] })))

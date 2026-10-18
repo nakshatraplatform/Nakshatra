@@ -706,7 +706,13 @@ function MultiSelectInput({ fieldPath, label, value, options, onChange, audience
     <div className="space-y-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]">
       <label htmlFor={fieldPath ? portfolioFieldAnchor(fieldPath) : listId + "-input"}><FieldLabel label={label} requirement={requirement} audience={audience} /></label>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative min-w-0 flex-1" onBlur={(event) => {
+        <div className="relative min-w-0 flex-1" onKeyDown={(event) => {
+          if (event.key === "Escape" && expanded) {
+            event.preventDefault(); event.stopPropagation();
+            event.currentTarget.querySelector("input")?.focus();
+            setOpen(false); setActiveValue(null);
+          }
+        }} onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) { setOpen(false); setActiveValue(null); }
         }}>
           <input id={fieldPath ? portfolioFieldAnchor(fieldPath) : listId + "-input"} aria-invalid={Boolean(externalError)} aria-describedby={fieldDescriptionIds(listId, hint, audience, externalError ? listId + "-error" : undefined)}

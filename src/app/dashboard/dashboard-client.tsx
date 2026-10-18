@@ -1,11 +1,11 @@
 "use client";
 
-import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardingFeedback";
 import { PortfolioImage } from "@/components/loading/PortfolioImage";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { useModalFocus } from "@/components/useModalFocus";
 import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
@@ -119,7 +119,6 @@ export default function DashboardClient({
   canCreatePortfolio,
   pilotAccessState = null,
   viewCount,
-  userEmail,
   shareUrl,
   whatsappMessage = null,
   isExpired,
@@ -209,6 +208,12 @@ export default function DashboardClient({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const horoscopeInputRef = useRef<HTMLInputElement>(null);
   const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const reviewDialogRef = useRef<HTMLElement>(null);
+  const editorDialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(canCreatePortfolio && formOpen && !reviewOpen, editorDialogRef, closePortfolioEditor);
+  useModalFocus(canCreatePortfolio && reviewOpen, reviewDialogRef, () => {
+    if (!publishing) setReviewOpen(false);
+  });
   const draftRevisionRef = useRef(0);
   const savedReviewFingerprintRef = useRef<string | null | undefined>(undefined);
   // A versioned or deliberately unbound loader projection must not become a
@@ -296,58 +301,6 @@ export default function DashboardClient({
     window.addEventListener("beforeunload", warnBeforeLeaving);
     return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
   }, [draftSaveState]);
-
-  useEffect(() => {
-    if (!formOpen) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    const heading = document.getElementById("portfolio-editor-heading");
-    document.body.style.overflow = "hidden";
-    heading?.focus({ preventScroll: true });
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      previous?.focus();
-    };
-  }, [formOpen]);
-
-  useEffect(() => {
-    if (!formOpen) return;
-    const heading = document.getElementById("portfolio-editor-heading");
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closePortfolioEditor();
-        return;
-      }
-      trapDialogFocus(event, heading?.closest<HTMLElement>("[role='dialog']") || null);
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-    };
-  // Refresh the key handler with the latest save state without resetting editor focus.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formOpen, draftSaveState, savingDraft]);
-
-  useEffect(() => {
-    if (!reviewOpen) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    reviewHeadingRef.current?.focus();
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !publishing) {
-        setReviewOpen(false);
-        return;
-      }
-      trapDialogFocus(event, reviewHeadingRef.current?.closest<HTMLElement>("[role='dialog']") || null);
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = previousOverflow;
-      previous?.focus();
-    };
-  }, [reviewOpen, publishing]);
 
   useEffect(() => {
     if (draftSaveState !== "unsaved" || !canCreatePortfolio || savingDraft) return;
@@ -1028,9 +981,8 @@ export default function DashboardClient({
   }
 
   return (
-    <div className="dashboard-shell flex flex-1 flex-col">
+    <div className="contents">
       <div className="contents" inert={formOpen || reviewOpen} aria-hidden={formOpen || reviewOpen}>
-      <CustomerAppHeader currentPage="dashboard" userEmail={userEmail} />
 
       <main id="main-content" tabIndex={-1} className="relative flex-1 px-4 py-8 sm:py-12">
         <div className="mx-auto max-w-5xl">
@@ -1295,6 +1247,7 @@ export default function DashboardClient({
       {canCreatePortfolio && reviewOpen && (
         <div className="dashboard-review-overlay fixed inset-0 z-[60] bg-[color:var(--ui-scrim)]/70 p-4 backdrop-blur-sm sm:p-6">
           <section
+            ref={reviewDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="portfolio-review-heading"
@@ -1414,7 +1367,7 @@ export default function DashboardClient({
 
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[color:var(--ui-scrim)]/45 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden dashboard-dialog-elevation">
+          <div ref={editorDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden dashboard-dialog-elevation">
             <div className="dashboard-editor-header flex-none border-b border-[var(--workspace-border)] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>

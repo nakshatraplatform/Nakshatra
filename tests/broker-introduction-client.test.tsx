@@ -9,6 +9,7 @@ vi.mock("@/components/templates", () => ({
 import { BrokerIntroductionClient } from "../src/app/introductions/[introductionRef]/broker-introduction-client";
 
 const introductionRef = `bir_${"a".repeat(32)}`;
+const intersectionObserverFixture = globalThis.IntersectionObserver;
 const base = {
   available: true,
   introductionRef,
@@ -35,7 +36,10 @@ describe("broker introduction recipient client", () => {
     expect(screen.queryByTestId("template")).not.toBeInTheDocument();
   });
 
-  beforeEach(() => window.history.replaceState(null, "", "/"));
+  beforeEach(() => {
+    vi.stubGlobal("IntersectionObserver", intersectionObserverFixture);
+    window.history.replaceState(null, "", "/");
+  });
   afterEach(() => vi.unstubAllGlobals());
 
   it("renders the pinned Broker Standard Profile for an authenticated participant", async () => {

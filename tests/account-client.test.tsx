@@ -27,6 +27,7 @@ vi.mock("@/features/account/client/account.api", () => ({
 import AccountClient from "../src/app/account/account-client";
 
 beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   vi.clearAllMocks();
   mocks.export.mockResolvedValue({ ok: true, data: new Blob(["{}"], { type: "application/json" }) });
   mocks.sessions.mockResolvedValue({ ok: true, data: { ok: true } });
@@ -44,6 +45,35 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("account privacy screen", () => {
+  it("keeps confirmation open while deletion is pending and exposes failure inside the dialog", async () => {
+    let finish!: (result: unknown) => void;
+    mocks.deletion.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete account" }));
+    fireEvent.change(screen.getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.click(screen.getByRole("button", { name: "Schedule deletion" }));
+    expect(screen.getByRole("button", { name: "Close deletion confirmation" })).toBeDisabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    finish({ ok: false, message: "Please try again." });
+    const error = await screen.findByText("Please try again.");
+    expect(screen.getByRole("dialog")).toContainElement(error);
+    expect(error.closest("[inert]")).toBeNull();
+    expect(screen.getByRole("button", { name: "Close deletion confirmation" })).toBeEnabled();
+  });
+  it("dismisses with Escape, restores focus and clears destructive confirmation", () => {
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} />);
+    const trigger = screen.getByRole("button", { name: "Delete account" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    fireEvent.change(screen.getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    expect(screen.getByLabelText(/type delete/i)).toHaveValue("");
+    expect(mocks.deletion).not.toHaveBeenCalled();
+  });
   it("keeps deletion loading feedback inside the confirmation dialog", async () => {
     let resolve!: (value: { ok: false; error: { message: string; code: string; status: number } }) => void;
     mocks.deletion.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
@@ -109,7 +139,7 @@ describe("account privacy screen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out others" }));
     await waitFor(() => expect(mocks.sessions).toHaveBeenCalled());
-    expect(screen.getByText("Other devices have been signed out.")).toBeInTheDocument();
+    expect(await screen.findByText("Other devices have been signed out.")).toBeInTheDocument();
   });
 
   it("requires typed confirmation before scheduling deletion", async () => {

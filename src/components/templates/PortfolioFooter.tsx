@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import styles from "./PortfolioChrome.module.css";
 
@@ -9,10 +10,10 @@ export function PortfolioFooter({ livenessChecked, appearance = "light" }: { liv
         <p>One introduction, shared with care.</p>
       </div>
       <nav className={styles.policies} aria-label="Portfolio help and policies">
-        <a href="/received-a-link">Viewer guide</a>
-        <a href="/terms#data-accuracy">Terms &amp; data accuracy</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/privacy#corrections">Report or correct information</a>
+        <Link href="/received-a-link">Viewer guide</Link>
+        <Link href="/terms#data-accuracy">Terms &amp; data accuracy</Link>
+        <Link href="/privacy">Privacy Policy</Link>
+        <Link href="/privacy#corrections">Report or correct information</Link>
       </nav>
       <div className={styles.footerNote}>
         <p>{livenessChecked ? "Liveness checked means a live person completed the check. It does not verify identity, photos or profile details, or endorse a match." : "Profile details are provided by the introduction owner. Review them carefully before making a decision."}</p>

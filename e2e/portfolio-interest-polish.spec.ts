@@ -6,6 +6,7 @@ for (const [token, theme] of [["e2e-portfolio-token", "light"], ["e2e-dark-portf
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(`/p/${token}`);
     const stage = page.locator(".portfolio-photo-stage");
+    await expect(stage).toBeVisible();
     const artwork = stage.locator(".portfolio-portrait-artwork");
     await expect(artwork).toHaveAttribute("aria-hidden", "true");
     await expect(artwork).toHaveCSS("pointer-events", "none");
@@ -43,6 +44,7 @@ test("shared portfolio components retain typography, contrast and keyboard behav
     await page.evaluate(({ theme, key }) => localStorage.setItem(key, theme), { theme: appTheme, key: APP_THEME_STORAGE_KEY });
     await page.goto(`/p/${token}`);
     const root = page.locator(".portfolio-root");
+    await expect(root).toHaveCount(1);
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", appTheme);
     await expect(root).toHaveAttribute("data-appearance", appearance);
     await page.evaluate(() => document.fonts.ready);
