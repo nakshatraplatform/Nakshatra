@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(47);
+select plan(48);
 
 select pg_temp.create_auth_actor(
   'a1000000-0000-4000-8000-000000000001',
@@ -37,7 +37,7 @@ insert into public.portfolios(
   'a4000000-0000-4000-8000-000000000001',
   'a1000000-0000-4000-8000-000000000001',
   'a3000000-0000-4000-8000-000000000001',
-  'readiness_test_token_01',
+  'readiness_test_tok_01',
   pg_temp.complete_portfolio_draft('{
     "personal":{"first_name":"Aditi","last_name":"Rao","dob":"1996-08-12","gender":"female","country":"United States","city":"Boston","current_location":"Boston, Massachusetts, United States","marital_status":"Never Married","short_bio":"A thoughtful introduction.","profile_for":"self"},
     "career":{"title":"Engineer"},
@@ -188,6 +188,15 @@ select lives_ok($$update public.portfolios set is_published = true, published_da
 select is(public.get_portfolio_publication_readiness() ->> 'published', 'true', 'the journey reports publication completion');
 
 reset role;
+-- Reminder eligibility uses the canonical published predicate, including active
+-- snapshots. A direct flag write above characterizes gates, not publication I/O.
+select pg_temp.set_service_role_claims();
+select is(public.service_publish_portfolio_transaction(
+  'a1000000-0000-4000-8000-000000000001','a2000000-0000-4000-8000-000000000001',
+  'a4000000-0000-4000-8000-000000000001',
+  (select draft_data from public.portfolios where id='a4000000-0000-4000-8000-000000000001'),
+  '{}','{}','readiness_test_tok_01',null,3,'#17151c','kanya')->>'status','ok',
+  'expiry reminders use an actually published snapshot');
 insert into public.interest_requests(
   id, portfolio_id, requester_user_id, viewer_name, viewer_phone, viewer_email,
   email_verified_at, verification_channel, status, metadata

@@ -43,7 +43,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "viewer@example.com" } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
     expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: "viewer@example.com",
       subject: "Private details shared with you",
@@ -60,7 +60,7 @@ describe("relationship notification delivery", () => {
 
   it("does nothing when no relationship notifications are due", async () => {
     const client = { rpc: vi.fn().mockResolvedValue({ data: [], error: null }) };
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 0, sent: 0, failed: 0 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 0, sent: 0, failed: 0, skipped: 0 });
     expect(sendResendEmail).not.toHaveBeenCalled();
   });
 
@@ -68,7 +68,6 @@ describe("relationship notification delivery", () => {
     ["new_introduction", "Someone has shown interest", "/dashboard"],
     ["introduction_declined", "Update on your VivIntro introduction", "not sharing"],
     ["full_view_revoked", "Sharing has stopped", "no longer open"],
-    ["full_view_access_expiring", "Sharing period ends soon", "/dashboard"],
   ])("renders %s without loading an access grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{
@@ -88,7 +87,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: " Viewer@Example.com " } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
     expect(from).not.toHaveBeenCalled();
     expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: "viewer@example.com",
@@ -126,7 +125,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "customer@example.com" } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
     const message = sendResendEmail.mock.calls[0][0];
     expect(message).toEqual(expect.objectContaining({ to: "customer@example.com", subject }));
     expect(message.text).toContain(copy);
@@ -166,7 +165,6 @@ describe("relationship notification delivery", () => {
 
   it.each([
     ["full_view_renewed", "Private details shared for another 15 days", "another 15 days"],
-    ["full_view_expiring", "Your sharing period ends soon", "ends on"],
   ])("renders %s from the active grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{
@@ -193,7 +191,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "viewer@example.com" } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
     expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject, text: expect.stringContaining(copy) }));
   });
 
@@ -215,7 +213,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "viewer@example.com" } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1, skipped: 0 });
     expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
       p_attempt_count: 1,
       p_succeeded: false,
@@ -274,7 +272,7 @@ describe("relationship notification delivery", () => {
       auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "customer@example.com" } }, error: null }) } },
     };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1, skipped: 0 });
     expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
       p_attempt_count: 1,
       p_error_code: "EMAIL_NOT_CONFIGURED",
@@ -299,7 +297,7 @@ describe("relationship notification delivery", () => {
     const getUserById = vi.fn();
     const client = { rpc, auth: { admin: { getUserById } } };
 
-    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1 });
+    await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 0, failed: 1, skipped: 0 });
     expect(getUserById).not.toHaveBeenCalled();
     expect(sendResendEmail).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({

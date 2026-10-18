@@ -142,3 +142,53 @@ Compatibility note: the horoscope migration revokes direct browser table writes,
 
 
 Retention correction: the pending expanded migration clears both message columns (`message` and `request_reason`) atomically. Selection, remaining counts and overdue health use one private eligibility rule. Older rejected/closed rows matching the exact prior partial-erasure signature are eligible for repair despite a reset `updated_at`, provided `created_at` is older than 180 days. Current/open/approved requests retain their normal retention rules. Explicit full personal-detail erasure, including account deletion, also clears the duplicate via a private trigger regardless of status. This does not shorten access-grant expiry or delete submitted requests at their 15-day access deadline. Validate both newly eligible and already partially erased synthetic records in staging before authorizing the real backlog drain. Full clean local Supabase replay of the final correction now passes, with 57 suites/1,534 assertions, schema lint, security advisors and generated-type comparison. Production installation and actual authorized backlog cleanup still require their own verification.
+
+## Personal Complete Portfolio expiry reminders (NAK-66)
+
+The matching reminder migration/app adds an eighth maintenance result,
+`expiryReminders`. It enqueues at most 25 due grants / 50 owner-and-viewer messages
+per run before relationship-email claims. An enqueue failure marks the batch
+unhealthy while existing mail and all other maintenance still run. The protected
+health endpoint additionally reports `expiryReminders.oldestUnqueuedAt`; missing
+production for more than 15 minutes is unhealthy even if the outbox is empty.
+
+Each current grant gets at most one message per recipient and exact expiry
+period during its final 24 hours. A renewal invalidates old unsent messages;
+revocation, expiration, unavailable publication and changed/unverified recipients
+also retire them. The canonical publication predicate is reused. Retired work
+has expiry-only `skipped` status, no acceptance timestamp and no permanent failed
+health count. Previously failed/quarantined messages remain operator-owned.
+
+Before the provider call, the current lease, grant and intended recipient are
+rechecked. A digest binds the exact rendered recipient/subject/text; no raw address
+or body is added to the queue. Configuration (public origin, sender and Reply-To)
+must remain stable during uncertain retries. A changed rendered request is
+skipped rather than reused under the old delivery key. Legacy attempted reminder
+work without a request digest is retired conservatively; old sent date keys are
+honored and no blind historical replay occurs. Only provider acceptance is
+recorded as sent. Accepted messages cannot be recalled after renewal/revocation;
+the linked application still enforces current permissions.
+
+The unchanged five-message scheduled batch reserves three slots for ordinary
+relationship mail and two for earliest-expiring reminders when both backlogs
+exist; either pool uses spare capacity. Smaller operator batches reserve both
+pools where possible; a size-one batch alternates its preferred pool by UTC
+minute. Nominal empty-queue capacity remains 60 messages per hour at five-minute
+cadence, before retries/provider limits. Two reminders are generated per grant;
+monitor backlog and earliest expiry before increasing batches. Production-volume
+capacity and end-to-end delivery are not established by synthetic tests.
+
+Rollout: pause all relationship-email dispatchers, apply the forward migration,
+deploy matching app/worker code, verify active schedule and sender settings, then
+resume dispatch through the existing protected operator procedure. Installation
+must not automatically enable the primary schedule. The prior app does not
+perform reminder preparation, so rolling it back requires pausing dispatch first.
+Use synthetic staging accounts to verify both inboxes, exact UTC expiry, current
+access and obsolete-job skip. Keep NAK-82 inbox evidence separate from unit/SQL
+checks. BrokerDesk policy, Auth SMTP and delivery webhooks are unchanged.
+
+Reminder recovery note: a preparation RPC outage occurs before the provider call.
+`REMINDER_PREPARE_FAILED` is accepted by existing recent safe-recovery commands;
+retry windows and first-attempt clocks still apply. Obsolete backlog is retired
+in bounded 100-row sweeps, so a large expired backlog may need multiple batches.
+Overflow remains queued for those sweeps rather than creating failed-mail alerts.

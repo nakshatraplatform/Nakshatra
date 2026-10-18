@@ -44,6 +44,13 @@ export async function runProductionMaintenance(dispatchId?: string) {
   const client = createServiceRoleClient(transport);
   const identityRun = Promise.resolve().then(() =>
     createIdentityVerificationWorker(client, { candidateOnly: true, fetchImpl: transport }).run(2));
+  const expiryRun = Promise.resolve().then(async () => {
+    const { data, error } = await client.rpc("enqueue_due_full_view_expiry_reminders");
+    if (error || typeof data !== "number" || !Number.isInteger(data) || data < 0 || data > 50) {
+      throw new Error("EXPIRY_REMINDER_ENQUEUE_FAILED");
+    }
+    return true;
+  });
   const tasks = {
     retention: () => processRetention(client),
     horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
@@ -57,7 +64,11 @@ export async function runProductionMaintenance(dispatchId?: string) {
         limit: 2, send: (input: unknown) => sendResendEmail(input, transport),
       })).failed === 0;
     },
-    relationshipEmail: async () => (await processRelationshipNotifications(client, 5, transport)).failed === 0,
+    expiryReminders: () => expiryRun,
+    relationshipEmail: async () => {
+      await expiryRun.catch(() => undefined);
+      return (await processRelationshipNotifications(client, 5, transport)).failed === 0;
+    },
     accountDeletion: async () => (await createAccountDeletionWorker(client).run(1)).deferred === 0,
   };
   const outcomes = await Promise.allSettled(Object.values(tasks).map(task => task()));
@@ -70,7 +81,11 @@ export async function runProductionMaintenance(dispatchId?: string) {
 }
 
 export async function productionHealth() {
-  const { data, error } = await createServiceRoleClient(boundedFetch()).rpc("production_worker_health");
-  if (error || !data || typeof data !== "object" || Array.isArray(data)) throw new Error("HEALTH_UNAVAILABLE");
-  return data;
+  const client = createServiceRoleClient(boundedFetch());
+  const [{ data, error }, { data: expiry, error: expiryError }] = await Promise.all([
+    client.rpc("production_worker_health"), client.rpc("portfolio_expiry_reminder_health"),
+  ]);
+  if (error || expiryError || !data || typeof data !== "object" || Array.isArray(data)
+    || !expiry || typeof expiry !== "object" || Array.isArray(expiry)) throw new Error("HEALTH_UNAVAILABLE");
+  return { ...data, healthy: data.healthy === true && expiry.healthy === true, expiryReminders: expiry };
 }
