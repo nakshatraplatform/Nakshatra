@@ -35,3 +35,10 @@ Review found a streamed-editor hydration race: theme context could change before
 Final checks: 24 focused unit tests passed; full lint and typecheck passed; 62 browser cases passed across desktop/tablet/mobile Chromium with four existing duplicate-matrix skips. Covers persistence, cross-tab changes, blocked storage, saved pose before hydration, streamed editor state, contrast on the first changed frame, modal focus, header order and 320px layout. Earlier run: 53 passed / three hydration failures / four skips, superseded by the corrected run. Full coverage passed: 194 files / 1,546 tests, all repository thresholds, and all 61 feature gates. Production build passed with loopback-only configuration (81 pages). No unresolved material in-scope findings.
 
 The host filled its disk before initial edits; only this task's disposable build output was cleared. Screenshots were retained under ignored tmp/theme-slider, and the existing local preview was updated without overwriting unrelated test-hardening edits.
+
+
+## Integration with current main
+
+Integrated main `5e7389c` after PR 117 reported conflicts. Preserved the merged auth accessibility improvements and expanded NAK-84 coverage gates. The single theme-test conflict was an older workaround that reset to Light before editor navigation; the hydration fix now permits retaining Dark and checking the actual saved state.
+
+Integration checks passed: 195 unit files / 1,586 tests with coverage (85.84% statements, 81.70% branches, 86.37% functions, 89.37% lines); all 61 feature files and 18 protected boundaries pass their gates. Full lint, typecheck and production build passed. The focused combined browser batch passed all 18 cases across desktop/tablet/mobile: theme/header persistence, authenticated editor, signup presentation and auth recovery/accessibility. An initial two-case failure came from Playwright hiding input carets while streamed account inputs were hydrating, rather than application attributes; screenshots now preserve carets and the full hydration-warning assertion remains intact. No application workaround or assertion suppression was added for that test interference.

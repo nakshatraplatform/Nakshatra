@@ -26,6 +26,16 @@ describe("BrokerDesk team client API", () => {
     await expect(startTeamInvitationSecurity(workspaceRef, "google")).rejects.toThrow("Complete the security check.");
   });
 
+  it("uses a neutral fallback when a team command response is malformed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("not json", { status: 503 }));
+    await expect(inviteTeamMember(
+      workspaceRef,
+      "employee@example.com",
+      "advisor",
+      "invite:22222222-2222-4222-8222-222222222222"
+    )).rejects.toThrow("This action is temporarily unavailable.");
+  });
+
   it("uses explicit member command URLs and allowlisted bodies", async () => {
     const memberRef = `mbr_${"b".repeat(32)}`;
     const fetchMock = vi.spyOn(globalThis, "fetch")

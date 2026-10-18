@@ -1,5 +1,19 @@
 # VivIntro / Nakshatra project map
 
+- [Accessible account entry](features/auth-accessibility-feedback.md): concise
+  signup guidance, same-route recovery focus, field-associated password/code
+  errors, truthful recovery advice and quiet background liveness reads. Isolated
+  follow-up to NAK-74; current validation and manual screen-reader limits are in
+  the feature record. No authentication/domain/API or database-policy changes.
+- [NAK-84 test coverage hardening](features/nak-84-test-coverage-hardening.md):
+  continues the completed NAK-17 baseline in risk order. The authenticated
+  theme E2E hydration race is stabilized and passes repeated no-retry plus all
+  three viewport projects. Direct repository/client coverage now covers access,
+  identity webhooks, horoscope storage, MFA, authentication, account, location,
+  consent and identity-recovery routes. Import-safe workers are instrumented and
+  18 high-risk boundaries have per-file regression floors. Current evidence and
+  remaining UI/provider-boundary work are recorded in the feature file.
+
 - [Frontend integration with main](features/frontend-hardening-integration.md):
   October 18 integration with main `46540e5` preserves onboarding/Didit/security
   work alongside component loading and hybrid lint. Six conflicts resolved;

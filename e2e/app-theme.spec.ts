@@ -115,7 +115,8 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
     await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     await noOverflow(page);
-    await page.screenshot({ path: testInfo.outputPath(`${route.replaceAll("/", "-")}-dark.png`), fullPage: true, animations: "disabled" });
+    // Avoid screenshot caret styling mutating streamed form inputs before hydration.
+    await page.screenshot({ path: testInfo.outputPath(`${route.replaceAll("/", "-")}-dark.png`), fullPage: true, animations: "disabled", caret: "initial" });
     await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
     await noOverflow(page);
   }
@@ -141,6 +142,7 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   // Retain the empty-account checks above and reuse the existing local fixture.
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard?edit=1");
+  // Keep Dark across navigation: the switch now handles delayed hydration itself.
   await expect(editor.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   await goToAstrology();
   await expect(editor.getByRole("heading", { name: "Astrology and horoscope", exact: true })).toBeVisible();
