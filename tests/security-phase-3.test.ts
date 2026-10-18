@@ -9,7 +9,13 @@ import {
   requireSameOrigin,
 } from "../src/lib/api/request-security";
 import { getRequestId, logServerError } from "../src/lib/security/logging";
-import { createCanonicalAppUrl, isBrokerdeskAuthRedirect, sanitizeInternalRedirect } from "../src/lib/security/redirect";
+import {
+  createCanonicalAppUrl,
+  getPilotInvitationToken,
+  isBrokerdeskAuthRedirect,
+  isPilotAccessAuthRedirect,
+  sanitizeInternalRedirect,
+} from "../src/lib/security/redirect";
 import {
   consumeRateLimit,
   enforceRateLimit,
@@ -129,6 +135,19 @@ describe("redirects and safe logging", () => {
     expect(isBrokerdeskAuthRedirect("/brokerdesk/w/wrk_example/dashboard")).toBe(true);
     expect(isBrokerdeskAuthRedirect("/dashboard?next=/brokerdesk")).toBe(false);
     expect(isBrokerdeskAuthRedirect("https://attacker.test/brokerdesk")).toBe(false);
+  });
+
+  it("recognizes only applicant routes and exact invitation capabilities", () => {
+    expect(isPilotAccessAuthRedirect("/waitlist?source=login")).toBe(true);
+    expect(isPilotAccessAuthRedirect("/pilot-access")).toBe(true);
+    expect(isPilotAccessAuthRedirect("/dashboard?next=/waitlist")).toBe(false);
+    expect(isPilotAccessAuthRedirect("https://attacker.test/waitlist")).toBe(false);
+
+    const token = "A".repeat(43);
+    expect(getPilotInvitationToken(`/invite/${token}`)).toBe(token);
+    expect(getPilotInvitationToken(`/invite/${token}?unexpected=true`)).toBeNull();
+    expect(getPilotInvitationToken(`/invite/${"A".repeat(42)}`)).toBeNull();
+    expect(getPilotInvitationToken(`https://attacker.test/invite/${token}`)).toBeNull();
   });
 
   it("accepts safe request IDs and logs only structured error types", () => {

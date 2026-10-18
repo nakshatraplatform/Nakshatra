@@ -20,14 +20,26 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "lcov"],
-      include: ["src/**/*.{ts,tsx}", "src/features/notifications/server/*.mjs"],
+      include: [
+        "src/**/*.{ts,tsx,mjs}",
+        "scripts/account-deletion-worker.mjs",
+        "scripts/candidate-liveness-email-worker.mjs",
+        "scripts/check-database-types.mjs",
+        "scripts/check-feature-coverage.mjs",
+        "scripts/deleted-provider-cleanup.mjs",
+        "scripts/identity-verification-worker.mjs",
+        "scripts/production-controls.mjs",
+        "scripts/security-audit.mjs",
+        "scripts/verify-didit-liveness-sandbox.mjs",
+        "scripts/verify-migration-history.mjs",
+      ],
       thresholds: {
         branches: 75,
         functions: 80,
         lines: 88,
         statements: 85,
         perFile: false,
-    },
+      },
     },
   },
 });

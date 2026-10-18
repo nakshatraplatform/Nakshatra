@@ -48,4 +48,18 @@ describe("access dashboard API", () => {
       status: 0,
     });
   });
+
+  it("uses neutral defaults when a failed response is not JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json", { status: 503 })));
+    await expect(manageAccessGrantRequest("grant/encoded", "revoke")).resolves.toEqual({
+      ok: false,
+      code: "ACCESS_REQUEST_FAILED",
+      error: "This access change could not be saved.",
+      status: 503,
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/access-grants/grant%2Fencoded",
+      expect.objectContaining({ body: JSON.stringify({ action: "revoke" }) })
+    );
+  });
 });

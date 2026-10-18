@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  cancelCandidateVerificationRequest,
+  checkCandidateResultRequest,
   createIdentityVerificationInvitationRequest,
+  getCurrentCandidateVerificationRequest,
   getIdentityVerificationLinkRequest,
+  resumeCandidateVerificationRequest,
   retryIdentityVerificationRequest,
   startInvitationIdentityVerificationRequest,
   startSelfIdentityVerificationRequest,
@@ -41,6 +45,29 @@ describe("identity verification client API", () => {
     ]);
     expect(fetchMock.mock.calls[1][1].body).toBe(JSON.stringify({ authorization: "self", candidateId: "candidate-id", consent: true, consentVersion: "2026-10-05-liveness-only" }));
     expect(fetchMock.mock.calls[2][1].body).toBe(JSON.stringify({ candidateId: "candidate-id" }));
+  });
+
+  it("uses candidate-scoped recovery routes for current, resume, cancellation, and result checks", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ state: "available" }, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const signal = new AbortController().signal;
+
+    await getCurrentCandidateVerificationRequest("candidate/one", signal);
+    await resumeCandidateVerificationRequest("candidate-one", "attempt-one");
+    await cancelCandidateVerificationRequest("candidate-one", "attempt-one");
+    await checkCandidateResultRequest("candidate-one", "attempt-one");
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1,
+      "/api/identity-verification/current?candidateId=candidate%2Fone",
+      { method: "GET", cache: "no-store", signal });
+    for (const [index, route] of ["resume", "cancel", "check-result"].entries()) {
+      expect(fetchMock).toHaveBeenNthCalledWith(index + 2,
+        `/api/identity-verification/${route}`,
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ candidateId: "candidate-one", attemptId: "attempt-one" }),
+        }));
+    }
   });
 
   it("maps server and network errors to stable frontend failures", async () => {
