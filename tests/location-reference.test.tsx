@@ -30,6 +30,25 @@ describe("location reference client", () => {
     await expect(searchLocationSuggestions({ query: "offline", countryCode: "US", sessionToken: crypto.randomUUID() })).resolves.toEqual([]);
   });
 
+  it("returns empty values for malformed successful location responses", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("not json", { status: 200 }))
+      .mockResolvedValueOnce(new Response("not json", { status: 200 }))
+      .mockResolvedValueOnce(new Response("not json", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getLocationReferences(new URLSearchParams({ level: "countries" }))).resolves.toEqual([]);
+    await expect(searchLocationSuggestions({
+      query: "Boston",
+      countryCode: "US",
+      sessionToken: crypto.randomUUID(),
+    })).resolves.toEqual([]);
+    await expect(resolveLocationSuggestion({
+      placeId: "place_123",
+      sessionToken: crypto.randomUUID(),
+    })).resolves.toBeNull();
+  });
+
   it("searches by PIN and applies a normalized suggestion", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ options: [{
       id: "postalpincode:560001:0", label: "Bengaluru GPO, Bengaluru, Karnataka 560001",

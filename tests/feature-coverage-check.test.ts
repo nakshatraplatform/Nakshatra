@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { findFeatureCoverageFailures } from "../scripts/check-feature-coverage.mjs";
+import {
+  findFeatureCoverageFailures,
+  findProtectedCoverageFailures,
+} from "../scripts/check-feature-coverage.mjs";
 
 function metrics(percentage: number) {
   return Object.fromEntries(
@@ -43,5 +46,53 @@ describe("feature coverage guard", () => {
     expect(() => findFeatureCoverageFailures({ total: metrics(100) })).toThrow(
       "No feature mapper, service, or contract files"
     );
+  });
+
+  it("enforces file-specific floors for protected boundaries across path styles", () => {
+    const thresholds = {
+      "src/features/auth/client/auth.api.ts": {
+        statements: 90,
+        branches: 80,
+        functions: 100,
+        lines: 90,
+      },
+    };
+    expect(findProtectedCoverageFailures({
+      total: metrics(100),
+      "C:\\repo\\src\\features\\auth\\client\\auth.api.ts": metrics(100),
+    }, thresholds)).toEqual({ checkedFiles: 1, failures: [] });
+
+    const result = findProtectedCoverageFailures({
+      total: metrics(100),
+      "/repo/src/features/auth/client/auth.api.ts": {
+        ...metrics(100),
+        branches: { total: 10, covered: 7, skipped: 0, pct: 70 },
+      },
+    }, thresholds);
+    expect(result.failures).toEqual([
+      expect.objectContaining({
+        file: "src/features/auth/client/auth.api.ts",
+        metric: "branches",
+        percentage: 70,
+        minimum: 80,
+      }),
+    ]);
+  });
+
+  it("fails closed when a protected boundary disappears from the report", () => {
+    const result = findProtectedCoverageFailures({ total: metrics(100) }, {
+      "scripts/security-worker.mjs": {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    });
+    expect(result.failures).toEqual([{
+      file: "scripts/security-worker.mjs",
+      metric: "file",
+      percentage: 0,
+      minimum: 1,
+    }]);
   });
 });

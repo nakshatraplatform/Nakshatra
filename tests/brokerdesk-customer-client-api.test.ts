@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { inviteBrokerdeskCustomer } from "@/features/broker-relationships/client/customer-invitation.api";
+import {
+  inviteBrokerdeskCustomer,
+  manageCustomerBrokerConsent,
+} from "@/features/broker-relationships/client/customer-invitation.api";
 
 describe("BrokerDesk customer invitation client API", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -31,5 +34,24 @@ describe("BrokerDesk customer invitation client API", () => {
     await expect(inviteBrokerdeskCustomer("workspace", "customer@example.com", "request-two"))
       .rejects.toThrow("This action is temporarily unavailable.");
   });
-});
 
+  it("sends customer-controlled consent commands to the encoded relationship path", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({
+      available: true,
+      relationshipRef: "bcr_safe",
+      relationshipStatus: "paused",
+      endsAt: null,
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+
+    await expect(manageCustomerBrokerConsent("bcr/encoded", "pause", "consent:0001"))
+      .resolves.toMatchObject({ relationshipStatus: "paused" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/customer/brokers/bcr%2Fencoded/consent",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "pause", idempotencyKey: "consent:0001" }),
+      })
+    );
+  });
+});

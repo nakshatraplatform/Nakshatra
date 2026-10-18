@@ -48,4 +48,22 @@ describe("pilot access client API", () => {
     expect((await getPilotAccessState()).failure?.error).toMatch(/could not connect/i);
     expect((await submitPilotAccess({} as never)).failure?.error).toMatch(/could not connect/i);
   });
+
+  it("maps malformed API error bodies to an empty safe failure", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response("not json", { status: 503 }))
+      .mockResolvedValueOnce(new Response("not json", { status: 503 })));
+
+    await expect(getPilotAccessState()).resolves.toMatchObject({
+      ok: false,
+      unauthenticated: false,
+      state: null,
+      failure: null,
+    });
+    await expect(submitPilotAccess({} as never)).resolves.toMatchObject({
+      ok: false,
+      state: null,
+      failure: null,
+    });
+  });
 });
