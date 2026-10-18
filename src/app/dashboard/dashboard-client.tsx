@@ -20,6 +20,7 @@ import {
   type PortfolioMediaVisibility,
   normalizePortfolioPrivacyMode,
 } from "@/types/portfolio";
+import type { CandidateRecovery } from "@/features/identity-verification/candidate-recovery.types";
 import type { PortfolioApiFailure } from "@/features/portfolio/client/portfolio-dashboard.api";
 import type {
   AccessAuditEvent,
@@ -197,7 +198,11 @@ export default function DashboardClient({
   const router = useRouter();
   const refreshDashboard = useCallback(() => startRefresh(() => router.refresh()), [router]);
 
-  const onVerificationStatusChange = useCallback(() => refreshDashboard(), [refreshDashboard]);
+  const onVerificationStatusChange = useCallback((state: CandidateRecovery["state"]) => {
+    // Transient status refreshes can race the external Didit navigation in Safari.
+    // Reload server-owned publication readiness only when its proof state differs.
+    if ((state === "verified") !== (readinessState.verificationStatus === "verified")) refreshDashboard();
+  }, [readinessState.verificationStatus, refreshDashboard]);
   const disclosedCategories = fullViewDisclosureCategories(
     draftData,
     portfolioMedia,

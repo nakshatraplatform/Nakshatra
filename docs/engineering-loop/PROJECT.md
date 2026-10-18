@@ -76,7 +76,18 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Checks and limits
 
-- [NAK-73 liveness completion](features/nak-73-liveness-completion.md): owner-requested canonical result lookup, authenticated return/dashboard confirmation and transactional Resend completion outbox. Local checks and fresh review are recorded separately from pending authoritative Supabase and real-provider release gates.
+- [NAK-73 liveness completion](features/nak-73-liveness-completion.md): current
+  2026-10-17 follow-up fixes first-click handoff through overlapping status reads
+  and Safari parent-refresh races, adds a one-time accessible completion dialog,
+  bounded return checks and owner-scoped durable after-response confirmation mail.
+  Latest-main integration now preserves PR109 retention/horoscope jobs alongside
+  the single reconciliation-before-email promise; NAK73-VERIFY-01 is resolved
+  locally against main aeeaecc. Combined validation passes 1,442 unit tests,
+  61 coverage gates, 48 browser cases (including one ordinary-limit retry),
+  all 105 migrations / 1,552 SQL assertions, types/build/audit and independent
+  integration review. Earlier lease-contention evidence remains in the feature.
+  New migration must precede matching app rollout; hosted runtime, real provider
+  delivery, physical-device and Linear synchronization checks remain separate.
 
 - [Candidate liveness recovery](features/candidate-liveness-recovery.md): owner-only status/resume/cancel, bounded expiry and cleanup-gated replacement; local implementation and review evidence, with authoritative Supabase CI and live-provider rollout gates kept distinct.
 

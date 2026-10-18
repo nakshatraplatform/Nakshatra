@@ -10,8 +10,9 @@ describe("verification pages", () => {
   it("keeps the provider return page non-authoritative and no-index", async () => {
     render(await VerificationResultPage());
     expect(screen.getByText("Your liveness result")).toBeInTheDocument();
-    expect(screen.getByText(/Returning from Didit does not mean the check is complete/)).toBeInTheDocument();
-    expect(screen.getByText(/We check the result securely/)).toBeInTheDocument();
+    expect(screen.getByText(/We confirm it securely before updating your introduction/)).toBeInTheDocument();
+    expect(screen.getByText(/Sign in to view your private result/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(resultMetadata.robots).toEqual({ index: false, follow: false });
   });
 
