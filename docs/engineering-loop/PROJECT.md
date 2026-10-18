@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [Accessible account entry](features/auth-accessibility-feedback.md): concise
+  signup guidance, same-route recovery focus, field-associated password/code
+  errors, truthful recovery advice and quiet background liveness reads. Isolated
+  follow-up to NAK-74; current validation and manual screen-reader limits are in
+  the feature record. No authentication/domain/API or database-policy changes.
 - [NAK-84 test coverage hardening](features/nak-84-test-coverage-hardening.md):
   continues the completed NAK-17 baseline in risk order. The authenticated
   theme E2E hydration race is stabilized and passes repeated no-retry plus all

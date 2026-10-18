@@ -59,9 +59,8 @@ describe("AuthForm", () => {
 
     expect(screen.getByRole("heading", { name: "Create your account" })).toBeInTheDocument();
     expect(screen.getByText(/your introduction begins as a private draft/i)).toBeInTheDocument();
-    expect(screen.getByText(/publishing requires your own introduction/i)).toBeInTheDocument();
-    expect(screen.getByText(/use that link to view it and show interest/i)).toBeInTheDocument();
-    expect(screen.getByText(/Liveness checked badge appears only after those checks succeed/i)).toBeInTheDocument();
+    expect(screen.getByText("Confirm your email to begin. A liveness check is required before publishing.")).toBeInTheDocument();
+    expect(screen.queryByText(/use that link to view it and show interest/i)).not.toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: /access model/i })).toHaveTextContent(/Begin privately.*15 days/i);
 
     await user.type(screen.getByLabelText("Email address"), "New@Example.com");
@@ -180,5 +179,76 @@ describe("AuthForm", () => {
     await user.click(screen.getByRole("button", { name: "Show password" }));
     expect(password).toHaveAttribute("type", "text");
     expect(screen.getByRole("alert")).toHaveTextContent(/session has been signed out/i);
+  });
+
+  it("focuses recovery and return steps without stealing initial page focus", async () => {
+    const user = userEvent.setup();
+    render(<AuthForm mode="login" />);
+    expect(screen.getByLabelText("Email address")).not.toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Forgot password?" }));
+    expect(screen.getByRole("heading", { name: "Reset your password" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByLabelText("Email address")).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Back to sign in" }));
+    expect(screen.getByRole("heading", { name: "Sign in to VivIntro" })).toHaveFocus();
+  });
+
+  it("associates password-policy errors and clears them when the field is edited", async () => {
+    const user = userEvent.setup();
+    render(<AuthForm mode="signup" />);
+    await user.type(screen.getByLabelText("Email address"), "new@example.com");
+    const password = screen.getByLabelText("Password");
+    await user.type(password, "onlyletters");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    expect(password).toHaveFocus();
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    const alert = screen.getByRole("alert");
+    expect(password.getAttribute("aria-describedby")?.split(" ")).toContain(alert.id);
+    await user.type(password, "1");
+    expect(password).not.toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(password).toHaveAttribute("aria-describedby", "signup-password-help");
+  });
+
+  it("focuses and associates invalid codes but keeps network errors form-level", async () => {
+    startAuthentication.mockResolvedValueOnce({ ok: true, body: { verificationRequired: true } });
+    verifyAuthenticationCode.mockResolvedValueOnce({ ok: false, body: { code: "OTP_REJECTED", error: "That code is incorrect or has expired." } });
+    const user = userEvent.setup();
+    render(<AuthForm mode="signup" />);
+    await user.type(screen.getByLabelText("Email address"), "new@example.com");
+    await user.type(screen.getByLabelText("Password"), "Wedding2026");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    const code = screen.getByLabelText("Verification code");
+    expect(code).toHaveFocus();
+    await user.type(code, "123456");
+    await user.click(screen.getByRole("button", { name: "Verify and continue" }));
+    expect(code).toHaveAttribute("aria-invalid", "true");
+    expect(code).toHaveFocus();
+    expect(code.getAttribute("aria-describedby")?.split(" ")).toContain(screen.getByRole("alert").id);
+    await user.clear(code);
+    await user.type(code, "654321");
+    verifyAuthenticationCode.mockResolvedValueOnce({ ok: false, body: { code: "AUTH_NETWORK_ERROR", error: "Check your connection." } });
+    await user.click(screen.getByRole("button", { name: "Verify and continue" }));
+    expect(code).not.toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Check your connection.");
+    await user.click(screen.getByRole("button", { name: "Change email" }));
+    expect(screen.getByRole("heading", { name: "Create your account" })).toHaveFocus();
+    expect(screen.getByLabelText("Email address")).toHaveValue("new@example.com");
+  });
+
+  it("focuses recovery success and leaves generic sign-in errors unassigned", async () => {
+    startAuthentication.mockResolvedValueOnce({ ok: false, body: { code: "SIGNIN_FAILED", error: "The email or password is incorrect." } });
+    const user = userEvent.setup();
+    render(<AuthForm mode="login" />);
+    await user.type(screen.getByLabelText("Email address"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "Wedding2026");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.getByLabelText("Email address")).not.toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Password")).not.toHaveAttribute("aria-invalid", "true");
+    await user.click(screen.getByRole("button", { name: "Forgot password?" }));
+    startAuthentication.mockResolvedValueOnce({ ok: true, body: { sent: true } });
+    await user.click(screen.getByRole("button", { name: "Send recovery email" }));
+    expect(screen.getByRole("heading", { name: "Check your email" })).toHaveFocus();
+    expect(screen.getByText(/if an account exists/i)).toBeInTheDocument();
   });
 });
