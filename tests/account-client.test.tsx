@@ -58,6 +58,18 @@ describe("account privacy screen", () => {
     expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
   });
 
+  it("shows saved introduction names as read-only with one clear editing route", () => {
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} profileManagedByPortfolio
+      initialProfile={{ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" }} />);
+    expect(screen.getByLabelText("First name")).toHaveValue("Mary Jane");
+    expect(screen.getByLabelText("First name")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Middle name (optional)")).toHaveValue("Anne");
+    expect(screen.getByLabelText("Last name")).toHaveValue("Rao");
+    expect(screen.queryByRole("button", { name: "Save names" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit introduction names" })).toHaveAttribute("href", "/dashboard?edit=1");
+    expect(mocks.profile).not.toHaveBeenCalled();
+  });
+
   it("keeps failure recovery inside the active dialog", async () => {
     mocks.deletion.mockResolvedValueOnce({ ok: false, message: "Please try scheduling again." });
     render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
