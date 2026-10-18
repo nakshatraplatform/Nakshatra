@@ -6,13 +6,18 @@ import {
   GraduationCap,
   FileText,
   ExternalLink,
-  Heart,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
-import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
-import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
+import { PortfolioNav, type PortfolioSectionLink } from "@/components/portfolio/presentation/PortfolioNav";
+import { ChapterHeading, IconDataRow, Pill, ProtectedDataVault, TrustBadge } from "@/components/portfolio/presentation/PortfolioPrimitives";
+import { BrandMotif } from "@/components/brand/BrandMotif";
+import { formatPortfolioLocation, portfolioHobbies, isPortfolioAudienceLocked } from "@/features/portfolio/presentation";
+import { PortfolioFooter } from "./PortfolioFooter";
 import { PortfolioBackToTop } from "./PortfolioBackToTop";
+import { AdaptivePortfolioGallery, AdaptivePortfolioHero } from "./AdaptivePortfolioMedia";
+import { PortfolioNarrative } from "./PortfolioNarrative";
+import { PortfolioContactActions } from "./PortfolioContactActions";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   CELESTIAL_THEME_COLORS,
@@ -29,6 +34,7 @@ interface CelestialUnionProps {
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
+  viewingOwnPortfolio?: boolean;
 }
 
 interface ChapterDefinition {
@@ -62,6 +68,7 @@ export default function CelestialUnion({
   photos = [],
   horoscopeAttachment,
   interestAction,
+  viewingOwnPortfolio = false,
 }: CelestialUnionProps) {
   const appearance = getCelestialAppearance(data.style);
   const theme = CELESTIAL_THEME_COLORS[appearance];
@@ -78,7 +85,7 @@ export default function CelestialUnion({
       ? {
           id: "legacy-owner-photo",
           src: data.personal.photo_url,
-          alt: `${data.personal.name || "Portfolio"} portrait`,
+          alt: `${data.personal.name || "Introduction"} portrait`,
           mediaType: "hero",
           orientation: "unknown",
         }
@@ -92,25 +99,26 @@ export default function CelestialUnion({
     : legacyOwnerPhoto
       ? [legacyOwnerPhoto, ...photos]
       : photos;
-  const briefGalleryPhotos = galleryPhotos;
   const blurredPhotos = photos.filter((photo) => photo.presentation === "blurred");
-  const shortBio = clean(data.personal.short_bio);
-  const profileSummary = clean(data.personal.profile_summary);
+  const personalVisible = !isPortfolioAudienceLocked(data, "personal", accessMode);
+  const shortBio = personalVisible ? clean(data.personal.short_bio) : undefined;
+  const profileSummary = personalVisible ? clean(data.personal.profile_summary) : undefined;
   const age = data.personal.age ?? ageFromDate(data.personal.dob);
-  const currentLocation = clean(data.personal.current_location);
+  const currentLocation = formatPortfolioLocation(data.personal);
   const careerTitle = clean(data.career?.title);
   const educationTitle = clean(data.education?.degree) || clean(data.education?.qualification_level);
-  const journeyVisible = hasApprovedAccess || !isRestricted(data, "journey");
-  const lifestyleVisible = hasApprovedAccess || !isRestricted(data, "lifestyle");
-  const familyVisible = hasApprovedAccess || !isRestricted(data, "family");
-  const astrologyVisible = hasApprovedAccess || !isRestricted(data, "astrology");
-  const preferencesVisible = hasApprovedAccess || !isRestricted(data, "preferences");
-  const futurePlansVisible = hasApprovedAccess || !isRestricted(data, "future_plans");
+  const journeyVisible = !isPortfolioAudienceLocked(data, "journey", accessMode) && (hasApprovedAccess || !isRestricted(data, "journey"));
+  const careerVisible = journeyVisible && !isPortfolioAudienceLocked(data, "career", accessMode);
+  const lifestyleVisible = !isPortfolioAudienceLocked(data, "lifestyle", accessMode) && (hasApprovedAccess || !isRestricted(data, "lifestyle"));
+  const familyVisible = !isPortfolioAudienceLocked(data, "family", accessMode) && (hasApprovedAccess || !isRestricted(data, "family"));
+  const astrologyVisible = !isPortfolioAudienceLocked(data, "astrology", accessMode) && (hasApprovedAccess || !isRestricted(data, "astrology"));
+  const preferencesVisible = !isPortfolioAudienceLocked(data, "preferences", accessMode) && (hasApprovedAccess || !isRestricted(data, "preferences"));
+  const futurePlansVisible = !isPortfolioAudienceLocked(data, "future_plans", accessMode) && (hasApprovedAccess || !isRestricted(data, "future_plans"));
   const visibleRashi = astrologyVisible ? rashi : undefined;
-  const hobbies = lifestyleVisible ? splitValues([data.lifestyle?.hobbies]) : [];
-  const languages = splitValues([data.lifestyle?.languages]);
-  const values = splitValues([data.lifestyle?.values_statement]);
-  const hasPersonalDetails = hasAny([
+  const hobbies = lifestyleVisible ? portfolioHobbies(data.lifestyle?.hobbies) : [];
+  const languages = lifestyleVisible ? splitValues([data.lifestyle?.languages]) : [];
+  const values = lifestyleVisible ? splitValues([data.lifestyle?.values_statement]) : [];
+  const hasPersonalDetails = personalVisible && hasAny([
     data.personal.gender,
     data.personal.marital_status,
     data.personal.citizenship,
@@ -133,7 +141,7 @@ export default function CelestialUnion({
     data.education?.location,
     data.education?.summary,
   ]);
-  const hasCareer = journeyVisible && hasAny([
+  const hasCareer = careerVisible && hasAny([
     data.career?.title,
     data.career?.company,
     data.career?.location,
@@ -150,9 +158,8 @@ export default function CelestialUnion({
     data.personal.community,
     data.family?.sibling_position,
   ]) || data.family?.sibling_count !== undefined || (hasApprovedAccess && hasDetailedFamily(data)));
-  const familyProtected = isRestricted(data, "family") || isRestricted(data, "family_details");
-  const hasVisibleAstrology = Boolean(horoscopeAttachment) || (
-    astrologyVisible && (
+  const familyProtected = isPortfolioAudienceLocked(data, "family", accessMode) || isRestricted(data, "family") || isRestricted(data, "family_details");
+  const hasVisibleAstrology = astrologyVisible && (Boolean(horoscopeAttachment) || (
       Boolean(visibleRashi)
       || hasAny([
         data.astrology?.nakshatra,
@@ -162,9 +169,8 @@ export default function CelestialUnion({
         data.astrology?.manglik_status,
       ])
       || (hasApprovedAccess && hasDetailedAstrology(data))
-    )
-  );
-  const astrologyProtected = isRestricted(data, "astrology") || isRestricted(data, "astrology_details");
+  ));
+  const astrologyProtected = isPortfolioAudienceLocked(data, "astrology", accessMode) || isRestricted(data, "astrology") || isRestricted(data, "astrology_details");
   const hasVisiblePreferences = preferencesVisible && hasAny([
     data.preferences?.narrative,
     data.preferences?.age_range,
@@ -173,7 +179,7 @@ export default function CelestialUnion({
     data.preferences?.caste_preference,
     data.preferences?.horoscope_preference,
   ]);
-  const hasStructuredFuturePlans = hasApprovedAccess && hasAny([
+  const hasStructuredFuturePlans = hasApprovedAccess && futurePlansVisible && hasAny([
     data.preferences?.marriage_timeline,
     data.preferences?.children_preference,
     data.personal.relocation_preference,
@@ -185,9 +191,9 @@ export default function CelestialUnion({
     ? clean(data.personal.shared_life_plans)
       || clean(data.personal.long_term_goals)
     : undefined;
-  const visibleCareerTitle = journeyVisible ? careerTitle : undefined;
+  const visibleCareerTitle = careerVisible ? careerTitle : undefined;
   const heroLine = [visibleCareerTitle, currentLocation].filter(Boolean).join(", ");
-  const contactEntries = normalizedContacts(data.contact);
+  const contactEntries = isPortfolioAudienceLocked(data, "contact", accessMode) ? [] : normalizedContacts(data.contact);
   const quickFacts = compactPairs([
     ["Moon Sign (Rashi)", visibleRashi && rashiOption ? `${ZODIAC_SYMBOLS[visibleRashi]} ${rashiOption.label}` : undefined],
     ["Age", age ? `${age} years` : undefined],
@@ -199,7 +205,8 @@ export default function CelestialUnion({
     blurredPhotos: blurredPhotos.length,
     hasApprovedAccess,
   });
-  const showProtectedSection = protectedItems.length > 0 || (hasApprovedAccess && contactEntries.length > 0);
+  const contactLocked = !hasApprovedAccess && (isRestricted(data, "contact") || isPortfolioAudienceLocked(data, "contact", accessMode));
+  const showProtectedSection = contactLocked || protectedItems.length > 0 || (hasApprovedAccess && contactEntries.length > 0);
   const showInterestSection = Boolean(interestAction);
   const chapters: ChapterDefinition[] = [];
 
@@ -210,7 +217,8 @@ export default function CelestialUnion({
       title: "Personal story",
       content: (
         <div className="portfolio-personal-content">
-          {profileSummary && <p className="portfolio-long-copy">{profileSummary}</p>}
+          {!personalVisible && <ProtectedDataVault title="Personal story shared privately" showAction={showInterestSection} />}
+          {profileSummary && <PortfolioNarrative text={profileSummary} label="Personal story" />}
           {hasPersonalDetails && (
             <div className="portfolio-detail-grid portfolio-personal-details">
               <DataPair label="Gender" value={genderLabel(data.personal.gender)} />
@@ -233,9 +241,11 @@ export default function CelestialUnion({
         </div>
       ),
     });
+  } else if (!personalVisible) {
+    chapters.push(protectedChapter("personal-story", "Introduction", "Personal story", "Personal details stay private.", showInterestSection));
   }
 
-  if (hasEducation || hasCareer || clean(data.personal.immigration_status)) {
+  if (hasEducation || hasCareer || (journeyVisible && clean(data.personal.immigration_status))) {
     chapters.push({
       id: "journey",
       eyebrow: "Journey",
@@ -257,6 +267,7 @@ export default function CelestialUnion({
               detail={clean(data.education?.summary)}
             />
           )}
+          {!careerVisible && isPortfolioAudienceLocked(data, "career", accessMode) && <ProtectedDataVault title="Career shared privately" showAction={showInterestSection} />}
           {hasCareer && (
             <>
               <TimelineItem
@@ -270,23 +281,23 @@ export default function CelestialUnion({
           )}
           {hasAny([
             data.personal.immigration_status,
-            hasApprovedAccess ? data.career?.annual_income : undefined,
-            hasApprovedAccess ? data.career?.income_currency : undefined,
+            hasApprovedAccess && careerVisible ? data.career?.annual_income : undefined,
+            hasApprovedAccess && careerVisible ? data.career?.income_currency : undefined,
           ]) && (
             <div className="portfolio-detail-grid portfolio-timeline-details">
-              <DataPair label="Visa or residency" value={clean(data.personal.immigration_status)} />
-              {hasApprovedAccess && <DataPair label="Annual income range" value={joinValues([data.career?.annual_income, data.career?.income_currency])} />}
+              {journeyVisible && <DataPair label="Visa or residency" value={clean(data.personal.immigration_status)} />}
+              {hasApprovedAccess && careerVisible && <DataPair label="Annual income range" value={joinValues([data.career?.annual_income, data.career?.income_currency])} />}
             </div>
           )}
         </div>
       ),
     });
-  } else if (!hasApprovedAccess && isRestricted(data, "journey")) {
+  } else if (!journeyVisible || !careerVisible) {
     chapters.push(protectedChapter(
       "journey",
       "Journey",
       "Education and career",
-      "Education and career information exists and may be shared after approval.",
+      "Education and career information exists and may be shared privately.",
       showInterestSection
     ));
   }
@@ -308,12 +319,16 @@ export default function CelestialUnion({
           {hobbies.length > 0 && (
             <div className="portfolio-lifestyle-group">
               <h3>Interests</h3>
-              <div className="portfolio-tags">{hobbies.map((value) => <span key={value}>{value}</span>)}</div>
+              <div className="portfolio-tags">{hobbies.map((value) => <Pill key={value}>{value}</Pill>)}</div>
             </div>
           )}
         </div>
       ),
     });
+  }
+
+  if (!lifestyleVisible) {
+    chapters.push(protectedChapter("lifestyle", "Everyday life", "Lifestyle and interests", "Lifestyle details stay private.", showInterestSection));
   }
 
   if (hasVisibleFamily) {
@@ -323,7 +338,7 @@ export default function CelestialUnion({
       title: "Family",
       content: (
         <>
-          {clean(data.family?.public_summary) && <p className="portfolio-long-copy">{data.family?.public_summary}</p>}
+          {clean(data.family?.public_summary) && <PortfolioNarrative text={data.family?.public_summary || ""} label="Family introduction" />}
           <div className="portfolio-detail-grid">
             {hasApprovedAccess && <DataPair label="Father or guardian" value={familyMemberValue(data.family?.father)} />}
             {hasApprovedAccess && <DataPair label="Mother or guardian" value={familyMemberValue(data.family?.mother)} />}
@@ -340,17 +355,17 @@ export default function CelestialUnion({
           </div>
           {familyProtected && !hasApprovedAccess && (
             <ProtectedInline
-              heading="More family details are shared after approval"
+              heading="More family details are shared privately"
               detail={privacyMode === "private"
-                ? "Additional family background, names, occupations, and exact locations stay protected."
-                : "Names, occupations, and exact family locations stay protected."}
+                ? "Additional family background, names, occupations, and exact locations stay private."
+                : "Names, occupations, and exact family locations stay private."}
               showAction={showInterestSection}
             />
           )}
         </>
       ),
     });
-  } else if (!hasApprovedAccess && familyProtected) {
+  } else if (!familyVisible && familyProtected) {
     chapters.push(protectedChapter(
       "family",
       "Family and roots",
@@ -381,10 +396,10 @@ export default function CelestialUnion({
           </div>
           {astrologyProtected && !hasApprovedAccess && (
             <ProtectedInline
-              heading="More astrology details are shared after approval"
+              heading="More astrology details are shared privately"
               detail={privacyMode === "private"
-                ? "Additional astrology and exact birth details stay protected."
-                : "Exact birth date, time, place, and chart stay protected."}
+                ? "Additional astrology and exact birth details stay private."
+                : "Exact birth date, time, place, and chart stay private."}
               showAction={showInterestSection}
             />
           )}
@@ -398,7 +413,7 @@ export default function CelestialUnion({
                     .filter(Boolean)
                     .join(" · ")}
                 </span>
-                <small><LockKeyhole aria-hidden="true" /> Approved access</small>
+                <small><LockKeyhole aria-hidden="true" /> Details shared</small>
               </span>
               <span className="portfolio-horoscope-action">View document <ExternalLink aria-hidden="true" /></span>
             </a>
@@ -406,12 +421,12 @@ export default function CelestialUnion({
         </>
       ),
     });
-  } else if (!hasApprovedAccess && astrologyProtected) {
+  } else if (!astrologyVisible && astrologyProtected) {
     chapters.push(protectedChapter(
       "astrology",
       "Astrology",
       "Cultural alignment",
-      "Astrology information exists and can be shared after approval.",
+      "Astrology information exists and can be shared privately.",
       showInterestSection
     ));
   }
@@ -423,7 +438,7 @@ export default function CelestialUnion({
       title: "Hopes for a partnership",
       content: (
         <>
-          {clean(data.preferences?.narrative) && <p className="portfolio-long-copy">{data.preferences?.narrative}</p>}
+          {clean(data.preferences?.narrative) && <PortfolioNarrative text={data.preferences?.narrative || ""} label="Hopes for a partnership" />}
           {hasApprovedAccess && (
             <div className="portfolio-detail-grid portfolio-preference-grid">
               <DataPair label="Preferred age" value={clean(data.preferences?.age_range)} />
@@ -439,6 +454,10 @@ export default function CelestialUnion({
         </>
       ),
     });
+  }
+
+  if (!preferencesVisible) {
+    chapters.push(protectedChapter("preferences", "Looking ahead", "Hopes for a partnership", "Preferences stay private.", showInterestSection));
   }
 
   if (hasStructuredFuturePlans) {
@@ -467,11 +486,11 @@ export default function CelestialUnion({
       content: hasApprovedAccess && clean(data.personal.long_term_goals) && clean(data.personal.shared_life_plans)
         ? (
             <div className="portfolio-personal-content">
-              <div><h3>Life direction</h3><p className="portfolio-long-copy">{data.personal.long_term_goals}</p></div>
-              <div><h3>What I hope to share</h3><p className="portfolio-long-copy">{data.personal.shared_life_plans}</p></div>
+              <div><h3>Life direction</h3><PortfolioNarrative text={data.personal.long_term_goals || ""} label="Life direction" /></div>
+              <div><h3>What I hope to share</h3><PortfolioNarrative text={data.personal.shared_life_plans || ""} label="What I hope to share" /></div>
             </div>
           )
-        : <p className="portfolio-long-copy">{sharedLifeStatement}</p>,
+        : <PortfolioNarrative text={sharedLifeStatement} label="Shared future" />,
     });
   }
 
@@ -509,15 +528,20 @@ export default function CelestialUnion({
   );
   const firstFullChapter = numberedChapters.find((chapter) => chapter.id !== "astrology");
   const briefOverviewAvailable = Boolean(
-    educationTitle || careerTitle || languages.length || clean(data.lifestyle?.diet)
-    || hobbies.length || values.length || clean(data.family?.public_summary)
-    || clean(data.preferences?.narrative)
+    (journeyVisible && educationTitle) || visibleCareerTitle || languages.length || (lifestyleVisible && clean(data.lifestyle?.diet))
+    || hobbies.length || values.length || (familyVisible && clean(data.family?.public_summary))
+    || (preferencesVisible && clean(data.preferences?.narrative))
   );
-  const familyJourneyTarget = briefPublicView
-    ? briefOverviewAvailable ? "#portfolio-profile" : null
-    : numberedChapters.some((chapter) => chapter.id === "journey")
-      ? "#journey"
-      : numberedChapters.some((chapter) => chapter.id === "family") ? "#family" : null;
+  const navigationSections: PortfolioSectionLink[] = [{ href: "#main-content", label: "Overview" }];
+  if (galleryPhotos.length || data.visibility?.gallery === "restricted") navigationSections.push({ href: "#portfolio-gallery-title", label: "Gallery" });
+  if (astrologyChapter) navigationSections.push({ href: "#astrology", label: "Astrology" });
+  if (briefPublicView) {
+    if (briefOverviewAvailable) navigationSections.push({ href: "#portfolio-profile", label: "About" });
+  } else {
+    for (const [id, label] of [["journey", "Education & work"], ["family", "Family"]]) {
+      if (numberedChapters.some(chapter => chapter.id === id)) navigationSections.push({ href: `#${id}`, label });
+    }
+  }
   const remainingFullChapters = numberedChapters.filter(
     (chapter) => chapter.id !== firstFullChapter?.id && chapter.id !== "astrology"
   );
@@ -533,7 +557,7 @@ export default function CelestialUnion({
           "astrology",
           "Astrology",
           "Cultural alignment",
-          "Astrology information exists and can be shared after approval.",
+          "Astrology information exists and can be shared privately.",
           showInterestSection
         )}
         number={astrologyChapter.number}
@@ -553,33 +577,30 @@ export default function CelestialUnion({
     "--portfolio-border": theme.border,
   } as CSSProperties;
 
+  const gallery = data.visibility?.gallery === "restricted" && !hasApprovedAccess
+    ? <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
+        <ChapterHeading eyebrow="Captured moments" title="Gallery" id="portfolio-gallery-title" />
+        <ProtectedDataVault title="Photos shared privately" detail="Protected photos stay private until access is approved." showAction={showInterestSection} />
+      </section>
+    : <AdaptivePortfolioGallery photos={galleryPhotos} />;
+
   return (
     <div
       data-template="celestial-union"
       data-appearance={appearance}
       data-privacy-mode={privacyMode}
       data-access-mode={accessMode}
+      id="portfolio-top"
       className="portfolio-root"
       style={variables}
     >
-      <header className="portfolio-header">
-        <div className="portfolio-header-inner">
-          <VivIntroBrand href="#main-content" variant="horizontal" className="portfolio-brand" />
-          <nav aria-label="Introduction quick actions">
-            <a href="#main-content">Overview</a>
-            {galleryPhotos.length > 0 && <a href="#portfolio-gallery-title">Gallery</a>}
-            {astrologyChapter && <a href="#astrology">Astrology</a>}
-            {familyJourneyTarget && <a href={familyJourneyTarget}>Family / Journey</a>}
-          </nav>
-          {showInterestSection && <a className="portfolio-header-action" href="#portfolio-interest"><Heart aria-hidden="true" />Show interest</a>}
-        </div>
-      </header>
+      <PortfolioNav sections={navigationSections} showInterest={showInterestSection} appearance={appearance} />
 
       {approvedViewer && (
-        <aside className="portfolio-access-context" aria-label="Protected access details">
+        <aside className="portfolio-access-context" aria-label="Private sharing details">
           <ShieldCheck aria-hidden="true" />
           <div>
-            <strong>Protected access</strong>
+            <strong>Private sharing</strong>
             <span>
               Shared with your signed-in account by the introduction owner
               {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
@@ -587,29 +608,23 @@ export default function CelestialUnion({
           </div>
         </aside>
       )}
-      <main id="main-content" className="portfolio-main">
+      <main id="main-content" className="portfolio-main" tabIndex={-1}>
         <section className="portfolio-hero" aria-labelledby="portfolio-name">
           <div className="portfolio-photo-stage">
-            <span className="portfolio-orbit portfolio-orbit-one" aria-hidden="true" />
-            <span className="portfolio-orbit portfolio-orbit-two" aria-hidden="true" />
+            <div className="portfolio-portrait-artwork" aria-hidden="true">
+              <BrandMotif />
+              <span className="portfolio-orbit portfolio-orbit-one" />
+              <span className="portfolio-orbit portfolio-orbit-two" />
+            </div>
             <div className="portfolio-primary-photo">
               <AdaptivePortfolioHero photos={heroPhotos} fallbackColor={theme.surfaceSoft} />
             </div>
           </div>
           <div className="portfolio-hero-copy">
-            <p className="portfolio-eyebrow">A Marriage Introduction</p>
+            <p className="portfolio-eyebrow">Marriage introduction</p>
             <div className="portfolio-name-row">
               <h1 id="portfolio-name">{clean(data.personal.name) || "Marriage introduction"}</h1>
-              {identityVerified && (
-                <span
-                  className="portfolio-verified-badge"
-                  aria-label="Liveness checked. A live person completed liveness checks. This does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match."
-                  title="Liveness checked"
-                >
-                  <ShieldCheck aria-hidden="true" />
-                  <span>Liveness checked</span>
-                </span>
-              )}
+              {identityVerified && <TrustBadge />}
             </div>
             {heroLine && <p className="portfolio-hero-line">{heroLine}</p>}
             {shortBio && <p className="portfolio-hero-summary">{shortBio}</p>}
@@ -626,16 +641,16 @@ export default function CelestialUnion({
           <>
             <BriefIntroduction
               name={data.personal.name}
-              education={educationTitle}
-              career={careerTitle}
+              education={journeyVisible ? educationTitle : undefined}
+              career={visibleCareerTitle}
               interests={hobbies}
               values={values}
               languages={languages}
-              diet={clean(data.lifestyle?.diet)}
-              familyIntroduction={clean(data.family?.public_summary)}
-              partnershipIntroduction={clean(data.preferences?.narrative)}
+              diet={lifestyleVisible ? clean(data.lifestyle?.diet) : undefined}
+              familyIntroduction={familyVisible ? clean(data.family?.public_summary) : undefined}
+              partnershipIntroduction={preferencesVisible ? clean(data.preferences?.narrative) : undefined}
             />
-            <AdaptivePortfolioGallery photos={briefGalleryPhotos} />
+            {gallery}
             {briefAstrologySection}
           </>
         ) : hasApprovedAccess ? (
@@ -645,7 +660,7 @@ export default function CelestialUnion({
                 <Chapter {...firstFullChapter} />
               </div>
             )}
-            <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {gallery}
             {astrologySection}
             {remainingFullChapters.length > 0 && (
               <div className="portfolio-chapters portfolio-full-chapters">
@@ -660,7 +675,7 @@ export default function CelestialUnion({
                 <Chapter {...firstStandardChapter} />
               </div>
             )}
-            <AdaptivePortfolioGallery photos={galleryPhotos} />
+            {gallery}
             {astrologySection}
             {pairedChapterRows.length > 0 && (
               <div className="portfolio-chapters">
@@ -686,32 +701,32 @@ export default function CelestialUnion({
           <section id="portfolio-interest" className="portfolio-protected-section">
             <div className="portfolio-protected-copy">
               <p className="portfolio-eyebrow">Respectful access</p>
-              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the introduction owner" : "More can be shared after approval."}</h2>
+              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the introduction owner" : "More can be shared privately."}</h2>
               <p>
                 {ownerPreview
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
-                    ? "These contact details became visible when the introduction owner approved your request."
-                    : "Introduce yourself using a verified email. The introduction owner decides whether to share the protected details with you."}
+                    ? "These contact details are visible because they chose to share them with you."
+                    : `Tap Show interest and confirm your email. ${firstName(data.personal.name)} decides whether to share the details below.`}
               </p>
             </div>
             {protectedItems.length > 0 && (
               <div className="portfolio-protected-summary">
-                <div className="portfolio-protected-items" aria-label="Protected information available">
+                <div className="portfolio-protected-items" aria-label="Private details available">
                   {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
                 </div>
                 {!hasApprovedAccess && (
-                  <p className="portfolio-protected-clarifier">One approved request shares everything listed above for up to 15 days.</p>
+                  <p className="portfolio-protected-clarifier">When they choose to share, everything listed above is available for up to 15 days.</p>
                 )}
               </div>
             )}
+            {contactLocked && <ProtectedDataVault title="Contact shared privately" detail="Phone numbers and email addresses stay private." />}
             {hasApprovedAccess && contactEntries.length > 0 ? (
               <div className="portfolio-contact-list">
                 {contactEntries.map((contact, index) => (
                   <div key={`${contact.name}-${index}`}>
                     <strong>{contact.name}{contact.relationship ? ` · ${contact.relationship}` : ""}</strong>
-                    {contact.phone && <span>{contact.phone}</span>}
-                    {contact.email && <span>{contact.email}</span>}
+                    <PortfolioContactActions phone={contact.phone} email={contact.email} />
                   </div>
                 ))}
               </div>
@@ -721,33 +736,22 @@ export default function CelestialUnion({
           </section>
         )}
 
-        {!ownerPreview && (
+        {!ownerPreview && !viewingOwnPortfolio && (
           <aside className="portfolio-creator-cta" aria-labelledby="portfolio-creator-cta-title">
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
-              <h2 id="portfolio-creator-cta-title">Want to share an introduction with this level of care?</h2>
-              <p>Create your portfolio privately. When you are ready, share an Introduction and keep sensitive details behind your approval.</p>
+              <h2 id="portfolio-creator-cta-title">Want an introduction like this?</h2>
+              <p>Create yours privately. Share it when you’re ready, and choose who sees your private details.</p>
             </div>
             <Link href="/signup">
-              Create your portfolio
+              Create your introduction
               <ArrowRight aria-hidden="true" />
             </Link>
           </aside>
         )}
       </main>
 
-      <footer className="portfolio-footer">
-        <div className="portfolio-footer-identity">
-          <VivIntroBrand variant="full-symbol" decorative />
-          <p>One introduction, shared with care.</p>
-        </div>
-        <nav className="portfolio-footer-links" aria-label="Portfolio help and policies">
-          <Link href="/received-a-link">Viewer guide</Link>
-          <Link href="/terms#data-accuracy">Terms &amp; data accuracy</Link>
-          <Link href="/privacy">Privacy Policy</Link>
-          <Link href="/privacy#corrections">Report or correct information</Link>
-        </nav>
-      </footer>
+      <PortfolioFooter livenessChecked={identityVerified} appearance={appearance} />
       <PortfolioBackToTop />
     </div>
   );
@@ -784,31 +788,24 @@ function BriefIntroduction({
   if (!facts.length && !tags.length && !familyIntroduction && !partnershipIntroduction) return null;
 
   return (
-    <section id="portfolio-profile" className="portfolio-short-overview" aria-labelledby="short-overview-title">
-      <div className="portfolio-section-heading">
-        <p>A quick introduction</p>
-        <h2 id="short-overview-title">A little more about {firstName(name)}</h2>
-      </div>
+    <section id="portfolio-profile" className="portfolio-short-overview" aria-labelledby="short-overview-title" tabIndex={-1}>
+      <ChapterHeading eyebrow="A quick introduction" title={`A little more about ${firstName(name)}`} id="short-overview-title" />
       {facts.length > 0 && (
         <div className="portfolio-detail-grid">
           {facts.map(([label, value]) => <DataPair key={label} label={label} value={value} />)}
         </div>
       )}
-      {tags.length > 0 && <div className="portfolio-tags">{tags.map((value) => <span key={value}>{value}</span>)}</div>}
-      {familyIntroduction && <div><h3>Family introduction</h3><p className="portfolio-long-copy">{familyIntroduction}</p></div>}
-      {partnershipIntroduction && <div><h3>Hopes for a partnership</h3><p className="portfolio-long-copy">{partnershipIntroduction}</p></div>}
+      {tags.length > 0 && <div className="portfolio-tags">{tags.map((value) => <Pill key={value}>{value}</Pill>)}</div>}
+      {familyIntroduction && <div><h3>Family introduction</h3><PortfolioNarrative text={familyIntroduction} label="Family introduction" /></div>}
+      {partnershipIntroduction && <div><h3>Hopes for a partnership</h3><PortfolioNarrative text={partnershipIntroduction} label="Hopes for a partnership" /></div>}
     </section>
   );
 }
 
 function Chapter({ number, id, eyebrow, title, content }: ChapterDefinition & { number: number }) {
   return (
-    <section id={id} className="portfolio-chapter" aria-labelledby={`${id}-title`}>
-      <span className="portfolio-chapter-number" aria-hidden="true">{String(number).padStart(2, "0")}</span>
-      <div className="portfolio-section-heading">
-        <p>{eyebrow}</p>
-        <h2 id={`${id}-title`}>{title}</h2>
-      </div>
+    <section id={id} className="portfolio-chapter" aria-labelledby={`${id}-title`} tabIndex={-1}>
+      <ChapterHeading number={number} eyebrow={eyebrow} title={title} id={`${id}-title`} />
       <div className="portfolio-chapter-content">{content}</div>
     </section>
   );
@@ -816,24 +813,15 @@ function Chapter({ number, id, eyebrow, title, content }: ChapterDefinition & { 
 
 function TimelineItem({ icon, label, title, meta, detail }: { icon: ReactNode; label: string; title: string; meta?: string; detail?: string }) {
   return (
-    <article className="portfolio-timeline-item">
-      <div className="portfolio-timeline-icon">{icon}</div>
-      <div>
-        <span>{label}</span>
-        <h3>{title}</h3>
-        {meta && <p className="portfolio-timeline-meta">{meta}</p>}
-        {detail && <p className="portfolio-section-copy">{detail}</p>}
-      </div>
-    </article>
+    <IconDataRow icon={icon} label={label} title={title} subtitle={meta}>
+      {detail && <PortfolioNarrative text={detail} label={label} className="portfolio-section-copy" />}
+    </IconDataRow>
   );
 }
 
 function ProtectedInline({ heading, detail, showAction }: { heading: string; detail: string; showAction: boolean }) {
   return (
-    <div className="portfolio-protected-note">
-      <LockKeyhole aria-hidden="true" />
-      <p><strong>{heading}</strong><span>{detail}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p>
-    </div>
+    <ProtectedDataVault title={heading} detail={detail} showAction={showAction} />
   );
 }
 
@@ -848,7 +836,7 @@ function protectedChapter(id: string, eyebrow: string, title: string, message: s
     id,
     eyebrow,
     title,
-    content: <div className="portfolio-gate"><LockKeyhole aria-hidden="true" /><p><strong>{title} shared after approval</strong><span>{message}</span>{showAction && <a href="#portfolio-interest">Show interest</a>}</p></div>,
+    content: <ProtectedDataVault title={`${title} shared privately`} detail={message} showAction={showAction} />,
   };
 }
 
@@ -869,7 +857,7 @@ function protectedSectionLabels({
   if (isRestricted(data, "astrology") || isRestricted(data, "astrology_details")) labels.push("Astrology details");
   if (isRestricted(data, "preferences")) labels.push("Partner preferences");
   if (isRestricted(data, "future_plans")) labels.push("Shared-life plans");
-  if (blurredPhotos > 0) labels.push(`${blurredPhotos} protected ${blurredPhotos === 1 ? "photo" : "photos"}`);
+  if (blurredPhotos > 0) labels.push(`${blurredPhotos} private ${blurredPhotos === 1 ? "photo" : "photos"}`);
   if (isRestricted(data, "contact")) labels.push("Direct contact");
   return Array.from(new Set(labels));
 }

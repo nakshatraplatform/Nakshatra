@@ -18,6 +18,8 @@ function fixture() {
 }
 type Fixture = ReturnType<typeof fixture>;
 const evaluate = (f: Fixture) => evaluateAudit(f.full, f.production, f.lock);
+const clean = () => fixture().production;
+const affected = () => fixture().full;
 
 describe("strict npm audit without exceptions", () => {
   it("rejects the previously accepted development advisory after retirement", () => {
@@ -91,48 +93,35 @@ describe("strict npm audit without exceptions", () => {
   ])("rejects missing, changed or inconsistent report data %#", full => {
     const f = fixture(); f.full = full;
     expect(() => evaluate(f)).toThrow();
+    f.production = full; f.full = clean();
+    expect(() => evaluate(f)).toThrow();
   });
 });
-
 describe("npm audit execution boundary", () => {
-  it("accepts exit 1 only with a complete vulnerability report", () => {
-    const f = fixture();
-    expect(parseAuditResult({ status: 1, stdout: JSON.stringify(f.full) })).toEqual(f.full);
-    expect(parseAuditResult({ status: 0, stdout: JSON.stringify(f.production) })).toEqual(f.production);
+  it("accepts only report-consistent exit statuses", () => {
+    expect(parseAuditResult({ status: 1, stdout: JSON.stringify(affected()) })).toEqual(affected());
+    expect(parseAuditResult({ status: 0, stdout: JSON.stringify(clean()) })).toEqual(clean());
   });
   it.each([
-    { status: 1, stdout: "registry unavailable" },
-    { status: 1, stdout: JSON.stringify(fixture().production) },
-    { status: 0, stdout: JSON.stringify(fixture().full) },
-    { status: 2, stdout: JSON.stringify(fixture().production) },
-    { status: null, signal: "SIGTERM", stdout: "" },
-    { status: 0, error: new Error("spawn failed"), stdout: JSON.stringify(fixture().production) },
+    { status: 1, stdout: "registry unavailable" }, { status: 1, stdout: JSON.stringify(clean()) },
+    { status: 0, stdout: JSON.stringify(affected()) }, { status: 2, stdout: JSON.stringify(clean()) },
+    { status: null, signal: "SIGTERM", stdout: "" }, { status: 0, error: new Error("spawn failed"), stdout: JSON.stringify(clean()) },
     { status: 1, stdout: JSON.stringify({ error: { code: "E503" } }) },
-  ])("fails closed on command/report errors %#", (result) => {
-    expect(() => parseAuditResult(result)).toThrow();
-  });
-  it("runs both audit scopes and propagates an invalid full-report failure through the CLI", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "vivintro-audit-cli-"));
+  ])("fails closed on execution errors %#", result => expect(() => parseAuditResult(result)).toThrow());
+  it.each(["invalid", "affected", "clean"])("CLI runs both scopes under NODE_ENV=production: %s", mode => {
+    const dir = mkdtempSync(path.join(tmpdir(), "nak-audit-cli-"));
     try {
       const fakeNpm = path.join(dir, "npm.cjs");
       const log = path.join(dir, "calls.jsonl");
-      writeFileSync(fakeNpm, `
-        require('node:fs').appendFileSync(${JSON.stringify(log)}, JSON.stringify(process.argv.slice(2)) + '\\n');
-        if (process.argv.includes('--omit=dev')) {
-          console.log(${JSON.stringify(JSON.stringify(fixture().production))});
-        } else { console.log('registry unavailable'); process.exitCode = 1; }
-      `);
-      // Windows treats environment variable names case-insensitively; npm may
-      // supply npm_execPath alongside this test's npm_execpath override.
-      const childEnv = Object.fromEntries(Object.entries(process.env)
-        .filter(([key]) => key.toLowerCase() !== "npm_execpath"));
-      const result = spawnSync(process.execPath, ["scripts/security-audit.mjs"], {
-        env: { ...childEnv, npm_execpath: fakeNpm, NODE_ENV: "production" },
-        encoding: "utf8", timeout: 10000,
-      });
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain("did not return valid JSON");
-      const calls = readFileSync(log, "utf8").trim().split("\n").map((line) => JSON.parse(line));
+      writeFileSync(fakeNpm, `require('node:fs').appendFileSync(${JSON.stringify(log)}, JSON.stringify(process.argv.slice(2))+'\\n');
+        if(process.argv.includes('--omit=dev')) console.log(${JSON.stringify(JSON.stringify(clean()))});
+        else {console.log(${JSON.stringify(mode === "invalid" ? "registry unavailable" : JSON.stringify(mode === "affected" ? affected() : clean()))});process.exitCode=${mode === "clean" ? 0 : 1};}`);
+      const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "npm_execpath"));
+      const result = spawnSync(process.execPath, ["scripts/security-audit.mjs"], { env: { ...env, npm_execpath: fakeNpm, NODE_ENV: "production" }, encoding: "utf8", timeout: 10000 });
+      expect(result.status).toBe(mode === "clean" ? 0 : 1);
+      if (mode === "invalid") expect(result.stderr).toContain("did not return valid JSON");
+      if (mode === "affected") expect(result.stderr).toContain("Unaccepted");
+      const calls = readFileSync(log, "utf8").trim().split("\n").map(line => JSON.parse(line));
       expect(calls).toHaveLength(2);
       expect(calls[0]).toContain("--omit=dev");
       expect(calls[1]).toContain("--include=dev");

@@ -23,14 +23,14 @@ function runNext(code: string, filename = "fixture.tsx", config = path.join(root
   } finally { rmSync(directory, { recursive: true, force: true }); }
 }
 
-describe("hybrid lint rule parity", () => {
+// CLI subprocesses already have a 15s budget; leave room for cold engine setup
+// without changing global test deadlines or any lint/exit-status expectation.
+describe("hybrid lint rule parity", { timeout: 20_000 }, () => {
   it.each(Object.keys(baseline))("preserves every non-Next rule and option for %s", async file => {
     const config = await eslint.calculateConfigForFile(file);
-    for (const [rule, options] of Object.entries(baseline[file].rules)) {
-      if (!rule.startsWith("@next/next/") || rule.endsWith("/no-location-assign-relative-destination")) {
-        expect(config.rules[rule], rule).toEqual(options);
-      }
-    }
+    const retained = (rules: Record<string, unknown>) => Object.fromEntries(Object.entries(rules)
+      .filter(([rule]) => !rule.startsWith("@next/next/") || rule.endsWith("/no-location-assign-relative-destination")));
+    expect(retained(config.rules)).toEqual(retained(baseline[file].rules));
     expect(config.settings).toEqual(baseline[file].settings);
   });
 
@@ -41,6 +41,7 @@ describe("hybrid lint rule parity", () => {
     expect(Object.keys(ox.rules)).toHaveLength(21);
     expect(ox.plugins).toEqual(["nextjs"]);
     expect(ox.categories).toEqual({ correctness: "off" });
+    expect(ox.ignorePatterns).toEqual(expect.arrayContaining(["playwright-report/**", "test-results/**", "coverage/**", ".next-e2e/**"]));
     const inventory = spawnSync(process.execPath, [oxlintPath, "--rules", "--format=json"], { cwd: root, encoding: "utf8", timeout: 15000 });
     expect(inventory.status).toBe(0);
     const supported = new Set(JSON.parse(inventory.stdout).filter((rule: { scope: string }) => rule.scope === "nextjs").map((rule: { value: string }) => `nextjs/${rule.value}`));

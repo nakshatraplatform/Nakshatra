@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   deletion: vi.fn(),
   cancel: vi.fn(),
   reauth: vi.fn(),
+  profile: vi.fn(),
 }));
 
 vi.mock("@/features/account/client/account.api", () => ({
@@ -20,11 +21,13 @@ vi.mock("@/features/account/client/account.api", () => ({
   requestAccountDeletionRequest: mocks.deletion,
   cancelAccountDeletionRequest: mocks.cancel,
   startAccountDeletionReauthRequest: mocks.reauth,
+  saveAccountProfileRequest: mocks.profile,
 }));
 
 import AccountClient from "../src/app/account/account-client";
 
 beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   vi.clearAllMocks();
   mocks.export.mockResolvedValue({ ok: true, data: new Blob(["{}"], { type: "application/json" }) });
   mocks.sessions.mockResolvedValue({ ok: true, data: { ok: true } });
@@ -46,6 +49,7 @@ describe("account privacy screen", () => {
     let finish!: (result: unknown) => void;
     mocks.deletion.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
     render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete account" }));
     fireEvent.change(screen.getByLabelText(/type delete/i), { target: { value: "DELETE" } });
     fireEvent.click(screen.getByRole("button", { name: "Schedule deletion" }));
     expect(screen.getByRole("button", { name: "Close deletion confirmation" })).toBeDisabled();
@@ -70,16 +74,42 @@ describe("account privacy screen", () => {
     expect(screen.getByLabelText(/type delete/i)).toHaveValue("");
     expect(mocks.deletion).not.toHaveBeenCalled();
   });
-  it("downloads the account export and revokes other sessions", async () => {
+  it("keeps deletion loading feedback inside the confirmation dialog", async () => {
+    let resolve!: (value: { ok: false; error: { message: string; code: string; status: number } }) => void;
+    mocks.deletion.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete account" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/type delete/i), { target: { value: "DELETE" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Schedule deletion" }));
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Scheduling account deletion");
+    await act(async () => resolve({ ok: false, error: { message: "Please retry", code: "UNAVAILABLE", status: 503 } }));
+    expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Schedule deletion" })).toBeEnabled();
+  });
+
+  it("saves separate account names with an optional middle name and shows linked methods", async () => {
+    const profile = { firstName: "Rahul", middleName: "", lastName: "Ranganatha" };
+    mocks.profile.mockResolvedValue({ ok: true, data: profile });
+    render(<AccountClient userEmail="owner@example.test" initialDeletion={null} signInMethods={["Google"]} />);
+    expect(screen.getByLabelText("Middle name (optional)")).not.toBeRequired();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: profile.firstName } });
+    fireEvent.change(screen.getByLabelText("Last name"), { target: { value: profile.lastName } });
+    fireEvent.click(screen.getByRole("button", { name: "Save names" }));
+    await waitFor(() => expect(mocks.profile).toHaveBeenCalledWith(profile));
+    expect(await screen.findByText("Your account names have been saved. Your portfolio has not changed.")).toBeInTheDocument();
+    expect(screen.getByText("Google")).toBeInTheDocument();
+    expect(screen.queryByText("Payment method")).not.toBeInTheDocument();
+  });
+  it("hides the JSON download until a portfolio PDF is available and still revokes other sessions", async () => {
     render(<AccountClient userEmail="owner@example.test" initialDeletion={null} reauthComplete />);
     expect(screen.getByRole("heading", { name: "Account settings" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Your data and devices" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your devices" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Close your account" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Download" }));
-    await waitFor(() => expect(mocks.export).toHaveBeenCalled());
-    expect(screen.getByText("Your account export has been downloaded.")).toBeInTheDocument();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:account-export");
+    expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Download your data" })).not.toBeInTheDocument();
+    expect(mocks.export).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out others" }));
     await waitFor(() => expect(mocks.sessions).toHaveBeenCalled());
@@ -163,15 +193,13 @@ describe("account privacy screen", () => {
 
   it("surfaces safe API errors for every action", async () => {
     const failure = { ok: false, code: "UNAVAILABLE", message: "Please try again.", status: 503 };
-    mocks.export.mockResolvedValueOnce(failure);
     mocks.sessions.mockResolvedValueOnce(failure);
     mocks.cancel.mockResolvedValueOnce(failure);
     const first = render(<AccountClient userEmail="owner@example.test" initialDeletion={null} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Download" }));
-    expect(await screen.findByText("Please try again.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sign out others" }));
     await waitFor(() => expect(mocks.sessions).toHaveBeenCalled());
+    expect(await screen.findByText("Please try again.")).toBeInTheDocument();
 
     first.unmount();
     render(<AccountClient

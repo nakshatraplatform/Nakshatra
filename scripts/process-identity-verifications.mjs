@@ -1,3 +1,4 @@
+import { processDeletedProviderCleanup } from "./deleted-provider-cleanup.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { createIdentityVerificationWorker } from "./identity-verification-worker.mjs";
 import { processCandidateLivenessEmails } from "./candidate-liveness-email-worker.mjs";
@@ -19,6 +20,12 @@ const result = await createIdentityVerificationWorker(supabase, { candidateOnly:
 console.log(
   `Identity verification run complete: ${result.completed} completed, ${result.pending} pending, ${result.deferred} deferred.`,
 );
+const cleanupResult = await processDeletedProviderCleanup(supabase).then(
+  (value) => ({ ...value, error: null }),
+  () => ({ completed: 0, deferred: 1, error: "DELETED_PROVIDER_WORK_FAILED" }),
+);
+const cleanup = cleanupResult;
+console.log(`Deleted-account provider cleanup: ${cleanup.completed} completed, ${cleanup.deferred} deferred.`);
 // Email failures never roll back a proof or prevent the next provider batch.
 // Dispatch even when this batch contains a deferred provider request.
 const emails = await processCandidateLivenessEmails(supabase);
@@ -32,3 +39,5 @@ if (result.deferred > 0) {
   throw new Error("IDENTITY_VERIFICATION_WORK_DEFERRED");
 }
 if (emails.failed > 0) throw new Error("LIVENESS_EMAIL_DELIVERY_DEFERRED");
+
+if (cleanup.deferred > 0) throw new Error("DELETED_PROVIDER_WORK_DEFERRED");

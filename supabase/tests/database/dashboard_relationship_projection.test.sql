@@ -70,7 +70,7 @@ select pg_temp.prime_paid_publication(
 );
 
 update public.portfolios
-set is_published = true
+set is_published = true, published_data = draft_data
 where id = '83000000-0000-4000-8000-000000000002';
 
 insert into public.public_portfolio_snapshots (

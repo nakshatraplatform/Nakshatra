@@ -98,6 +98,88 @@ const photos: PortfolioPhoto[] = [
 ];
 
 describe("celestial union portfolio", () => {
+  it.each(["light", "dark"] as const)("keeps the signature portrait orbits decorative in the %s theme", (appearance) => {
+    const { container } = render(<CelestialUnion data={{ ...complete, style: { ...complete.style, appearance } }} sunSign="kanya" accessMode="public" />);
+    const artwork = container.querySelector(".portfolio-photo-stage .portfolio-portrait-artwork");
+    expect(artwork).toHaveAttribute("aria-hidden", "true");
+    expect(artwork?.querySelectorAll(".portfolio-orbit")).toHaveLength(2);
+    expect(artwork?.querySelector(".portfolio-orbit-one")).toBeInTheDocument();
+    expect(artwork?.querySelector(".portfolio-orbit-two")).toBeInTheDocument();
+    expect(artwork?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(artwork?.querySelector(".portfolio-primary-photo")).toBeNull();
+    expect(container.querySelector(".portfolio-photo-stage > .portfolio-primary-photo")).toBeInTheDocument();
+  });
+
+  it("hides conversion for the signed-in public-link owner without widening disclosure", () => {
+    render(<BiodataTemplate templateId={3} data={complete} sunSign="kanya" accessMode="public" viewingOwnPortfolio />);
+    expect(screen.queryByRole("link", { name: "Create your introduction" })).not.toBeInTheDocument();
+    expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy phone" })).not.toBeInTheDocument();
+  });
+
+  it("lets viewers expand and collapse a lengthy authorized narrative", () => {
+    const narrative = "A thoughtful story about family, work and shared values. ".repeat(24);
+    render(<CelestialUnion data={{ ...complete, personal: { ...complete.personal, profile_summary: narrative } }} sunSign="kanya" accessMode="public" />);
+    const toggle = screen.getByRole("button", { name: "Read more: Personal story" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const text = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(text.textContent!.length).toBeLessThan(narrative.length);
+    fireEvent.click(toggle);
+    expect(text.textContent).toBe(narrative.trim());
+    fireEvent.click(screen.getByRole("button", { name: "Read less: Personal story" }));
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("copies only authorized contact values and supplies safe action URLs", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<CelestialUnion data={complete} sunSign="kanya" accessMode="approved" />);
+    expect(screen.getByRole("link", { name: "Call" })).toHaveAttribute("href", "tel:+919000000000");
+    expect(screen.getByRole("link", { name: "Email" })).toHaveAttribute("href", "mailto:family%40example.com");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Copy email" })); });
+    expect(writeText).toHaveBeenCalledWith("family@example.com");
+    expect(screen.getByRole("status")).toHaveTextContent("Email address copied.");
+  });
+  it("contains lightbox focus and restores existing inert state on close", () => {
+    const background = document.createElement("div");
+    background.setAttribute("inert", "");
+    document.body.append(background);
+    const view = render(<AdaptivePortfolioGallery photos={photos} />);
+    const opener = screen.getByRole("button", { name: "Open Portrait full screen" });
+    fireEvent.click(opener);
+    expect(view.container).toHaveAttribute("inert");
+    const dialog = screen.getByRole("dialog", { name: "Gallery photo viewer" });
+    const close = within(dialog).getByRole("button", { name: "Close photo and return to gallery" });
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(within(dialog).getByRole("button", { name: "Show next available photo" })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: "Tab" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "Escape" });
+    expect(opener).toHaveFocus();
+    expect(view.container).not.toHaveAttribute("inert");
+    expect(background).toHaveAttribute("inert");
+    background.remove();
+  });
+  it("offers only rendered navigation targets across public, private and owner projections", () => {
+    for (const accessMode of ["public", "owner", "approved"] as const) {
+      for (const privacy_mode of ["private", "balanced"] as const) {
+        const view = render(<CelestialUnion data={{ ...complete, privacy_mode }} sunSign="kanya" accessMode={accessMode} />);
+        for (const link of within(view.getByRole("navigation", { name: "Introduction quick actions" })).getAllByRole("link")) {
+          expect(view.container.querySelector(link.getAttribute("href")!)).not.toBeNull();
+        }
+        view.unmount();
+      }
+    }
+  });
+  it("keeps policy destinations and visible liveness limitations in the compact footer", () => {
+    render(<CelestialUnion data={complete} sunSign="kanya" identityVerified />);
+    const footer = screen.getByRole("contentinfo");
+    expect(within(footer).getByRole("link", { name: "Viewer guide" })).toHaveAttribute("href", "/received-a-link");
+    expect(within(footer).getByRole("link", { name: "Terms & data accuracy" })).toHaveAttribute("href", "/terms#data-accuracy");
+    expect(within(footer).getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
+    expect(within(footer).getByRole("link", { name: "Report or correct information" })).toHaveAttribute("href", "/privacy#corrections");
+    expect(within(footer).getByText(/It does not verify identity, photos or profile details/)).toBeInTheDocument();
+  });
   it("uses the canonical template for legacy and unknown template IDs", () => {
     const { container, rerender } = render(
       <BiodataTemplate templateId={3} data={complete} sunSign="kanya" photos={photos} />
@@ -123,10 +205,10 @@ describe("celestial union portfolio", () => {
 
     expect(screen.getByRole("heading", { name: "Aditi Rao" })).toBeInTheDocument();
     expect(screen.queryByText("Liveness checked")).not.toBeInTheDocument();
-    expect(screen.getByText("A Marriage Introduction")).toBeInTheDocument();
+    expect(screen.getByText("Marriage introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
     const heroLine = document.querySelector(".portfolio-hero-line");
     expect(heroLine).toHaveTextContent("Engineer, Boston");
     expect(heroLine).not.toHaveTextContent(/\d+ years/);
@@ -171,7 +253,9 @@ describe("celestial union portfolio", () => {
     expect(within(quickActions).getByRole("link", { name: "Overview" })).toHaveAttribute("href", "#main-content");
     expect(within(quickActions).getByRole("link", { name: "Gallery" })).toHaveAttribute("href", "#portfolio-gallery-title");
     expect(within(quickActions).getByRole("link", { name: "Astrology" })).toHaveAttribute("href", "#astrology");
-    expect(within(quickActions).getByRole("link", { name: "Family / Journey" })).toHaveAttribute("href", "#journey");
+    expect(within(quickActions).getByRole("link", { name: "Education & work" })).toHaveAttribute("href", "#journey");
+    expect(within(quickActions).getByRole("link", { name: /^Family$/ })).toHaveAttribute("href", "#family");
+    expect(within(quickActions).queryByRole("link", { name: "Family / Journey" })).not.toBeInTheDocument();
     const quickFacts = screen.getByLabelText("At a glance");
     expect(within(quickFacts).getByText("Marital Status")).toBeInTheDocument();
     expect(within(quickFacts).queryByText("Lives in")).not.toBeInTheDocument();
@@ -188,8 +272,11 @@ describe("celestial union portfolio", () => {
     expect(pairedRows[1].children).toHaveLength(1);
     const trailingChapters = document.querySelectorAll(".portfolio-chapters-trailing > .portfolio-chapter");
     expect(Array.from(trailingChapters, (chapter) => chapter.id)).toEqual(["preferences", "shared-life"]);
-    expect(trailingChapters[0].children).toHaveLength(3);
-    expect(trailingChapters[1].children).toHaveLength(3);
+    for (const chapter of trailingChapters) {
+      expect(chapter.children).toHaveLength(2);
+      expect(chapter.firstElementChild?.querySelector("h2")).toHaveAttribute("id", `${chapter.id}-title`);
+      expect(chapter.firstElementChild?.querySelector("p > span[aria-hidden=true]")).toHaveTextContent(/^\d{2}$/);
+    }
     expect(document.querySelector("#preferences .portfolio-long-copy")).toBeTruthy();
     expect(document.querySelector("#shared-life .portfolio-long-copy")).toBeTruthy();
     const gallery = document.querySelector(".portfolio-gallery");
@@ -217,8 +304,8 @@ describe("celestial union portfolio", () => {
     const { rerender } = render(
       <CelestialUnion data={createApprovedPortfolioSnapshot(complete)} sunSign="kanya" accessMode="approved" horoscopeAttachment={attachment} />
     );
-    expect(screen.getByLabelText("Protected access details")).toBeInTheDocument();
-    expect(screen.queryByText("Complete Portfolio", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Private sharing details")).toBeInTheDocument();
+    expect(screen.queryByText("private details", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Personal details" })).not.toBeInTheDocument();
     const approvedPersonalStory = document.getElementById("personal-story");
     expect(approvedPersonalStory).toBeTruthy();
@@ -239,7 +326,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText("family@example.com")).not.toBeInTheDocument();
   });
 
-  it("shows approved access context with an explicit expiry", () => {
+  it("shows shared details context with an explicit expiry", () => {
     render(
       <CelestialUnion
         data={createApprovedPortfolioSnapshot(complete)}
@@ -250,8 +337,8 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const context = screen.getByLabelText("Protected access details");
-    expect(within(context).getByText("Protected access")).toBeInTheDocument();
+    const context = screen.getByLabelText("Private sharing details");
+    expect(within(context).getByText("Private sharing")).toBeInTheDocument();
     expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Liveness checked\. A live person/)).toBeInTheDocument();
@@ -269,14 +356,14 @@ describe("celestial union portfolio", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Introduce yourself" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
+    expect(screen.getByRole("link", { name: "Show Interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared after approval." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
+    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
   });
 
-  it("offers portfolio creation to approved viewers without showing it in owner preview", () => {
+  it("offers portfolio creation to people you’ve shared with without showing it in owner preview", () => {
     const { rerender } = render(
       <CelestialUnion
         data={createApprovedPortfolioSnapshot(complete)}
@@ -285,11 +372,11 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Want to share an introduction with this level of care?" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create your portfolio" })).toHaveAttribute("href", "/signup");
+    expect(screen.getByRole("heading", { name: "Want an introduction like this?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
 
     rerender(<CelestialUnion data={complete} sunSign="kanya" accessMode="owner" />);
-    expect(screen.queryByRole("link", { name: "Create your portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create your introduction" })).not.toBeInTheDocument();
   });
 
   it("links protected chapters to the interest action and explains the disclosure bundle", () => {
@@ -308,26 +395,26 @@ describe("celestial union portfolio", () => {
 
     const family = document.getElementById("family");
     expect(family).toBeTruthy();
-    expect(within(family!).getByText("Family shared after approval")).toBeInTheDocument();
+    expect(within(family!).getByText("Family shared privately")).toBeInTheDocument();
     expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(screen.getByText("One approved request shares everything listed above for up to 15 days.")).toBeInTheDocument();
+    expect(screen.getByText("When they choose to share, everything listed above is available for up to 15 days.")).toBeInTheDocument();
   });
 
-  it("does not promise another approval when a Complete Portfolio has no details in a restricted chapter", () => {
+  it("does not promise another approval when a private details has no details in a restricted chapter", () => {
     const sparseData = {
       privacy_mode: "balanced" as const,
       personal: { name: "Aditi", short_bio: "A short hello." },
       visibility: { journey: "restricted" as const, family: "restricted" as const, astrology: "restricted" as const },
     };
     const { rerender } = render(<CelestialUnion data={sparseData} sunSign={null} accessMode="approved" />);
-    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/shared privately/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/can be requested after a respectful introduction/i)).not.toBeInTheDocument();
 
     rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="owner" />);
-    expect(screen.queryByText(/shared after approval/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/shared privately/i)).not.toBeInTheDocument();
 
     rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="public" interestAction={<button type="button">Show interest</button>} />);
-    expect(screen.getByText("Family shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Family shared privately")).toBeInTheDocument();
   });
 
   it("keeps protected gallery slots visible in the Brief Introduction", () => {
@@ -346,10 +433,10 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared after approval" });
+    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared privately" });
     expect(protectedPhoto).toBeInTheDocument();
     fireEvent.click(protectedPhoto);
-    expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
     expect(screen.getByText("3 photos")).toBeInTheDocument();
     const gallery = document.querySelector(".portfolio-gallery");
     const astrology = document.getElementById("astrology");
@@ -446,7 +533,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Minimal" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Family" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "More can be shared after approval." })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "More can be shared privately." })).not.toBeInTheDocument();
   });
 
   it("clears stale fields while rerendering Private and Balanced modes", () => {
@@ -520,6 +607,17 @@ describe("celestial union portfolio", () => {
 
 describe("adaptive portfolio media", () => {
   afterEach(() => vi.useRealTimers());
+
+  it("exposes an accessible no-photo placeholder", () => {
+    render(<AdaptivePortfolioHero photos={[]} />);
+    expect(screen.getByRole("img", { name: "Portfolio photo has not been added" })).toBeInTheDocument();
+  });
+
+  it("prioritizes the visible hero image without prioritizing gallery images", () => {
+    render(<><AdaptivePortfolioHero photos={[photos[0]]} /><AdaptivePortfolioGallery photos={[photos[1]]} /></>);
+    expect(screen.getByAltText(photos[0].alt)).toHaveAttribute("fetchpriority", "high");
+    expect(screen.getByAltText(photos[1].alt)).not.toHaveAttribute("fetchpriority", "high");
+  });
 
   it("keeps orientation metadata on hero and gallery elements", () => {
     const { container } = render(
@@ -601,13 +699,13 @@ describe("adaptive portfolio media", () => {
     const { container } = render(<AdaptivePortfolioGallery photos={[protectedPhoto]} />);
 
     expect(screen.queryByAltText(protectedPhoto.alt)).not.toBeInTheDocument();
-    expect(screen.getByText("Photo shared after approval")).toBeInTheDocument();
+    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
     expect(
       container.querySelector('.portfolio-gallery-feature[data-presentation="blurred"]')
     ).toBeTruthy();
   });
 
-  it("shows visible-to-all photos before protected photos while preserving each group order", () => {
+  it("shows visible-to-all photos before private photos while preserving each group order", () => {
     const protectedFirst: PortfolioPhoto = {
       ...photos[1],
       id: "protected-first",
@@ -633,7 +731,7 @@ describe("adaptive portfolio media", () => {
     expect(screen.getByText("1 of 3")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show photo 1" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "Show photo 2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Photo 3, shared after approval" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 3, shared privately" })).toBeInTheDocument();
   });
 
   it("detects orientation for legacy photos without stored dimensions", () => {

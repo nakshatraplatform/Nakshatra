@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import type { PortfolioDraftData } from "@/types/portfolio";
 
 const completeDraft: PortfolioDraftData = {
@@ -9,9 +9,16 @@ const completeDraft: PortfolioDraftData = {
     last_name: "Rao",
     dob: "1996-08-12",
     gender: "female",
-    current_location: "Boston, United States",
+    current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
+    region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "1 Beacon Street",
+    address_line_2: "Unit 2",
     place_of_birth: "Bengaluru",
     short_bio: "A thoughtful introduction.",
     marital_status: "Never Married",
@@ -28,6 +35,21 @@ const completeDraft: PortfolioDraftData = {
 };
 
 describe("portfolio completion", () => {
+  it("fails closed for missing and malformed published snapshots", () => {
+    for (const snapshot of [null, undefined, {}, [], "published", { personal: { dob: "1990-99-99" } }]) {
+      expect(isProfileFullyComplete(snapshot, true)).toBe(false);
+    }
+  });
+
+  it("checks current required published answers and a shareable primary photo", () => {
+    expect(isProfileFullyComplete(completeDraft, true)).toBe(true);
+    expect(isProfileFullyComplete(completeDraft, false)).toBe(false);
+    for (const field of ["postal_code", "address_line_1", "region_code"] as const) {
+      expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, [field]: "" } }, true)).toBe(false);
+    }
+    expect(isProfileFullyComplete({ ...completeDraft, personal: { ...completeDraft.personal, address_line_2: "" } }, true)).toBe(true);
+  });
+
   it("uses one deterministic checklist for completion and publication readiness", () => {
     expect(calculatePortfolioCompletion(completeDraft, true)).toMatchObject({
       percentage: 100,
@@ -38,6 +60,22 @@ describe("portfolio completion", () => {
       readyToPublish: true,
       missing: [],
     });
+  });
+
+  it("requires street address line 1 but not line 2", () => {
+    const withoutLine2 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_2: "" },
+    }, true);
+    expect(withoutLine2.readyToPublish).toBe(true);
+    expect(withoutLine2.missing).toEqual([]);
+
+    const withoutLine1 = calculatePortfolioCompletion({
+      ...completeDraft,
+      personal: { ...completeDraft.personal, address_line_1: "", address_line_2: "Unit 2" },
+    }, true);
+    expect(withoutLine1.readyToPublish).toBe(false);
+    expect(withoutLine1.missing.map((item) => item.key)).toContain("private_address");
   });
 
   it("identifies the first incomplete editor section and all missing labels", () => {

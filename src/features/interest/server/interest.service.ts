@@ -26,7 +26,7 @@ export class InterestSubmissionError extends Error {
 /** Submits an interest request and distinguishes unavailable links from server failures. */
 export async function submitInterestRequest(
   supabase: SupabaseClient,
-  input: InterestRequestInput
+  input: InterestRequestInput & { useExistingProfile?: boolean }
 ): Promise<"created" | "unavailable"> {
   const { data, error } = await new InterestRepository(supabase).submit(input);
   if (error) {

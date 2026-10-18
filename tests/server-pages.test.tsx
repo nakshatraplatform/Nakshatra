@@ -49,11 +49,8 @@ function databaseClient() {
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }) }));
 vi.mock("next/font/google", () => ({
-  Geist: () => ({ variable: "geist-sans" }),
-  Geist_Mono: () => ({ variable: "geist-mono" }),
-  Manrope: () => ({ variable: "portfolio-body" }),
-  Playfair_Display: () => ({ variable: "portfolio-display" }),
-  Tenor_Sans: () => ({ variable: "portfolio-section" }),
+  Inter: () => ({ variable: "portfolio-body" }),
+  Plus_Jakarta_Sans: () => ({ variable: "portfolio-display" }),
 }));
 vi.mock("next/og", () => ({
   ImageResponse: class {
@@ -66,6 +63,7 @@ vi.mock("@/lib/auth", () => ({
   getAuthenticatedUser: async () => ({ supabase: databaseClient(), user: { id: "user-1", email: "user@example.com" } }),
   getApiUser: async () => ({ status: mocks.apiAuthStatus }),
 }));
+vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => databaseClient() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => databaseClient() }));
 vi.mock("@/features/media/server/photo-url.service", () => ({ createPortfolioPhotoUrls: mocks.photoUrls }));
 vi.mock("@/features/portfolio/server/dashboard-view.service", () => ({
@@ -76,8 +74,8 @@ vi.mock("@/features/portfolio/server/owner-preview.service", () => ({
   loadOwnerApprovedPreview: mocks.loadOwnerApprovedPreview,
 }));
 vi.mock("@/components/templates", () => ({
-  BiodataTemplate: (props: { data: PortfolioData; accessMode?: string; interestAction?: React.ReactNode }) => (
-    <div data-testid="template">{props.data.personal.name}:{props.accessMode}{props.interestAction}</div>
+  BiodataTemplate: (props: { data: PortfolioData; accessMode?: string; interestAction?: React.ReactNode; photos?: { alt?: string }[] }) => (
+    <div data-testid="template" data-photo-alts={JSON.stringify(props.photos?.map(photo => photo.alt))}>{props.data.personal.name}:{props.accessMode}{props.interestAction}</div>
   ),
 }));
 vi.mock("@/components/auth/AuthForm", () => ({ AuthForm: ({ mode }: { mode: string }) => <div>auth:{mode}</div> }));
@@ -174,9 +172,16 @@ describe("authenticated server pages", () => {
   });
 
   it("loads dashboard counts, media, share URL, and expiry", async () => {
-    mocks.outcomes.portfolios = { data: portfolio };
+    mocks.outcomes.portfolios = { data: { ...portfolio, published_data: {
+      personal: { ...data.personal, profile_for: "self", first_name: "Aditi", last_name: "Rao",
+        marital_status: "Never Married", short_bio: "A thoughtful introduction.",
+        country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA",
+        city: "Boston", postal_code: "02108", location_source: "manual", address_line_1: "1 Beacon Street",
+        current_location: "Boston, Massachusetts, United States" },
+      vitals: { height: "5'5\"" }, career: { title: "Engineer" },
+    } } };
     mocks.outcomes.portfolio_views = { count: 7 };
-    mocks.outcomes.portfolio_media = { data: [{ id: "media-1" }] };
+    mocks.outcomes.portfolio_media = { data: [{ id: "media-1", media_type: "hero", visibility: "public" }] };
     render(await DashboardPage({ searchParams: Promise.resolve({}) }));
     const props = screen.getByTestId("dashboard-props").textContent ?? "";
     expect(props).toContain('"viewCount":7');
@@ -195,7 +200,7 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolios = { data: portfolio };
     mocks.outcomes.portfolio_media = { data: [] };
     render(await PreviewPage());
-    expect(screen.getByText("Public Introduction · Draft preview")).toBeInTheDocument();
+    expect(screen.getByText("Public introduction · Draft preview")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to editing" })).toHaveAttribute("href", "/dashboard?edit=1");
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
     expect(mocks.loadOwnerPublicPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
@@ -208,7 +213,7 @@ describe("authenticated server pages", () => {
     mocks.outcomes.portfolio_media = { data: [] };
     mocks.outcomes.portfolio_horoscopes = { data: null };
     render(await ApprovedPreviewPage());
-    expect(screen.getByText(/Complete Portfolio · Owner preview/)).toBeInTheDocument();
+    expect(screen.getByText(/Private details · Your preview/)).toBeInTheDocument();
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:owner");
     expect(mocks.loadOwnerApprovedPreview).toHaveBeenCalledWith(expect.anything(), "user-1");
   });
@@ -225,7 +230,7 @@ describe("public portfolio pages", () => {
 
   it("builds missing and complete metadata", async () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
-    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction not found", robots: { index: false } });
+    await expect(generateMetadata({ params: Promise.resolve({ token: "missing" }) })).resolves.toMatchObject({ title: "Introduction unavailable", robots: { index: false } });
     mocks.outcomes.resolve_public_portfolio = { data: publicPayload };
     const metadata = await generateMetadata({ params: Promise.resolve({ token: "token" }) });
     expect(metadata.title).toBe("Aditi’s marriage introduction");
@@ -279,6 +284,15 @@ describe("public portfolio pages", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("resolve_approved_portfolio", { p_share_token: "token" });
   });
 
+  it("names generic authorized photos without replacing meaningful alternative text", async () => {
+    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, media: [
+      { key: "hero", accessPath: "owner/portfolio/hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" },
+      { key: "gallery", accessPath: "owner/portfolio/gallery.webp", mediaType: "gallery", sortOrder: 1, presentation: "clear", altText: "Walking in the garden" },
+    ] } };
+    render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
+    expect(JSON.parse(screen.getByTestId("template").getAttribute("data-photo-alts")!)).toEqual(["Photo of Aditi, 1 of 2", "Walking in the garden"]);
+  });
+
   it("keeps the separate horoscope image viewer gated with a grant-bounded URL", async () => {
     mocks.outcomes.resolve_approved_horoscope = { data: null };
     await expect(HoroscopePage({ params: Promise.resolve({ token: "token" }) })).rejects.toThrow("NOT_FOUND");
@@ -302,7 +316,7 @@ describe("public portfolio pages", () => {
     mocks.outcomes.resolve_public_portfolio = { data: null };
     await OpenGraphImage({ params: Promise.resolve({ token: "missing" }) });
     expect(mocks.imageResponse).toHaveBeenLastCalledWith(expect.anything(), { width: 1200, height: 630 });
-    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
+    mocks.outcomes.resolve_public_portfolio = { data: { ...publicPayload, themeColor: "#ffffff", media: [{ key: "hero", accessPath: "owner/portfolio/hero.webp", mediaType: "hero", sortOrder: 0, presentation: "clear" }] } };
     await OpenGraphImage({ params: Promise.resolve({ token: "token" }) });
     expect(mocks.signedUrl).not.toHaveBeenCalled();
   });
@@ -336,7 +350,7 @@ describe("complete portfolio access landing", () => {
     mocks.authUser = { id: "viewer-1", email: "viewer@example.com" };
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "expired" } };
     const { rerender } = render(await CompletePortfolioAccessPage({ params: Promise.resolve({ grantId }) }));
-    expect(screen.getByRole("heading", { name: /access has expired/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Sharing period ended/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
 
     mocks.outcomes.resolve_complete_portfolio_access = { data: { status: "revoked" } };

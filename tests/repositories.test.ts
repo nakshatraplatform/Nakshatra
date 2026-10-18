@@ -106,6 +106,12 @@ describe("DashboardRepository", () => {
 });
 
 describe("dashboard read repositories", () => {
+  it("does not fall back to the retired weaker submission command", async () => {
+    const rpc = vi.fn();
+    const repository = new InterestRepository({ rpc } as never);
+    await expect(repository.submit({ portfolioToken: "portfolio-token", name: "Mira Rao", profileFor: "self", phone: "+1 617 555 0123", email: "mira@example.test" } as never)).resolves.toMatchObject({ error: { code: "22023" } });
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it("builds guarded interest and horoscope owner reads", async () => {
     const q = query({ data: { id: "row" }, error: null });
     const createSignedUrl = vi.fn().mockResolvedValue({

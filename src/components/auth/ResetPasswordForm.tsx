@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
@@ -9,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { updateRecoveredPassword } from "@/features/auth/client/auth.api";
+import { sanitizeInternalRedirect } from "@/lib/security/redirect";
 import {
   isAcceptablePassword,
   PASSWORD_HELP,
@@ -16,13 +19,15 @@ import {
   PASSWORD_MIN_LENGTH,
 } from "@/features/auth/password-policy";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const destination = sanitizeInternalRedirect(returnTo);
+  const loginHref = `/login?redirect=${encodeURIComponent(destination)}`;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +47,7 @@ export function ResetPasswordForm() {
       setPending(false);
       return;
     }
-    router.replace("/dashboard?password=updated");
+    router.replace(destination === "/dashboard" ? "/dashboard?password=updated" : destination);
     router.refresh();
   }
 
@@ -50,14 +55,15 @@ export function ResetPasswordForm() {
     <div className="account-shell">
       <header className="account-header">
         <VivIntroBrand href="/" variant="horizontal" priority />
-        <div className="app-header-actions"><ThemeSwitch /><Link href="/login" className="account-home">Back to sign in</Link></div>
+        <div className="app-header-actions"><ThemeSwitch /><Link href={loginHref} className="account-home">Back to sign in</Link></div>
       </header>
       <main className="account-main">
         <section className="account-panel">
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={142} priority /></div>
           <p className="account-eyebrow">Account security</p>
           <h1 className="account-title">Choose a new password.</h1>
-          <p className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account.</p>
+          <p className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account. After saving, you’ll return to where you left off.</p>
+          {pending && <LoadingStatus compact title="Saving your new password" className="my-4" />}
           <form className="account-form" onSubmit={submit}>
             <PasswordField
               id="new-password"
@@ -75,7 +81,7 @@ export function ResetPasswordForm() {
               onChange={setConfirmation}
               onToggle={() => setShowPassword((shown) => !shown)}
             />
-            {error && <p className="account-error" role="alert">{error}</p>}
+            {error && <p className="account-error" role="alert">{error} <Link href={loginHref}>Return to sign in to request a new recovery email.</Link></p>}
             <button className="auth-primary-btn" type="submit" disabled={pending}>
               {pending ? "Saving..." : "Save new password"}
             </button>

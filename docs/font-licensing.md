@@ -1,9 +1,10 @@
 # Runtime font licensing
 
-The current root layout loads Geist, Geist Mono, Playfair Display, Manrope and
-Tenor Sans through `next/font/google` and serves the generated font assets locally.
-This differs from the older Inter/Plus Jakarta Sans inventory. Retain the source
-distributions' license notices and confirm the shipped versions during release.
+The current root layout uses Inter and Plus Jakarta Sans from `src/lib/fonts.ts`
+through `next/font/google` and serves the generated font assets locally. The
+latest-main integration retains these runtime families, rather than restoring
+the older Geist/Playfair/Manrope/Tenor layout. Retain source distributions'
+SIL OFL notices and confirm the shipped versions during release.
 
 On 2026-10-17, the owner authorized removal of nine unused legacy binaries from
 `public/fonts` and their obsolete `@font-face` declarations. The current source

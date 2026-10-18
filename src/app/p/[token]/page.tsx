@@ -8,6 +8,7 @@ import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.cont
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
 import { resolveExistingViewerProfile, type ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
+import { formatPortfolioLocation } from "@/features/portfolio/presentation";
 import {
   isPortfolioOwner,
   recordPublicPortfolioView,
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const portfolio = await resolvePublicPortfolio(supabase, token);
 
   if (!portfolio?.data) {
-    return { title: "Introduction not found", robots: { index: false, follow: false, noarchive: true } };
+    return { title: "Introduction unavailable", robots: { index: false, follow: false, noarchive: true } };
   }
 
   const data = portfolio.data;
@@ -90,19 +91,25 @@ export default async function PublicBiodataPage({ params }: Props) {
       accessMode={portfolio.accessMode}
       accessExpiresAt={portfolio.accessExpiresAt}
       identityVerified={portfolio.identityVerified}
-      photos={portfolio.photos}
+      photos={portfolio.photos.map((photo, index) => ({
+        ...photo,
+        alt: photo.alt && !/^(?:portfolio|introduction) photo$/i.test(photo.alt)
+          ? photo.alt
+          : `Photo of ${portfolio.data.personal.first_name || portfolio.data.personal.name?.split(/\s+/)[0] || "this person"}, ${index + 1} of ${portfolio.photos.length}`,
+      }))}
+      viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
+      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
     />
   );
 }
 
 function ExpiredPortfolioLink() {
   return (
-    <main id="main-content" className="grid min-h-screen place-items-center bg-[color:var(--workspace-canvas)] px-5 py-16 text-[color:var(--workspace-ink)]">
-      <section className="w-full max-w-xl rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-7 text-center shadow-sm sm:p-10" aria-labelledby="expired-portfolio-title">
+    <main id="main-content" className="grid min-h-screen place-items-center bg-[color:var(--workspace-canvas)] px-4 py-16 text-[color:var(--workspace-ink)]">
+      <section className="w-full max-w-xl rounded-2xl border border-[color:var(--workspace-border)] bg-[color:var(--workspace-surface)] p-8 text-center shadow-[var(--ui-shadow-card)] sm:p-10" aria-labelledby="expired-portfolio-title">
         <p className="text-sm font-semibold text-[color:var(--workspace-teal)]">VivIntro</p>
-        <h1 id="expired-portfolio-title" className="mt-3 text-3xl font-semibold">This Introduction link has expired</h1>
+        <h1 id="expired-portfolio-title" className="mt-4 break-words text-3xl font-semibold">This Introduction link has expired</h1>
         <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[color:var(--workspace-ink-muted)]">
           Ask the person who shared it to reactivate the link. No Introduction details are available from an expired link.
         </p>

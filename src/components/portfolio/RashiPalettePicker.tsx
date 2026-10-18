@@ -40,7 +40,7 @@ export function RashiPalettePicker({
             type="button"
             disabled={disabled}
             onClick={() => onSelect(palette)}
-            className={`group relative flex min-h-16 items-center gap-3 overflow-hidden rounded-lg border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`group relative flex min-h-16 items-center gap-3 overflow-hidden rounded-lg border p-3 text-left transition-[transform,box-shadow,filter] focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
               selected
                 ? "ring-1"
                 : "hover:brightness-95"
@@ -53,7 +53,7 @@ export function RashiPalettePicker({
             aria-pressed={selected}
           >
             <span
-              className="h-9 w-9 shrink-0 rounded-full border border-black/10 shadow-sm"
+              className="h-9 w-9 shrink-0 rounded-full border border-[color:var(--workspace-ink)]/10 shadow-sm"
               style={{ backgroundColor: palette.accent }}
               aria-hidden="true"
             />
@@ -66,7 +66,7 @@ export function RashiPalettePicker({
               </span>
             </span>
             {selected && (
-              <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/70 text-white">
+              <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--ui-scrim)]/70 text-[color:var(--ui-on-action)]">
                 <Check className="h-3.5 w-3.5" aria-hidden="true" />
               </span>
             )}

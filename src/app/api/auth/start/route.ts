@@ -26,7 +26,7 @@ const signupPassword = z
   .refine(isAcceptablePassword);
 
 const authStartSchema = z.discriminatedUnion("method", [
-  z.object({ method: z.literal("google"), redirect: z.string().max(500).optional() }),
+  z.object({ method: z.literal("google"), redirect: z.string().max(500).optional(), email: email.optional() }),
   z.object({
     method: z.literal("password_signup"),
     email,
@@ -49,7 +49,7 @@ const authStartSchema = z.discriminatedUnion("method", [
     email,
     redirect: z.string().max(500).optional(),
   }),
-  z.object({ method: z.literal("password_recovery"), email }),
+  z.object({ method: z.literal("password_recovery"), email, redirect: z.string().max(500).optional() }),
 ]);
 
 function authEmailProviderErrorResponse(error: unknown) {
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       );
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: callbackUrl, skipBrowserRedirect: true },
+        options: { redirectTo: callbackUrl, skipBrowserRedirect: true, ...(parsed.data.email ? { queryParams: { login_hint: parsed.data.email.toLowerCase() } } : {}) },
       });
       if (error || !data.url) throw error || new Error("OAuth URL missing");
       return NextResponse.json(
@@ -220,8 +220,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const resetPath = parsed.data.redirect
+      ? `/reset-password?redirect=${encodeURIComponent(sanitizeInternalRedirect(parsed.data.redirect))}`
+      : "/reset-password";
     const recoveryUrl = createCanonicalAppUrl(
-      "/api/auth/callback?next=%2Freset-password",
+      `/api/auth/callback?next=${encodeURIComponent(resetPath)}`,
       request.url
     );
     const { error } = await supabase.auth.resetPasswordForEmail(

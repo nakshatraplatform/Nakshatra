@@ -16,6 +16,7 @@ function Fixture({ dismissible = true }: { dismissible?: boolean }) {
 }
 
 beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -65,4 +66,34 @@ it("preserves existing inert state and handles a dialog without focusable contro
   expect(dialog).toHaveFocus();
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(background).toHaveAttribute("inert");
+});
+
+it("does not resurrect caller-controlled inert after that caller removes it", () => {
+  function ControlledFixture() {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLElement>(null);
+    useModalFocus(open, ref, () => setOpen(false));
+    return <><main inert={open} data-testid="controlled"><button onClick={() => setOpen(true)}>Open controlled</button></main>
+      {open && <section ref={ref} role="dialog" tabIndex={-1}><button>Close target</button></section>}</>;
+  }
+  render(<ControlledFixture />);
+  fireEvent.click(screen.getByText("Open controlled"));
+  expect(screen.getByTestId("controlled")).toHaveAttribute("inert");
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.getByTestId("controlled")).not.toHaveAttribute("inert");
+});
+
+it("preserves an editor's explicitly focusable heading as its entry point", () => {
+  function HeadingFixture() {
+    const ref = useRef<HTMLElement>(null);
+    useModalFocus(true, ref, () => {});
+    return <section ref={ref} role="dialog" aria-labelledby="editor-entry"><h2 id="editor-entry" tabIndex={-1}>Editor entry</h2><button>First action</button><button>Last action</button></section>;
+  }
+  render(<HeadingFixture />);
+  expect(screen.getByRole("heading", { name: "Editor entry" })).toHaveFocus();
+  fireEvent.keyDown(document, { key: "Tab" });
+  expect(screen.getByRole("button", { name: "First action" })).toHaveFocus();
+  screen.getByRole("heading", { name: "Editor entry" }).focus();
+  fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+  expect(screen.getByRole("button", { name: "Last action" })).toHaveFocus();
 });

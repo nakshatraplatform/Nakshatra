@@ -75,6 +75,12 @@ describe("authentication start route", () => {
     });
     expect(consumeRateLimit).toHaveBeenCalledWith(expect.anything(), expect.any(Request), "auth_google");
   });
+  it("uses a registered email only as an OAuth login hint, never an identity lookup", async () => {
+    expect((await POST(request({ method: "google", email: "Mira@Example.test", redirect: "/p/token#portfolio-interest" }))).status).toBe(200);
+    expect(signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ options: expect.objectContaining({ queryParams: {login_hint:"mira@example.test"} }) }));
+    expect((await POST(request({ method: "google", email: "invalid" }))).status).toBe(400);
+    expect(signInWithOAuth).toHaveBeenCalledTimes(1);
+  });
 
   it("starts bounded viewer email verification without assigning an exclusive role", async () => {
     const response = await POST(request({ method: "email_otp", email: "Reader@Example.com", redirect: "/p/token" }));
@@ -271,6 +277,15 @@ describe("authentication start route", () => {
     expect(limited.status).toBe(429);
     expect(limited.headers.get("Retry-After")).toBe("30");
     expect(signInWithOAuth).not.toHaveBeenCalled();
+  });
+
+  it.each(["/p/shared-token#portfolio-interest", "https://outside.example", "//outside.example"])("carries only a safe destination through password recovery: %s", async (destination) => {
+    expect((await POST(request({ method: "password_recovery", email: "owner@example.com", redirect: destination }))).status).toBe(200);
+    const callback = new URL(resetPasswordForEmail.mock.calls[0][1].redirectTo);
+    const reset = new URL(callback.searchParams.get("next")!, "https://local.test");
+    expect(reset.pathname).toBe("/reset-password");
+    expect(reset.searchParams.get("redirect")).toBe(destination.startsWith("/p/") ? destination : "/dashboard");
+    expect(ensureOwnerPortfolio).not.toHaveBeenCalled();
   });
 
   it("redacts unexpected provider failures and supplies a request id", async () => {

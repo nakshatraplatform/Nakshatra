@@ -1,10 +1,21 @@
 // @vitest-environment jsdom
 
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 
 describe("VivIntroBrand", () => {
+  it("keeps the introduction open when its home mark opens a new tab", () => {
+    render(<VivIntroBrand href="/" openInNewTab />);
+    const link = screen.getByRole("link", { name: "VivIntro home — opens in a new tab" });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+  it("does not preload both theme alternatives for adaptive branding", () => {
+    const html = renderToStaticMarkup(<VivIntroBrand variant="horizontal" priority />);
+    expect(html).not.toContain('rel="preload"');
+  });
   it("uses the approved ornate symbol for an explicitly toned home link", () => {
     render(<VivIntroBrand href="/" tone="primary" />);
 

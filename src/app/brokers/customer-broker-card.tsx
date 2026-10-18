@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, CalendarClock, Pause, RefreshCw, ShieldOff } from "lucide-react";
 import { manageCustomerBrokerConsent } from "@/features/broker-relationships/client/customer-invitation.api";
@@ -33,6 +35,7 @@ function dateLabel(value: string | null) {
 
 export function CustomerBrokerCard({ relationship }: { relationship: CustomerBrokerRelationship }) {
   const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
   const [pending, setPending] = useState<CustomerBrokerConsentAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const isActive = relationship.relationshipStatus === "active";
@@ -43,7 +46,7 @@ export function CustomerBrokerCard({ relationship }: { relationship: CustomerBro
     setError(null);
     try {
       await manageCustomerBrokerConsent(relationship.relationshipRef, action, crypto.randomUUID());
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "This action is temporarily unavailable.");
     } finally {
@@ -64,10 +67,11 @@ export function CustomerBrokerCard({ relationship }: { relationship: CustomerBro
     </p>
     {(relationship.actions.canPause || relationship.actions.canRenew || relationship.actions.canTerminate) &&
       <div className={styles.actions} aria-label={`Manage ${relationship.workspaceName}`}>
-        {relationship.actions.canPause && <button type="button" disabled={pending !== null} onClick={() => runAction("pause")}><Pause aria-hidden="true" /> {pending === "pause" ? "Pausing…" : actionCopy.pause.button}</button>}
-        {relationship.actions.canRenew && <button type="button" disabled={pending !== null} onClick={() => runAction("renew")}><RefreshCw aria-hidden="true" /> {pending === "renew" ? "Renewing…" : actionCopy.renew.button}</button>}
-        {relationship.actions.canTerminate && <button type="button" className={styles.danger} disabled={pending !== null} onClick={() => runAction("terminate")}><ShieldOff aria-hidden="true" /> {pending === "terminate" ? "Ending…" : actionCopy.terminate.button}</button>}
+        {relationship.actions.canPause && <button type="button" disabled={pending !== null || refreshing} onClick={() => runAction("pause")}><Pause aria-hidden="true" /> {pending === "pause" ? "Pausing…" : actionCopy.pause.button}</button>}
+        {relationship.actions.canRenew && <button type="button" disabled={pending !== null || refreshing} onClick={() => runAction("renew")}><RefreshCw aria-hidden="true" /> {pending === "renew" ? "Renewing…" : actionCopy.renew.button}</button>}
+        {relationship.actions.canTerminate && <button type="button" className={styles.danger} disabled={pending !== null || refreshing} onClick={() => runAction("terminate")}><ShieldOff aria-hidden="true" /> {pending === "terminate" ? "Ending…" : actionCopy.terminate.button}</button>}
       </div>}
+    {(pending || refreshing) && <LoadingStatus compact title={refreshing && !pending ? "Refreshing broker access" : pending === "pause" ? "Pausing broker access" : pending === "renew" ? "Renewing broker consent" : "Ending this broker relationship"} />}
     {error && <p className={styles.error} role="alert">{error}</p>}
   </article>;
 }

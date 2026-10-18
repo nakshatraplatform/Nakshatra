@@ -3,6 +3,7 @@ import type { PortfolioData } from "../src/types/portfolio";
 
 const repository = vi.hoisted(() => ({
   saveDashboardDraftTransaction: vi.fn(),
+  probeStructuredLocationSchema: vi.fn(),
 }));
 
 vi.mock("../src/features/portfolio/server/dashboard.repository", () => ({
@@ -23,8 +24,21 @@ const baseDraft: PortfolioData = {
 };
 
 describe("saveDashboardDraft", () => {
+  it("returns validated database-normalized geography with saved review state", async () => {
+    const draftData = { ...baseDraft, personal: { ...baseDraft.personal, country_code: "US", country: "United States", city: "Boston" } };
+    repository.saveDashboardDraftTransaction.mockResolvedValue({ data: {
+      status: "saved", portfolioId: "portfolio-id", candidateId: "candidate-id", draftData,
+      readiness: { portfolioExists: true, verificationStatus: "required", paymentStatus: "none", published: false,
+        previewedAt: null, selectedPlanCode: null, paymentExpiresAt: null,
+        disclosureConfirmed: false, missingRequired: [], reviewFingerprint: "a".repeat(64), publicPreviewReviewed: true, completePreviewReviewed: false },
+    }, error: null });
+    const result = await saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft });
+    expect(result.draftData?.personal).toMatchObject(draftData.personal);
+    expect(result.readiness).toMatchObject({ publicPreviewReviewed: true, completePreviewReviewed: false });
+  });
   beforeEach(() => {
     vi.clearAllMocks();
+    repository.probeStructuredLocationSchema.mockResolvedValue({ error: null });
     repository.saveDashboardDraftTransaction.mockResolvedValue({
       data: {
         status: "saved",
@@ -140,6 +154,30 @@ describe("saveDashboardDraft", () => {
     await expect(
       saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft })
     ).rejects.toMatchObject({ code: "DASHBOARD_DATA_REJECTED", status: 400 });
+  });
+
+  it("identifies legacy geography rejection when the structured location table is missing", async () => {
+    repository.saveDashboardDraftTransaction.mockResolvedValue({ data: null,
+      error: { code: "22023", message: "geography_region_invalid" } });
+    repository.probeStructuredLocationSchema.mockResolvedValue({ error: { code: "PGRST205" } });
+    await expect(saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft }))
+      .rejects.toMatchObject({ code: "DASHBOARD_DATABASE_UPDATE_REQUIRED", status: 503 });
+  });
+
+  it("preserves geography validation errors when the current schema exists", async () => {
+    repository.saveDashboardDraftTransaction.mockResolvedValue({ data: null,
+      error: { code: "22023", message: "geography_region_invalid" } });
+    await expect(saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft }))
+      .rejects.toMatchObject({ code: "DASHBOARD_DATA_REJECTED", status: 400 });
+    expect(repository.probeStructuredLocationSchema).toHaveBeenCalledOnce();
+  });
+
+  it("retains the original rejection if schema diagnosis is unavailable", async () => {
+    repository.saveDashboardDraftTransaction.mockResolvedValue({ data: null,
+      error: { code: "22023", message: "geography_region_invalid" } });
+    repository.probeStructuredLocationSchema.mockRejectedValue(new Error("offline"));
+    await expect(saveDashboardDraft({ supabase: {} as never, userId: "user-id", data: baseDraft }))
+      .rejects.toMatchObject({ code: "DASHBOARD_DATA_REJECTED", status: 400 });
   });
 
   it("does not misreport a database runtime defect as an unapplied migration", async () => {

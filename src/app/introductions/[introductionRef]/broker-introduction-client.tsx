@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useEffect, useState, type FormEvent } from "react";
 import { BiodataTemplate } from "@/components/templates";
 import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
@@ -20,11 +22,11 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     let active = true;
     async function load() {
       if (!introductionRef) { setState("unavailable"); return; }
-      const response = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}`, { cache: "no-store" });
-      const result = await response.json().catch(() => null) as ResolvedBrokerIntroduction | null;
+      const response = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}`, { cache: "no-store" }).catch(() => null);
+      const result = await response?.json().catch(() => null) as ResolvedBrokerIntroduction | null;
       if (!active) return;
-      if (response.status === 401) { setState("signed-out"); return; }
-      if (!response.ok || !result?.available) { setState("unavailable"); return; }
+      if (response?.status === 401) { setState("signed-out"); return; }
+      if (!response?.ok || !result?.available) { setState("unavailable"); return; }
       setIntroduction(result); setState("ready");
     }
     void load();
@@ -68,7 +70,7 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     setPending(false);
   }
 
-  if (state === "loading") return <main className={styles.state}><h1>Opening this introduction…</h1><p>We are checking that you are one of the two customers in this introduction.</p></main>;
+  if (state === "loading") return <main className={styles.state}><h1>Opening this introduction…</h1><LoadingStatus title="Checking access to this introduction" detail="Only the two selected customers can open it." state="connecting" /></main>;
   if (state === "signed-out") return <main className={styles.state}><h1>Sign in to view this introduction</h1><p>Broker introductions are visible only to the two customers selected by the broker. The URL alone never grants access.</p><a href={`/login?redirect=${encodeURIComponent(`/introductions/${introductionRef}`)}`}>Sign in to VivIntro</a></main>;
   if (state === "unavailable" || !introduction) return <main className={styles.state}><h1>This introduction is unavailable</h1><p>It may have expired or been withdrawn. Ask the broker who shared it for a current link.</p></main>;
 
@@ -109,6 +111,7 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
       horoscopeAttachment={horoscope}
       interestAction={<section className={styles.response}>
         <h2>Your response</h2>
+        {pending && <LoadingStatus compact title="Recording your response" />}
         {needsLegacyConsentConfirmation ? <form onSubmit={respond}>
           <p>Your earlier Interested response was recorded before this disclosure rule existed. Confirm the updated meaning before Complete Portfolio access can begin.</p>
           <input type="hidden" name="response" value="accepted" />

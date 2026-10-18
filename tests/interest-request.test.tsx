@@ -9,6 +9,16 @@ const enforceRateLimit = vi.hoisted(() => vi.fn());
 const startAuthentication = vi.hoisted(() => vi.fn());
 const verifyAuthenticationCode = vi.hoisted(() => vi.fn());
 const continueToAuthProvider = vi.hoisted(() => vi.fn());
+vi.mock("../src/components/portfolio/LocationFields", () => ({
+  hasCompleteLocationHierarchy: (value: { countryCode?: string; regionCode?: string; city?: string; postalCode?: string }) =>
+    value.countryCode === "US" && value.regionCode === "US-MA" && value.city === "Boston" && value.postalCode === "02108",
+  LocationFields: ({ onChange }: { onChange: (value: Record<string, unknown>) => void }) => <fieldset>
+    <legend>Your location</legend>
+    <label>Country<select aria-label="Country" required defaultValue=""><option value="">Choose</option><option value="US">US</option></select></label>
+    <label>State<select aria-label="State" required defaultValue=""><option value="">Choose</option><option value="MA">MA</option></select></label>
+    <label>City<select aria-label="City" required defaultValue="" onChange={() => onChange({ country: "United States", countryCode: "US", region: "Massachusetts", regionCode: "US-MA", city: "Boston", postalCode: "02108", locationSource: "manual" })}><option value="">Choose</option><option value="4930956">4930956</option></select></label>
+  </fieldset>,
+}));
 vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 vi.mock("@/features/auth/client/auth.api", () => ({ continueToAuthProvider, startAuthentication, verifyAuthenticationCode }));
@@ -20,9 +30,102 @@ import {
   interestRequestValidationMessage,
 } from "../src/features/interest/server/interest.contract";
 
-describe("interest request flow", () => {
+const requiredLocationPayload = {
+  country: "United States", state: "Massachusetts", city: "Boston", countryCode: "US",
+  subdivisionCode: "US-MA", postalCode: "02108", locationSource: "manual",
+};
+const decisionDetails = {
+  familyContext: "Our family values honesty, kindness and mutual respect.",
+  message: "I enjoyed reading your introduction and would like to learn more about your family, interests and plans for the future.",
+  location: requiredLocationPayload,
+};
+function fillDecisionDetails() {
+  fireEvent.change(screen.getByLabelText("Family context"), { target: { value: decisionDetails.familyContext } });
+  fireEvent.change(screen.getByLabelText("Message"), { target: { value: decisionDetails.message } });
+  for (const [field, value] of [["Country", "US"], ["State", "MA"], ["City", "4930956"]]) fireEvent.change(screen.getByLabelText(field), { target: { value } });
+  if (screen.queryByLabelText("Candidate’s full name")) {
+    fireEvent.change(screen.getByLabelText("Candidate’s full name"), { target: { value: "Arun Mehta" } });
+    fireEvent.change(screen.getByLabelText("Candidate’s email"), { target: { value: "arun@example.com" } });
+    fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "+1 617 555 0123" } });
+  }
+}
+describe("interest flow", () => {
+  it("focuses and describes an incomplete existing-profile location before sending", async () => {
+    const request = vi.fn();
+    vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.submit(screen.getByRole("button", { name: "Send interest" }).closest("form")!);
+    const location = await screen.findByRole("group", { name: "Your location", description: /./ });
+    await waitFor(() => expect(location).toHaveFocus());
+    expect(location).toHaveAttribute("data-invalid", "true");
+    expect(location).toHaveAccessibleDescription();
+    expect(request).not.toHaveBeenCalled();
+  });
+  it("submits a name-only candidate with a blank message and prevents duplicate in-flight sends", async () => {
+    let complete!: (response: Response) => void;
+    const request = vi.fn<typeof fetch>(() => new Promise<Response>(resolve => { complete = resolve; }));
+    vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "daughter" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 617 555 0123" } });
+    fillDecisionDetails();
+    fireEvent.change(screen.getByLabelText("Candidate’s email"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "" } });
+    const form = screen.getByRole("button", { name: "Send interest" }).closest("form")!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
+    const payload = JSON.parse(String(request.mock.calls[0][1]?.body));
+    expect(payload.candidate).toEqual({ name: "Arun Mehta", relationship: "Parent" });
+    expect(payload.message).toBeNull();
+    complete(new Response(JSON.stringify({ ok: true }), { status: 201 }));
+    expect(await screen.findByText(/Interest sent to Ananya/)).toBeInTheDocument();
+  });
+
+  it("starts Google without a redundant registered-email field", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    expect(screen.queryByLabelText("Registered email")).not.toBeInTheDocument();
+    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/p/portfolio-token#portfolio-interest" }));
+  });
+  it.each(["light", "dark"] as const)("uses the %s dialog artwork independently of the document theme", (appearance) => {
+    document.documentElement.dataset.appTheme = appearance === "dark" ? "light" : "dark";
+    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} appearance={appearance} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.closest("[data-appearance]")).toHaveAttribute("data-appearance", appearance);
+    const artwork = dialog.querySelector('[data-brand-variant="stacked"]')!;
+    expect(artwork).toHaveAttribute("data-brand-tone", appearance === "dark" ? "reverse" : "primary");
+    expect(artwork.querySelectorAll("img")).toHaveLength(1);
+    unmount();
+    delete document.documentElement.dataset.appTheme;
+  });
+  it.each(["abcdefg", "-------", "12", "+1 22222222222222222222"])("rejects invalid interest phone %s at the API contract", (phone) => {
+    const parsed = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", name: "Rohan Mehta", profileFor: "self", phone, email: "rohan@example.com" });
+    expect(parsed.success).toBe(false);
+  });
+  it("does not send an email code for an invalid phone entered in the modal", async () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 abcdefgh" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
+    fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("valid phone number");
+    expect(startAuthentication).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     enforceRateLimit.mockResolvedValue(null);
     startAuthentication.mockResolvedValue({ ok: true, body: { sent: true } });
     verifyAuthenticationCode.mockResolvedValue({ ok: true, body: { verified: true, email: "rohan@example.com" } });
@@ -35,19 +138,20 @@ describe("interest request flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(document.body.style.overflow).toBe("hidden");
-    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
-    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
 
-    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
-    expect(screen.getByText(/The introduction owner can review it and decide whether to share protected details/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ananya can review your interest and decide whether to share private details/i)).toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 1900));
-    expect(screen.getByRole("dialog", { name: "Request sent" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Interest sent" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Return to introduction" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("The owner will decide whether to share protected details.");
+    expect(screen.getByRole("status")).toHaveTextContent("They’ll share more if they’d like to continue.");
     const request = vi.mocked(fetch).mock.calls[0];
     const submitted = JSON.parse(String((request[1] as RequestInit).body));
     expect(submitted).toMatchObject({
@@ -55,11 +159,8 @@ describe("interest request flow", () => {
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
-      country: "",
-      state: "",
-      city: "",
-      familyContext: "",
-      message: "",
+      ...requiredLocationPayload,
+      ...decisionDetails,
     });
   });
 
@@ -69,10 +170,11 @@ describe("interest request flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
-    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
 
     await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
@@ -89,7 +191,7 @@ describe("interest request flow", () => {
       token: "123456",
       redirect: "/p/portfolio-token",
     }));
-    expect(await screen.findByText(/Request sent to Ananya/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
   });
 
   it("keeps verification disabled until six digits and resets an invalid code", async () => {
@@ -98,10 +200,11 @@ describe("interest request flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
-    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
 
     const input = await screen.findByLabelText("Six-digit code");
@@ -123,10 +226,11 @@ describe("interest request flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
-    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
 
     const codeInput = await screen.findByLabelText("Six-digit code");
@@ -144,10 +248,11 @@ describe("interest request flow", () => {
       render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
       fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
       fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-      fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-      fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "self" } });
-      fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+      fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+      fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+      fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
       fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
       fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
       await vi.runAllTimersAsync();
 
@@ -161,42 +266,38 @@ describe("interest request flow", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Contacting for"), { target: { value: "relative" } });
-    fireEvent.change(screen.getByLabelText("Phone number"), { target: { value: "+1 555 010 2200" } });
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "relative" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
     fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
 
     fireEvent.click(await screen.findByRole("button", { name: "Change details" }));
 
-    expect(screen.getByLabelText("Your full name")).toHaveValue("Rohan Mehta");
-    expect(screen.getByLabelText("Contacting for")).toHaveValue("relative");
-    expect(screen.getByLabelText("Country calling code")).toHaveValue("1");
-    expect(screen.getByLabelText("Phone number")).toHaveValue("555 010 2200");
+    expect(screen.getByLabelText("Full name")).toHaveValue("Rohan Mehta");
+    expect(screen.getByLabelText("Who are you contacting for?")).toHaveValue("relative");
+    expect(screen.getByRole("textbox", { name: "Country calling code" })).toHaveValue("1");
+    expect(screen.getByRole("textbox", { name: "Phone number" })).toHaveValue("555 010 2200");
     expect(screen.getByLabelText("Email address")).toHaveValue("rohan@example.com");
   });
 
-  it("keeps location and introductions optional in the form", () => {
+  it("requires location and decision-making context in the new visitor form", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-
-    expect(screen.getByLabelText("Your full name")).toBeRequired();
-    expect(screen.getByLabelText("Contacting for")).toBeRequired();
-    expect(screen.getByLabelText("Phone number")).toBeRequired();
-    expect(screen.getByLabelText("Email address")).toBeRequired();
-    fireEvent.click(screen.getByText("Add more details"));
-    expect(screen.getByLabelText("Country")).not.toBeRequired();
-    expect(screen.getByLabelText("State or province")).not.toBeRequired();
-    expect(screen.getByLabelText("City")).not.toBeRequired();
-    expect(screen.getByLabelText("Family context")).not.toBeRequired();
+    for (const label of ["Full name", "Who are you contacting for?", "Email address", "Country", "State", "City", "Family context"]) expect(screen.getByLabelText(label)).toBeRequired();
+expect(screen.getByRole("textbox", { name: "Phone number" })).toBeRequired();
     expect(screen.getByLabelText("Message")).not.toBeRequired();
-    expect(screen.getByLabelText("Country")).toHaveValue("");
-    expect(screen.getByLabelText("State or province")).toHaveValue("");
-    expect(screen.getByLabelText("City")).toHaveValue("");
-    expect(screen.getByLabelText("Family context")).toHaveValue("");
-    expect(screen.getByLabelText("Message")).toHaveValue("");
-    expect(screen.queryByLabelText("Your portfolio link")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Candidate details" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "son" } });
+    expect(screen.getByLabelText("Candidate’s full name")).toBeRequired();
+    expect(screen.getByLabelText("Candidate’s email")).not.toBeRequired();
+    expect(screen.getByLabelText("Candidate’s phone (optional)")).not.toBeRequired();
+    expect(screen.queryByLabelText("Your relationship to candidate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Candidate’s location country")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    expect(screen.queryByRole("group", { name: "Candidate details" })).not.toBeInTheDocument();
   });
 
   it("offers an existing VivIntro user a Google continuation", async () => {
@@ -206,7 +307,7 @@ describe("interest request flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByText("Already use VivIntro?")).toBeInTheDocument();
     const googleButton = screen.getByRole("button", { name: "Continue with Google" });
-    expect(googleButton).toHaveClass("portfolio-button-primary");
+    expect(screen.getByRole("link", { name: "Sign in to VivIntro" })).toHaveClass("portfolio-button-primary");
     fireEvent.click(googleButton);
 
     await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
@@ -217,13 +318,14 @@ describe("interest request flow", () => {
   });
 
   it("reuses an authenticated VivIntro profile and asks only for context", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", city: "Toronto" }} />);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
 
-    expect(screen.getByRole("heading", { name: "Add a note for Ananya's family" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Confirm your details for Ananya's family" })).toBeInTheDocument();
     expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
-    expect(screen.queryByLabelText("Your full name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
+    expect(screen.getByText(/Boston, Massachusetts, United States/)).toBeInTheDocument();
     expect(screen.getByLabelText("Family context")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
   });
@@ -233,7 +335,7 @@ describe("interest request flow", () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: {
         draft_data: {
-          personal: { name: "Rohan Mehta", profile_for: "self", city: "Toronto" },
+          personal: { name: "Rohan Mehta", profile_for: "self", country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA", city: "Boston", postal_code: "02108" },
           contact: { phone: "" },
         },
         published_data: null,
@@ -256,22 +358,26 @@ describe("interest request flow", () => {
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: JSON.stringify({
         portfolioToken: "portfolio-token",
+        ...decisionDetails,
         useExistingProfile: true,
-        familyContext: "Our families have friends in common.",
-        message: "We would be glad to connect.",
+        country: "United States",
+        countryCode: "US",
+        state: "Massachusetts",
+        subdivisionCode: "US-MA",
+        city: "Boston",
+        postalCode: "02108",
+        locationSource: "existing_profile",
+        familyContext: decisionDetails.familyContext,
+        message: "",
       }),
     }));
 
     expect(response.status).toBe(201);
-    expect(rpc).toHaveBeenCalledWith("submit_public_interest", expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith("submit_existing_interest", expect.objectContaining({
       p_share_token: "portfolio-token",
-      p_name: "Rohan Mehta",
-      p_profile_for: "self",
-      p_phone: "",
-      p_email: "rohan@example.com",
-      p_city: "Toronto",
-      p_family_context: "Our families have friends in common.",
-      p_message: "We would be glad to connect.",
+
+      p_family_context: decisionDetails.familyContext,
+      p_message: null,
     }));
   });
 
@@ -286,6 +392,8 @@ describe("interest request flow", () => {
   });
 
   it("validates and stores an interest for an active portfolio", async () => {
+    const contractCheck = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", ...decisionDetails, ...requiredLocationPayload, name: "Rohan Mehta", profileFor: "self", phone: "+1 555 010 2200", email: "rohan@example.com" });
+    if (!contractCheck.success) throw new Error(JSON.stringify(contractCheck.error.issues));
     const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
     getApiUser.mockResolvedValue({
       status: "authenticated",
@@ -298,34 +406,26 @@ describe("interest request flow", () => {
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: JSON.stringify({
         portfolioToken: "portfolio-token",
+        ...decisionDetails,
         name: "Rohan Mehta",
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "rohan@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
     expect(response.status).toBe(201);
-    expect(rpc).toHaveBeenCalledWith("submit_public_interest", {
-      p_share_token: "portfolio-token",
-      p_name: "Rohan Mehta",
-      p_profile_for: "self",
-      p_phone: "+1 555 010 2200",
-      p_email: "rohan@example.com",
-      p_location: null,
-      p_family_context: null,
-      p_message: null,
-      p_portfolio_url: null,
-      p_country: null,
-      p_state: null,
-      p_city: null,
-    });
+    expect(rpc).toHaveBeenCalledWith("submit_interest_details", { p_details: expect.objectContaining({
+      portfolioToken: "portfolio-token", name: "Rohan Mehta", ...decisionDetails,
+    }) });
 
     const detailedResponse = await POST(new Request("http://local/api/interest", {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: JSON.stringify({
         portfolioToken: "portfolio-token",
+        ...decisionDetails,
         name: "Rohan Mehta",
         profileFor: "self",
         phone: "+1 555 010 2200",
@@ -333,30 +433,17 @@ describe("interest request flow", () => {
         country: "Canada",
         state: "Ontario",
         city: "Toronto",
-        familyContext: "Our family lives in Toronto.",
-        message: "We would be glad to connect.",
+        familyContext: decisionDetails.familyContext,
+        message: decisionDetails.message,
         portfolioUrl: "https://untrusted.example/rohan",
       }),
     }));
 
-    expect(detailedResponse.status).toBe(201);
-    expect(rpc).toHaveBeenLastCalledWith("submit_public_interest", {
-      p_share_token: "portfolio-token",
-      p_name: "Rohan Mehta",
-      p_profile_for: "self",
-      p_phone: "+1 555 010 2200",
-      p_email: "rohan@example.com",
-      p_location: "Toronto, Ontario, Canada",
-      p_family_context: "Our family lives in Toronto.",
-      p_message: "We would be glad to connect.",
-      p_portfolio_url: null,
-      p_country: "Canada",
-      p_state: "Ontario",
-      p_city: "Toronto",
-    });
+    expect(detailedResponse.status).toBe(400);
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it("requires a verified session before accepting an interest request", async () => {
+  it("requires a verified session before accepting an interest", async () => {
     getApiUser.mockResolvedValue({ status: "missing_session" });
     const response = await POST(new Request("http://local/api/interest", {
       method: "POST",
@@ -382,10 +469,12 @@ describe("interest request flow", () => {
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: JSON.stringify({
         portfolioToken: "portfolio-token",
+        ...decisionDetails,
         name: "Portfolio Owner",
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "owner@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
@@ -430,10 +519,12 @@ describe("interest request flow", () => {
       headers: { "Content-Type": "application/json", Origin: "http://local" },
       body: JSON.stringify({
         portfolioToken: "portfolio-token",
+        ...decisionDetails,
         name: "Rohan Mehta",
         profileFor: "self",
         phone: "+1 555 010 2200",
         email: "rohan@example.com",
+        ...requiredLocationPayload,
       }),
     }));
 
@@ -462,10 +553,12 @@ describe("interest request flow", () => {
 
     const payload = JSON.stringify({
       portfolioToken: "portfolio-token",
+        ...decisionDetails,
       name: "Rohan Mehta",
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
+      ...requiredLocationPayload,
     });
     const unavailable = await POST(new Request("http://local/api/interest", {
       method: "POST",
@@ -497,14 +590,16 @@ describe("interest request flow", () => {
     [{ profileFor: "" }, "contacting for"],
     [{ phone: "" }, "phone number"],
     [{ email: "not-an-email" }, "email address"],
-    [{ message: "x".repeat(601) }, "too long"],
+    [{ message: "x".repeat(601) }, "80–600"],
   ])("explains the first invalid field in the interest form", (override, expectedMessage) => {
     const parsed = interestSubmissionSchema.safeParse({
       portfolioToken: "portfolio-token",
+        ...decisionDetails,
       name: "Rohan Mehta",
       profileFor: "self",
       phone: "+1 555 010 2200",
       email: "rohan@example.com",
+      ...requiredLocationPayload,
       ...override,
     });
 
@@ -512,5 +607,28 @@ describe("interest request flow", () => {
     if (!parsed.success) {
       expect(interestRequestValidationMessage(parsed.error)).toContain(expectedMessage);
     }
+  });
+
+  it("normalizes ZIP+4 and accepts the canonical US Virgin Islands hierarchy", () => {
+    const parsed = interestSubmissionSchema.parse({
+      familyContext: decisionDetails.familyContext,
+      message: decisionDetails.message,
+      portfolioToken: "portfolio-token",
+      useExistingProfile: false,
+      name: "Rohan Mehta",
+      profileFor: "self",
+      phone: "+1 555 010 2200",
+      email: "rohan@example.com",
+      country: "United States",
+      countryCode: "US",
+      state: "United States Virgin Islands",
+      subdivisionCode: "US-VI",
+      city: "Charlotte Amalie",
+      postalCode: "00802-1234",
+      locationSource: "manual",
+      location: { country: "United States", countryCode: "US", state: "United States Virgin Islands", subdivisionCode: "US-VI", city: "Charlotte Amalie", postalCode: "00802-1234", locationSource: "manual" },
+    });
+
+    expect(parsed.postalCode).toBe("00802");
   });
 });

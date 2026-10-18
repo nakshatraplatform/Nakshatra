@@ -1,9 +1,15 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 
-const workflow = readFileSync(new URL("../.github/workflows/cd.yml", import.meta.url), "utf8");
+// Git checkouts may use CRLF; workflow semantics must be identical on both hosts.
+const workflow = readFileSync(new URL("../.github/workflows/cd.yml", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+// Use Git for Windows' Bash, not the Windows WSL launcher named bash.exe.
+const bash = process.platform === "win32"
+  ? resolve(spawnSync("git", ["--exec-path"], { encoding: "utf8" }).stdout.trim(), "../../../bin/bash.exe")
+  : "/bin/bash";
 const jobCondition = workflow.match(/^    if: (.+)$/m)?.[1];
 const steps = workflow.split(/^      - name: /m).slice(1).map((block) => ({
   name: block.split("\n", 1)[0],
@@ -65,7 +71,7 @@ describe("production database workflow", () => {
     const command = steps.find((step) => step.name === "Validate Supabase migration deployment secrets")?.run;
     expect(command).toBeDefined();
     const env: NodeJS.ProcessEnv = { NODE_ENV: "test", ...Object.fromEntries(secretNames.map((name) => [name, name === missing ? "" : "private-test-sentinel"])) };
-    const result = spawnSync("/bin/bash", ["-e", "-o", "pipefail", "-c", command!], { env, encoding: "utf8" });
+    const result = spawnSync(bash, ["-e", "-o", "pipefail", "-c", command!], { env, encoding: "utf8" });
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain(missing);
     expect(result.stdout + result.stderr).not.toContain("private-test-sentinel");
@@ -74,7 +80,7 @@ describe("production database workflow", () => {
   it("accepts all deployment credentials without printing their values", () => {
     const command = steps.find((step) => step.name === "Validate Supabase migration deployment secrets")?.run;
     const env: NodeJS.ProcessEnv = { NODE_ENV: "test", ...Object.fromEntries(secretNames.map((name) => [name, "private-test-sentinel"])) };
-    const result = spawnSync("/bin/bash", ["-e", "-o", "pipefail", "-c", command!], { env, encoding: "utf8" });
+    const result = spawnSync(bash, ["-e", "-o", "pipefail", "-c", command!], { env, encoding: "utf8" });
     expect(result.status).toBe(0);
     expect(result.stdout + result.stderr).not.toContain("private-test-sentinel");
   });

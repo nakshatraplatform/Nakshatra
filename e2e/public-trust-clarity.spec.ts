@@ -13,10 +13,10 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
       await page.goto(`/p/${token}`);
       const portfolio = page.locator('[data-template="celestial-union"]:visible');
       await expect(portfolio).toHaveAttribute("data-appearance", appearance);
-      const badge = portfolio.locator(".portfolio-verified-badge");
+      const badge = portfolio.getByLabel(/^Liveness checked\./);
       await expect(badge).toBeVisible();
       await expect(badge.getByText("Liveness checked")).toBeVisible();
-      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, portfolio photo ownership/i);
+      await expect(badge).toHaveAttribute("aria-label", /Liveness checked.*liveness checks.*does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/i);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       if (width === 375 || width === 1440) {
         await page.screenshot({
@@ -31,7 +31,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
 test("the fictional introduction does not claim a real liveness check", async ({ page }) => {
   await page.goto("/demo");
   await expect(page.getByText("Fictional sample introduction")).toBeVisible();
-  await expect(page.locator(".portfolio-verified-badge")).toHaveCount(0);
+  await expect(page.getByLabel(/^Liveness checked\./)).toHaveCount(0);
 });
 
 test("public trust explanation matches the publication exception and link controls", async ({ page }, testInfo) => {
@@ -41,10 +41,12 @@ test("public trust explanation matches the publication exception and link contro
   await expect(page.getByText(/These checks do not establish identity or photo ownership/i)).toBeVisible();
   await expect(page.getByText(/limited pilot test exemption can allow publication without that check/i)).toBeVisible();
   await expect(page.getByText(/exempt introductions do not receive the Liveness checked badge/i)).toBeVisible();
-  const accessControls = page.getByText("Access and control").locator("xpath=ancestor::details");
+  const accessControls = page.getByRole("heading", { name: "Sharing and control", exact: true }).locator("xpath=ancestor::details");
   await expect(accessControls).not.toHaveAttribute("open", "");
   await accessControls.locator("summary").click();
-  await expect(accessControls).toContainText(/Owners can unpublish or rotate a personal public link at any time/i);
-  await expect(accessControls.getByText(/Owners can unpublish or rotate a personal public link at any time/i)).toBeVisible();
+  await expect(accessControls).toContainText(/You can unpublish or replace your personal public link at any time/i);
+  await expect(accessControls.getByText(/You can unpublish or replace your personal public link at any time/i)).toBeVisible();
+  await expect(accessControls).toContainText(/Private details are shared for up to 15 days, and you can stop sharing earlier/i);
+  await expect(accessControls).toContainText(/replacing the link also stops the old URL from working/i);
   await page.screenshot({ path: testInfo.outputPath("trust-375-final.png"), fullPage: true, animations: "disabled" });
 });

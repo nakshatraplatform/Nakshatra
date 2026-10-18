@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { useState, type FormEvent } from "react";
 import { AlertTriangle, CheckCircle2, Copy, Link2, MessageCircleQuestion, Send, XCircle } from "lucide-react";
 import type { BrokerIntroductionItem, BrokerPortfolioNotice, EligibleBrokerIntroductionRecipient } from "@/features/broker-introductions/server/broker-introduction.contract";
@@ -19,11 +21,12 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
   const [introductions, setIntroductions] = useState(initialIntroductions);
   const [notices, setNotices] = useState(initialNotices);
   const [created, setCreated] = useState<CreatedLink | null>(null);
+  const [pendingTarget, setPendingTarget] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
 
   async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending(true); setMessage("");
+    event.preventDefault(); setPendingTarget("create"); setPending(true); setMessage("");
     const form = new FormData(event.currentTarget);
     try {
       const result = await createIntroduction(workspaceRef, {
@@ -60,7 +63,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
 
   async function activateAndCopy() {
     if (!created) return;
-    setPending(true); setMessage("");
+    setPendingTarget("activate"); setPending(true); setMessage("");
     try {
       const transition = await markIntroductionShared(workspaceRef, created.introductionRef, created.rowVersion);
       await navigator.clipboard.writeText(created.introductionUrl);
@@ -74,7 +77,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
   }
 
   async function revoke(item: BrokerIntroductionItem) {
-    setPending(true); setMessage("");
+    setPendingTarget(item.introductionRef); setPending(true); setMessage("");
     try {
       const transition = await revokeIntroduction(workspaceRef, item.introductionRef, item.rowVersion);
       setIntroductions((items) => items.map((candidate) => candidate.introductionRef === item.introductionRef
@@ -86,7 +89,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
   }
 
   async function flag(notice: BrokerPortfolioNotice) {
-    setPending(true); setMessage("");
+    setPendingTarget(notice.noticeRef); setPending(true); setMessage("");
     try {
       await flagPortfolioUpdate(workspaceRef, relationshipRef, notice.noticeRef);
       setNotices((items) => items.map((item) => item.noticeRef === notice.noticeRef ? { ...item, status: "clarification" } : item));
@@ -96,7 +99,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
   }
 
   async function acknowledge(notice: BrokerPortfolioNotice) {
-    setPending(true); setMessage("");
+    setPendingTarget(notice.noticeRef); setPending(true); setMessage("");
     try {
       await acknowledgePortfolioUpdate(workspaceRef, relationshipRef, notice.noticeRef);
       setNotices((items) => items.map((item) => item.noticeRef === notice.noticeRef ? { ...item, status: "acknowledged" } : item));
@@ -110,6 +113,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       <div className={styles.panelTitle}><AlertTriangle /><div><h2>Portfolio updates</h2><p>Each notice belongs only to this broker relationship. Updates do not alter introductions already shared.</p></div></div>
       <div className={styles.timeline}>{notices.map((notice) => <article className={styles.introductionRow} key={notice.noticeRef}>
         <div><strong>Published version {notice.versionNumber}</strong><span>{new Date(notice.publishedAt).toLocaleDateString()} · {notice.status}</span></div>
+        {pending && pendingTarget === notice.noticeRef && <LoadingStatus compact title="Updating this portfolio notice" />}
         {notice.status !== "acknowledged" && <div><button disabled={pending} type="button" onClick={() => acknowledge(notice)}><CheckCircle2 /> Acknowledge</button>{notice.status === "unread" && <button disabled={pending} type="button" onClick={() => flag(notice)}><MessageCircleQuestion /> Flag for clarification</button>}</div>}
       </article>)}</div>
     </section>}
@@ -117,7 +121,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       <div className={styles.panelTitle}><Send /><div><h2>Broker introductions</h2><p>Choose another ready customer in this workspace. Both portfolios must be published, and both customers must have completed liveness checks.</p></div></div>
       {canCreate && eligibleRecipients.length > 0 ? <form className={styles.introductionForm} onSubmit={create}>
         <label>Introduce this customer to
-          <select className="min-h-11 rounded-lg border border-[light-dark(#d6cec0,var(--app-dark-border))] bg-[light-dark(#fff,var(--app-dark-surface-soft))] px-3 text-inherit" name="recipientRelationshipRef" required defaultValue="">
+          <select className="min-h-11 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] px-3 text-inherit" name="recipientRelationshipRef" required defaultValue="">
             <option value="" disabled>Select an eligible customer</option>
             {eligibleRecipients.map((recipient) => <option key={recipient.relationshipRef} value={recipient.relationshipRef}>
               {[recipient.displayName, recipient.gender, recipient.location].filter(Boolean).join(" · ")}
@@ -126,10 +130,12 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
         </label>
         <button disabled={pending} type="submit"><Link2 /> {pending ? "Working…" : "Create private introduction"}</button>
       </form> : <p className={styles.empty}>{canCreate ? "No other active customer with a published portfolio and completed liveness checks is available yet." : "This customer needs an active mandate, a published portfolio and completed liveness checks before introductions can be created."}</p>}
-      {created && <div className={styles.createdLink}><strong>Customer-only introduction link</strong><code>{created.introductionUrl}</code><button disabled={pending} type="button" onClick={activateAndCopy}><Copy /> Activate and copy</button><small>Only the selected customer can open this link after signing in to VivIntro. Forwarding the URL does not grant anyone else access.</small></div>}
+      {pending && pendingTarget === "create" && <LoadingStatus compact title="Creating your private introduction" />}
+      {created && <div className={styles.createdLink}><strong>Customer-only introduction link</strong>{pending && pendingTarget === "activate" && <LoadingStatus compact title="Activating your private link" />}<code>{created.introductionUrl}</code><button disabled={pending} type="button" onClick={activateAndCopy}><Copy /> Activate and copy</button><small>Only the selected customer can open this link after signing in to VivIntro. Forwarding the URL does not grant anyone else access.</small></div>}
       {message && <p className={styles.notice} role="status">{message}</p>}
       <div className={styles.timeline}>{introductions.length === 0 ? <p className={styles.empty}>No broker introductions yet.</p> : introductions.map((item) => <article className={styles.introductionRow} key={item.introductionRef}>
         <div>{item.sourceResponse === "accepted" && item.recipientResponse === "accepted" ? <CheckCircle2 /> : item.sourceResponse === "declined" || item.recipientResponse === "declined" ? <XCircle /> : <Link2 />}<span><strong>{item.recipientLabel}</strong><small>Selected customer: {item.sourceResponse ?? "waiting"} · {item.recipientLabel}: {item.recipientResponse ?? "waiting"}</small><small>Version {item.versionNumber} · {item.status} · respond by {new Date(item.expiresAt).toLocaleDateString()}</small>{item.completeAccessExpiresAt && <small>Mutual-interest Complete access until {new Date(item.completeAccessExpiresAt).toLocaleDateString()}</small>}{item.recipientResponseComment && <em>“{item.recipientResponseComment}”</em>}</span></div>
+        {pending && pendingTarget === item.introductionRef && <LoadingStatus compact title="Revoking this introduction" />}
         {!['revoked','expired'].includes(item.status) && <button disabled={pending} type="button" onClick={() => revoke(item)}>Revoke</button>}
       </article>)}</div>
     </section>

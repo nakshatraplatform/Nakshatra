@@ -18,6 +18,25 @@ import {
   requireSameOrigin,
 } from "@/lib/api/request-security";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
+import { interestHistorySchema } from "@/features/interest/server/interest-dashboard.contract";
+
+/** Paginated owner-only retained submissions, including old approved requests. */
+export async function GET(request: Request) {
+  const auth = await getApiUser();
+  if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
+  const rateLimited = await enforceRateLimit(auth.supabase, request, "interest_decision");
+  if (rateLimited) return rateLimited;
+  const value = new URL(request.url).searchParams.get("offset") || "0";
+  if (!/^(0|[1-9][0-9]{0,5})$/.test(value) || Number(value)>100000) return NextResponse.json({ error: "Choose a valid page." }, { status: 400 });
+  try {
+    const { data, error } = await auth.supabase.rpc("list_interest_history", { p_offset: Number(value), p_limit: 25 });
+    const parsed = interestHistorySchema.safeParse(data);
+    if (error || !parsed.success) throw new Error("History unavailable");
+    return NextResponse.json({ interests: parsed.data }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "We could not load interest history. Try again." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+  }
+}
 
 /** Accepts a short viewer introduction for an active public portfolio. */
 export async function POST(request: Request) {
@@ -37,7 +56,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    let interest: InterestRequestInput;
+    let interest: InterestRequestInput & { useExistingProfile?: boolean };
     if (parsed.data.useExistingProfile) {
       const [{ data: authData }, profile] = await Promise.all([
         auth.supabase.auth.getUser(),
@@ -58,9 +77,18 @@ export async function POST(request: Request) {
       interest = {
         portfolioToken: parsed.data.portfolioToken,
         ...profile,
+        useExistingProfile: true,
         email: verifiedEmail,
         familyContext: parsed.data.familyContext,
         message: parsed.data.message,
+        country: parsed.data.country,
+        state: parsed.data.state,
+        city: parsed.data.city,
+        countryCode: parsed.data.countryCode,
+        subdivisionCode: parsed.data.subdivisionCode,
+        cityGeonameId: parsed.data.cityGeonameId,
+        postalCode: parsed.data.postalCode,
+        locationSource: parsed.data.locationSource,
       };
     } else {
       interest = parsed.data;
@@ -108,7 +136,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           code: "INTEREST_REQUEST_REJECTED",
-          error: "The request contains a value the database cannot accept. Check the phone number and optional details.",
+          error: "The request contains a value the database cannot accept. Check the phone number and required location details.",
         },
         { status: 400 }
       );

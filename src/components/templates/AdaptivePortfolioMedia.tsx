@@ -1,5 +1,8 @@
 "use client";
 
+import { PortfolioImage } from "@/components/loading/PortfolioImage";
+import { ChapterHeading, ProtectedDataVault } from "@/components/portfolio/presentation/PortfolioPrimitives";
+
 import { ChevronLeft, ChevronRight, LockKeyhole, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,7 +18,7 @@ import type { PortfolioPhotoOrientation } from "@/types/portfolio";
  */
 export function AdaptivePortfolioHero({
   photos,
-  fallbackColor = "#17151c",
+  fallbackColor = "var(--workspace-surface-muted)",
 }: {
   photos: PortfolioPhoto[];
   fallbackColor?: string;
@@ -62,6 +65,7 @@ export function AdaptivePortfolioHero({
       <div
         className="portfolio-hero-empty"
         style={{ backgroundColor: fallbackColor }}
+        role="img"
         aria-label="Portfolio photo has not been added"
       />
     );
@@ -73,13 +77,13 @@ export function AdaptivePortfolioHero({
       data-orientation={activeOrientation}
       data-presentation={activePhoto.presentation || "clear"}
     >
-      {/* oxlint-disable-next-line nextjs/no-img-element */}
-      <img
+      <PortfolioImage key={activePhoto.src}
         src={activePhoto.src}
         alt={activePhoto.alt}
         width={activePhoto.width}
         height={activePhoto.height}
         className="portfolio-hero-photo"
+        fetchPriority="high"
         onLoad={(event) => {
           if (activePhoto.orientation === "unknown") {
             detectLegacyOrientation(
@@ -137,6 +141,8 @@ export function AdaptivePortfolioGallery({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const lightboxTriggerRef = useRef<HTMLButtonElement | null>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement | null>(null);
+  const lightboxPortalRef = useRef<HTMLDivElement | null>(null);
+  const lightboxDialogRef = useRef<HTMLDivElement | null>(null);
   const orderedPhotos = useMemo(
     () => photos
       .map((photo, index) => ({ photo, index }))
@@ -162,11 +168,32 @@ export function AdaptivePortfolioGallery({
     if (!lightboxOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const background = new Map<HTMLElement, string | null>();
+    function makeBackgroundInert(element: Element) {
+      const portal = lightboxPortalRef.current;
+      if (!(element instanceof HTMLElement) || element === portal || (portal && element.contains(portal)) || background.has(element)) return;
+      background.set(element, element.getAttribute("inert"));
+      element.setAttribute("inert", "");
+    }
+    Array.from(document.body.children).forEach(makeBackgroundInert);
+    const observer = new MutationObserver(records => {
+      records.forEach(record => record.addedNodes.forEach(node => { if (node instanceof Element) makeBackgroundInert(node); }));
+    });
+    observer.observe(document.body, { childList: true });
     document.body.style.overflow = "hidden";
     lightboxCloseRef.current?.focus();
+    function containFocus(event: FocusEvent) {
+      if (event.target instanceof Node && !lightboxDialogRef.current?.contains(event.target)) lightboxCloseRef.current?.focus();
+    }
+    document.addEventListener("focusin", containFocus);
     return () => {
+      observer.disconnect();
+      document.removeEventListener("focusin", containFocus);
+      background.forEach((previous, element) => {
+        if (previous === null) element.removeAttribute("inert"); else element.setAttribute("inert", previous);
+      });
       document.body.style.overflow = previousOverflow;
-      lightboxTriggerRef.current?.focus();
+      if (lightboxTriggerRef.current?.isConnected) lightboxTriggerRef.current.focus();
     };
   }, [lightboxOpen]);
 
@@ -174,17 +201,17 @@ export function AdaptivePortfolioGallery({
     if (!lightboxOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
         setLightboxPhotoId(null);
       } else if (event.key === "Tab") {
-        const controls = Array.from(document.querySelectorAll<HTMLElement>(
-          ".portfolio-lightbox button:not([disabled])"
-        ));
+        const controls = Array.from(lightboxDialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") || []);
         if (!controls.length) return;
         const first = controls[0];
         const last = controls[controls.length - 1];
-        if (!document.activeElement?.closest(".portfolio-lightbox")) {
+        if (!lightboxDialogRef.current?.contains(document.activeElement)) {
           event.preventDefault();
-          first.focus();
+          (event.shiftKey ? last : first).focus();
         } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last.focus();
@@ -193,16 +220,18 @@ export function AdaptivePortfolioGallery({
           first.focus();
         }
       } else if (event.key === "ArrowLeft" && clearPhotos.length > 1) {
+        event.preventDefault();
         const previous = (lightboxIndex - 1 + clearPhotos.length) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[previous].id);
       } else if (event.key === "ArrowRight" && clearPhotos.length > 1) {
+        event.preventDefault();
         const next = (lightboxIndex + 1) % clearPhotos.length;
         setLightboxPhotoId(clearPhotos[next].id);
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [clearPhotos, lightboxIndex, lightboxOpen]);
 
   if (!photos.length) return null;
@@ -245,12 +274,8 @@ export function AdaptivePortfolioGallery({
 
   return (
     <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
-      <div className="portfolio-section-heading">
-        <p>Captured moments</p>
-        <h2 id="portfolio-gallery-title">Gallery</h2>
-      </div>
+      <ChapterHeading eyebrow="Captured moments" title="Gallery" id="portfolio-gallery-title" />
       <div className="portfolio-gallery-meta">
-        <p>A simple collection of everyday moments.</p>
         <span>{orderedPhotos.length} photo{orderedPhotos.length === 1 ? "" : "s"}</span>
       </div>
       <div className="portfolio-gallery-viewer">
@@ -306,7 +331,7 @@ export function AdaptivePortfolioGallery({
               data-active={index === activeIndex}
               data-presentation={photo.presentation || "clear"}
               onClick={() => setActivePhotoIndex(index)}
-              aria-label={photo.presentation === "blurred" ? `Photo ${index + 1}, shared after approval` : `Show photo ${index + 1}`}
+              aria-label={photo.presentation === "blurred" ? `Photo ${index + 1}, shared privately` : `Show photo ${index + 1}`}
               aria-current={index === activeIndex ? "true" : undefined}
             >
               {photo.presentation === "blurred" ? (
@@ -327,8 +352,8 @@ export function AdaptivePortfolioGallery({
       </div>
 
       {lightboxPhoto && createPortal(
-        <div data-template="celestial-union" className="portfolio-lightbox-portal">
-        <div className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
+        <div ref={lightboxPortalRef} data-template="celestial-union" className="portfolio-lightbox-portal">
+        <div ref={lightboxDialogRef} className="portfolio-lightbox" role="dialog" aria-modal="true" aria-label="Gallery photo viewer" onClick={(event) => {
           const target = event.target;
           if (target instanceof Element && !target.closest("button, img, figcaption")) setLightboxPhotoId(null);
         }}>
@@ -378,8 +403,7 @@ function GalleryImage({
     : photo.orientation;
 
   return (
-    // oxlint-disable-next-line nextjs/no-img-element
-    <img
+    <PortfolioImage key={photo.src} showLoading={!decorative}
       src={photo.src}
       alt={decorative ? "" : photo.alt}
       width={photo.width}
@@ -403,9 +427,7 @@ function meaningfulCaption(alt: string) {
 function ProtectedGalleryTile() {
   return (
     <div className="portfolio-gallery-protected">
-      <span><LockKeyhole aria-hidden="true" /></span>
-      <strong>Photo shared after approval</strong>
-      <p>This photo stays protected until the portfolio owner approves access.</p>
+      <ProtectedDataVault title="Photo shared privately" detail="This photo stays private until they choose to share it." />
     </div>
   );
 }
@@ -414,7 +436,7 @@ function ProtectedPhotoLabel() {
   return (
     <span className="portfolio-protected-photo-label">
       <LockKeyhole aria-hidden="true" />
-      <span>Photo shared after approval</span>
+      <span>Photo shared privately</span>
     </span>
   );
 }

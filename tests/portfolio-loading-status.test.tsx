@@ -11,10 +11,20 @@ vi.mock("thinking-orbs", () => ({
 }));
 
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { APP_THEME_STORAGE_KEY } from "@/lib/app-theme";
 
 describe("PortfolioLoadingStatus", () => {
+  it("keeps a public dialog's appearance independent of the app theme", () => {
+    render(<AppThemeProvider><LoadingStatus compact appearance="dark" title="Sending interest" /></AppThemeProvider>);
+    const status = screen.getByRole("status");
+    expect(status).toHaveAttribute("aria-atomic", "true");
+    expect(status.querySelector("canvas")).toHaveAttribute("data-theme", "dark");
+    expect(status.querySelector("canvas")).toHaveAttribute("aria-hidden", "true");
+    expect(status).toHaveStyle({ colorScheme: "dark" });
+  });
+
   beforeEach(() => {
     const browser = (globalThis as unknown as { jsdom: { window: Window } }).jsdom.window;
     vi.stubGlobal("localStorage", browser.localStorage);

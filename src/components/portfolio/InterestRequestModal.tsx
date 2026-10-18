@@ -1,13 +1,18 @@
 "use client";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
-import { PhoneNumberField } from "@/components/portfolio/PhoneNumberField";
+import { InterestContextFields, VisitorInterestFields } from "./VisitorInterestFields";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, CheckCircle2, ChevronDown, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2, LoaderCircle, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
+import type { NewViewerInterestInput } from "@/features/interest/server/interest.contract";
 import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
 import type { ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
+import type { LocationValue } from "@/components/portfolio/LocationFields";
+import { StructuredInterestLocation, interestLocationError } from "./StructuredInterestLocation";
+import { lockPageScroll } from "@/lib/ui/scroll-lock";
 
 type ModalStep = "choice" | "details" | "verify" | "success";
 type InterestPayload = {
@@ -19,14 +24,22 @@ type InterestPayload = {
   country: FormDataEntryValue | null;
   state: FormDataEntryValue | null;
   city: FormDataEntryValue | null;
+  countryCode: FormDataEntryValue | null;
+  subdivisionCode: FormDataEntryValue | null;
+  cityGeonameId: FormDataEntryValue | null;
+  postalCode: FormDataEntryValue | null;
+  locationSource: FormDataEntryValue | null;
   familyContext: FormDataEntryValue | null;
   message: FormDataEntryValue | null;
   useExistingProfile?: boolean;
+  location?: NewViewerInterestInput["location"];
+  candidate?: NonNullable<NewViewerInterestInput["candidate"]>;
 };
 
-export function InterestRequestModal({ portfolioToken, profileName, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
+export function InterestRequestModal({ portfolioToken, profileName, profileSummary, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
   portfolioToken: string;
   profileName: string;
+  profileSummary?: string;
   authenticated: boolean;
   verifiedEmail?: string | null;
   existingViewerProfile?: ExistingViewerProfile | null;
@@ -34,10 +47,12 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   appearance?: CelestialAppearance;
 }) {
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const [step, setStep] = useState<ModalStep>(authenticated ? "details" : "choice");
   const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [email, setEmail] = useState(verifiedEmail || "");
   const [otp, setOtp] = useState("");
   const [resendSeconds, setResendSeconds] = useState(0);
@@ -47,15 +62,27 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   const titleId = useId();
   const verificationErrorId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
+  const inFlight = useRef(false);
   const portfolioPath = `/p/${encodeURIComponent(portfolioToken)}`;
   const sessionEmail = authenticated ? verifiedEmail?.trim().toLowerCase() || null : null;
+
+  useEffect(() => {
+    if (step === "details" && Object.keys(fieldErrors).length) {
+      const first = dialogRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid="true"]');
+      first?.focus({ preventScroll: true });
+      first?.closest('label, [role="group"]')?.scrollIntoView?.({ block: "center" });
+    }
+  }, [fieldErrors, step]);
 
   useEffect(() => {
     if (!authenticated || window.location.hash !== "#portfolio-interest") return;
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     const resume = window.setTimeout(() => {
       setStep("details");
+      setHasOpened(true);
       setOpen(true);
     }, 0);
     return () => window.clearTimeout(resume);
@@ -63,24 +90,38 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    dialogRef.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
-
+    // Safari does not focus a button on pointer activation; retain its trigger explicitly.
+    const previous = triggerRef.current || document.activeElement as HTMLElement | null;
+    const unlockScroll = lockPageScroll(document);
+    const background = new Map<HTMLElement, boolean>();
+    for (const element of Array.from(document.body.children)) {
+      if (element instanceof HTMLElement && !element.contains(dialogRef.current)) { background.set(element, element.inert); element.inert = true; }
+    }
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") return setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!inFlight.current) setOpen(false);
+        return;
+      }
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]'
-      ));
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])'
+      )).filter(element => {
+        if (element.tabIndex < 0) return false;
+        for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+          if (node.hidden || getComputedStyle(node).display === "none") return false;
+          if (node instanceof HTMLDetailsElement && !node.open && !node.querySelector("summary")?.contains(element)) return false;
+        }
+        return true;
+      });
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      const index = focusable.indexOf(document.activeElement as HTMLElement);
+      if (event.shiftKey && (index <= 0)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (index < 0 || document.activeElement === last)) {
         event.preventDefault();
         first.focus();
       }
@@ -89,10 +130,17 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     document.addEventListener("keydown", handleKey);
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = previousOverflow;
-      previous?.focus();
+      background.forEach((inert, element) => { element.inert = inert; });
+      unlockScroll();
+      previous?.focus({ preventScroll: true });
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (step === "verify") codeInputRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [open, step]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -106,7 +154,15 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
 
   async function beginRequest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    if (inFlight.current) return;
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const viewerLocation = (prefix = "") => {
+      const field = (key: string) => String(formData.get(prefix ? `${prefix}${key[0].toUpperCase()}${key.slice(1)}` : key) || "");
+      return { country: field("country"), state: field("state"), city: field("city"), countryCode: field("countryCode"),
+        subdivisionCode: field("subdivisionCode"), cityGeonameId: Number(field("cityGeonameId")) || undefined,
+        postalCode: field("postalCode"), locationSource: field("locationSource") };
+    };
     const enteredEmail = String(formData.get("email") || "").trim().toLowerCase();
     const payload: InterestPayload = {
       portfolioToken,
@@ -117,14 +173,48 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       country: formData.get("country"),
       state: formData.get("state"),
       city: formData.get("city"),
+      countryCode: formData.get("countryCode"),
+      subdivisionCode: formData.get("subdivisionCode"),
+      cityGeonameId: formData.get("cityGeonameId"),
+      postalCode: formData.get("postalCode"),
+      locationSource: formData.get("locationSource"),
       familyContext: formData.get("familyContext"),
       message: formData.get("message"),
       useExistingProfile: Boolean(sessionEmail && existingViewerProfile),
+      location: viewerLocation() as NewViewerInterestInput["location"],
+      ...(formData.get("profileFor") !== "self" && !existingViewerProfile ? { candidate: {
+        name: String(formData.get("candidateName") || ""), email: String(formData.get("candidateEmail") || ""), phone: String(formData.get("candidatePhone") || ""), relationship: "",
+        ...(formData.has("candidateCountryCode") ? { location: viewerLocation("candidate") as NewViewerInterestInput["location"] } : {}),
+      } } : {}),
     };
+    setError("");
+    setFieldErrors({});
+    setPending(true);
+    inFlight.current = true;
+
+    // Load authoring validation only when needed, not on the portfolio's first paint.
+    try {
+      const { interestSubmissionSchema, interestRequestValidationMessage, interestFieldErrors } = await import("@/features/interest/server/interest.contract");
+      const parsed = interestSubmissionSchema.safeParse(payload);
+      if (!parsed.success) {
+        const errors = interestFieldErrors(parsed.error);
+        setFieldErrors(errors);
+        setError(interestRequestValidationMessage(parsed.error));
+        setPending(false);
+        inFlight.current = false;
+        return;
+      }
+      payload.familyContext = parsed.data.familyContext;
+      payload.message = parsed.data.message ?? null;
+      if (!parsed.data.useExistingProfile) payload.candidate = parsed.data.candidate;
+    } catch {
+      setError("We could not check your details. Please try again.");
+      setPending(false);
+      inFlight.current = false;
+      return;
+    }
     setRequestPayload(payload);
     setEmail(payload.email);
-    setError("");
-    setPending(true);
 
     if (sessionEmail) return void await sendInterest(payload);
 
@@ -132,6 +222,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     if (!ok || !body?.sent) {
       setError(body?.error || "We could not send the verification code. Please try again.");
       setPending(false);
+      inFlight.current = false;
       return;
     }
     setOtp("");
@@ -139,15 +230,19 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
     setResendSeconds(60);
     setStep("verify");
     setPending(false);
+    inFlight.current = false;
   }
 
   async function continueWithVivIntro() {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setPending(true);
     setError("");
     const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest` });
     if (!ok || !body?.url) {
       setError(body?.error || "We could not connect to Google. Please try again.");
       setPending(false);
+      inFlight.current = false;
       return;
     }
     continueToAuthProvider(body.url);
@@ -155,7 +250,9 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
 
   async function verifyAndSend(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlight.current) return;
     if (!requestPayload) return setStep("details");
+    inFlight.current = true;
     setPending(true);
     setVerificationAction("verifying");
     setError("");
@@ -164,6 +261,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       setError(body?.error || "That code is incorrect or has expired.");
       setOtp("");
       setPending(false);
+      inFlight.current = false;
       setVerificationAction("idle");
       window.requestAnimationFrame(() => codeInputRef.current?.focus());
       return;
@@ -173,7 +271,8 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   }
 
   async function resendCode() {
-    if (resendSeconds > 0 || pending) return;
+    if (resendSeconds > 0 || inFlight.current) return;
+    inFlight.current = true;
     setPending(true);
     setError("");
     const { ok, body } = await startAuthentication({ method: "email_otp", email, redirect: portfolioPath });
@@ -185,6 +284,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       window.requestAnimationFrame(() => codeInputRef.current?.focus());
     }
     setPending(false);
+    inFlight.current = false;
   }
 
   async function sendInterest(payload: InterestPayload) {
@@ -203,63 +303,79 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
       if (!response.ok) throw new Error(result?.error || "Unable to send interest");
       setSubmitted(true);
       setStep("success");
+      setRequestPayload(null);
+      setOtp("");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to send interest");
     } finally {
       setPending(false);
+      inFlight.current = false;
       setVerificationAction("idle");
     }
   }
 
   function openModal() {
     if (isOwner) return;
-    setError("");
-    if (!requestPayload) {
-      setStep(authenticated ? "details" : "choice");
-      setOtp("");
-      setVerificationNotice("");
-    }
-    setVerificationAction("idle");
-    setEmail(requestPayload?.email || sessionEmail || "");
+    setHasOpened(true);
     setOpen(true);
   }
 
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Request sent.</strong> The owner will decide whether to share protected details.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> They’ll share more if they’d like to continue.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
           <span id="own-portfolio-interest-note">This is your introduction.</span>
         </div>
       ) : (
-        <button type="button" className="portfolio-button portfolio-button-primary" onClick={openModal}><MessageCircle aria-hidden="true" /> Show interest</button>
+        <button ref={triggerRef} type="button" className="portfolio-button portfolio-button-primary" onClick={openModal}><MessageCircle aria-hidden="true" /> Show interest</button>
       )}
 
-      {open && createPortal(
-        <div className="interest-modal-backdrop" style={{ colorScheme: appearance }}>
+      {hasOpened && createPortal(
+        <div className="interest-modal-backdrop" hidden={!open} data-appearance={appearance}>
           <div ref={dialogRef} className="interest-modal" data-step={step} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <div className="interest-brand-lockup"><VivIntroBrand className="interest-brand" variant="stacked" decorative displayWidth={112} /></div>
+            <aside className="interest-context" aria-label="About this introduction">
+              <VivIntroBrand href="/" openInNewTab variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} />
+              <div className="interest-context-profile">
+                <p className="portfolio-eyebrow">A thoughtful introduction</p>
+                <h3>{profileName}</h3>
+                {profileSummary && <p>{profileSummary}</p>}
+              </div>
+              <div className="interest-context-steps">
+                <h3>Next steps</h3>
+                <ol>
+                  <li>Introduce yourself and your family.</li>
+                  <li>Verify your email before sending.</li>
+                  <li>{firstName(profileName)} reviews your interest.</li>
+                </ol>
+              </div>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />They’ll share more if they’d like to continue.</p>
+            </aside>
+            <div className="interest-main-pane">
+            <div className="interest-brand-lockup"><VivIntroBrand href="/" openInNewTab className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Request sent" : sessionEmail && existingViewerProfile ? `Add a note for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Use your saved VivIntro details, or continue as a new visitor." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? "The introduction owner can now review your request." : sessionEmail && existingViewerProfile ? "Your verified VivIntro details will be attached. Add only the context you want this family to see." : "Start with your contact details. You can add more context if useful."}</p>
+                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "choice" ? "Sign in to reuse your details, or continue with email. You don’t need to create an introduction." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : sessionEmail && existingViewerProfile ? "Check your location and add a short introduction. Your signed-in details are already filled in." : "A few details help the family understand who is getting in touch."}</p>
               </div>
-              <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
+              <button type="button" className="interest-modal-close" disabled={pending} onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
 
             {step === "choice" && (
               <div className="interest-account-choice">
-                <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with Google to reuse the profile details connected to your account.</p></div>
-                {error && <p className="interest-form-error" role="alert">{error}</p>}
-                <button type="button" className="portfolio-button portfolio-button-primary" disabled={pending} onClick={() => void continueWithVivIntro()}>{pending ? "Connecting…" : "Continue with Google"}</button>
+                <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with your usual account to reuse your details.</p></div>
+                {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
+                <Link href={`/login?redirect=${encodeURIComponent(`${portfolioPath}#portfolio-interest`)}`} className="portfolio-button portfolio-button-primary">Sign in to VivIntro</Link>
+                <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : "Continue with Google"}</button>
                 <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setError(""); setStep("details"); }}>Continue as a new visitor</button>
               </div>
             )}
 
-            {step === "details" && <DetailsForm draft={requestPayload} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} onSubmit={beginRequest} />}
+            {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
+            {(step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -272,7 +388,7 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
                 </label>
                 {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
                 {verificationNotice && !error && <p className="interest-verification-notice" role="status">{verificationNotice}</p>}
-                <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending || otp.length !== 6}>{verificationAction === "sending" ? "Sending interest…" : verificationAction === "verifying" ? "Verifying…" : "Verify email"}</button>
+                <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending || otp.length !== 6} aria-busy={pending} aria-label={pending ? verificationAction === "sending" ? "Sending interest" : "Verifying email" : undefined}>{pending ? <InterestActionProgress label={verificationAction === "sending" ? "Sending interest" : "Verifying email"} /> : "Verify email"}</button>
                 <button type="button" className="interest-secondary-action" onClick={() => void resendCode()} disabled={pending || resendSeconds > 0}>{resendSeconds > 0 ? `Send another code in ${resendSeconds}s` : "Send another code"}</button>
                 <button type="button" className="interest-secondary-action" onClick={() => { setError(""); setStep("details"); }} disabled={pending}><ArrowLeft aria-hidden="true" /> Change details</button>
               </form>
@@ -281,11 +397,12 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
             {step === "success" && (
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
-                <h3>Request sent to {firstName(profileName)}.</h3>
-                <p>The introduction owner can review it and decide whether to share protected details. You can return whenever you&apos;re ready.</p>
+                <h3>Interest sent to {firstName(profileName)}.</h3>
+                <p>{firstName(profileName)} can review your interest and decide whether to share private details. There’s nothing else to send now.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
+            </div>
           </div>
         </div>, document.body
       )}
@@ -293,87 +410,72 @@ export function InterestRequestModal({ portfolioToken, profileName, authenticate
   );
 }
 
-function DetailsForm({ draft, sessionEmail, existingViewerProfile, pending, error, onSubmit }: {
+function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
+  hidden: boolean;
   draft: InterestPayload | null;
+  portfolioToken: string;
   sessionEmail: string | null;
   existingViewerProfile?: ExistingViewerProfile | null;
   pending: boolean;
   error: string;
+  fieldErrors: Record<string, string>;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
-  const [phone, setPhone] = useState(() => fieldValue(draft?.phone));
+  const [location, setLocation] = useState<LocationValue>(() => existingViewerProfile ? {
+    country: existingViewerProfile.country,
+    countryCode: existingViewerProfile.countryCode,
+    region: existingViewerProfile.state,
+    regionCode: existingViewerProfile.subdivisionCode,
+    city: existingViewerProfile.city,
+    cityGeonameId: existingViewerProfile.cityGeonameId,
+    postalCode: existingViewerProfile.postalCode,
+    locationSource: "existing_profile",
+  } : {});
+  function updateLocation(changes: LocationValue) {
+    setLocation((current) => ({ ...current, ...changes }));
+  }
+
   return (
-    <form onSubmit={onSubmit} className="interest-form">
+    <form onSubmit={onSubmit} hidden={hidden} className="interest-form" noValidate>
       <div className="interest-form-scroll">
         {sessionEmail && existingViewerProfile ? (
           <>
             <div className="interest-existing-profile" aria-label="VivIntro profile in use">
               <span><MailCheck aria-hidden="true" /><strong>Using your VivIntro profile</strong></span>
               <p>{existingViewerProfile.name} · {sessionEmail}</p>
+              {existingViewerProfile.city && <p>{[existingViewerProfile.city, existingViewerProfile.state, existingViewerProfile.country].filter(Boolean).join(", ")}</p>}
+              {existingViewerProfile.profession && <p>Profession: {existingViewerProfile.profession}</p>}
+              {existingViewerProfile.coreValues && <p>Core values: {existingViewerProfile.coreValues}</p>}
             </div>
             <input type="hidden" name="name" value={existingViewerProfile.name} />
             <input type="hidden" name="profileFor" value={existingViewerProfile.profileFor} />
             <input type="hidden" name="phone" value={existingViewerProfile.phone} />
             <input type="hidden" name="email" value={sessionEmail} />
-            <input type="hidden" name="country" value={existingViewerProfile.country || ""} />
-            <input type="hidden" name="state" value={existingViewerProfile.state || ""} />
-            <input type="hidden" name="city" value={existingViewerProfile.city || ""} />
-            <div className="interest-optional-copy-grid">
-              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={4} maxLength={600} placeholder="A few helpful details about your family" /></label>
-              <label className="interest-field"><span>Message</span><textarea name="message" rows={4} maxLength={600} placeholder="Anything you would like the family to know" /></label>
-            </div>
+            <fieldset className="interest-form-section">
+              <legend>Current location · Required</legend>
+              <StructuredInterestLocation label="Your location" value={location} onChange={updateLocation} portfolioToken={portfolioToken}
+                error={interestLocationError(fieldErrors)} />
+            </fieldset>
+            <InterestContextFields draft={{ familyContext: fieldValue(draft?.familyContext), message: fieldValue(draft?.message) }} errors={fieldErrors} />
           </>
         ) : (
           <>
-        <div className="interest-form-intro"><strong>Contact details</strong><span>Required fields are marked *</span></div>
-        <div className="interest-field-grid">
-          <Field label="Your full name" name="name" autoComplete="name" defaultValue={fieldValue(draft?.name)} required />
-          <label className="interest-field">
-            <span>Contacting for <b aria-hidden="true">*</b></span>
-            <select name="profileFor" required defaultValue={fieldValue(draft?.profileFor)} aria-label="Contacting for">
-              <option value="" disabled>Choose one</option><option value="self">Myself</option><option value="son">My son</option><option value="daughter">My daughter</option><option value="sibling">My sibling</option><option value="relative">A relative</option>
-            </select>
-          </label>
-          <PhoneNumberField name="phone" value={phone} onChange={setPhone} required hint="Use the calling code for the country where this number can be reached." />
-          <label className="interest-field">
-            <span>Email address <b aria-hidden="true">*</b></span>
-            <div className={sessionEmail ? "interest-verified-input" : undefined}>
-              <input aria-label="Email address" name="email" type="email" autoComplete="email" inputMode="email" required defaultValue={sessionEmail || draft?.email || ""} readOnly={Boolean(sessionEmail)} maxLength={180} />
-              {sessionEmail && <MailCheck aria-label="Email verified" />}
-            </div>
-            {sessionEmail && <small className="interest-verified-copy">Verified email</small>}
-          </label>
-        </div>
-        <details className="interest-optional">
-          <summary><span><strong>Add more details</strong><small>Location, family introduction, or message (optional)</small></span><ChevronDown aria-hidden="true" /></summary>
-          <div className="interest-optional-content">
-            <div className="interest-form-intro"><strong>Location</strong><span>Optional</span></div>
-            <div className="interest-location-grid"><Field label="Country" name="country" autoComplete="country-name" defaultValue={fieldValue(draft?.country)} /><Field label="State or province" name="state" autoComplete="address-level1" defaultValue={fieldValue(draft?.state)} /><Field label="City" name="city" autoComplete="address-level2" defaultValue={fieldValue(draft?.city)} /></div>
-            <div className="interest-optional-copy-grid">
-              <label className="interest-field"><span>Family context</span><textarea name="familyContext" rows={2} maxLength={600} defaultValue={fieldValue(draft?.familyContext)} placeholder="A few helpful details about your family" /></label>
-              <label className="interest-field"><span>Message</span><textarea name="message" rows={2} maxLength={600} defaultValue={fieldValue(draft?.message)} placeholder="Anything you would like the family to know" /></label>
-            </div>
-          </div>
-        </details>
+        <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
           </>
         )}
+        <p className="interest-verification-help">Your answers stay here while this page is open. {sessionEmail ? "Sending shares them with this family." : "Next, confirm your email to send your interest."}</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
+        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Showing interest shares these details with the person you’re contacting. They’ll share more if they’d like to continue. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
       </div>
       <div className="interest-form-footer">
-        <p className="interest-form-note">{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p>
-        <p className="interest-form-note">Sending interest shares the details above with the introduction owner. Protected portfolio details are available only if they approve your request. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
-        <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending}>{pending ? "Please wait..." : sessionEmail ? "Send interest" : "Verify email and continue"}</button>
+        <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? sessionEmail ? "Sending interest" : "Sending verification code" : undefined}>{pending ? <InterestActionProgress label={sessionEmail ? "Sending interest" : "Sending verification code"} /> : sessionEmail ? "Send interest" : "Verify email and continue"}</button>
       </div>
     </form>
   );
 }
 
-function Field({ label, name, type = "text", required = false, autoComplete, inputMode, placeholder, pattern, title, defaultValue }: {
-  label: string; name: string; type?: string; required?: boolean; autoComplete?: string;
-  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]; placeholder?: string;
-  pattern?: string; title?: string; defaultValue?: string;
-}) {
-  return <label className="interest-field"><span>{label} {required && <b aria-hidden="true">*</b>}</span><input aria-label={label} name={name} type={type} required={required} autoComplete={autoComplete} inputMode={inputMode} placeholder={placeholder} pattern={pattern} title={title} defaultValue={defaultValue} maxLength={180} /></label>;
+function InterestActionProgress({ label }: { label: string }) {
+  return <span className="interest-action-progress" role="status"><LoaderCircle aria-hidden="true" /><span className="sr-only">{label}</span></span>;
 }
 
 function fieldValue(value: FormDataEntryValue | null | undefined) {

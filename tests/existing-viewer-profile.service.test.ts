@@ -18,6 +18,13 @@ function createSupabaseClient(data: unknown) {
 }
 
 describe("existing viewer profile resolver", () => {
+  it("reuses only valid owned profession and core values with published fallback", async () => {
+    const { client } = createSupabaseClient({
+      draft_data: { personal: { name: "Mira Rao" }, career: { title: "Engineer" }, lifestyle: { values_statement: 123 } },
+      published_data: { career: { title: "Older profession" }, lifestyle: { values_statement: "Kindness and mutual respect" } },
+    });
+    await expect(resolveExistingViewerProfile(client, "viewer-1")).resolves.toMatchObject({ profession: "Engineer", coreValues: "Kindness and mutual respect" });
+  });
   it("returns null when the viewer has no portfolio", async () => {
     const { client } = createSupabaseClient(null);
 
@@ -75,6 +82,28 @@ describe("existing viewer profile resolver", () => {
       profileFor: "daughter",
       phone: "+1 617 555 0101",
       city: "Boston",
+    });
+  });
+
+  it("normalizes legacy provider region codes to ISO subdivision codes", async () => {
+    const { client } = createSupabaseClient({
+      draft_data: {
+        personal: {
+          name: "Legacy Viewer",
+          country: "United States",
+          country_code: "US",
+          region: "Massachusetts",
+          region_code: "MA",
+          city: "Boston",
+        },
+        contact: { phone: "+1 617 555 0101" },
+      },
+      published_data: null,
+    });
+
+    await expect(resolveExistingViewerProfile(client, "viewer-legacy")).resolves.toMatchObject({
+      countryCode: "US",
+      subdivisionCode: "US-MA",
     });
   });
 

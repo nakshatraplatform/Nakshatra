@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingOrb } from "@/components/loading/LoadingStatus";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, Menu } from "lucide-react";
@@ -68,8 +70,8 @@ export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: Cus
         </nav>
         <div className={styles.actions}>
           <ThemeSwitch />
-          <button type="button" className={styles.desktopSignOut} onClick={signOut} disabled={signingOut}>
-            <LogOut size={17} aria-hidden="true" /> {signingOut ? "Signing out…" : "Sign out"}
+          <button type="button" aria-label="Sign out" className={styles.desktopSignOut} onClick={signOut} disabled={signingOut}>
+            {signingOut ? <LoadingOrb size={20} /> : <LogOut size={17} aria-hidden="true" />} {signingOut ? "Signing out…" : "Sign out"}
           </button>
           <details
             ref={menuRef}
@@ -87,8 +89,8 @@ export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: Cus
               <nav aria-label="Customer pages mobile">
                 {links(styles.menuLink)}
               </nav>
-              <button type="button" className={styles.menuSignOut} onClick={signOut} disabled={signingOut}>
-                <LogOut size={17} aria-hidden="true" /> {signingOut ? "Signing out…" : "Sign out"}
+              <button type="button" aria-label="Sign out" className={styles.menuSignOut} onClick={signOut} disabled={signingOut}>
+                {signingOut ? <LoadingOrb size={20} /> : <LogOut size={17} aria-hidden="true" />} {signingOut ? "Signing out…" : "Sign out"}
               </button>
             </div>
           </details>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PolicyLayout, PolicySection } from "@/components/legal/PolicyLayout";
 
-export const metadata: Metadata = { title: "About", alternates: { canonical: "/about" } };
+export const metadata: Metadata = { title: "About", description: "Why VivIntro separates a current marriage Introduction from privately shared personal details, and how to contact the team.", alternates: { canonical: "/about" } };
 
 export default function AboutPage() {
   const founderName = process.env.VIVINTRO_FOUNDER_NAME?.trim();
@@ -10,16 +10,16 @@ export default function AboutPage() {
     <PolicyLayout
       eyebrow="About VivIntro"
       title="A more thoughtful way to share marriage introductions."
-      summary="VivIntro is not a biodata generator or matchmaking directory. It separates a thoughtful first introduction from the sensitive information that should be disclosed only with permission."
+      summary="VivIntro helps people create a marriage introduction, share it through their existing family network, and decide when to release private details."
     >
       <PolicySection title="The product idea">
-        <p>Create one current introduction, share it through the family network you already use, and decide who can see contact details and private documents. The public link remains active until its owner unpublishes it.</p>
+        <p>A relative asks for updated biodata. Another asks for contact details or a horoscope. VivIntro keeps the first introduction at one current link and lets you handle requests for more from your dashboard. It does not list profiles or recommend matches.</p>
       </PolicySection>
       <PolicySection title="The design promise">
-        <p>VivIntro uses readable typography, plain language, and explicit privacy cues. The person stays at the centre; approval and “set aside” decisions stay private and dignified.</p>
+        <p>VivIntro uses readable typography, plain language, and explicit privacy cues. The person stays at the centre; sharing and “set aside” choices stay private and dignified.</p>
       </PolicySection>
       <PolicySection title="Who is building VivIntro">
-        {founderName ? <p>VivIntro was founded by {founderUrl ? <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={founderUrl}>{founderName}</a> : <strong>{founderName}</strong>}. The product is being developed as an independently operated private pilot.</p> : <p>VivIntro is an independently built private pilot. A named founder profile will appear here when the operator details have been formally confirmed; VivIntro will not invent a biography or borrowed social proof in the meantime.</p>}
+        {founderName ? <p>VivIntro was founded by {founderUrl ? <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href={founderUrl}>{founderName}</a> : <strong>{founderName}</strong>}. We are developing the product around feedback from people sharing marriage introductions.</p> : <p>We are developing VivIntro around the practical steps of sharing a marriage introduction: writing it, keeping it current, and deciding when to share more. Questions and product feedback reach the team at the address below.</p>}
       </PolicySection>
       <PolicySection title="Contact">
         <p>Questions or feedback are welcome at <a className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4" href="mailto:hello@vivintro.com">hello@vivintro.com</a>.</p>

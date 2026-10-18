@@ -3,6 +3,31 @@ import { themeTestCookie } from "./support/theme-session.mjs";
 
 test.beforeEach(async ({ context }) => { await context.addCookies([themeTestCookie]); });
 
+test("privacy help preserves the editor after a failed autosave", async ({ page }) => {
+  let saves = 0;
+  await page.route("**/api/dashboard", async route => {
+    if (route.request().method() !== "PUT") return route.continue();
+    saves += 1;
+    return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "DASHBOARD_SAVE_FAILED", error: "Save unavailable" }) });
+  });
+  await page.goto("/dashboard?edit=1");
+  const editor = page.getByRole("dialog", { name: "Introduction details" });
+  await expect(editor.getByRole("heading", { name: "Introduction details" })).toBeFocused();
+  const firstName = editor.getByLabel("First name", { exact: true });
+  await firstName.fill("Unsaved privacy help");
+  await expect.poll(() => saves).toBeGreaterThan(0);
+  await expect(editor.getByText("Changes not saved", { exact: true })).toBeVisible();
+  const [help] = await Promise.all([
+    page.waitForEvent("popup"),
+    editor.getByRole("link", { name: "Location search privacy (opens in a new tab)" }).click(),
+  ]);
+  await help.waitForURL("**/privacy#location-search");
+  await expect(editor).toBeVisible();
+  await expect(firstName).toHaveValue("Unsaved privacy help");
+  await expect(page).toHaveURL(/\/dashboard\?edit=1$/);
+  await help.close();
+});
+
 test("deletion confirmation contains keyboard focus and restores it without a request", async ({ page }) => {
   await page.goto("/account");
   const trigger = page.getByRole("button", { name: "Delete account", exact: true });
@@ -24,9 +49,16 @@ test("deletion confirmation contains keyboard focus and restores it without a re
 test("editor Escape preserves the dirty-draft decision in reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/dashboard?edit=1");
-  const dialog = page.getByRole("dialog", { name: "Portfolio details" });
+  const dialog = page.getByRole("dialog", { name: "Introduction details" });
   await expect(dialog).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("hidden");
+  const heading = dialog.getByRole("heading", { name: "Introduction details" });
+  await expect(heading).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.locator(".dashboard-editor-review-action")).toBeFocused();
+  await heading.focus();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: /Switch to .* theme/ })).toBeFocused();
   await page.getByLabel("First name", { exact: true }).fill("Unsaved");
   page.once("dialog", dialog => dialog.dismiss());
   await page.keyboard.press("Escape");
@@ -39,18 +71,22 @@ test("editor Escape preserves the dirty-draft decision in reduced motion", async
 
 test("Escape closes an expanded editor dropdown before the editor", async ({ page }) => {
   await page.goto("/dashboard?edit=1");
-  const dialog = page.getByRole("dialog", { name: "Portfolio details" });
-  const mobileSection = dialog.getByRole("combobox", { name: "Go to portfolio section" });
+  const dialog = page.getByRole("dialog", { name: "Introduction details" });
+  await expect(dialog).toBeVisible();
+  const mobileSection = dialog.getByRole("combobox", { name: "Go to introduction section" });
   if (await mobileSection.isVisible()) {
-    await mobileSection.selectOption({ label: "2. Personal story & lifestyle" });
+    await mobileSection.selectOption("story");
   } else {
-    await dialog.getByRole("navigation", { name: "Portfolio form sections" }).getByRole("button", { name: /Personal story & lifestyle/ }).click();
+    await dialog.getByRole("navigation", { name: "Introduction form sections" }).getByRole("button", { name: /Personal story & lifestyle/ }).click();
   }
   const languages = dialog.getByRole("combobox", { name: "Languages", exact: true });
   await languages.focus();
   await expect(languages).toHaveAttribute("aria-expanded", "true");
-  await page.keyboard.press("Tab");
-  await expect(dialog.getByRole("listbox", { name: "Languages suggestions" }).getByRole("option").first()).toBeFocused();
+  // Main now uses aria-activedescendant: options are intentionally outside Tab order.
+  // Exercise the defensive option-focus path without changing that keyboard model.
+  const option = dialog.getByRole("listbox", { name: "Languages suggestions" }).getByRole("option").first();
+  await option.evaluate(element => (element as HTMLElement).focus());
+  await expect(option).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
   await expect(languages).toHaveAttribute("aria-expanded", "false");

@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import {
-  Geist,
-  Geist_Mono,
-  Manrope,
-  Playfair_Display,
-  Tenor_Sans,
-} from "next/font/google";
+import { portfolioBody, portfolioDisplay } from "@/lib/fonts";
 import "./globals.css";
 import "./app-theme.css";
 import "lenis/dist/lenis.css";
@@ -13,32 +7,6 @@ import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { ThemeBootstrap } from "@/components/theme/ThemeBootstrap";
 import { PrivacySafeAnalytics } from "@/components/analytics/PrivacySafeAnalytics";
 import { ApplicationSmoothScroll } from "@/components/motion/ApplicationSmoothScroll";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const portfolioDisplay = Playfair_Display({
-  variable: "--font-portfolio-display",
-  subsets: ["latin"],
-});
-
-const portfolioBody = Manrope({
-  variable: "--font-portfolio-body",
-  subsets: ["latin"],
-});
-
-const portfolioSection = Tenor_Sans({
-  variable: "--font-portfolio-section",
-  weight: "400",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -49,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | VivIntro",
   },
   description:
-    "Share one current marriage introduction link. Keep contact details and documents protected until you approve access.",
+    "Share one current marriage introduction link. Keep contact details and documents private until you choose to share them.",
   openGraph: {
     type: "website",
     siteName: "VivIntro",
@@ -67,9 +35,9 @@ export default function RootLayout({
       lang="en"
       data-app-theme="light"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${portfolioDisplay.variable} ${portfolioBody.variable} ${portfolioSection.variable} h-full antialiased`}
+      className={`${portfolioDisplay.variable} ${portfolioBody.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-dvh" suppressHydrationWarning>
         <ThemeBootstrap />
         <ApplicationSmoothScroll />
         <a href="#main-content" className="skip-link">Skip to main content</a>

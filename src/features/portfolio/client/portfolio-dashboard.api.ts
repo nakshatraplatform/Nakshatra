@@ -58,7 +58,7 @@ export function publishPortfolioRequest(data: PortfolioData) {
 
 /** Saves an editable dashboard draft without changing the published snapshot. */
 export function saveDashboardDraftRequest(data: PortfolioData) {
-  return requestPortfolioApi<{ portfolioId: string; candidateId: string | null }>(
+  return requestPortfolioApi<{ portfolioId: string; candidateId: string | null; readiness?: PublicationReadiness; draftData?: PortfolioData }>(
     "/api/dashboard",
     { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data }) }
   );

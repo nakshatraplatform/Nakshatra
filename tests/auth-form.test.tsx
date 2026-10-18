@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,6 +24,22 @@ vi.mock("../src/features/auth/client/auth.api", () => ({
 import { AuthForm } from "../src/components/auth/AuthForm";
 
 describe("AuthForm", () => {
+  it("shows real sign-in work and removes feedback on a failed request before retry", async () => {
+    let resolve!: (value: { ok: boolean; body: { error: string } }) => void;
+    startAuthentication.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(<AuthForm mode="login" />);
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "owner@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Example1234" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Signing you in");
+    expect(screen.getByRole("button", { name: "Please wait..." })).toBeDisabled();
+    expect(screen.getByRole("status").querySelector("canvas")).not.toBeNull();
+    await act(async () => resolve({ ok: false, body: { error: "Sign-in temporarily unavailable" } }));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in temporarily unavailable");
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     searchParams.get.mockReturnValue(null);
@@ -42,8 +58,8 @@ describe("AuthForm", () => {
     render(<AuthForm mode="signup" />);
 
     expect(screen.getByRole("heading", { name: "Create your account" })).toBeInTheDocument();
-    expect(screen.getByText(/your portfolio begins as a private draft/i)).toBeInTheDocument();
-    expect(screen.getByText(/publishing requires your own portfolio/i)).toBeInTheDocument();
+    expect(screen.getByText(/your introduction begins as a private draft/i)).toBeInTheDocument();
+    expect(screen.getByText(/publishing requires your own introduction/i)).toBeInTheDocument();
     expect(screen.getByText(/use that link to view it and show interest/i)).toBeInTheDocument();
     expect(screen.getByText(/Liveness checked badge appears only after those checks succeed/i)).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: /access model/i })).toHaveTextContent(/Begin privately.*15 days/i);
@@ -134,6 +150,7 @@ describe("AuthForm", () => {
     expect(startAuthentication).toHaveBeenCalledWith({
       method: "password_recovery",
       email: "owner@example.com",
+      redirect: "/dashboard",
     });
     expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument();
     expect(screen.getByText(/if an account exists/i)).toBeInTheDocument();

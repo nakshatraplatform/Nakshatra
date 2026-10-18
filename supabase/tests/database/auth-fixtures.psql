@@ -162,7 +162,7 @@ as $$
     (coalesce(p_draft, '{}'::jsonb) - 'personal' - 'career' - 'vitals')
     || pg_catalog.jsonb_build_object(
       'personal',
-      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","gender":"female","country":"United States","city":"Test City","current_location":"Test City, United States","marital_status":"Never Married","short_bio":"A complete test introduction.","profile_for":"self"}'::jsonb
+      '{"first_name":"Test","last_name":"Person","dob":"1990-01-01","gender":"female","country":"United States","country_code":"US","region":"Massachusetts","region_code":"US-MA","city":"Test City","postal_code":"02108","location_source":"manual","address_line_1":"123 Test Street","address_line_2":"Unit 2","current_location":"Test City, Massachusetts, United States","marital_status":"Never Married","short_bio":"A complete test introduction.","profile_for":"self"}'::jsonb
         || coalesce(p_draft -> 'personal', '{}'::jsonb),
       'career',
       '{"title":"Test role"}'::jsonb || coalesce(p_draft -> 'career', '{}'::jsonb),

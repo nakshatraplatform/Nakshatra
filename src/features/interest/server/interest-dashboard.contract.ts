@@ -24,3 +24,15 @@ export const dashboardInterestSchema = z.object({
 export const dashboardInterestsSchema = z.array(dashboardInterestSchema);
 
 export type DashboardInterest = z.output<typeof dashboardInterestSchema>;
+
+export const interestDetailsSchema = z.object({
+  id: z.string().uuid(), name: z.string().nullable(), email: z.string().nullable(), phone: z.string().nullable(),
+  familyContext: z.string().nullable(), message: z.string().nullable(), metadata: z.record(z.string(), z.unknown()).nullable(),
+  submittedAt: z.string().refine(value => Number.isFinite(Date.parse(value))), verifiedAt: z.string().refine(value => Number.isFinite(Date.parse(value))).nullable(), requestStatus: z.string(),
+  accessGrantedAt: z.string().refine(value => Number.isFinite(Date.parse(value))).nullable(), accessExpiresAt: z.string().refine(value => Number.isFinite(Date.parse(value))).nullable(),
+  accessStatus: z.enum(["not_granted", "active", "expired", "revoked"]),
+  history: z.array(z.object({ id: z.number().int(), eventType: z.string(), createdAt: z.string().refine(value => Number.isFinite(Date.parse(value))) })).default([]),
+});
+export type InterestDetails = z.infer<typeof interestDetailsSchema>;
+
+export const interestHistorySchema = z.array(z.object({ id: z.uuid(), name: z.string().nullable(), submittedAt: z.string().refine(value => Number.isFinite(Date.parse(value))), status: z.string() }));

@@ -12,10 +12,16 @@
   text-decoration: none;
 }
 
+.link:focus-visible {
+  border-radius: 8px;
+  outline: 2px solid var(--workspace-ink, var(--foreground));
+  outline-offset: 4px;
+}
+
 .artwork {
   position: relative;
   display: inline-block;
-  width: var(--vivintro-brand-width);
+  width: var(--vivintro-brand-responsive-width, var(--vivintro-brand-width));
   aspect-ratio: var(--vivintro-brand-ratio);
   flex: none;
 }

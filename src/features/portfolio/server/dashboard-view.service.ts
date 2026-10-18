@@ -20,6 +20,7 @@ import { DashboardRepository } from "./dashboard.repository";
 import { canCreatePortfolio } from "@/features/auth/server/portfolio-bootstrap";
 import { loadPilotAccessState } from "@/features/pilot-access/server/pilot-access.service";
 import { getPublicationReadiness } from "./publication-readiness.service";
+import { dashboardReviewSnapshotSchema } from "./dashboard-review.contract";
 import { listOwnerBrokerIntroductionResponses, listReceivedBrokerIntroductions } from "@/features/broker-introductions/server/broker-introduction.service";
 
 type PortfolioRow = Database["public"]["Tables"]["portfolios"]["Row"];
@@ -51,12 +52,30 @@ export async function loadDashboardView({
   userId: string;
 }) {
   const dashboardRepository = new DashboardRepository(supabase);
-  const [{ data: portfolioRow }, creatorEntitled, pilotAccessState] = await Promise.all([
-    dashboardRepository.findDashboardPortfolioForUser(userId),
+  const [snapshotResult, creatorEntitled, pilotAccessState] = await Promise.all([
+    dashboardRepository.findDashboardReviewSnapshot(),
     canCreatePortfolio(supabase),
     loadPilotAccessState(supabase).catch(() => null),
   ]);
+  const parsedSnapshot = dashboardReviewSnapshotSchema.safeParse(snapshotResult.data);
+  // Only a missing additive RPC permits legacy reads. Other failures must not
+  // turn invalid/foreign-owner/session-denied responses into trusted evidence.
+  const legacyDatabase = snapshotResult.error?.code === "PGRST202";
+  if (!legacyDatabase && (snapshotResult.error || !parsedSnapshot.success
+    || (parsedSnapshot.data.portfolio && parsedSnapshot.data.portfolio.user_id !== userId))) {
+    throw new Error("We could not load your saved portfolio safely. Please try again.");
+  }
+  const snapshot = !snapshotResult.error && parsedSnapshot.success ? parsedSnapshot.data : null;
+  const portfolioRow = snapshot ? snapshot.portfolio
+    : (await dashboardRepository.findDashboardPortfolioForUser(userId)).data;
   const portfolio = mapDashboardPortfolio(portfolioRow as PortfolioRow | null);
+  const publicationReadiness = snapshot?.readiness ?? {
+    ...await getPublicationReadiness(supabase),
+    reviewFingerprint: null,
+    publicPreviewReviewed: false,
+    completePreviewReviewed: false,
+    disclosureConfirmed: false,
+  };
 
   if (!portfolio) {
     return {
@@ -69,7 +88,7 @@ export async function loadDashboardView({
       horoscope: null as PortfolioHoroscope | null,
       interests: [],
       accessSummary: { grants: [], events: [] },
-      publicationReadiness: await getPublicationReadiness(supabase),
+      publicationReadiness,
       brokerIntroductionResponses: [],
       receivedBrokerIntroductions: [],
     };
@@ -78,13 +97,12 @@ export async function loadDashboardView({
   const mediaRepository = new PortfolioMediaRepository(supabase);
   const horoscopeRepository = new HoroscopeRepository(supabase);
   const interestRepository = new InterestRepository(supabase);
-  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, publicationReadiness, brokerIntroductionResponses, receivedBrokerIntroductions] = await Promise.all([
+  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, brokerIntroductionResponses, receivedBrokerIntroductions] = await Promise.all([
     dashboardRepository.countPortfolioViews(portfolio.id),
-    mediaRepository.findPortfolioPhotos(portfolio.id),
-    horoscopeRepository.findByPortfolio(portfolio.id),
+    snapshot ? Promise.resolve({ data: snapshot.media }) : mediaRepository.findPortfolioPhotos(portfolio.id),
+    snapshot ? Promise.resolve({ data: snapshot.horoscope }) : horoscopeRepository.findByPortfolio(portfolio.id),
     interestRepository.listForPortfolio(portfolio.id),
     getPortfolioAccessSummary(supabase),
-    getPublicationReadiness(supabase),
     listOwnerBrokerIntroductionResponses(supabase).catch(() => []),
     listReceivedBrokerIntroductions(supabase).catch(() => []),
   ]);

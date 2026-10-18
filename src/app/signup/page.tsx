@@ -1,3 +1,4 @@
+import { PageLoading } from "@/components/loading/PageLoading";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -5,7 +6,7 @@ import { getApiUser } from "@/lib/auth";
 import { sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 export const metadata = {
-  title: "Create an account · VivIntro",
+  title: "Create your introduction",
   description: "Create your private VivIntro portfolio.",
   robots: { index: false, follow: false },
 };
@@ -21,7 +22,7 @@ export default async function SignupPage({
   if (auth.status === "authenticated") redirect(destination);
 
   return (
-    <Suspense>
+    <Suspense fallback={<PageLoading title="Preparing your account setup" />}>
       <AuthForm mode="signup" />
     </Suspense>
   );

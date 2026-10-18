@@ -74,6 +74,8 @@ describe("BrokerDesk MFA client", () => {
 
     await user.click(await screen.findByRole("button", { name: "Set up securely" }));
     expect(await screen.findByAltText("Authenticator setup QR code")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Authenticator setup ready");
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
     await user.click(screen.getByText("Cannot scan it?"));
     expect(screen.getByText("PRIVATE-SETUP-KEY")).toBeInTheDocument();
     expect(supabase.auth.mfa.enroll).toHaveBeenCalledWith({

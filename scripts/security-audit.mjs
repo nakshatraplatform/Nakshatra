@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const severities = ["info", "low", "moderate", "high", "critical"];
 const blocks = (finding) => ["high", "critical"].includes(finding.severity);
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const read = (path) => JSON.parse(readFileSync(new URL(`../${path}`, import.meta.url), "utf8"));
 
 // npm audit v2 includes inherited findings as package-name references in `via`.
 // Validate the complete report before making any acceptance decision.
@@ -84,7 +85,6 @@ export function evaluateAudit(full, production, lock) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const root = new URL("../", import.meta.url);
-    const read = (path) => JSON.parse(readFileSync(new URL(path, root), "utf8"));
     if (!process.env.npm_execpath) throw new Error("Run this check through npm run security:audit");
     const audit = (scope) => parseAuditResult(spawnSync(process.execPath, [
       process.env.npm_execpath, "audit", "--json", "--audit-level=high",

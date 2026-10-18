@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   formListValues,
   portfolioEditorDraftSchema,
   portfolioEditorPublishSchema,
+  validAdultBirthDate,
 } from "@/features/portfolio/form-contract";
 
 const validPortfolio = {
@@ -25,6 +26,39 @@ const validPortfolio = {
 };
 
 describe("portfolio editor contract", () => {
+  it.each(["24:00", "12:60", "99:99"])("rejects impossible optional birth time %s in drafts and publication", (time) => {
+    const data = { ...validPortfolio, astrology: { time_of_birth: time } };
+    for (const schema of [portfolioEditorDraftSchema, portfolioEditorPublishSchema]) {
+      const parsed = schema.safeParse(data);
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) expect(parsed.error.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path: ["astrology", "time_of_birth"] })]));
+    }
+  });
+  it.each(["00:00", "23:59", ""])("keeps a valid or unanswered optional birth time %s", (time) => {
+    expect(portfolioEditorDraftSchema.safeParse({ ...validPortfolio, astrology: { time_of_birth: time } }).success).toBe(true);
+  });
+  it.each(["-------", "123", "+1 22222222222222222222"])("rejects invalid protected contact phone %s", (phone) => {
+    for (const contact of [{ phone }, { contacts: [{ phone }] }]) {
+      expect(portfolioEditorDraftSchema.safeParse({ ...validPortfolio, contact }).success).toBe(false);
+    }
+  });
+  it("keeps contacts optional, including empty contact rows and email-only entries", () => {
+    expect(portfolioEditorDraftSchema.safeParse({ ...validPortfolio, contact: { contacts: [{ phone: "", email: "family@example.com" }, {}] } }).success).toBe(true);
+  });
+  it("does not roll the adult date cutoff into March on a leap day", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2024-02-29T12:00:00Z"));
+      expect(validAdultBirthDate("2006-03-01")).toBe(false);
+      expect(validAdultBirthDate("2006-02-28")).toBe(true);
+      expect(validAdultBirthDate("2006-02-29")).toBe(false);
+    } finally { vi.useRealTimers(); }
+  });
+  it("rejects control characters and punctuation-only portfolio name parts", () => {
+    for (const first_name of ["Ana\nMarie", "---", "''"]) {
+      expect(portfolioEditorDraftSchema.safeParse({ ...validPortfolio, personal: { ...validPortfolio.personal, first_name } }).success).toBe(false);
+    }
+  });
   it("counts list selections case-insensitively like the database", () => {
     expect(formListValues("Music,music, Cooking;COOKING")).toEqual(["Music", "Cooking"]);
   });

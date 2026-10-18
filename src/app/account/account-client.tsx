@@ -1,30 +1,37 @@
 "use client";
 
+import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
+
 import { CustomerAppHeader } from "@/components/navigation/CustomerAppHeader";
 
 
 import { useRef, useState } from "react";
 import { useModalFocus } from "@/components/useModalFocus";
-import { Download, KeyRound, LoaderCircle, ShieldCheck, Trash2, X } from "lucide-react";
+import { KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
+import { emptyAccountProfile, type AccountProfile } from "@/features/account/profile";
 import {
   cancelAccountDeletionRequest,
-  downloadAccountExportRequest,
   requestAccountDeletionRequest,
   revokeOtherSessionsRequest,
   startAccountDeletionReauthRequest,
+  saveAccountProfileRequest,
 } from "@/features/account/client/account.api";
 
 interface Props {
   userEmail: string;
   initialDeletion: AccountDeletionStatus;
   reauthComplete?: boolean;
+  initialProfile?: AccountProfile;
+  signInMethods?: string[];
 }
 
-type Action = "export" | "sessions" | "delete" | "cancel" | "reauth" | null;
+type Action = "profile" | "sessions" | "delete" | "cancel" | "reauth" | null;
 
 /** Presents browser-safe account controls while all privileged work remains in authenticated APIs. */
-export default function AccountClient({ userEmail, initialDeletion, reauthComplete = false }: Props) {
+export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, signInMethods = [], reauthComplete = false }: Props) {
+  const [profile, setProfile] = useState(initialProfile);
+  const [savedProfile, setSavedProfile] = useState(initialProfile);
   const [deletion, setDeletion] = useState(initialDeletion);
   const [confirmationOpen, setConfirmationOpen] = useState(reauthComplete);
   const [confirmation, setConfirmation] = useState("");
@@ -46,22 +53,17 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
     setError(null);
   }
 
-  /** Requests the export and lets the browser save the returned private JSON file locally. */
-  async function downloadExport() {
-    beginAction("export");
-    const result = await downloadAccountExportRequest();
-    if (!result.ok) {
-      setError(result.message);
-      setAction(null);
-      return;
+  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (action !== null) return;
+    beginAction("profile");
+    const result = await saveAccountProfileRequest(profile);
+    if (!result.ok) setError(result.message);
+    else {
+      setProfile(result.data);
+      setSavedProfile(result.data);
+      setMessage("Your account names have been saved. Your portfolio has not changed.");
     }
-    const url = URL.createObjectURL(result.data);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `vivintro-account-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setMessage("Your account export has been downloaded.");
     setAction(null);
   }
 
@@ -150,18 +152,32 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
           {error ? <p className="account-notice is-error">{error}</p> : null}
         </div>}
 
-        <section className="account-settings-group" aria-labelledby="data-devices-heading">
-          <h2 id="data-devices-heading">Your data and devices</h2>
-          <section className="account-control-row" aria-labelledby="export-heading">
-            <div>
-              <h3 id="export-heading">Download your data</h3>
-              <p>Export your profile, portfolio, media inventory, memberships, and your own activity as JSON.</p>
+        {action && !confirmationOpen && <LoadingStatus compact className="my-4" title={action === "profile" ? "Saving your account names" : action === "sessions" ? "Signing out other devices" : action === "reauth" ? "Preparing secure sign-in" : action === "cancel" ? "Cancelling scheduled deletion" : "Scheduling account deletion"} />}
+
+        <section className="account-settings-group" aria-labelledby="account-profile-heading">
+          <h2 id="account-profile-heading">Your account profile</h2>
+          <p>These names identify the account holder. Edit your portfolio separately from the dashboard.</p>
+          <form onSubmit={saveProfile} className="account-profile-form">
+            <div className="account-profile-fields">
+              {(["firstName", "middleName", "lastName"] as const).map((key) => (
+                <label key={key} htmlFor={`account-${key}`}>
+                  {key === "firstName" ? "First name" : key === "middleName" ? "Middle name (optional)" : "Last name"}
+                  <input className="biodata-field" id={`account-${key}`} name={key} autoComplete={key === "firstName" ? "given-name" : key === "middleName" ? "additional-name" : "family-name"} required={key !== "middleName"} maxLength={80} value={profile[key]} disabled={action !== null || deletionProcessing} onChange={(event) => setProfile({ ...profile, [key]: event.target.value })} />
+                </label>
+              ))}
             </div>
-            <button className="dashboard-secondary-action" onClick={downloadExport} disabled={action !== null}>
-              {action === "export" ? <LoaderCircle className="animate-spin" /> : <Download />}
-              Download
+            <button className="dashboard-secondary-action" type="submit" disabled={action !== null || deletionProcessing || JSON.stringify(profile) === JSON.stringify(savedProfile)}>
+              {action === "profile" ? "Saving…" : "Save names"}
             </button>
-          </section>
+          </form>
+          <dl className="account-sign-in-details">
+            <div><dt>Email address</dt><dd>{userEmail || "Not available"}</dd></div>
+            <div><dt>Linked sign-in methods</dt><dd>{signInMethods.length ? signInMethods.join(", ") : "Not available"}</dd></div>
+          </dl>
+        </section>
+
+        <section className="account-settings-group" aria-labelledby="data-devices-heading">
+          <h2 id="data-devices-heading">Your devices</h2>
 
           <section className="account-control-row" aria-labelledby="sessions-heading">
             <div>
@@ -169,7 +185,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
               <p>End every other active session. This browser stays signed in.</p>
             </div>
             <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={action !== null}>
-              {action === "sessions" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
+              {action === "sessions" ? <LoadingOrb size={20} /> : <KeyRound />}
               Sign out others
             </button>
           </section>
@@ -191,7 +207,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
             </div>
             {deletionPending ? (
               <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={action !== null}>
-                {action === "cancel" ? <LoaderCircle className="animate-spin" /> : <ShieldCheck />}
+                {action === "cancel" ? <LoadingOrb size={20} /> : <ShieldCheck />}
                 Cancel deletion
               </button>
             ) : deletionProcessing ? (
@@ -218,6 +234,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
               {message ? <p className="account-notice is-success">{message}</p> : null}
               {error ? <p className="account-notice is-error">{error}</p> : null}
             </div>
+            {action && <LoadingStatus compact className="my-4" title={action === "reauth" ? "Preparing secure sign-in" : "Scheduling account deletion"} />}
             <p>Your links and approved access stop working now. After 24 hours, your account and stored files are permanently removed.</p>
             <p>First complete a fresh sign-in. Your confirmation is submitted only after that sign-in succeeds.</p>
             <fieldset>
@@ -247,7 +264,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
                 onClick={startDeletionReauth}
                 disabled={!reauthMethod || action !== null}
               >
-                {action === "reauth" ? <LoaderCircle className="animate-spin" /> : <KeyRound />}
+                {action === "reauth" ? <LoadingOrb size={20} /> : <KeyRound />}
                 Continue to fresh sign-in
               </button>
             ) : (
@@ -266,7 +283,7 @@ export default function AccountClient({ userEmail, initialDeletion, reauthComple
               onClick={requestDeletion}
               disabled={!reauthComplete || confirmation !== "DELETE" || action !== null}
             >
-              {action === "delete" ? <LoaderCircle className="animate-spin" /> : <Trash2 />}
+              {action === "delete" ? <LoadingOrb size={20} /> : <Trash2 />}
               Schedule deletion
             </button>
           </section>

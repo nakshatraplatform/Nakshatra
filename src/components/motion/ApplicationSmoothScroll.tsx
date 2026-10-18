@@ -14,6 +14,7 @@ export function interruptSmoothScroll(lenis: Pick<Lenis, "isStopped" | "stop" | 
 /** Progressive enhancement only: the browser owns layout, focus and history. */
 export function ApplicationSmoothScroll() {
   const pathname = usePathname();
+  const previousPathname = useRef(pathname);
   const controller = useRef<Lenis | null>(null);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function ApplicationSmoothScroll() {
         const overflow = document.body.style.overflowY || document.body.style.overflow
           || getComputedStyle(document.body).overflowY;
         const modal = document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]');
-        if (document.hidden || modal || overflow === "hidden" || overflow === "clip") lenis.stop();
+        if (modal || overflow === "hidden" || overflow === "clip") lenis.stop();
         else lenis.start();
       };
       const dialogSelector = '[role="dialog"][aria-modal="true"], dialog';
@@ -65,31 +66,38 @@ export function ApplicationSmoothScroll() {
       };
       document.addEventListener("click", onClick, true);
       document.addEventListener("keydown", onKeyDown);
-      document.addEventListener("visibilitychange", syncLock);
       syncLock();
       return () => {
         observer.disconnect();
         document.removeEventListener("click", onClick, true);
         document.removeEventListener("keydown", onKeyDown);
-        document.removeEventListener("visibilitychange", syncLock);
         controller.current = null;
         lenis.destroy();
       };
     };
     const syncPreference = () => {
+      // Do not change document classes while the browser saves its history
+      // position. RAF is natively paused while hidden; refresh on return instead.
+      if (document.hidden) return;
       dispose?.();
       // Use fully native scrolling, not even a one-frame interpolation, for reduce.
       dispose = preference.matches ? undefined : mount();
     };
     syncPreference();
     preference.addEventListener("change", syncPreference);
+    document.addEventListener("visibilitychange", syncPreference);
     return () => {
       preference.removeEventListener("change", syncPreference);
+      document.removeEventListener("visibilitychange", syncPreference);
       dispose?.();
     };
   }, []);
 
   useEffect(() => {
+    // A fresh instance has no old-page inertia; do not reset browser-restored
+    // scroll during the initial hydration of a back/forward navigation.
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
     // Cancel old-page inertia without overriding Next's scroll/history restoration.
     const lenis = controller.current;
     if (lenis) {

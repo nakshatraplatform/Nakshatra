@@ -28,6 +28,10 @@ rules from multiple generations of the design.
 - [`dashboard-relationship-lifecycle.md`](./dashboard-relationship-lifecycle.md)
   defines the personal B2C approval lifecycle; it is not the broker response
   state machine.
+- [`structured-location-capture.md`](./engineering-loop/features/structured-location-capture.md)
+  defines the coordinate-free India/US location-entry and persistence contract.
+- [`hierarchical-location-matching.md`](./engineering-loop/features/hierarchical-location-matching.md)
+  defines the service-only country-safe geographic expansion RPC and index strategy.
 - [`vivintrodesk-business-model-family-review.md`](./vivintrodesk-business-model-family-review.md)
   is a plain-language explanation for family, friends, and pilot brokers.
 - [`design/brokerdesk/BROKERDESK_MASTER_PLAN.md`](../design/brokerdesk/BROKERDESK_MASTER_PLAN.md)

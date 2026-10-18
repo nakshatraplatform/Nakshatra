@@ -68,7 +68,7 @@ export class DashboardRepository {
   async findPortfolioForUser(userId: string) {
     return this.supabase
       .from("portfolios")
-      .select("id, candidate_id, theme_color, is_published, share_token, expires_at")
+      .select("id, candidate_id, theme_color, is_published, share_token, expires_at, draft_data")
       .eq("user_id", userId)
       .maybeSingle();
   }
@@ -80,6 +80,11 @@ export class DashboardRepository {
       .select(DASHBOARD_PORTFOLIO_COLUMNS)
       .eq("user_id", userId)
       .maybeSingle();
+  }
+
+  /** Answers, attachment facts and review evidence share one owner-scoped SQL snapshot. */
+  async findDashboardReviewSnapshot() {
+    return this.supabase.rpc("get_owner_dashboard_review_snapshot");
   }
 
   /** Loads only the portfolio fields needed by owner preview pages. */
@@ -103,6 +108,11 @@ export class DashboardRepository {
     return this.supabase.rpc("save_dashboard_draft_transaction", {
       p_payload: payload,
     });
+  }
+
+  /** Read-only capability probe used only after a geography command rejects a save. */
+  async probeStructuredLocationSchema() {
+    return this.supabase.from("reference_subdivisions").select("subdivision_code").limit(1);
   }
 
   /** Atomically persists owner, public, approved, and horoscope publication state. */

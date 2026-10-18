@@ -3,16 +3,17 @@ import { z } from "zod/v4";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
+import { createClient } from "@/lib/supabase/server";
 
 const querySchema = z.discriminatedUnion("level", [
   z.object({ level: z.literal("countries") }),
   z.object({
     level: z.literal("regions"),
-    country: z.string().length(2),
+    country: z.string().regex(/^[A-Za-z]{2}$/),
   }),
   z.object({
     level: z.literal("cities"),
-    country: z.string().length(2),
+    country: z.string().regex(/^[A-Za-z]{2}$/),
     region: z.string().max(30).optional(),
     q: z.string().max(80).optional(),
   }),
@@ -24,8 +25,9 @@ function safePrefix(value: string) {
 
 export async function GET(request: Request) {
   const auth = await getApiUser();
-  if (auth.status !== "authenticated") return apiAuthFailureResponse(auth);
-  const rateLimited = await enforceRateLimit(auth.supabase, request, "location_search");
+  if (auth.status !== "authenticated" && auth.status !== "missing_session") return apiAuthFailureResponse(auth);
+  const supabase = auth.status === "authenticated" ? auth.supabase : await createClient();
+  const rateLimited = await enforceRateLimit(supabase, request, "location_search");
   if (rateLimited) return rateLimited;
 
   const url = new URL(request.url);
@@ -40,6 +42,16 @@ export async function GET(request: Request) {
       { code: "LOCATION_QUERY_INVALID", error: "Choose a valid location level." },
       { status: 400 }
     );
+  }
+
+  if (auth.status === "missing_session") {
+    const query = parsed.data;
+    const { data, error } = await supabase.rpc("list_interest_location_options", {
+      p_level: query.level,
+      ...(query.level !== "countries" ? { p_country: query.country.toUpperCase() } : {}),
+      ...(query.level === "cities" ? { p_region: query.region, p_query: query.q } : {}),
+    });
+    return error ? NextResponse.json({ error: "Location directory is temporarily unavailable. Try again." }, { status: 503 }) : NextResponse.json({ options: data ?? [] });
   }
 
   let query;

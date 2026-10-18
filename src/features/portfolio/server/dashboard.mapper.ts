@@ -8,6 +8,9 @@ import {
 } from "@/features/portfolio/template";
 import { getCelestialBackground } from "@/features/portfolio/celestial-theme";
 import { normalizePortfolioName } from "@/features/portfolio/name";
+import { formListValues } from "@/features/portfolio/form-contract";
+import { findSubdivision } from "@/features/location/subdivisions";
+import { normalizePostalCode } from "@/features/location/location.contract";
 
 const EMPTY_VALUES = new Set(["", undefined, null]);
 
@@ -34,6 +37,9 @@ function commaSeparatedList(value: string | undefined) {
 
 /** Extracts a minimum and maximum age from free-form preference text. Input: age range text. Output: nullable numeric bounds. */
 function ageRange(value: string | undefined) {
+  const bounded = (value ?? "").trim().match(/^(\d*)\s*(?:–|—|-|to)\s*(\d*)$/i);
+  if (bounded) return { min: bounded[1] ? Number(bounded[1]) : null, max: bounded[2] ? Number(bounded[2]) : null };
+  // Retain the interpretation of older free-text answers.
   const matches = (value ?? "").match(/\d+/g)?.map(Number) ?? [];
   return { min: matches[0] ?? null, max: matches[1] ?? null };
 }
@@ -58,9 +64,13 @@ export function mapPortfolioDraft(
   existingThemeColor: string | null
 ) {
   const privacyMode = normalizePortfolioPrivacyMode(data.privacy_mode);
+  const personal = normalizePortfolioName(data.personal);
   const canonicalData = {
     ...data,
-    personal: normalizePortfolioName(data.personal),
+    personal: {
+      ...personal,
+      postal_code: normalizePostalCode(personal.postal_code),
+    },
     privacy_mode: privacyMode,
     style: withCanonicalTemplate(data.style),
   };
@@ -83,7 +93,16 @@ export function mapPortfolioDraft(
  * Input: validated portfolio data and authenticated owner ID. Output: a candidates upsert payload.
  */
 export function mapCandidate(data: PortfolioData, userId: string) {
-  const personal = normalizePortfolioName(data.personal);
+  const personal = {
+    ...normalizePortfolioName(data.personal),
+    postal_code: normalizePostalCode(data.personal.postal_code),
+  };
+  const countryCode = personal.country_code === "IN" || personal.country_code === "US"
+    ? personal.country_code
+    : null;
+  const subdivisionCode = countryCode
+    ? findSubdivision(countryCode, personal.region_code ?? personal.region)?.subdivisionCode ?? null
+    : null;
   return {
     display_name: personal.name,
     legal_name: personal.name,
@@ -92,6 +111,11 @@ export function mapCandidate(data: PortfolioData, userId: string) {
     current_city: nullable(data.personal.city || data.personal.current_location),
     current_region: nullable(data.personal.region),
     current_country: nullable(data.personal.country),
+    current_country_code: countryCode,
+    current_subdivision_code: subdivisionCode,
+    current_city_geoname_id: data.personal.city_geoname_id ?? null,
+    current_postal_code: nullable(personal.postal_code),
+    location_source: nullable(data.personal.location_source),
     primary_owner_user_id: userId,
     created_by: userId,
   };
@@ -150,8 +174,8 @@ export function mapCandidateDetails(data: PortfolioData) {
       diet: nullable(data.lifestyle?.diet),
       smoking: nullable(data.lifestyle?.smoking),
       drinking: nullable(data.lifestyle?.drinking),
-      languages: commaSeparatedList(data.lifestyle?.languages),
-      hobbies: commaSeparatedList(data.lifestyle?.hobbies),
+      languages: formListValues(data.lifestyle?.languages),
+      hobbies: formListValues(data.lifestyle?.hobbies),
       // Retired from the product. Clear any legacy relational value on the next save.
       music: null,
       lifestyle_payload: {

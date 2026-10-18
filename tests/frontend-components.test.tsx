@@ -74,21 +74,21 @@ describe("landing and shared frontend components", () => {
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /create your portfolio/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /one introduction.*one link.*always current/i })).toBeInTheDocument();
-    expect(screen.getByText(/Marriage introductions, shared with care/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /create your introduction/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeInTheDocument();
+    expect(screen.getByText(/For marriage introductions/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/protected access/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /for families already making introductions/i })).toBeInTheDocument();
-    expect(screen.getByText(/begin with a private draft/i)).toBeInTheDocument();
-    expect(screen.getByText(/what does the liveness badge mean/i).closest("summary")).toBeInTheDocument();
+    expect(screen.getAllByText(/private details/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /Your introduction. Your choice/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Private until you publish/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/What does “Liveness checked” mean/i).closest("summary")).toBeInTheDocument();
     expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
   });
 
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
     expect(screen.getByRole("heading", { name: /keep personal details personal/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Approval required/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Shared by choice/i).length).toBeGreaterThan(0);
 
     rerender(<LandingExperience variant="story" />);
     expect(screen.getByRole("heading", { name: /more human way to make a marriage introduction/i })).toBeInTheDocument();

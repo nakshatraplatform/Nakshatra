@@ -3,7 +3,7 @@ import {
   getPublicationReadiness,
   updatePublicationProgress,
 } from "@/features/portfolio/server/publication-readiness.service";
-import { canPublishWithVerificationStatus, publicationReadinessSchema } from "@/features/portfolio/server/publication-readiness.contract";
+import { canPublishWithVerificationStatus, publicationReadinessSchema, publicationProgressActionSchema } from "@/features/portfolio/server/publication-readiness.contract";
 
 const readiness = {
   portfolioExists: true,
@@ -20,6 +20,11 @@ const readiness = {
 };
 
 describe("publication readiness service", () => {
+  it("accepts versioned preview markers, not arbitrary fingerprints or consent versions", () => {
+    expect(publicationProgressActionSchema.parse({ action: "public_preview", value: "a".repeat(64) })).toEqual({ action: "public_preview", value: "a".repeat(64) });
+    expect(publicationProgressActionSchema.safeParse({ action: "complete_preview", value: "publication-disclosure-v2" }).success).toBe(false);
+    expect(publicationProgressActionSchema.safeParse({ action: "complete_preview" }).success).toBe(false);
+  });
   it("separates the named test publishing exception from real identity verification", () => {
     expect(publicationReadinessSchema.parse({ ...readiness, verificationStatus: "test_exempt" }).verificationStatus).toBe("test_exempt");
     expect(canPublishWithVerificationStatus("test_exempt")).toBe(true);
@@ -93,6 +98,7 @@ describe("publication readiness service", () => {
     ["not_found", "PORTFOLIO_DRAFT_MISSING"],
     ["verification_required", "IDENTITY_VERIFICATION_REQUIRED"],
     ["content_required", "PORTFOLIO_NOT_READY"],
+    ["review_changed", "PORTFOLIO_REVIEW_CHANGED"],
   ])("maps %s without exposing database details", async (status, code) => {
     const rpc = vi.fn().mockResolvedValue({ data: { status }, error: null });
     await expect(updatePublicationProgress(

@@ -120,16 +120,16 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   }
 
   if (job.notification_type === "new_introduction") {
-    return { to, subject: "A new verified introduction is waiting", text: `A verified viewer has introduced themselves.\n\nReview the introduction in your VivIntro dashboard: ${origin}/dashboard\n\nReview their verified contact and context before deciding whether to share the Complete Portfolio.` };
+    return { to, subject: "Someone has shown interest", text: `Someone has confirmed their email and introduced themselves.\n\nReview their interest in your VivIntro dashboard: ${origin}/dashboard\n\nRead their details before deciding whether to share private details. Email confirmation is not proof of identity.` };
   }
   if (job.notification_type === "introduction_declined") {
-    return { to, subject: "Update on your VivIntro introduction", text: "The portfolio owner is not sharing Complete Portfolio access at this time. Your verified contact information remains protected by VivIntro's access controls." };
+    return { to, subject: "Update on your VivIntro introduction", text: "The person you contacted is not sharing private details at this time. The details you sent remain subject to VivIntro’s privacy and retention rules." };
   }
   if (job.notification_type === "full_view_revoked") {
-    return { to, subject: "Your Complete Portfolio access has ended", text: "The portfolio owner has ended your Complete Portfolio access. The access link will no longer open protected details." };
+    return { to, subject: "Sharing has stopped", text: "The person who shared their introduction has stopped sharing private details. The link will no longer open those details." };
   }
   if (job.notification_type === "full_view_access_expiring") {
-    return { to, subject: "Complete Portfolio access expires soon", text: `A viewer's Complete Portfolio access expires within 24 hours.\n\nReview access in your VivIntro dashboard: ${origin}/dashboard` };
+    return { to, subject: "Sharing period ends soon", text: `Someone’s sharing period for your private details ends within 24 hours.\n\nReview sharing in your VivIntro dashboard: ${origin}/dashboard` };
   }
 
   if (!job.grant_id) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
@@ -139,7 +139,7 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
     .eq("id", job.grant_id)
     .maybeSingle();
   if (grantError) throw new NotificationRenderError("GRANT_LOOKUP_FAILED", true);
-  if (!grant || grant.revoked_at) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
+  if (!grant || grant.revoked_at || Date.parse(grant.expires_at) <= Date.now()) throw new NotificationRenderError("GRANT_UNAVAILABLE", false);
   const { data: portfolio } = await supabase
     .from("portfolios")
     .select("draft_data")
@@ -151,19 +151,19 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
   const expiry = formatExpiry(grant.expires_at);
 
   if (job.notification_type === "full_view_expiring") {
-    return { to, subject: "Your Complete Portfolio access expires soon", text: `Your access${ownerName ? ` to ${ownerName}'s Complete Portfolio` : ""} expires on ${expiry}.\n\nOpen the portfolio after verifying your email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
+    return { to, subject: "Your sharing period ends soon", text: `Your sharing period${ownerName ? ` for ${ownerName}'s private details` : ""} ends on ${expiry}.\n\nOpen the introduction using the same verified email: ${accessUrl}\n\nForwarding this email does not transfer access.` };
   }
 
   const renewed = job.notification_type === "full_view_renewed";
   return {
     to,
-    subject: renewed ? "Your Complete Portfolio access was renewed" : "You can now view the Complete Portfolio",
-    text: `${ownerName || "The portfolio owner"} has ${renewed ? "renewed" : "granted"} your Complete Portfolio access for 15 days.\n\nView the portfolio: ${accessUrl}\n\nAccess expires on ${expiry}. You must verify the same email address that received this message. Forwarding this email does not transfer access, and the owner may end access early.`,
+    subject: renewed ? "Private details shared for another 15 days" : "Private details shared with you",
+    text: `${ownerName || "The person you contacted"} has shared private details with you for ${renewed ? "another " : ""}15 days.\n\nView the introduction: ${accessUrl}\n\nSharing ends on ${expiry}. Verify the same email address that received this message. Forwarding this email does not transfer access. The person sharing may stop sharing early.`,
   };
 }
 
 /** Claims and delivers durable relationship notifications without mixing in pilot-access jobs. */
-export async function processRelationshipNotifications(supabase: Client, limit = 10) {
+export async function processRelationshipNotifications(supabase: Client, limit = 10, transport?: typeof fetch) {
   const origin = appOrigin.parse(process.env.NEXT_PUBLIC_APP_URL);
   const { data, error } = await supabase.rpc("claim_relationship_notification_outbox", { p_limit: limit });
   if (error) throw error;
@@ -177,7 +177,8 @@ export async function processRelationshipNotifications(supabase: Client, limit =
     let retryable = false;
     try {
       const message = await renderJob(supabase, job, origin);
-      const result = await sendResendEmail({ deliveryId: deliveryId(job.notification_ref), ...message });
+      const input = { deliveryId: deliveryId(job.notification_ref), ...message };
+      const result = transport ? await sendResendEmail(input, transport) : await sendResendEmail(input);
       succeeded = result.status === "accepted";
       errorCode = result.status === "failed" ? result.code : null;
       retryable = result.status === "failed" && result.retryable;
@@ -191,7 +192,7 @@ export async function processRelationshipNotifications(supabase: Client, limit =
       p_notification_ref: job.notification_ref,
       p_attempt_count: job.attempt_count,
       p_succeeded: succeeded,
-      p_error_code: errorCode,
+      ...(errorCode === null ? {} : { p_error_code: errorCode }),
       p_retryable: retryable,
     });
     if (completionError) throw completionError;
@@ -200,7 +201,8 @@ export async function processRelationshipNotifications(supabase: Client, limit =
       : retryable && job.attempt_count < 5
         ? "queued"
         : "failed";
-    if (completion !== expectedCompletion) {
+    // The database may close the retry window while this send is in flight.
+    if (completion !== expectedCompletion && !(expectedCompletion === "queued" && completion === "failed")) {
       throw new Error(`notification completion was ${completion || "unavailable"}; expected ${expectedCompletion}`);
     }
     if (succeeded) sent += 1;

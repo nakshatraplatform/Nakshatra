@@ -9,6 +9,9 @@ export const publicationReadinessSchema = z.object({
   portfolioExists: z.boolean(),
   lastEditorSection: editorSectionSchema.nullish().transform((value) => value ?? null),
   previewedAt: z.string().nullable(),
+  reviewFingerprint: z.string().regex(/^[a-f0-9]{64}$/).nullable().optional(),
+  publicPreviewReviewed: z.boolean().optional(),
+  completePreviewReviewed: z.boolean().optional(),
   selectedPlanCode: z.string().nullable(),
   verificationStatus: z.enum(["required", "verified", "test_exempt"]),
   paymentStatus: z.enum(["none", "pending", "paid", "failed", "refunded", "cancelled"]),
@@ -22,6 +25,7 @@ export const publicationReadinessSchema = z.object({
 export const publicationProgressActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("editor_section"), value: editorSectionSchema }).strict(),
   z.object({ action: z.literal("previewed"), value: z.null().optional() }).strict(),
+  z.object({ action: z.enum(["public_preview", "complete_preview"]), value: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   z.object({ action: z.literal("select_plan"), value: z.string().regex(/^[a-z0-9][a-z0-9_-]{2,79}$/) }).strict(),
   z.object({ action: z.literal("confirm_disclosure"), value: z.literal("publication-disclosure-v2") }).strict(),
 ]);

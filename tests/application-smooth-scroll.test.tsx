@@ -3,7 +3,7 @@ import { render, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   create: vi.fn(), destroy: vi.fn(), stop: vi.fn(), start: vi.fn(), resize: vi.fn(), scrollTo: vi.fn(),
-  pathname: "/", 
+  pathname: "/",
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => mocks.pathname }));
 vi.mock("lenis", () => ({ default: class {
@@ -49,15 +49,23 @@ it("suspends inertia for modal dialogs even without a body style lock", async ()
   await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 });
 
-it("suspends in a hidden tab and resumes on return", () => {
+it("leaves the native history position unlocked while hidden and recreates on return", () => {
   render(<ApplicationSmoothScroll />);
+  mocks.stop.mockClear();
   vi.spyOn(document, "hidden", "get").mockReturnValue(true);
   document.dispatchEvent(new Event("visibilitychange"));
-  expect(mocks.stop).toHaveBeenCalled();
+  expect(mocks.destroy).not.toHaveBeenCalled();
+  expect(mocks.stop).not.toHaveBeenCalled();
   vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-  mocks.start.mockClear();
   document.dispatchEvent(new Event("visibilitychange"));
-  expect(mocks.start).toHaveBeenCalled();
+  expect(mocks.destroy).toHaveBeenCalledOnce();
+  expect(mocks.create).toHaveBeenCalledTimes(2);
+});
+
+it("does not interrupt native restoration when a fresh controller first mounts", () => {
+  render(<ApplicationSmoothScroll />);
+  expect(mocks.stop).not.toHaveBeenCalled();
+  expect(mocks.resize).not.toHaveBeenCalled();
 });
 
 it("uses native scrolling when reduced motion is already requested", () => {

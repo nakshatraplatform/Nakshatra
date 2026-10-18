@@ -29,11 +29,15 @@ test("wheel, keyboard, anchors and browser back remain usable", async ({ page })
   await expect(page.locator("#tour-step-01")).toBeInViewport();
   // A fresh path exercises native back restoration, rather than the hash history entry.
   await page.goto("/privacy");
+  await expect(page.locator("html")).toHaveClass(/\blenis\b/);
   await page.evaluate(() => window.scrollTo({ top: 400, behavior: "instant" }));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(400);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const before = await page.evaluate(() => scrollY);
   await page.goto("/login");
   await expect(page.getByLabel("Email address")).toBeVisible();
   await page.goBack();
+  await expect(page.locator("html")).toHaveClass(/\blenis\b/);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThanOrEqual(Math.min(before, 200));
 });
 

@@ -34,3 +34,45 @@ export async function getLocationReferences<T extends LocationReference>(
     return [];
   }
 }
+
+import type { LocationSuggestion, StructuredLocation } from "@/features/location/location.contract";
+
+export async function searchLocationSuggestions(input: {
+  query: string;
+  countryCode?: "IN" | "US";
+  sessionToken: string;
+  portfolioToken?: string;
+}, signal?: AbortSignal): Promise<LocationSuggestion[]> {
+  try {
+    const response = await fetch("/api/reference/location-suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "search", ...input }),
+      signal,
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json().catch(() => null)) as { options?: LocationSuggestion[] } | null;
+    return Array.isArray(payload?.options) ? payload.options : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function resolveLocationSuggestion(input: {
+  placeId: string;
+  sessionToken: string;
+  portfolioToken?: string;
+}): Promise<StructuredLocation | null> {
+  try {
+    const response = await fetch("/api/reference/location-suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resolve", provider: "google_places", ...input }),
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json().catch(() => null)) as { location?: StructuredLocation } | null;
+    return payload?.location ?? null;
+  } catch {
+    return null;
+  }
+}

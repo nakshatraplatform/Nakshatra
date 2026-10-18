@@ -1,31 +1,33 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { InterestRequestInput } from "./interest.contract";
+import type { InterestRequestInput, NewViewerInterestInput } from "./interest.contract";
 
 /** Calls the database-owned interest command so clients cannot set workflow fields. */
 export class InterestRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  submit(input: InterestRequestInput) {
-    const location = [input.city, input.state, input.country]
-      .filter((value): value is string => Boolean(value))
-      .join(", ") || null;
-
-    return this.supabase.rpc("submit_public_interest", {
-      p_share_token: input.portfolioToken,
-      p_name: input.name,
-      p_profile_for: input.profileFor,
-      p_phone: input.phone,
-      p_email: input.email,
-      p_location: location,
-      p_family_context: input.familyContext ?? null,
-      p_message: input.message ?? null,
-      p_portfolio_url: null,
-      p_country: input.country ?? null,
-      p_state: input.state ?? null,
-      p_city: input.city ?? null,
+  submit(input: InterestRequestInput & { useExistingProfile?: boolean }) {
+    if (input.useExistingProfile) return this.supabase.rpc("submit_existing_interest", {
+      p_share_token: input.portfolioToken, p_family_context: input.familyContext ?? null, p_message: input.message ?? null,
+      p_location: {
+        country: input.country, state: input.state, city: input.city,
+        countryCode: input.countryCode, subdivisionCode: input.subdivisionCode,
+        cityGeonameId: input.cityGeonameId, postalCode: input.postalCode,
+        locationSource: input.locationSource,
+      },
     });
+    if ("location" in input) {
+      const details = input as NewViewerInterestInput;
+      return this.supabase.rpc("submit_interest_details", { p_details: {
+        portfolioToken: details.portfolioToken, name: details.name, profileFor: details.profileFor,
+        phone: details.phone, email: details.email, familyContext: details.familyContext,
+        message: details.message, location: details.location,
+        ...(details.profileFor !== "self" ? { candidate: details.candidate } : {}),
+      } });
+    }
+    // Historical read shapes must never select the retired weaker command.
+    return Promise.resolve({ data: null, error: { code: "22023", message: "Structured interest details required" } });
   }
 
   /**

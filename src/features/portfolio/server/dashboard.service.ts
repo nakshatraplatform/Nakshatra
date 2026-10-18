@@ -12,6 +12,8 @@ import {
   mapPortfolioDraft,
 } from "./dashboard.mapper";
 import { DashboardRepository } from "./dashboard.repository";
+import { publicationReadinessSchema } from "./publication-readiness.contract";
+import { portfolioEditorDraftSchema } from "../form-contract";
 
 export type DashboardSaveErrorCode =
   | "DASHBOARD_DATABASE_UPDATE_REQUIRED"
@@ -119,9 +121,19 @@ export async function saveDashboardDraft({
   if (error) {
     logDashboardDatabaseFailure(error);
     const code = databaseErrorCode(error);
-    if (["PGRST202", "PGRST203", "PGRST204"].includes(code || "")) {
+    let structuredLocationSchemaMissing = false;
+    const message = typeof error === "object" && error !== null && "message" in error ? error.message : null;
+    if (code === "22023" && ["geography_region_invalid", "geography_country_invalid"].includes(String(message))) {
+      try {
+        const schema = await repository.probeStructuredLocationSchema();
+        structuredLocationSchemaMissing = ["PGRST205", "42P01"].includes(databaseErrorCode(schema.error) || "");
+      } catch {
+        // An unavailable probe cannot establish schema drift; retain the original classification.
+      }
+    }
+    if (structuredLocationSchemaMissing || ["PGRST202", "PGRST203", "PGRST204"].includes(code || "")) {
       throw new DashboardSaveError(
-        "Portfolio saving is temporarily unavailable because the latest database update has not been applied.",
+        "Portfolio saving is temporarily unavailable. Your answers are still here; please try again after the service update is complete.",
         "DASHBOARD_DATABASE_UPDATE_REQUIRED",
         503
       );
@@ -146,5 +158,10 @@ export async function saveDashboardDraft({
     );
   }
 
-  return { portfolioId: result.portfolioId, candidateId: result.candidateId };
+  const readiness = publicationReadinessSchema.safeParse((result as Record<string, unknown>).readiness);
+  const draft = portfolioEditorDraftSchema.safeParse((result as Record<string, unknown>).draftData);
+  return { portfolioId: result.portfolioId, candidateId: result.candidateId,
+    ...(readiness.success ? { readiness: readiness.data } : {}),
+    ...(draft.success ? { draftData: draft.data } : {}),
+  };
 }

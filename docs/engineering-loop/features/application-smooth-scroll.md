@@ -1,5 +1,11 @@
 # Application-wide smooth scrolling and frontend release evidence
 
+> Current integration status: see `frontend-hardening-integration.md`. The earlier
+> checks below apply to their recorded source. SS4 Back restoration is currently
+> unresolved after integration with newer main; it also fails with native reduced
+> motion, so a Lenis-specific root cause has not been established. No current
+> merge/release readiness is implied by historical passes in this record.
+
 ## Contract / execution context
 
 - User request (2026-10-17): use Lenis across landing, dashboard and all routes;

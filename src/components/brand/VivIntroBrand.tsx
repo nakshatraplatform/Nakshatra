@@ -23,6 +23,7 @@ export type VivIntroBrandProps = {
   variant?: VivIntroBrandVariant;
   tone?: VivIntroBrandTone;
   href?: string;
+  openInNewTab?: boolean;
   className?: string;
   decorative?: boolean;
   priority?: boolean;
@@ -38,6 +39,7 @@ export function VivIntroBrand({
   variant = "full-symbol",
   tone = "adaptive",
   href,
+  openInNewTab = false,
   className,
   decorative = false,
   priority = false,
@@ -49,7 +51,9 @@ export function VivIntroBrand({
     "--vivintro-brand-width": `${displayWidth ?? metrics.defaultDisplayWidth}px`,
     "--vivintro-brand-ratio": `${metrics.width} / ${metrics.height}`,
   } as CSSProperties;
-  const accessibleLabel = decorative ? undefined : href ? "VivIntro home" : "VivIntro";
+  const accessibleLabel = decorative ? undefined : href
+    ? openInNewTab ? "VivIntro home — opens in a new tab" : "VivIntro home"
+    : "VivIntro";
 
   const artwork = (
     <span
@@ -63,8 +67,8 @@ export function VivIntroBrand({
     >
       {tone === "adaptive" ? (
         <>
-          <BrandImage metrics={metrics} tone="primary" priority={priority} className={styles.primaryArtwork} />
-          <BrandImage metrics={metrics} tone="reverse" priority={priority} className={styles.reverseArtwork} />
+          <BrandImage metrics={metrics} tone="primary" priority={priority} adaptive className={styles.primaryArtwork} />
+          <BrandImage metrics={metrics} tone="reverse" priority={priority} adaptive className={styles.reverseArtwork} />
         </>
       ) : (
         <BrandImage metrics={metrics} tone={tone} priority={priority} />
@@ -74,7 +78,7 @@ export function VivIntroBrand({
 
   if (href) {
     return (
-      <Link href={href} className={rootClassName} aria-label={accessibleLabel}>
+      <Link href={href} target={openInNewTab ? "_blank" : undefined} rel={openInNewTab ? "noopener noreferrer" : undefined} className={rootClassName} aria-label={accessibleLabel}>
         {artwork}
       </Link>
     );
@@ -84,6 +88,7 @@ export function VivIntroBrand({
 }
 
 function BrandImage({
+  adaptive = false,
   metrics,
   tone,
   priority,
@@ -91,6 +96,7 @@ function BrandImage({
 }: {
   metrics: BrandMetrics;
   tone: Exclude<VivIntroBrandTone, "adaptive">;
+  adaptive?: boolean;
   priority: boolean;
   className?: string;
 }) {
@@ -101,7 +107,9 @@ function BrandImage({
       width={metrics.width}
       height={metrics.height}
       className={[styles.image, className].filter(Boolean).join(" ")}
-      loading={priority || metrics.assetName === "lockup-stacked" ? "eager" : "lazy"}
+      loading={priority ? "eager" : "lazy"}
+      // CSS chooses one adaptive artwork; React must not preload both alternatives.
+      fetchPriority={adaptive ? "low" : undefined}
     />
   );
 }

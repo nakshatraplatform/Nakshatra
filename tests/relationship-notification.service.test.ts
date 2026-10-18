@@ -26,7 +26,7 @@ describe("relationship notification delivery", () => {
       }], error: null })
       .mockResolvedValueOnce({ data: "sent", error: null });
     const rows = {
-      reveal_grants: { data: { id: grantId, expires_at: "2026-10-05T12:00:00.000Z", portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
+      reveal_grants: { data: { id: grantId, expires_at: new Date(Date.now() + 86_400_000).toISOString(), portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
       portfolios: { data: { draft_data: { personal: { name: "Aditi Rao" } } }, error: null },
     };
     const from = vi.fn((table: keyof typeof rows) => {
@@ -46,7 +46,7 @@ describe("relationship notification delivery", () => {
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0 });
     expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: "viewer@example.com",
-      subject: "You can now view the Complete Portfolio",
+      subject: "Private details shared with you",
       text: expect.stringContaining(`https://vivintro.test/access/${grantId}`),
     }));
     expect(rpc).toHaveBeenLastCalledWith("complete_relationship_notification_outbox", expect.objectContaining({
@@ -54,6 +54,8 @@ describe("relationship notification delivery", () => {
       p_succeeded: true,
       p_retryable: false,
     }));
+    // Omitting the optional argument uses the SQL default null on success.
+    expect(rpc.mock.calls.at(-1)?.[1]).not.toHaveProperty("p_error_code");
   });
 
   it("does nothing when no relationship notifications are due", async () => {
@@ -63,10 +65,10 @@ describe("relationship notification delivery", () => {
   });
 
   it.each([
-    ["new_introduction", "A new verified introduction is waiting", "/dashboard"],
+    ["new_introduction", "Someone has shown interest", "/dashboard"],
     ["introduction_declined", "Update on your VivIntro introduction", "not sharing"],
-    ["full_view_revoked", "Your Complete Portfolio access has ended", "no longer open"],
-    ["full_view_access_expiring", "Complete Portfolio access expires soon", "/dashboard"],
+    ["full_view_revoked", "Sharing has stopped", "no longer open"],
+    ["full_view_access_expiring", "Sharing period ends soon", "/dashboard"],
   ])("renders %s without loading an access grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{
@@ -163,8 +165,8 @@ describe("relationship notification delivery", () => {
   });
 
   it.each([
-    ["full_view_renewed", "Your Complete Portfolio access was renewed", "renewed"],
-    ["full_view_expiring", "Your Complete Portfolio access expires soon", "expires on"],
+    ["full_view_renewed", "Private details shared for another 15 days", "another 15 days"],
+    ["full_view_expiring", "Your sharing period ends soon", "ends on"],
   ])("renders %s from the active grant", async (notificationType, subject, copy) => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: [{
@@ -178,7 +180,7 @@ describe("relationship notification delivery", () => {
       }], error: null })
       .mockResolvedValueOnce({ data: "sent", error: null });
     const rows = {
-      reveal_grants: { data: { id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-10-05T12:00:00.000Z", portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
+      reveal_grants: { data: { id: "22222222-2222-4222-8222-222222222222", expires_at: new Date(Date.now() + 86_400_000).toISOString(), portfolio_id: "66666666-6666-4666-8666-666666666666", revoked_at: null }, error: null },
       portfolios: { data: { draft_data: {} }, error: null },
     };
     const from = vi.fn((table: keyof typeof rows) => {

@@ -5,7 +5,7 @@ import { join } from "node:path";
 const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-primary-og.png"), "base64");
 const logoSrc = `data:image/png;base64,${logoData}`;
 
-export const alt = "VivIntro — One introduction, one link, always current";
+export const alt = "VivIntro: Your biodata, as one link you control.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -48,15 +48,15 @@ export default function OpenGraphImage() {
 
           <div style={{ display: "flex", maxWidth: "930px", flexDirection: "column" }}>
             <div style={{ display: "flex", fontSize: 76, lineHeight: 1.02, letterSpacing: "-0.04em" }}>
-              One introduction. One link. Always current.
+              Your biodata, as one link you control.
             </div>
             <div style={{ display: "flex", maxWidth: "870px", marginTop: "28px", color: "#52666d", fontFamily: "Arial, sans-serif", fontSize: 27, lineHeight: 1.45 }}>
-              Share one current introduction. Contact details and documents stay protected until the owner approves access.
+              Update one link, not another PDF. Your phone number and horoscope file stay hidden until you approve.
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", color: "#246d75", fontFamily: "Arial, sans-serif", fontSize: 20, fontWeight: 700 }}>
-            <span>Shared introduction</span><span>→</span><span>Confirmed email</span><span>→</span><span>Owner approval</span>
+            <span>Create</span><span>→</span><span>Share</span><span>→</span><span>Approve</span>
           </div>
         </div>
       </div>

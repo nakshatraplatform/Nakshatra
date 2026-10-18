@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Marriage Introduction Link | VivIntro");
-  await expect(page.getByRole("heading", { name: /one introduction\. one link\. always current/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first();
+  await expect(page).toHaveTitle("Marriage biodata link you control | VivIntro");
+  await expect(page.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeVisible();
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");
   await page.goto("/waitlist");
   await expect(page).toHaveURL(/\/signup$/);
@@ -15,7 +15,7 @@ test("landing page presents the product and reaches open account creation", asyn
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
   await page.goto("/login?redirect=%2Fedit");
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
   await page.getByLabel("Email address").fill("person@example.com");
@@ -44,19 +44,19 @@ test("BrokerDesk reuses account creation with clear private-workspace guidance",
 test("unauthenticated owners are redirected away from protected screens", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login\?redirect=%2Fdashboard/);
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
 
   await page.goto("/account");
   await expect(page).toHaveURL(/\/login\?redirect=%2Faccount/);
-  await expect(page.getByRole("heading", { name: /sign in to your portfolio/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /sign in to VivIntro/i })).toBeVisible();
 });
 
 test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /create your portfolio/i }).first()).toBeVisible();
-  await expect(page.locator("#top").getByRole("link", { name: /view a sample introduction/i })).toBeVisible();
+  await expect(main.getByRole("link", { name: /create your introduction/i }).first()).toBeVisible();
+  await expect(page.locator("#top").getByRole("link", { name: /see an example/i })).toBeVisible();
 });
 
 test("landing concepts keep the same clear path to signup", async ({ page }) => {
@@ -68,7 +68,7 @@ test("landing concepts keep the same clear path to signup", async ({ page }) => 
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /create your portfolio/i }).first()).toHaveAttribute(
+    await expect(page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first()).toHaveAttribute(
       "href",
       "/signup"
     );
@@ -83,10 +83,10 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(verifiedBadge).toBeVisible();
   await expect(verifiedBadge).toHaveAttribute(
     "aria-label",
-    /does not verify legal identity, portfolio photo ownership, profile statements, or endorse a match/
+    /does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/
   );
   await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "More can be shared after approval." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "More can be shared privately." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
   await expect(page.getByText("Ramesh Rao", { exact: true })).toHaveCount(0);
   await expect(page.getByText("family@example.com", { exact: true })).toHaveCount(0);
@@ -98,13 +98,13 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(viewerChoiceDialog).toBeVisible();
   const googleContinuation = viewerChoiceDialog.getByRole("button", { name: "Continue with Google" });
   await expect(googleContinuation).toBeVisible();
-  await expect(googleContinuation).toHaveCSS("background-color", "rgb(33, 70, 91)");
+  await expect(viewerChoiceDialog.getByRole("link", { name: "Sign in to VivIntro" })).toHaveCSS("background-color", "rgb(35, 75, 104)");
   await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
 
   const interestDialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(interestDialog).toBeVisible();
-  await expect(interestDialog.getByLabel("Your full name")).toHaveValue("");
-  await expect(interestDialog.getByLabel("Contacting for")).toHaveValue("");
+  await expect(interestDialog.getByLabel("Full name", { exact: true })).toHaveValue("");
+  await expect(interestDialog.getByLabel("Who are you contacting for?")).toHaveValue("");
   await expect(interestDialog.getByLabel("Phone number")).toHaveValue("");
   await expect(interestDialog.getByLabel("Email address")).toHaveValue("");
   await interestDialog.getByRole("button", { name: "Close interest form" }).click();
@@ -138,7 +138,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(1);
   await expect(gallery.getByRole("button", { name: "Show photo 1" })).toBeVisible();
-  await expect(gallery.getByRole("button", { name: "Photo 8, shared after approval" })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Photo 8, shared privately" })).toBeVisible();
   await expect(gallery.getByAltText("Protected portrait")).toHaveCount(0);
   const galleryColumns = await gallery.locator(".portfolio-gallery-viewer").evaluate(
     (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length
@@ -175,18 +175,20 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   });
   expect(accents).toEqual({
     background: "#f7f5ef",
-    primary: "#213f59",
-    teal: "#477b77",
-    gold: "#8f6628",
+    primary: "#1c2936",
+    teal: "#1c2936",
+    gold: "#80551c",
   });
+  expect(accents.gold).not.toBe(accents.primary);
 
-  const privacyControl = portfolio.locator(".portfolio-brand");
+  const privacyControl = page.getByRole("banner").getByRole("link", { name: "VivIntro home — opens in a new tab", exact: true });
   await expect(privacyControl).toBeVisible();
+  await expect(privacyControl).toHaveAttribute("href", "/");
   await privacyControl.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(privacyControl).toBeFocused();
-  await expect(privacyControl).toHaveCSS("outline-width", "2px");
+  await expect(privacyControl).toHaveCSS("outline-width", "3px");
   await expect(page.locator(".portfolio-long-copy").first()).toHaveCSS("overflow-wrap", "anywhere");
 
   if ((page.viewportSize()?.width || 0) > 720) {
@@ -194,7 +196,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
       const styles = getComputedStyle(element);
       return { display: styles.display, columns: styles.gridTemplateColumns.split(" ").length };
     });
-    expect(chapterStyles).toEqual({ display: "grid", columns: 3 });
+    expect(chapterStyles).toEqual({ display: "grid", columns: 2 });
 
     const pairedStyles = await page.locator(".portfolio-chapter-pair").first().evaluate((element) => {
       const styles = getComputedStyle(element);
@@ -215,8 +217,8 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
       })
     );
     expect(futureChapterStyles).toEqual([
-      { display: "grid", columns: 3, copySize: 18 },
-      { display: "grid", columns: 3, copySize: 18 },
+      { display: "grid", columns: 2, copySize: 18 },
+      { display: "grid", columns: 2, copySize: 18 },
     ]);
   } else {
     await expect(page.locator(".portfolio-chapter-pair").first()).toHaveCSS("display", "block");
@@ -233,7 +235,7 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
   }
 });
 
-test("interest popup stays in view and keeps extra details optional", async ({ page }) => {
+test("interest popup stays in view and requires decision-making details", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   await page.getByRole("button", { name: "Show interest" }).click();
 
@@ -243,8 +245,8 @@ test("interest popup stays in view and keeps extra details optional", async ({ p
 
   const dialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel("Your full name")).toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("Contacting for")).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Full name", { exact: true })).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Who are you contacting for?")).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Phone number")).toHaveAttribute("required", "");
   await expect(dialog.getByLabel("Email address")).toHaveAttribute("required", "");
 
@@ -255,18 +257,13 @@ test("interest popup stays in view and keeps extra details optional", async ({ p
   expect(bounds.top).toBeGreaterThanOrEqual(0);
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport + 1);
 
-  await dialog.getByText("Add more details").click();
-  await expect(dialog.getByLabel("Country", { exact: true })).not.toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("State or province")).not.toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("City")).not.toHaveAttribute("required", "");
-  const optionalLayout = await dialog.locator(".interest-optional").evaluate((element) => ({
-    open: element.hasAttribute("open"),
-    clientHeight: element.clientHeight,
-    scrollHeight: element.scrollHeight,
-  }));
-  expect(optionalLayout.open).toBe(true);
-  expect(optionalLayout.scrollHeight).toBeLessThanOrEqual(optionalLayout.clientHeight + 1);
-  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeVisible();
+  await expect(dialog.getByRole("combobox", { name: "ZIP or PIN code" })).toHaveAttribute("required", "");
+  await dialog.getByRole("button", { name: "Enter location manually" }).click();
+  for (const name of ["Country", "State", "City", "ZIP or PIN code", "Family context"]) await expect(dialog.getByLabel(name, { exact: true })).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Message", { exact: true })).not.toHaveAttribute("required", "");
+  const formSpace = await dialog.locator(".interest-form-scroll").boundingBox();
+  expect(formSpace!.height).toBeGreaterThan(bounds.viewport * 0.55);
+  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeInViewport();
 });
 
 test("Private portfolio keeps one gallery photo clear and shows protected placeholders", async ({ page }) => {
@@ -307,7 +304,7 @@ test("gallery photo viewer closes from the backdrop on touch and restores the op
 test("portfolio navigation, help links, and return-to-top work at each viewport", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   const footer = page.getByRole("navigation", { name: "Portfolio help and policies" });
-  await expect(page.locator(".portfolio-footer-identity")).toHaveCSS("display", "grid");
+  await expect(page.locator("footer > div").first()).toHaveCSS("display", "grid");
   const helpLinks = footer.getByRole("link");
   await expect(helpLinks).toHaveCount(4);
   await expect(footer.getByRole("link", { name: "Report or correct information" })).toBeVisible();
@@ -320,7 +317,7 @@ test("portfolio navigation, help links, and return-to-top work at each viewport"
   }
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const backToTop = page.getByRole("button", { name: "Back to top of introduction" });
+  const backToTop = page.getByRole("link", { name: "Back to top", exact: true });
   await expect(backToTop).toBeVisible();
   await backToTop.click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
@@ -342,9 +339,10 @@ test("portfolio actions and hero remain usable across supported viewports", asyn
   await expect(page.locator(".portfolio-mobile-interest")).toHaveCount(0);
   await expect(page.locator(".portfolio-hero-actions")).toHaveCount(0);
 
-  const headerAction = page.locator(".portfolio-header-action");
+  const headerAction = page.getByRole("banner").getByRole("link", { name: "Show Interest", exact: true });
   await expect(headerAction).toBeVisible();
-  await expect(headerAction).toHaveText("Show interest");
+  await expect(headerAction).toHaveAttribute("aria-label", "Show Interest");
+  await expect(headerAction).toHaveText("");
   await expect(headerAction).toHaveAttribute("href", "#portfolio-interest");
   expect((await headerAction.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator("#portfolio-interest").getByRole("button", { name: "Show interest" })).toBeVisible();

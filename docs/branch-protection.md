@@ -1,54 +1,33 @@
-# Main Branch Protection
+# Main and privileged deployment protection
 
-Protect `main` in GitHub before merging production work.
+Repository: `nakshatraplatform/Nakshatra`. Keep the active `Protect main`
+ruleset; preserve existing required checks and bypass actors while tightening review.
 
-## Required GitHub Settings
+Required settings:
 
-- Require a pull request before merging.
-- Require approvals.
-- Require status checks to pass before merging.
-- Require branches to be up to date before merging.
-- Required status checks: `Lint, Test, Coverage & Build` and `TruffleHog Secret Scan`.
-- Block force pushes.
-- Block branch deletion.
-- Include administrators.
+- Pull requests, at least one approving review, dismiss approvals on new pushes,
+  approval of the latest push by someone other than its author, resolved conversations.
+- Strict up-to-date status checks: `Lint, Test, Coverage & Build`,
+  `Supabase migrations and pgTAP`, and `TruffleHog Secret Scan`.
+- Block force pushes and main deletion; no routine administrator bypass.
+- GitHub environments `production` and `identity-verification-worker-production`
+  permit the **main branch only**, including rejecting tags named main. Preserve
+  existing reviewers/wait timers. Do not add a manual reviewer gate to each cron run.
 
-## Apply With GitHub CLI
+With repository administration permission, preview then apply:
 
-Refresh GitHub CLI auth first:
-
-```bash
-gh auth login -h github.com
+```sh
+node scripts/production-controls.mjs
+node scripts/production-controls.mjs --apply
 ```
 
-Then apply protection:
+The script verifies the exact Git remote and default branch, preserves the
+ruleset's existing status checks and other rules, and refuses writes without
+administration permission. Inspect the resulting GitHub ruleset and both
+environments after applying. Repository settings are external state; merging this
+file does not apply them.
 
-```bash
-gh api \
-  --method PUT \
-  -H "Accept: application/vnd.github+json" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  /repos/NagarjunMa/Nakshatra/branches/main/protection \
-  --input - <<'JSON'
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": ["Lint, Test, Coverage & Build", "TruffleHog Secret Scan"]
-  },
-  "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1,
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false
-  },
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false,
-  "block_creations": false,
-  "required_conversation_resolution": true,
-  "lock_branch": false
-}
-JSON
-```
-
-The local `.husky/pre-push` hook blocks pushes from local `main` and `master`, then runs typecheck and unit tests. TruffleHog runs on GitHub when a pull request targets `main`; the `TruffleHog Secret Scan` check must be required in branch protection before merge. This keeps secret scanning independent of a contributor's local Docker installation.
+October 17 remediation attempt: connected account has push/triage but **not
+administration permission**. GitHub rejected the ruleset update with HTTP 404.
+No environment change was attempted after that rejection. These controls remain
+an open release condition, rather than a completed code fix.

@@ -21,8 +21,14 @@ const completeBlueprint: PortfolioData = {
     place_of_birth: "Bengaluru",
     current_location: "Boston, Massachusetts, United States",
     country: "United States",
+    country_code: "US",
     region: "Massachusetts",
+    region_code: "US-MA",
     city: "Boston",
+    postal_code: "02108",
+    location_source: "manual",
+    address_line_1: "100 Hancock Street",
+    address_line_2: "Unit 12",
     immigration_status: "H1B",
   },
   vitals: { height: `5'5"`, gotra: "Kashyap" },
@@ -54,6 +60,55 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("navigates tag suggestions with virtual focus and selects with Enter", () => {
+    const onUpdate = vi.fn();
+    render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} activeSection="story" onSectionChange={vi.fn()} />);
+    const input = screen.getByRole("combobox", { name: "Values that matter to you" });
+    input.focus();
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const selected = screen.getAllByRole("option").find(option => option.getAttribute("aria-selected") === "true")!;
+    expect(selected).toBeDefined();
+    expect(input).toHaveAttribute("aria-activedescendant", selected.id);
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onUpdate).toHaveBeenCalledWith("lifestyle", expect.objectContaining({ values_statement: selected.textContent }));
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+  });
+  it("bounds typed answers to the accepted field lengths", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Current profession title", { exact: true })).toHaveAttribute("maxlength", "200");
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter location manually" }));
+    expect(screen.getByLabelText("Current city", { exact: true })).toHaveAttribute("maxlength", "120");
+    expect(screen.getByLabelText("First name", { exact: true })).toHaveAttribute("pattern", expect.stringContaining("\\-"));
+    rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="astrology" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Lagnam", { exact: true })).toHaveAttribute("maxlength", "100");
+    rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="privacy" onSectionChange={vi.fn()} />);
+    expect(screen.getByLabelText("Name of contact", { exact: true })).toHaveAttribute("maxlength", "100");
+  });
+  it("lets the controlled editor own scrolling when changing sections", () => {
+    const onSectionChange = vi.fn();
+    const scrollIntoView = vi.fn();
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" onSectionChange={onSectionChange} />);
+    document.getElementById("blueprint-stage")!.scrollIntoView = scrollIntoView;
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    expect(onSectionChange).toHaveBeenCalledWith("work");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+  it("keeps useful hints below controls and uses a shared protected-field legend", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    const dob = screen.getByLabelText("Date of birth", { exact: true });
+    const hint = screen.getByText(/You must be at least 18/);
+    expect(dob.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dob).toHaveAccessibleDescription(/You must be at least 18/);
+    expect(screen.queryByText("Required to publish and shown in your public Introduction.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Fields marked with a lock/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    const employer = screen.getByLabelText("Employer or organisation", { exact: true });
+    expect(employer).toHaveAccessibleDescription(/Shared only when you choose/);
+    expect(screen.queryByText("Shared when you choose", { exact: true })).not.toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
@@ -88,7 +143,7 @@ describe("blueprint form", () => {
 
   it("guides optional narrative answers with an accessible example and minimum length", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story/ }));
     expect(screen.getByLabelText("How would your close friends describe you?")).toHaveAttribute("maxLength", "1600");
     fireEvent.click(screen.getAllByText("See a good example")[0]);
     expect(screen.getByText(/brings friends together for a relaxed meal/)).toBeVisible();
@@ -101,7 +156,7 @@ describe("blueprint form", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     expect(screen.getByText(/City and country where you studied/)).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /04Family/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /04Family/ }));
     expect(screen.getAllByText(/Place or region your family traces its roots to/)).toHaveLength(2);
   });
 
@@ -112,7 +167,7 @@ describe("blueprint form", () => {
     }
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "An unsaved but retained answer" } });
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Personal story/ }));
     const interests = screen.getByRole("combobox", { name: "Select up to 6 Interests" });
     for (const item of ["Cooking", "Music", "Reading", "Hiking", "Travel", "Art"]) {
       fireEvent.change(interests, { target: { value: item } });
@@ -128,7 +183,6 @@ describe("blueprint form", () => {
 
   it("offers clear Marital Status choices while retaining a prior saved answer", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Personal story/ }));
     const maritalStatus = screen.getByLabelText("Marital Status");
     expect(within(maritalStatus).getByRole("option", { name: "Single" })).toBeInTheDocument();
     expect(within(maritalStatus).getByRole("option", { name: "Married" })).toBeInTheDocument();
@@ -138,22 +192,45 @@ describe("blueprint form", () => {
     expect(within(screen.getByLabelText("Marital Status")).getByRole("option", { name: "Never Married (previous answer)" })).toBeInTheDocument();
   });
 
+  it("collects identity before location and separates education, work and residency", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
+    const before = (first: HTMLElement, next: HTMLElement) => expect(first.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    before(screen.getByLabelText("Last name"), screen.getByLabelText("Date of birth"));
+    before(screen.getByLabelText("Marital Status"), screen.getByText("Selected location"));
+    before(screen.getByText("Selected location"), screen.getByLabelText("Street address line 1"));
+    before(screen.getByLabelText("Street address line 2"), screen.getByLabelText("Current profession title"));
+    expect(screen.getByLabelText("Street address line 1")).toBeRequired();
+    expect(screen.getByLabelText("Street address line 2")).not.toBeRequired();
+    before(screen.getByLabelText("Current profession title"), screen.getByLabelText("Short description"));
+    fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
+    expect(within(screen.getByRole("group", { name: "Education" })).getByLabelText("Institution")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Current work" })).getByLabelText("Work status")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Citizenship and residency" })).getByLabelText("Citizenship")).toBeInTheDocument();
+    before(screen.getByLabelText("Education location"), screen.getByLabelText("Work status"));
+    fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
+    before(screen.getByLabelText("Place of birth"), screen.getByLabelText("Time of birth"));
+  });
+
   it("routes required profile, family, contact, appearance, and privacy changes", () => {
     const onUpdate = vi.fn();
     render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
 
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Updated" } });
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "A concise new bio" } });
+    fireEvent.change(screen.getByLabelText("Street address line 1"), { target: { value: "200 Beacon Street" } });
+    fireEvent.change(screen.getByLabelText("Street address line 2"), { target: { value: "Unit 4" } });
     fireEvent.click(screen.getByRole("button", { name: /Astrology/ }));
     fireEvent.change(screen.getByLabelText("Moon sign (Rashi)"), { target: { value: "kumbha" } });
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
     fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "2" } });
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     fireEvent.change(screen.getAllByLabelText("Name of contact")[0], { target: { value: "Updated Contact" } });
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
 
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ first_name: "Updated", name: "Updated Rao" }));
     expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ short_bio: "A concise new bio" }));
+    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_1: "200 Beacon Street" }));
+    expect(onUpdate).toHaveBeenCalledWith("personal", expect.objectContaining({ address_line_2: "Unit 4" }));
     expect(onUpdate).toHaveBeenCalledWith("astrology", expect.objectContaining({ rashi: "kumbha" }));
     expect(onUpdate).toHaveBeenCalledWith("family", expect.objectContaining({ sibling_count: 2 }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({
@@ -188,7 +265,7 @@ describe("blueprint form", () => {
     rerender(<BlueprintForm data={{ ...minimal, personal: { ...minimal.personal, dob: "2020-01-01" } }} onUpdate={onUpdate} />);
     fireEvent.blur(screen.getByLabelText("Date of birth"));
     expect(screen.getByText("You must be 18 or older.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
     expect(screen.getByRole("button", { name: "Update sharing setup" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
@@ -202,8 +279,8 @@ describe("blueprint form", () => {
       sibling_count: 1,
       siblings: [{}],
     }));
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Add a protected contact" }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a private contact" }));
     expect(onUpdate).toHaveBeenCalledWith("contact", expect.objectContaining({
       contacts: [expect.objectContaining({ relationship: "self" })],
     }));
@@ -213,7 +290,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
 
-    const sectionNavigation = screen.getByRole("navigation", { name: "Portfolio form sections" });
+    const sectionNavigation = screen.getByRole("navigation", { name: "Introduction form sections" });
     const sectionLabels = within(sectionNavigation).getAllByRole("button").map((button) => button.textContent);
     expect(sectionLabels).toHaveLength(7);
     expect(sectionLabels.map((label) => label?.replace(/\s+/g, " "))).toEqual([
@@ -221,9 +298,9 @@ describe("blueprint form", () => {
       expect.stringContaining("Personal story & lifestyle"),
       expect.stringContaining("Education & work"),
       expect.stringContaining("Family"),
-      expect.stringContaining("Astrology & traditions"),
+      expect.stringContaining("Astrology & horoscope"),
       expect.stringContaining("Match & future"),
-      expect.stringContaining("Privacy & contact"),
+      expect.stringContaining("Appearance & contact"),
     ]);
     expect(screen.queryByText("Optional")).not.toBeInTheDocument();
 
@@ -265,8 +342,8 @@ describe("blueprint form", () => {
   it("offers one public Introduction and an explicit upgrade for a legacy draft", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
-    expect(screen.getByText("Public Introduction")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
+    expect(screen.getByText("Public introduction")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Brief Introduction|Detailed Introduction/ })).not.toBeInTheDocument();
     rerender(<BlueprintForm data={{ ...completeBlueprint, privacy_mode: "private" }} onUpdate={onUpdate} />);
     fireEvent.click(screen.getByRole("button", { name: "Update sharing setup" }));
@@ -278,7 +355,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     render(<BlueprintForm data={{ ...completeBlueprint, preferences: {} }} onUpdate={onUpdate} />);
 
-    fireEvent.click(within(screen.getByRole("navigation", { name: "Portfolio form sections" })).getByRole("button", { name: /Match & future/i }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /Match & future/i }));
     fireEvent.change(screen.getByLabelText("Maximum height"), { target: { value: `5'10"` } });
 
     expect(onUpdate).toHaveBeenCalledWith("preferences", expect.objectContaining({
@@ -305,7 +382,7 @@ describe("blueprint form", () => {
 
   it("marks publishing requirements and uses clear astrology terminology", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Astrology & traditions/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Astrology & horoscope/ }));
 
     for (const label of [
       "Time of birth",
@@ -322,17 +399,17 @@ describe("blueprint form", () => {
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
     expect(screen.getByText("No guessing required")).toBeInTheDocument();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Shown after approval").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shared only when you choose/);
   });
 
   it("labels protected contact visibility once at the section level", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /Privacy & contact/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
 
-    const sectionNotice = screen.getByText("Protected contact").parentElement;
-    expect(sectionNotice).toHaveTextContent("Shown after approval");
+    const sectionNotice = screen.getByText("Private contact").parentElement;
+    expect(sectionNotice).toHaveTextContent("Shared when you choose");
     for (const label of ["Who is this?", "Name of contact", "Phone number", "Email"]) {
-      expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shown after approval");
+      expect(screen.getByLabelText(label).closest("label")).not.toHaveTextContent("Shared when you choose");
     }
     expect(screen.getByLabelText("Country calling code")).toHaveValue("91");
     expect(screen.getByLabelText("Phone number")).toHaveValue("90000 00000");

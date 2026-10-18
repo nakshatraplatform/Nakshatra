@@ -20,7 +20,7 @@ const APPROVED_EXCLUDED_PREFERENCE_KEYS = new Set([
 /**
  * Builds the full blueprint that an authenticated, approved requester may see.
  * Approved contact details are included, while internal notes, legacy photo
- * URLs, credit information, and geographic reference IDs are excluded.
+ * URLs, credit information, exact street address, and geographic reference IDs are excluded.
  */
 export function createApprovedPortfolioSnapshot(data: PortfolioData): PortfolioData {
   const personalName = normalizePortfolioName(data.personal);

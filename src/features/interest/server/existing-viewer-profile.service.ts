@@ -1,7 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { contactSchema, personalSchema, type ContactData, type PersonalData } from "@/types/portfolio";
+import { careerSchema, lifestyleSchema, contactSchema, personalSchema, type ContactData, type PersonalData } from "@/types/portfolio";
+import { findSubdivision } from "@/features/location/subdivisions";
 
 export type ExistingViewerProfile = {
   name: string;
@@ -10,6 +11,12 @@ export type ExistingViewerProfile = {
   country?: string;
   state?: string;
   city?: string;
+  countryCode?: "IN" | "US";
+  subdivisionCode?: string;
+  cityGeonameId?: number;
+  postalCode?: string;
+  profession?: string;
+  coreValues?: string;
 };
 
 const supportedProfileFor = new Set<ExistingViewerProfile["profileFor"]>([
@@ -25,6 +32,10 @@ const reusablePersonalSchema = personalSchema.pick({
   country: true,
   region: true,
   city: true,
+  country_code: true,
+  region_code: true,
+  city_geoname_id: true,
+  postal_code: true,
 }).partial();
 const reusableContactSchema = contactSchema.pick({ phone: true, contacts: true }).partial();
 
@@ -43,10 +54,16 @@ export async function resolveExistingViewerProfile(
   const sources = [data.draft_data, data.published_data];
   let personal: Partial<PersonalData> | null = null;
   let contact: Partial<ContactData> | null = null;
+  let profession: string | undefined;
+  let coreValues: string | undefined;
 
   for (const source of sources) {
     if (!source || typeof source !== "object" || Array.isArray(source)) continue;
     const record = source as Record<string, unknown>;
+    const career = careerSchema.pick({ title: true }).safeParse(record.career);
+    const lifestyle = lifestyleSchema.pick({ values_statement: true }).safeParse(record.lifestyle);
+    if (!profession && career.success) profession = career.data.title;
+    if (!coreValues && lifestyle.success) coreValues = lifestyle.data.values_statement;
     if (!personal) {
       const parsedPersonal = reusablePersonalSchema.safeParse(record.personal);
       if (parsedPersonal.success && parsedPersonal.data.name?.trim()) personal = parsedPersonal.data;
@@ -62,6 +79,10 @@ export async function resolveExistingViewerProfile(
   const firstContact = contact?.contacts?.find((entry) => entry.phone) || contact?.contacts?.[0];
   const requestedProfileFor = personal?.profile_for as ExistingViewerProfile["profileFor"] | undefined;
 
+  const countryCode = personal?.country_code === "IN" || personal?.country_code === "US" ? personal.country_code : undefined;
+  const subdivisionCode = countryCode
+    ? findSubdivision(countryCode, personal?.region_code ?? personal?.region)?.subdivisionCode
+    : undefined;
   return {
     name,
     profileFor: requestedProfileFor && supportedProfileFor.has(requestedProfileFor) ? requestedProfileFor : "self",
@@ -69,5 +90,11 @@ export async function resolveExistingViewerProfile(
     country: personal?.country,
     state: personal?.region,
     city: personal?.city,
+    countryCode,
+    subdivisionCode,
+    cityGeonameId: personal?.city_geoname_id,
+    postalCode: personal?.postal_code,
+    profession,
+    coreValues,
   };
 }

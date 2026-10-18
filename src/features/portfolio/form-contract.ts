@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import { HEIGHT_OPTIONS } from "@/features/portfolio/blueprint-options";
 import { resolvePortfolioNameParts } from "@/features/portfolio/name";
+import { isValidPhoneNumber } from "@/features/portfolio/phone-number";
 import {
   portfolioDataSchema,
   portfolioDraftSchema,
@@ -8,7 +9,7 @@ import {
 } from "@/types/portfolio";
 
 /** Pilot authoring rules. Stored historical snapshots retain the broader read schema. */
-export const NAME_PART_PATTERN = /^[A-Za-z\s'-]+$/;
+export const NAME_PART_PATTERN = /^(?=.*[A-Za-z])[A-Za-z '-]+$/;
 export const NAME_PART_MAX_LENGTH = 50;
 export const NARRATIVE_MIN_LENGTH = 80;
 export const FORM_LIST_LIMITS = { languages: 10, hobbies: 6, values_statement: 5 } as const;
@@ -30,15 +31,21 @@ export function validAdultBirthDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < "1920-01-01") return false;
   const birth = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(birth.getTime()) || birth.toISOString().slice(0, 10) !== value) return false;
-  const latest = new Date();
-  latest.setUTCHours(0, 0, 0, 0);
-  latest.setUTCFullYear(latest.getUTCFullYear() - 18);
-  return birth <= latest;
+  return value <= latestAdultBirthDate();
+}
+
+/** Subtract calendar years without rolling February 29 into March 1. */
+export function latestAdultBirthDate() {
+  const today = new Date();
+  const year = today.getUTCFullYear() - 18;
+  const month = today.getUTCMonth();
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(today.getUTCDate(), lastDay))).toISOString().slice(0, 10);
 }
 
 function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, publishing: boolean) {
   if (publishing && data.privacy_mode === "private") {
-    addIssue(ctx, ["privacy_mode"], "Update this draft to the current public Introduction and review its preview before publishing.");
+    addIssue(ctx, ["privacy_mode"], "Update this draft to the current sharing setup, then confirm publication consent.");
   }
   const nameParts = resolvePortfolioNameParts(data.personal);
   for (const [field, label] of [
@@ -60,6 +67,20 @@ function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, pu
   } else if (publishing && !dob) {
     addIssue(ctx, ["personal", "dob"], "Date of birth is required.");
   }
+
+  const birthTime = data.astrology?.time_of_birth;
+  if (birthTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) {
+    addIssue(ctx, ["astrology", "time_of_birth"], "Enter a valid time from 00:00 to 23:59, or leave it blank.");
+  }
+  const validatePhone = (phone: string | undefined, path: (string | number)[]) => {
+    if (phone?.trim() && !isValidPhoneNumber(phone)) {
+      addIssue(ctx, path, "Enter a valid phone number with 7–20 digits, or leave it blank.");
+    }
+  };
+  validatePhone(data.contact?.phone, ["contact", "phone"]);
+  data.contact?.contacts?.forEach((contact, index) => {
+    validatePhone(contact.phone, ["contact", "contacts", index, "phone"]);
+  });
 
   if (publishing) {
     for (const [path, value, label] of [
