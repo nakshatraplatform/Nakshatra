@@ -1,7 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { useBookshelfMotion } from "./useBookshelfMotion";
+import shelf from "./GuidedTour.module.css";
 import {
   BadgeCheck,
   Check,
@@ -49,75 +50,91 @@ const tourSteps = [
 ] as const;
 
 export function GuidedTour() {
-  const [activeStep, setActiveStep] = useState("01");
+  const root = useRef<HTMLElement>(null);
+  const [activeStep, setActiveStep] = useState(-1);
+  const [enhanced, setEnhanced] = useState(false);
+  const navigate = useBookshelfMotion(root, setActiveStep, setEnhanced);
 
-  useEffect(() => {
-    if (!("IntersectionObserver" in window)) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-        const step = visible[0]?.target.getAttribute("data-tour-step");
-        if (step) setActiveStep(step);
-      },
-      { rootMargin: "-16% 0px -56%", threshold: [0, 0.2, 0.55] }
-    );
-
-    for (const step of tourSteps) {
-      const element = document.getElementById(`tour-step-${step.number}`);
-      if (element) observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  function selectStep(event: React.MouseEvent<HTMLAnchorElement>, index: number) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (!navigate.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    navigate.current(index);
+  }
 
   return (
-    <section id="how" className={styles.guidedTour}>
-      <div className={styles.guidedTourInner}>
-        <div className={styles.guidedTourIntro}>
-          <p className={styles.eyebrow}>A guided tour</p>
-          <h2>How VivIntro works</h2>
-          <p>Create. Share. You decide. No app needed.</p>
-          <p className={styles.tourExampleNote}>Illustrations below use fictional details.</p>
-          <nav className={styles.tourNavigation} aria-label="Guided tour steps">
-            {tourSteps.map((step) => (
-              <a
-                key={step.number}
-                href={`#tour-step-${step.number}`}
-                aria-current={activeStep === step.number ? "step" : undefined}
-                onClick={() => setActiveStep(step.number)}
-              >
-                <span>{step.number}</span>
-                <strong>{step.label}</strong>
-              </a>
-            ))}
-          </nav>
-        </div>
+    <section ref={root} id="how" className={shelf.tour} aria-labelledby="tour-heading">
+      {tourSteps.map((step) => (
+        <span key={step.number} id={enhanced ? `tour-step-${step.number}` : undefined} className={shelf.anchor} data-shelf-anchor aria-hidden="true" />
+      ))}
+      <div className={shelf.scene} data-shelf-scene>
+        <header className={shelf.intro}>
+          <h2 id="tour-heading">How <span className={shelf.wordmark}><span className={shelf.wordmarkText}>VivIntro</span></span> works</h2>
+          <p>One introduction. Four simple steps.</p>
+        </header>
 
-        <div className={styles.tourStack}>
+        <div className={shelf.stage} data-shelf-stage>
+          <div className={shelf.ledge} aria-hidden="true" />
           {tourSteps.map((step, index) => {
             const Icon = step.icon;
             return (
               <article
                 key={step.number}
-                id={`tour-step-${step.number}`}
+                id={enhanced ? undefined : `tour-step-${step.number}`}
                 data-tour-step={step.number}
-                className={styles.tourCard}
-                style={{ "--tour-index": index } as CSSProperties}
+                data-shelf-book
+                data-active={activeStep === index ? "true" : undefined}
+                className={shelf.book}
               >
-                <div className={styles.tourCardCopy}>
-                  <div className={styles.tourCardLabel}><Icon aria-hidden="true" /><span>Step {step.number} · {step.label}</span></div>
+                <div className={shelf.paper} data-shelf-paper aria-hidden={enhanced && activeStep !== index ? true : undefined}>
+                  <span className={shelf.chapter}>Step {step.number} · {step.label}</span>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
                   <ul>{step.points.map((point) => <li key={point}><Check aria-hidden="true" />{point}</li>)}</ul>
+                  <span className={shelf.pageNumber} aria-hidden="true">{step.number} / 04</span>
                 </div>
-                <TourVisual step={step.number} />
+                <div className={shelf.cover} data-shelf-cover>
+                  <a
+                    className={shelf.coverFront}
+                    href={`#tour-step-${step.number}`}
+                    onClick={(event) => selectStep(event, index)}
+                    tabIndex={enhanced && activeStep === -1 ? 0 : -1}
+                    aria-hidden={enhanced && activeStep >= 0 ? true : undefined}
+                    aria-label={`Open step ${step.number}: ${step.label}`}
+                  >
+                    <span className={`${shelf.wordmark} ${shelf.coverBrand}`}><span className={shelf.wordmarkText}>VivIntro</span></span>
+                    <Icon aria-hidden="true" />
+                    <strong>{step.label}</strong>
+                    <span className={shelf.coverNumber}>{step.number}</span>
+                  </a>
+                  <div className={shelf.coverInside} aria-hidden="true">
+                    <TourVisual step={step.number} />
+                    <small>Illustration with fictional details</small>
+                  </div>
+                </div>
+                <div className={shelf.spine} aria-hidden="true"><span>{step.label}</span></div>
+                <div className={shelf.pageEdge} aria-hidden="true" />
+                <div className={shelf.staticVisual}><TourVisual step={step.number} /></div>
               </article>
             );
           })}
         </div>
+
+        <footer className={shelf.footer}>
+          <nav className={shelf.navigation} aria-label="Guided tour steps">
+            {tourSteps.map((step, index) => (
+              <a key={step.number} href={`#tour-step-${step.number}`} onClick={(event) => selectStep(event, index)} aria-current={activeStep === index ? "step" : undefined}>
+                <span>{step.number}</span><strong>{step.label}</strong>
+              </a>
+            ))}
+          </nav>
+          <div className={shelf.footerNotes}>
+            <p className={shelf.scrollHint}>Scroll to open each step, or choose a book.</p>
+            <p>Illustrations use fictional details.</p>
+            <a href="#viewer" className={shelf.skip}>Continue past the tour <span aria-hidden="true">↓</span></a>
+          </div>
+        </footer>
       </div>
     </section>
   );

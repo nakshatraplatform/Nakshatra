@@ -67,14 +67,12 @@ test("inverse demo and landing examples retain readable text in both themes", as
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
-    const approval = page.locator('[data-visual="approve"]').getByText("Share details", { exact: true });
-    // The established compact layout omits decorative tour illustrations.
-    // Retain the same contrast threshold, including their computed mobile tokens.
-    if (await page.evaluate(() => matchMedia("(max-width: 620px)").matches)) {
-      await expect(approval).toBeHidden();
-    } else {
-      await expect(approval).toBeVisible();
-    }
+    await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
+    // The opened cover and the static mobile fallback share one illustration.
+    // Measure the visible copy rather than the hidden alternate rendering.
+    const approval = page.locator('[data-tour-step="04"] [data-visual="approve"]:visible').getByText("Share details", { exact: true });
+    await expect(approval).toHaveCount(1);
+    await expect(approval).toBeVisible();
     expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
     await page.goto("/demo");
     expect(await contrast(page.getByText("Fictional sample introduction", { exact: true }))).toBeGreaterThanOrEqual(4.5);
