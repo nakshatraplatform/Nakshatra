@@ -56,6 +56,8 @@ describe("production database workflow", () => {
 
   it.each([false, true])("does not select production steps from a feature branch (confirmed=%s)", (confirmed) => {
     expect(selectedSteps("refs/heads/fix/test", confirmed)).toEqual([]);
+    expect(selectedSteps("refs/heads/development", confirmed)).toEqual([]);
+    expect(selectedSteps("refs/tags/main", confirmed)).toEqual([]);
   });
 
   it("retains manual dispatch, serialized production execution, and the dispatch revision", () => {

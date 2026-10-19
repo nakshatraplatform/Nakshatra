@@ -10,6 +10,16 @@ const bash = process.platform === "win32"
   : "/bin/bash";
 
 describe("split CI validation", () => {
+  it("validates both release branches without receiving live Supabase credentials", () => {
+    expect(workflow).toMatch(/pull_request:\n    branches: \[main, development\]/);
+    expect(workflow).toMatch(/push:\n    branches: \[main, development\]/);
+    expect(job("quality")).not.toContain("secrets.");
+    expect(job("quality")).toContain("NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321");
+    expect(job("quality")).toContain("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-only-publishable-key");
+    const secretScan = readFileSync(new URL("../.github/workflows/secret-scan.yml", import.meta.url), "utf8");
+    expect(secretScan).toMatch(/pull_request:\n    branches: \[main, development\]/);
+  });
+
   it("retains all quality checks and separates browser execution", () => {
     for (const command of ["npm ci", "npm run security:audit", "npm run lint", "npm run typecheck", "npm run test:unit:coverage", "npm run build"]) {
       expect(job("quality")).toContain(`run: ${command}`);

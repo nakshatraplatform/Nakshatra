@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-85 environment separation](features/nak-85-development-environment.md):
+  main stays production and development becomes the testing integration branch.
+  Bootstrap CI and guarded development migration configuration are prepared;
+  separate Supabase/Vercel settings and administrative protections remain pending.
+
 - [Accessible account entry](features/auth-accessibility-feedback.md): concise
   signup guidance, same-route recovery focus, field-associated password/code
   errors, truthful recovery advice and quiet background liveness reads. Isolated

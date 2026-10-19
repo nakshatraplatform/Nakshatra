@@ -138,12 +138,22 @@ for rule mapping, verification and future upgrade requirements.
 
 ## Production releases
 
+`main` is production; `development` is the integration/testing branch. Feature PRs
+target development, then explicitly owner-authorized releases use PRs into main.
+Only `NagarjunMa` is to merge/release production changes; administrator-enforced
+main access restrictions remain required. Each hosted environment
+must use its own Supabase project and credentials. See
+[environment setup and release flow](docs/operations/environments.md) for the
+bootstrap sequence, pending external configuration and activation checks.
+
 Vercel's GitHub integration owns application builds and deployments. The GitHub
 `Production Database Deployment` workflow previews or applies Supabase migrations;
 it does not need `VERCEL_TOKEN`,
 `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID`.
 
-- CI runs on pull requests targeting `main` and pushes to `main`. Its database
+- CI runs on pull requests targeting `main` or `development` and pushes to either.
+  Quality/build CI uses fake loopback Supabase configuration, never live keys; its
+  artifacts are not deployable releases. Its database
   job replays migrations in a disposable local Supabase database and runs pgTAP.
 - After the selected main revision passes CI, manually dispatch
   `Production Database Deployment` on `main` with `confirm_production` unchecked
