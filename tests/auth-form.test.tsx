@@ -129,6 +129,25 @@ describe("AuthForm", () => {
     expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
   });
 
+  it("keeps signup provider pending and error states on the outlined Google button", async () => {
+    let finish!: (value: { ok: boolean; body: { error: string } }) => void;
+    startAuthentication.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    render(<AuthForm mode="signup" />);
+    const button = screen.getByRole("button", { name: "Sign up with Google" });
+    expect(button).toHaveAttribute("type", "button");
+    expect(screen.queryByRole("button", { name: /Twitch|Twitter/i })).not.toBeInTheDocument();
+    await userEvent.click(button);
+    expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/dashboard" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
+    finish({ ok: false, body: { error: "Google is temporarily unavailable. Try again." } });
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(screen.getByRole("alert")).toHaveTextContent("Google is temporarily unavailable");
+    expect(button).toHaveTextContent("Sign up with Google");
+    expect(continueToAuthProvider).not.toHaveBeenCalled();
+  });
+
   it("reuses the auth design with clear BrokerDesk continuation copy", () => {
     searchParams.get.mockImplementation((key: string) => key === "redirect" ? "/brokerdesk/onboarding" : null);
     render(<AuthForm mode="signup" />);

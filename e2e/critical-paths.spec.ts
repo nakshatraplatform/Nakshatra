@@ -10,7 +10,7 @@ test("landing page presents the product and reaches open account creation", asyn
   await expect(page).toHaveURL(/\/signup$/);
   await expect(page.getByRole("heading", { name: /create your account/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Sign up with Google" })).toBeEnabled();
 });
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {

@@ -5,49 +5,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const animation = vi.hoisted(() => ({
-  play: vi.fn(),
-  pause: vi.fn(),
-  kill: vi.fn(),
-}));
-const gsap = vi.hoisted(() => ({
-  registerPlugin: vi.fn(),
-  set: vi.fn(),
-  to: vi.fn((_target: unknown, options?: { onComplete?: () => void }) => {
-    options?.onComplete?.();
-    return animation;
-  }),
-  from: vi.fn(() => animation),
-  killTweensOf: vi.fn(),
-  timeline: vi.fn(() => ({ to: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), kill: vi.fn() })),
-  matchMedia: vi.fn(() => ({
-    add: vi.fn((_query: unknown, callback: () => void) => callback()),
-    revert: vi.fn(),
-  })),
-  utils: { toArray: vi.fn(() => [document.createElement("div")]) },
-}));
-const trigger = vi.hoisted(() => ({ kill: vi.fn() }));
-const scrollTrigger = vi.hoisted(() => ({
-  batch: vi.fn((_items: unknown[], options: { onEnter?: (items: unknown[]) => void; onLeaveBack?: (items: unknown[]) => void }) => {
-    options.onEnter?.([]);
-    options.onLeaveBack?.([]);
-  }),
-  create: vi.fn((options: { onEnter?: () => void; onLeaveBack?: () => void }) => {
-    options.onEnter?.();
-    options.onLeaveBack?.();
-    return trigger;
-  }),
-}));
-
-vi.mock("gsap", () => ({ default: gsap }));
-vi.mock("gsap/ScrollTrigger", () => ({ ScrollTrigger: scrollTrigger }));
-vi.mock("@gsap/react", async () => {
-  const ReactModule = await import("react");
-  return {
-    useGSAP: (callback: () => void | (() => void), config?: { dependencies?: unknown[] }) =>
-      ReactModule.useEffect(callback, config?.dependencies ?? []),
-  };
-});
+// Use the shared matchMedia fixture for the static fallback; real animation
+// lifecycle and scroll behavior are exercised in the browser suites.
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean; fill?: boolean }) => {
     const imageProps = { ...props };

@@ -15,7 +15,7 @@ test("published creator can understand sharing, requests, and Complete access", 
     if (width === 375 || width === 1024 || width === 1440) {
       await page.screenshot({ path: testInfo.outputPath(`published-${width}-light.png`), fullPage: true, animations: "disabled" });
     }
-    await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     if (width === 375 || width === 1440) {
       await page.screenshot({ path: testInfo.outputPath(`published-${width}-dark.png`), fullPage: true, animations: "disabled" });

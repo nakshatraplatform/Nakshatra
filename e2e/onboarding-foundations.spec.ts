@@ -15,7 +15,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       });
       await page.goto("/dashboard?edit=1");
       const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
-      if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+      if (theme === "dark") await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
       const chooseSection = async (section: string, desktopLabel: RegExp) => {
         if (width < 1024) await editor.getByLabel("Go to introduction section").selectOption(section);
         else await editor.locator("aside").getByRole("button", { name: desktopLabel }).click();

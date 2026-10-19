@@ -66,15 +66,18 @@ test("standalone and unavailable actions retain contrast on focus and hover", as
 test("inverse demo and landing examples retain readable text in both themes", async ({ page }) => {
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
-    const approval = page.locator('[data-visual="approve"]').getByText("Share details", { exact: true });
-    // The established compact layout omits decorative tour illustrations.
-    // Retain the same contrast threshold, including their computed mobile tokens.
-    if (await page.evaluate(() => matchMedia("(max-width: 620px)").matches)) {
-      await expect(approval).toBeHidden();
-    } else {
-      await expect(approval).toBeVisible();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
+    // Wait for the desktop shelf to replace its static fallback before clicking.
+    if (await page.evaluate(() => matchMedia("(min-width: 860px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)").matches)) {
+      await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
     }
+    await page.evaluate(() => document.fonts.ready);
+    await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
+    // The opened cover and the static mobile fallback share one illustration.
+    // Measure the visible copy rather than the hidden alternate rendering.
+    const approval = page.locator('[data-tour-step="04"] [data-visual="approve"]:visible').getByText("Share details", { exact: true });
+    await expect(approval).toHaveCount(1);
+    await expect(approval).toBeVisible();
     expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
     await page.goto("/demo");
     expect(await contrast(page.getByText("Fictional sample introduction", { exact: true }))).toBeGreaterThanOrEqual(4.5);
@@ -86,7 +89,7 @@ test("approved horoscope navigation remains legible on focus and hover", async (
   await context.addCookies([approvedViewerCookie]);
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await page.goto("/p/e2e-portfolio-token/horoscope");
     await expect(page.getByRole("heading", { name: /Original horoscope/ })).toBeVisible();
     const back = page.getByRole("link", { name: "Back to portfolio" });
@@ -115,7 +118,7 @@ test("theme switches preserve link contrast on the first changed frame", async (
         resolve({ ink: getComputedStyle(link).color, background: getComputedStyle(document.body).backgroundColor });
       });
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-app-theme"] });
-      document.querySelector<HTMLButtonElement>(`button[aria-label="Switch to ${desired === "dark" ? "Dark" : "Light"} theme"]`)!.click();
+      document.querySelector<HTMLButtonElement>('button[role="switch"][aria-label="Dark mode"]')!.click();
     }), theme);
     const luminance = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => {
       const c = value / 255;

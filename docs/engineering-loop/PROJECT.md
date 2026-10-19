@@ -52,6 +52,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [Landing bookshelf and signup button](features/landing-bookshelf.md): four full-viewport, scroll-driven 3D books with direct/keyboard chapter access and static small-screen/reduced-motion/no-JavaScript fallbacks; compact outlined Google signup button. Local implementation and evidence are recorded in the feature; no provider or deployment change.
+
 - [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
 
 - [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
@@ -154,3 +156,5 @@ cleanup, server-only protected signing, durable email retry fences and dormant
 maintenance/health scheduling require coordinated migration/application rollout.
 Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
+
+- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The shared theme control now uses a sun/moon slider before the avatar; My brokers navigation is deferred.

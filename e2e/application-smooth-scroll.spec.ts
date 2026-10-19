@@ -24,9 +24,9 @@ test("wheel, keyboard, anchors and browser back remain usable", async ({ page })
   await page.keyboard.press("PageDown");
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(50);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.locator('a[href="#tour-step-01"]').click();
+  await page.getByRole('navigation', { name: 'Guided tour steps' }).getByRole('link', { name: /^01/ }).click();
   await expect(page).toHaveURL(/#tour-step-01$/);
-  await expect(page.locator("#tour-step-01")).toBeInViewport();
+  await expect(page.locator('[data-tour-step="01"] h3')).toBeInViewport();
   // A fresh path exercises native back restoration, rather than the hash history entry.
   await page.goto("/privacy");
   await expect(page.locator("html")).toHaveClass(/\blenis\b/);
@@ -69,8 +69,8 @@ test("reduced motion tracks wheel without an animated tail and keeps anchors", a
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   expect(await page.evaluate(() => scrollY)).toBe(settled);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.locator('a[href="#tour-step-01"]').click();
-  await expect(page.locator("#tour-step-01")).toBeInViewport();
+  await page.getByRole('navigation', { name: 'Guided tour steps' }).getByRole('link', { name: /^01/ }).click();
+  await expect(page.locator('[data-tour-step="01"] h3')).toBeInViewport();
 });
 
 test("keyboard End interrupts pending wheel momentum and reduced motion changes live", async ({ page }) => {

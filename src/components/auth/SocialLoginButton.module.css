@@ -1,0 +1,6 @@
+.group { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; max-width: 15rem; margin-inline: auto; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: 44px; border: 1px solid var(--workspace-border); border-radius: 6px; padding: 0.6rem 0.8rem; background: var(--workspace-surface); color: var(--workspace-ink); font: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+.button svg { flex: none; width: 20px; height: 20px; }
+.button:hover:not(:disabled) { background: var(--workspace-surface-muted); }
+.button:focus-visible { outline: 3px solid var(--workspace-teal); outline-offset: 3px; }
+.button:disabled { opacity: 0.55; cursor: not-allowed; }
