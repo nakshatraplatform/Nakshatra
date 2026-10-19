@@ -123,8 +123,14 @@ application code does not undo database migrations; use forward compatible fixes
   Initial build was blocked by an external node_modules symlink in the isolated
   worktree; replacing it with an APFS-cloned dependency copy resolved that local
   setup limitation without changing application code.
-- Fresh review is required before PR handoff; the report and PR milestone belong
-  in NAK-85. Hosted CI remains pending until the PR runs. Database replay, browser
+- Fresh-context independent review completed at code commit `20bc76a`, snapshot
+  `11d3962d80234ee062afa8be1cdf679693967e74467b7b1f0de0f29ff8f77d85`,
+  with no material findings. Reviewer independently passed the 49 focused checks,
+  additional guard boundary cases, CLI option verification, unchanged production
+  file comparison, whitespace and provenance checks. Exact reviewer model was
+  unavailable; this was fresh-context review, not a claimed cross-model review.
+  This subsequent edit records evidence only. PR milestone belongs in NAK-85.
+  Hosted CI remains pending until the PR runs. Database replay, browser
   suites and real-provider tests were not rerun locally for this config-only
   increment; existing required CI jobs are preserved, with live activation still
   blocked on separate resources. Graphify command/graph are unavailable here.
