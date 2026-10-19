@@ -167,7 +167,12 @@ If an issue appears to belong to Aletheia, PrismPro, or another unrelated projec
 
 ## Git Branch Naming
 
-All branches created or pushed for this repository must use a conventional,
+The long-lived integration branches are `main` (production) and `development`
+(testing), as explicitly selected by the user. Feature PRs target `development`;
+tested releases target `main`. Environment setup is documented in
+`docs/operations/environments.md`; branch names alone do not isolate databases.
+
+All other branches created or pushed for this repository must use a conventional,
 purpose-based prefix. Do not use agent, tool, person, or vendor prefixes such
 as `codex/`.
 

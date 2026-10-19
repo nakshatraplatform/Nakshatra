@@ -1,0 +1,79 @@
+name: Development Database Deployment
+run-name: "${{ inputs.confirm_development && 'Apply' || 'Preview' }} development database migrations"
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_development:
+        description: Apply pending development migrations (unchecked = preview only)
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: cd-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-development:
+    if: github.ref == 'refs/heads/development'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: development
+    env:
+      DEVELOPMENT_DATABASE_ENABLED: ${{ vars.DEVELOPMENT_DATABASE_ENABLED }}
+      EXPECTED_DEVELOPMENT_PROJECT_REF: ${{ vars.DEVELOPMENT_SUPABASE_PROJECT_REF }}
+
+    steps:
+      - name: Checkout dispatch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Validate isolated development target
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.DEVELOPMENT_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.DEVELOPMENT_SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.DEVELOPMENT_SUPABASE_DB_PASSWORD }}
+        run: node scripts/check-development-database-target.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Link approved development project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.DEVELOPMENT_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.DEVELOPMENT_SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.DEVELOPMENT_SUPABASE_DB_PASSWORD }}
+        run: npx supabase link --project-ref="$SUPABASE_PROJECT_REF" --password="$SUPABASE_DB_PASSWORD"
+
+      - name: Preview development migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.DEVELOPMENT_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.DEVELOPMENT_SUPABASE_DB_PASSWORD }}
+        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD" --dry-run --skip-vault
+
+      - name: Apply development migrations
+        if: ${{ inputs.confirm_development }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.DEVELOPMENT_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.DEVELOPMENT_SUPABASE_DB_PASSWORD }}
+        run: npx supabase db push --linked --password="$SUPABASE_DB_PASSWORD" --skip-vault --yes
+
+      - name: Verify development migration history
+        if: ${{ inputs.confirm_development }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.DEVELOPMENT_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.DEVELOPMENT_SUPABASE_DB_PASSWORD }}
+        run: |
+          npx supabase migration list --linked --password="$SUPABASE_DB_PASSWORD" --output-format json > "$RUNNER_TEMP/development-migration-history.json"
+          node scripts/verify-migration-history.mjs "$RUNNER_TEMP/development-migration-history.json"

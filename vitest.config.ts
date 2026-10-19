@@ -25,6 +25,7 @@ export default defineConfig({
         "scripts/account-deletion-worker.mjs",
         "scripts/candidate-liveness-email-worker.mjs",
         "scripts/check-database-types.mjs",
+        "scripts/check-development-database-target.mjs",
         "scripts/check-feature-coverage.mjs",
         "scripts/deleted-provider-cleanup.mjs",
         "scripts/identity-verification-worker.mjs",
