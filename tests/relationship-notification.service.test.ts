@@ -44,7 +44,7 @@ describe("relationship notification delivery", () => {
     };
 
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
-    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
+    expect(sendResendEmail.mock.calls[0][0]).toEqual(expect.objectContaining({
       to: "viewer@example.com",
       subject: "Private details shared with you",
       text: expect.stringContaining(`https://vivintro.test/access/${grantId}`),
@@ -89,7 +89,7 @@ describe("relationship notification delivery", () => {
 
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
     expect(from).not.toHaveBeenCalled();
-    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
+    expect(sendResendEmail.mock.calls[0][0]).toEqual(expect.objectContaining({
       to: "viewer@example.com",
       subject,
       text: expect.stringContaining(copy),
@@ -192,7 +192,7 @@ describe("relationship notification delivery", () => {
     };
 
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 1, sent: 1, failed: 0, skipped: 0 });
-    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject, text: expect.stringContaining(copy) }));
+    expect(sendResendEmail.mock.calls[0][0]).toEqual(expect.objectContaining({ subject, text: expect.stringContaining(copy) }));
   });
 
   it("records a retryable failure when recipient or grant data is unavailable", async () => {

@@ -49,7 +49,7 @@ jobs:
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'Production maintenance needs attention in:title' --json number,title --jq 'map(select(.title == "[Operational Alert] Production maintenance needs attention")) | first | .number // empty')"
           if [[ -z "$existing" ]]; then
             body_file="$(mktemp)"
-            printf 'Production maintenance health failed or could not be reached. This can indicate missed runs, deferred cleanup, or old/held notification work. No user or provider identifiers are included. Inspect protected health and run evidence: %s\n' "$RUN_URL" > "$body_file"
+            printf 'Production maintenance health failed or could not be reached. This can indicate missed runs, deferred cleanup, or old/held notification work, delivery deferrals, quota warnings, bounces or complaints. No user or provider identifiers are included. Inspect protected health and run evidence: %s\n' "$RUN_URL" > "$body_file"
             args=()
             if [[ -n "$ALERT_ASSIGNEE" ]]; then args+=(--assignee "$ALERT_ASSIGNEE"); fi
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body_file" "${args[@]}"

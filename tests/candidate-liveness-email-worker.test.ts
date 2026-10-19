@@ -49,3 +49,14 @@ describe("durable liveness confirmation dispatch", () => {
     await expect(processCandidateLivenessEmails(supabase, { send: vi.fn().mockResolvedValue({ status: "accepted", providerMessageId }) })).rejects.toThrow("LIVENESS_EMAIL_COMPLETION_FAILED");
   });
 });
+it("the isolated worker default cannot bypass recipient suppression", async () => {
+  vi.stubEnv("RESEND_API_KEY", "synthetic-key"); vi.stubEnv("RESEND_FROM_EMAIL", "notifications@example.test");
+  vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "synthetic-independent-key-32-characters");
+  const supabase = { rpc: vi.fn().mockResolvedValueOnce({ data: [delivery], error: null })
+    .mockResolvedValueOnce({ data: { status: "suppressed" }, error: null }).mockResolvedValueOnce({ data: true, error: null }) };
+  const transport = vi.fn(); vi.stubGlobal("fetch", transport);
+  expect(await processCandidateLivenessEmails(supabase)).toEqual({ accepted: 0, failed: 1 });
+  expect(transport).not.toHaveBeenCalled();
+  expect(supabase.rpc).toHaveBeenLastCalledWith("complete_candidate_liveness_email", expect.objectContaining({ p_error_code: "EMAIL_RECIPIENT_SUPPRESSED", p_retryable: false }));
+  vi.unstubAllEnvs(); vi.unstubAllGlobals();
+});

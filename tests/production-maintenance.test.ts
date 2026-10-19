@@ -16,6 +16,9 @@ import { POST } from "@/app/api/internal/production-maintenance/route";
 const secret = "x".repeat(32);
 const request = () => new Request("https://app.test/internal", { headers: { authorization: `Bearer ${secret}` } });
 beforeEach(() => {
+  vi.stubEnv("RESEND_API_KEY", "synthetic-key"); vi.stubEnv("RESEND_FROM_EMAIL", "notifications@example.test");
+  vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "synthetic-independent-32-plus-character-key");
+  vi.stubEnv("RESEND_WEBHOOK_SECRET", "whsec_c3ludGhldGljLWtleS1mb3ItdGVzdHM=");
   vi.clearAllMocks(); vi.stubEnv("PRODUCTION_WORKER_ENABLED", "true"); vi.stubEnv("PRODUCTION_WORKER_SECRET", secret);
   mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : name === "enqueue_due_full_view_expiry_reminders" ? 0 : true, error: null }));
   mocks.retention.mockReset().mockResolvedValue(true); mocks.horoscopeCleanup.mockReset().mockResolvedValue({ deferred: 0 });
@@ -158,4 +161,29 @@ describe("production maintenance", () => {
     mocks.rpc.mockResolvedValue({ data: { healthy: true }, error: null });
     expect((await GET(request())).status).toBe(200);
   });
+});
+it("aggregates signed delivery health and conceals missing configuration", async () => {
+  mocks.rpc.mockResolvedValue({ data: { healthy: true }, error: null });
+  expect((await GET(request())).status).toBe(200);
+  expect(mocks.rpc).toHaveBeenCalledWith("email_delivery_health", { p_daily_limit: 100, p_monthly_limit: 3000 });
+  vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "");
+  expect((await GET(request())).status).toBe(503);
+});
+it.each(["0", "-1", "NaN", "1000000000"])("refuses malformed mail quota configuration %s", async value => {
+  vi.stubEnv("RESEND_DAILY_EMAIL_LIMIT", value);
+  await expect(productionHealth()).rejects.toThrow("HEALTH_UNAVAILABLE");
+  vi.unstubAllEnvs();
+});
+it("uses configured application budgets and exposes email health failures", async () => {
+  vi.stubEnv("RESEND_DAILY_EMAIL_LIMIT", "500"); vi.stubEnv("RESEND_MONTHLY_EMAIL_LIMIT", "10000");
+  mocks.rpc.mockImplementation(async (name: string) => ({ data: { healthy: name !== "email_delivery_health" }, error: null }));
+  expect((await GET(request())).status).toBe(503);
+  expect(mocks.rpc).toHaveBeenCalledWith("email_delivery_health", { p_daily_limit: 500, p_monthly_limit: 10000 });
+  vi.unstubAllEnvs();
+});
+it("isolates email retention failure while still running proof and mail tasks", async () => {
+  mocks.rpc.mockImplementation(async (name: string) => ({ data: name === "begin_production_maintenance" ? "lease" : name === "enqueue_due_full_view_expiry_reminders" ? 0 : name !== "run_email_delivery_retention", error: null }));
+  const batch = await runProductionMaintenance();
+  expect(batch.tasks?.emailRetention).toBe("deferred"); expect(batch.failed).toBe(true);
+  expect(mocks.email).toHaveBeenCalledOnce(); expect(mocks.relationship).toHaveBeenCalledOnce();
 });

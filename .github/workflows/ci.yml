@@ -172,6 +172,9 @@ jobs:
       - name: Run database tests
         run: npm run test:db
 
+      - name: Verify signed email webhooks and suppression over local HTTP
+        run: npm run test:email:local
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

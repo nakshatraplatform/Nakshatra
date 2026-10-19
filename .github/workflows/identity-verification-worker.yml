@@ -64,6 +64,7 @@ jobs:
 
       - name: Process bounded verification batch
         env:
+          EMAIL_RECIPIENT_HMAC_KEY: ${{ secrets.EMAIL_RECIPIENT_HMAC_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
           RESEND_REPLY_TO_EMAIL: ${{ secrets.RESEND_REPLY_TO_EMAIL }}
