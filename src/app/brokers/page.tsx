@@ -1,3 +1,4 @@
+import { loadAccountHeaderProfile } from "@/features/account/server/account-header-profile";
 import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
 import { Suspense } from "react";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
@@ -12,7 +13,7 @@ export const metadata = { title: "My brokers · VivIntro", robots: { index: fals
 
 export default async function CustomerBrokersPage() {
   const { supabase, user } = await getAuthenticatedUser();
-  return <CustomerAppFrame currentPage="brokers" userEmail={user.email} className={styles.shell} loadingTitle="Loading your broker relationships">
+  return <CustomerAppFrame currentPage="brokers" userEmail={user.email} accountProfile={loadAccountHeaderProfile({ supabase, user })} className={styles.shell} loadingTitle="Loading your broker relationships">
     <main id="main-content" tabIndex={-1}>
       <p className={styles.eyebrow}>Privacy controls</p>
       <h1>My brokers</h1>

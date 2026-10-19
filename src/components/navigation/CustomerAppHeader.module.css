@@ -100,3 +100,6 @@
   .mobileNav { display: grid; }
   .chevron { display: none; }
 }
+
+.triggerLabel { max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.identity strong { overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+import { loadAccountHeaderProfile } from "@/features/account/server/account-header-profile";
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { Metadata } from "next";
@@ -24,7 +25,7 @@ export default async function DashboardPage({
 }) {
   const query = await searchParams;
   const session = await getAuthenticatedUser();
-  return <CustomerAppFrame currentPage="dashboard" userEmail={session.user.email}
+  return <CustomerAppFrame currentPage="dashboard" userEmail={session.user.email} accountProfile={loadAccountHeaderProfile(session)}
     className="dashboard-shell flex flex-1 flex-col" loadingTitle="Getting your portfolio and requests ready">
     <DashboardContent session={session} initialEditorOpen={query.edit === "1"} />
   </CustomerAppFrame>;

@@ -19,7 +19,7 @@ export function useBookshelfMotion(
     const element = root.current;
     if (!element) return;
     const media = gsap.matchMedia();
-    media.add("(min-width: 860px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)", () => {
+    media.add("(prefers-reduced-motion: no-preference)", () => {
       const scene = element.querySelector<HTMLElement>("[data-shelf-scene]")!;
       const stage = element.querySelector<HTMLElement>("[data-shelf-stage]")!;
       const books = Array.from(element.querySelectorAll<HTMLElement>("[data-shelf-book]"));
@@ -33,7 +33,8 @@ export function useBookshelfMotion(
       const shelfX = (index: number) => (index - 1.5) * slot();
       const shelfScale = () => Math.min(0.78, slot() / books[0].offsetWidth * 0.86);
       const shelfY = () => Math.max(10, stage.clientHeight * 0.08);
-      gsap.set(books, { xPercent: -50, yPercent: -50, x: shelfX, y: shelfY, scale: shelfScale, rotationY: -24, rotationX: 3 });
+      const restBooks = () => gsap.set(books, { xPercent: -50, yPercent: -50, x: shelfX, y: shelfY, scale: shelfScale, rotationY: -24, rotationX: 3 });
+      restBooks();
       gsap.set(covers, { rotationY: 0 });
       gsap.set(papers, { autoAlpha: 0 });
 
@@ -61,7 +62,7 @@ export function useBookshelfMotion(
         intervals.push({ start: start + 0.7, end: start + 2.85 });
         timeline.set(book, { zIndex: 5 }, start);
         // The book leaves its shelf before its front cover hinges open.
-        timeline.to(book, { x: () => book.offsetWidth * 0.46, y: 0, scale: 1, rotationY: 0, rotationX: 0, duration: 0.85 }, start);
+        timeline.to(book, { x: () => stage.clientWidth < 800 ? 0 : book.offsetWidth * 0.46, y: 0, scale: 1, rotationY: 0, rotationX: 0, duration: 0.85 }, start);
         books.forEach((other, otherIndex) => {
           if (otherIndex === index) return;
           timeline.to(other, {
@@ -81,6 +82,9 @@ export function useBookshelfMotion(
       // Keep real fragment targets in the scrolling document, outside the sticky
       // scene. Native reload/history restoration then lands on the reading pose.
       const positionAnchors = () => {
+        // A refresh at timeline zero does not render a tween. Recalculate the
+        // initial shelf explicitly so desktop offsets cannot survive on phones.
+        if (timeline.time() < 0.5) restBooks();
         gsap.set(anchors, { top: (index: number) => (element.offsetHeight - scene.offsetHeight) * readings[index] / timeline.duration() });
         // Refresh may restore the timeline with callbacks suppressed. Keep the
         // accessible reading state aligned with the rendered page after reload.
@@ -106,6 +110,20 @@ export function useBookshelfMotion(
       };
       let disposed = false;
       let hashFrame = 0;
+      let resizeFrame = 0;
+      let viewportWidth = window.innerWidth;
+      const preserveChapterOnResize = () => {
+        if (window.innerWidth === viewportWidth) return;
+        viewportWidth = window.innerWidth;
+        const index = intervals.findIndex(interval => timeline.time() >= interval.start && timeline.time() <= interval.end);
+        if (index < 0 || !timeline.scrollTrigger?.isActive) return;
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(() => {
+          if (disposed) return;
+          ScrollTrigger.refresh();
+          goToStep(index);
+        });
+      };
       const alignHashAfterLayout = () => {
         cancelAnimationFrame(hashFrame);
         // Wait for React to move fragment IDs from static articles to markers.
@@ -119,6 +137,7 @@ export function useBookshelfMotion(
       };
       window.addEventListener("hashchange", alignHashAfterLayout);
       window.addEventListener("load", alignHashAfterLayout);
+      window.addEventListener("resize", preserveChapterOnResize);
       void document.fonts?.ready.then(() => {
         if (disposed) return;
         ScrollTrigger.refresh();
@@ -128,9 +147,11 @@ export function useBookshelfMotion(
       return () => {
         disposed = true;
         cancelAnimationFrame(hashFrame);
+        cancelAnimationFrame(resizeFrame);
         ScrollTrigger.removeEventListener("refresh", positionAnchors);
         window.removeEventListener("hashchange", alignHashAfterLayout);
         window.removeEventListener("load", alignHashAfterLayout);
+        window.removeEventListener("resize", preserveChapterOnResize);
         navigate.current = null;
         delete element.dataset.bookshelf;
         onEnhanced(false);

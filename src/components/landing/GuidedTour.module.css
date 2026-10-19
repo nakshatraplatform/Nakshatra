@@ -109,3 +109,46 @@
   .paper > p { font-size: 0.88rem; line-height: 1.5; }
   .paper ul { margin-top: 1rem; }
 }
+
+/* Keep the hinged-book sequence on every screen. Narrow books open onto one
+   readable page; the reverse cover swings outside the clipped stage. */
+.tour[data-bookshelf="true"] .scene { overflow: clip; }
+.tour[data-bookshelf="true"] .book { max-height: 100%; }
+.tour[data-bookshelf="true"] .paper { overflow-y: auto; }
+@media (max-width: 859px) {
+  .tour[data-bookshelf="true"] .scene { padding: 12px max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom)); }
+  .tour[data-bookshelf="true"] .intro { padding-block: 8px 12px; }
+  .tour[data-bookshelf="true"] .intro h2 { font-size: clamp(1.4rem, 7vw, 3rem); }
+  .tour[data-bookshelf="true"] .intro p { margin-top: 8px !important; font-size: 0.8rem; }
+  .tour[data-bookshelf="true"] .book { width: min(360px, calc(100% - 24px)); height: min(470px, 100%); }
+  .tour[data-bookshelf="true"] .paper { padding: 20px; }
+  .tour[data-bookshelf="true"] .paper h3 { font-size: 1.8rem; }
+  .tour[data-bookshelf="true"] .paper > p { font-size: 0.9rem; }
+  .tour[data-bookshelf="true"] .pageNumber { position: static; margin-top: 20px; text-align: right; }
+  .tour[data-bookshelf="true"] .footer { gap: 8px; }
+  .tour[data-bookshelf="true"] .navigation { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tour[data-bookshelf="true"] .navigation a { flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 4px; }
+  .tour[data-bookshelf="true"] .navigation strong { font-size: 0.7rem; }
+  .tour[data-bookshelf="true"] .footerNotes { flex-direction: row; gap: 4px 12px; font-size: 0.65rem; }
+  .tour[data-bookshelf="true"] .skip { margin-left: auto; }
+}
+@media (max-height: 699px) {
+  .tour[data-bookshelf="true"] .scene { padding-block: 8px; }
+  .tour[data-bookshelf="true"] .intro { padding-block: 0 8px; }
+  .tour[data-bookshelf="true"] .intro h2 { font-size: clamp(1.4rem, 5vw, 2rem); }
+  .tour[data-bookshelf="true"] .intro p { margin-top: 4px !important; font-size: 0.75rem; }
+  .tour[data-bookshelf="true"] .book { height: 100%; }
+  .tour[data-bookshelf="true"] .paper { padding: 16px; }
+  .tour[data-bookshelf="true"] .paper h3 { font-size: 1.4rem; margin-top: 10px !important; }
+  .tour[data-bookshelf="true"] .paper > p { font-size: 0.85rem; margin-top: 10px !important; }
+  .tour[data-bookshelf="true"] .paper ul { margin-top: 12px; }
+  .tour[data-bookshelf="true"] .pageNumber { position: static; text-align: right; margin-top: 12px; }
+  .tour[data-bookshelf="true"] .footer { gap: 4px; }
+  .tour[data-bookshelf="true"] .footerNotes { gap: 4px 12px; font-size: 0.65rem; }
+  .tour[data-bookshelf="true"] .coverFront { padding: 12px 16px; }
+  .tour[data-bookshelf="true"] .coverBrand { font-size: 0.8rem; }
+  .tour[data-bookshelf="true"] .coverFront > svg { width: 24px; height: 24px; margin-bottom: 8px; }
+  .tour[data-bookshelf="true"] .coverFront > strong { font-size: 1.25rem; }
+  .tour[data-bookshelf="true"] .coverNumber { margin-top: 8px; padding-top: 4px; }
+  .tour[data-bookshelf="true"] .coverInside { overflow: hidden; }
+}

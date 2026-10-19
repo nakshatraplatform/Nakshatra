@@ -5,10 +5,12 @@ import { LoadingOrb } from "@/components/loading/LoadingStatus";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, Settings, UserRound } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, use, useEffect, useRef, useState } from "react";
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import styles from "./CustomerAppHeader.module.css";
+
+import type { AccountProfile } from "@/features/account/profile";
 
 type CustomerPage = "dashboard" | "brokers" | "account";
 
@@ -16,12 +18,11 @@ const destinations = [
   { page: "dashboard", href: "/dashboard", label: "Dashboard" },
 ] as const;
 
-export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: CustomerPage; userEmail?: string }) {
+export function CustomerAppHeader({ currentPage, userEmail, accountProfile }: { currentPage: CustomerPage; userEmail?: string; accountProfile?: Promise<AccountProfile> }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
-  const initials = userEmail?.trim().slice(0, 2).toUpperCase();
 
   function closeMenu() {
     if (menuRef.current) menuRef.current.open = false;
@@ -102,14 +103,12 @@ export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: Cus
             }}
           >
             <summary aria-label="Account menu">
-              <span className={styles.avatar} aria-hidden="true">{initials || <UserRound size={20} />}</span>
-              <span className={styles.triggerLabel}>Your account</span>
+              <Suspense fallback={<AccountIdentity userEmail={userEmail} />}><AccountIdentity profile={accountProfile} userEmail={userEmail} /></Suspense>
               <ChevronDown size={15} className={styles.chevron} aria-hidden="true" />
             </summary>
             <div className={styles.menuPanel}>
               <div className={styles.identity}>
-                <span className={styles.avatar} aria-hidden="true">{initials || <UserRound size={20} />}</span>
-                <div><strong>Your account</strong><p>{userEmail || "Signed in"}</p></div>
+                <Suspense fallback={<AccountIdentity userEmail={userEmail} expanded />}><AccountIdentity profile={accountProfile} userEmail={userEmail} expanded /></Suspense>
               </div>
               <nav className={styles.mobileNav} aria-label="Customer pages mobile">
                 {links(styles.menuLink)}
@@ -127,4 +126,20 @@ export function CustomerAppHeader({ currentPage, userEmail }: { currentPage: Cus
       {signOutError ? <p className={styles.error} role="alert">Could not sign out. Please try again.</p> : null}
     </header>
   );
+}
+
+
+/** Only this small identity region suspends; the account controls stay interactive. */
+function AccountIdentity({ profile, userEmail, expanded = false }: {
+  profile?: Promise<AccountProfile>; userEmail?: string; expanded?: boolean;
+}) {
+  const names = profile ? use(profile) : undefined;
+  const parts = [names?.firstName.trim(), names?.lastName.trim()].filter(Boolean);
+  const displayName = parts.join(" ") || userEmail || "Account";
+  const initials = parts.map(part => Array.from(part!)[0]).join("").toLocaleUpperCase();
+  return <>
+    <span className={styles.avatar} aria-hidden="true">{initials || <UserRound size={20} />}</span>
+    {expanded ? <div><strong>{displayName}</strong><p>{userEmail || "Signed in"}</p></div>
+      : <span className={styles.triggerLabel} title={displayName}>{displayName}</span>}
+  </>;
 }

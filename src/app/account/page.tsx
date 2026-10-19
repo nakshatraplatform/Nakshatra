@@ -1,3 +1,4 @@
+import { loadAccountHeaderProfile } from "@/features/account/server/account-header-profile";
 import type { Metadata } from "next";
 import { getAccountDeletionStatus } from "@/features/account/server/account.service";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -18,7 +19,7 @@ export default async function AccountPage({
 }) {
   const session = await getAuthenticatedUser();
   const query = await searchParams;
-  return <CustomerAppFrame currentPage="account" userEmail={session.user.email}
+  return <CustomerAppFrame currentPage="account" userEmail={session.user.email} accountProfile={loadAccountHeaderProfile(session)}
     className="account-privacy-shell" loadingTitle="Loading your account controls">
     <AccountControls session={session} reauthComplete={query.reauth === "complete"} />
   </CustomerAppFrame>;
