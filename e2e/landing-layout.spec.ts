@@ -107,17 +107,25 @@ test("bookshelf fills the viewport and opens every step by keyboard", async ({ p
   }
 });
 
-test("small and short screens retain the entire tour in normal flow", async ({ page }, testInfo) => {
-  for (const [width, height] of [[320, 812], [390, 844], [1440, 600]] as const) {
+test("small and short screens animate every chapter with readable scrollable pages", async ({ page }, testInfo) => {
+  for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [844, 390], [1440, 600]] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+    await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
     for (const step of ["01", "02", "03", "04"]) {
       await page.locator(`nav[aria-label="Guided tour steps"] a[href="#tour-step-${step}"]`).click();
-      await expect(page.locator(`[data-tour-step="${step}"] h3`)).toBeInViewport();
+      const book = page.locator(`[data-tour-step="${step}"]`);
+      await expect(book).toHaveAttribute("data-active", "true");
+      await expect(book.locator("h3")).toBeInViewport();
+      const paper = book.locator("[data-shelf-paper]");
+      await paper.evaluate(element => { element.scrollTop = element.scrollHeight; });
+      await expect(paper.locator("li").last()).toBeInViewport();
+      const box = await book.boundingBox();
+      expect(box!.width).toBeLessThanOrEqual(width);
+      await paper.evaluate(element => { element.scrollTop = 0; });
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    if (width === 390) await page.screenshot({ path: testInfo.outputPath("bookshelf-mobile-fallback.png") });
+    if (width === 390) await page.screenshot({ path: testInfo.outputPath("bookshelf-mobile-open.png") });
   }
 });
 

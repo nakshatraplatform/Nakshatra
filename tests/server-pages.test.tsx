@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PortfolioData } from "../src/types/portfolio";
 import { resolveServerTree } from "./resolve-server-tree";
@@ -163,14 +163,14 @@ beforeEach(() => {
 describe("authenticated server pages", () => {
   it("loads the authenticated account privacy state", async () => {
     mocks.outcomes.account_deletion_requests = { data: null };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByTestId("account-props")).toHaveTextContent('"userEmail":"user@example.com"');
     expect(screen.getByTestId("account-props")).toHaveTextContent('"initialDeletion":null');
   });
 
   it("keeps navigation but withholds account controls when deletion status is unknown", async () => {
     mocks.outcomes.account_deletion_requests = { data: { status: "unexpected-state" } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
     screen.getByRole("main").focus();
@@ -182,7 +182,8 @@ describe("authenticated server pages", () => {
 
   it("keeps navigation and a safe retry when dashboard reads fail", async () => {
     mocks.loadDashboardView.mockRejectedValueOnce(new Error("private database failure detail"));
-    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     const header = screen.getByRole("banner");
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your dashboard.");
@@ -193,7 +194,7 @@ describe("authenticated server pages", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(mocks.refresh).toHaveBeenCalledOnce();
-    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBe(header);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByTestId("dashboard-props")).toBeInTheDocument();
@@ -202,7 +203,7 @@ describe("authenticated server pages", () => {
   it("passes only the saved self-created name parts to Account settings", async () => {
     mocks.outcomes.portfolios = { data: { draft_data: { personal: { profile_for: "self",
       first_name: "Mary Jane", middle_name: "Anne", last_name: "Rao", address_line_1: "Never serialize this" } } } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     const props = JSON.parse(screen.getByTestId("account-props").textContent || "{}");
     expect(props.initialProfile).toEqual({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" });
     expect(props.profileManagedByPortfolio).toBe(true);
@@ -211,7 +212,7 @@ describe("authenticated server pages", () => {
 
   it("withholds editable account controls when the portfolio name source cannot be read", async () => {
     mocks.outcomes.portfolios = { data: null, error: { message: "private account lookup failure" } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
     expect(screen.queryByTestId("account-props")).not.toBeInTheDocument();
@@ -221,7 +222,7 @@ describe("authenticated server pages", () => {
 
   it("loads an empty dashboard", async () => {
     mocks.outcomes.portfolios = { data: null };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByTestId("dashboard-props")).toHaveTextContent('"shareUrl":null');
   });
 
@@ -236,7 +237,7 @@ describe("authenticated server pages", () => {
     } } };
     mocks.outcomes.portfolio_views = { count: 7 };
     mocks.outcomes.portfolio_media = { data: [{ id: "media-1", media_type: "hero", visibility: "public" }] };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     const props = screen.getByTestId("dashboard-props").textContent ?? "";
     expect(props).toContain('"viewCount":7');
     expect(props).toContain("https://nakshatra.test/p/token");
@@ -246,7 +247,7 @@ describe("authenticated server pages", () => {
   it("opens the canonical dashboard editor from the legacy edit URL", async () => {
     await expect(EditPage()).rejects.toThrow("REDIRECT:/dashboard?edit=1");
     mocks.outcomes.portfolios = { data: portfolio };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }))); });
     expect(screen.getByTestId("dashboard-props")).toHaveTextContent('"initialEditorOpen":true');
   });
 

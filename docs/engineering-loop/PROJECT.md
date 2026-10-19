@@ -52,7 +52,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
-- [Landing bookshelf and signup button](features/landing-bookshelf.md): four full-viewport, scroll-driven 3D books with direct/keyboard chapter access and static small-screen/reduced-motion/no-JavaScript fallbacks; compact outlined Google signup button. Local implementation and evidence are recorded in the feature; no provider or deployment change.
+- [Landing bookshelf and signup button](features/landing-bookshelf.md): four full-viewport, scroll-driven 3D books with direct/keyboard chapter access and animation at every screen size and static reduced-motion/no-JavaScript fallbacks; compact outlined Google signup button. Local implementation and evidence are recorded in the feature; no provider or deployment change.
 
 - [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
 
@@ -157,4 +157,4 @@ maintenance/health scheduling require coordinated migration/application rollout.
 Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
 
-- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The shared theme control now uses a sun/moon slider before the avatar; My brokers navigation is deferred.
+- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The avatar displays the account holder’s explicit first and last name through a streamed identity region. The shared theme control uses a sun/moon slider before the avatar; My brokers navigation is deferred.

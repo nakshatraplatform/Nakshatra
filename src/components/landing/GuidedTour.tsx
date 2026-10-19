@@ -87,7 +87,7 @@ export function GuidedTour() {
                 data-active={activeStep === index ? "true" : undefined}
                 className={shelf.book}
               >
-                <div className={shelf.paper} data-shelf-paper aria-hidden={enhanced && activeStep !== index ? true : undefined}>
+                <div className={shelf.paper} data-shelf-paper data-native-scroll aria-hidden={enhanced && activeStep !== index ? true : undefined}>
                   <span className={shelf.chapter}>Step {step.number} · {step.label}</span>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>

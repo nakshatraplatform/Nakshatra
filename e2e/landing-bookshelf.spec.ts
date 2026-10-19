@@ -48,7 +48,8 @@ test("direct step links survive reload and motion preference changes", async ({ 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+  await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+  await expect(book).toHaveAttribute("data-active", "true");
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
   await expect(book).toHaveAttribute("data-active", "true");
@@ -78,4 +79,43 @@ test.describe("without JavaScript", () => {
       await expect(page.locator(`#tour-step-${step} h3`)).toBeInViewport();
     }
   });
+});
+
+
+test("touch scrolling opens and reverses the mobile bookshelf", async ({ page, context, isMobile }) => {
+  test.skip(!isMobile, "Touch gesture coverage runs on touch projects.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#tour-step-01");
+  const first = page.locator('[data-tour-step="01"]');
+  const second = page.locator('[data-tour-step="02"]');
+  await expect(first).toHaveAttribute("data-active", "true");
+  const distance = await page.evaluate(() => {
+    const anchors = document.querySelectorAll("[data-shelf-anchor]");
+    return anchors[1].getBoundingClientRect().top - anchors[0].getBoundingClientRect().top;
+  });
+  const input = await context.newCDPSession(page);
+  // Touch outside the paper scrolls the document; overflowing paper has its own
+  // native reading scroll, then chains back to the tour at the page boundary.
+  await input.send("Input.synthesizeScrollGesture", { x: 8, y: 600, yDistance: -distance, speed: 1200, gestureSourceType: "touch" });
+  await expect(second).toHaveAttribute("data-active", "true");
+  await expect(second.locator("h3")).toBeInViewport();
+  await expect(second.locator("[data-shelf-cover]")).not.toHaveCSS("transform", "none");
+  await input.send("Input.synthesizeScrollGesture", { x: 8, y: 200, yDistance: distance, speed: 1200, gestureSourceType: "touch" });
+  await expect(first).toHaveAttribute("data-active", "true");
+  await page.getByRole("link", { name: "Continue past the tour" }).click();
+  await expect(page.locator("#viewer h2")).toBeInViewport();
+});
+
+test("the closed shelf fits after resizing from desktop to phone", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+  await page.evaluate(() => window.scrollTo(0, document.querySelector("#how")!.getBoundingClientRect().top + scrollY));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.locator("[data-shelf-book]").evaluateAll(books => books.every(book => {
+    const rect = book.getBoundingClientRect();
+    return rect.left >= 0 && rect.right <= innerWidth;
+  }))).toBe(true);
+  await page.locator('[data-shelf-cover] a').first().click();
+  await expect(page.locator('[data-tour-step="01"]')).toHaveAttribute("data-active", "true");
 });

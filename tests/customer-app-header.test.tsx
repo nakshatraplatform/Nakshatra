@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Link from "next/link";
 
@@ -84,4 +84,29 @@ describe("customer application header", () => {
     fireEvent.blur(details, { relatedTarget: screen.getByRole("button", { name: "Change theme" }) });
     expect(details.open).toBe(false);
   });
+});
+
+
+it("shows the account holder's first and last name after identity loads without blocking actions", async () => {
+  let resolve!: (value: { firstName: string; middleName: string; lastName: string }) => void;
+  const profile = new Promise<{ firstName: string; middleName: string; lastName: string }>(done => { resolve = done; });
+  await act(async () => { render(<CustomerAppHeader currentPage="dashboard" userEmail="owner@example.test" accountProfile={profile} />); });
+  expect(screen.getByRole("button", { name: "Change theme" })).toBeEnabled();
+  fireEvent.click(screen.getByLabelText("Account menu"));
+  expect(screen.getByRole("link", { name: "Account settings" })).toBeVisible();
+  await act(async () => resolve({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" }));
+  expect(await screen.findAllByText("Mary Jane Rao")).toHaveLength(2);
+  expect(screen.queryByText("Your account")).not.toBeInTheDocument();
+  expect(screen.getAllByText("MR")).toHaveLength(2);
+});
+
+it("keeps complete long names in the account identity and uses Unicode initials", async () => {
+  const firstName = `Élodie ${"a".repeat(70)}`;
+  const lastName = `李${"b".repeat(79)}`;
+  await act(async () => {
+    render(<CustomerAppHeader currentPage="dashboard" accountProfile={Promise.resolve({ firstName, middleName: "", lastName })} />);
+  });
+  fireEvent.click(screen.getByLabelText("Account menu"));
+  expect(await screen.findAllByText(`${firstName} ${lastName}`)).toHaveLength(2);
+  expect(screen.getAllByText("É李")).toHaveLength(2);
 });
