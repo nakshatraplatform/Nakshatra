@@ -8,6 +8,9 @@ export const emailMessageSchema = runtimeSchema;
 
 export type EmailMessage = z.infer<typeof emailMessageSchema>;
 export type EmailFailureCode =
+  | "EMAIL_RECIPIENT_SUPPRESSED"
+  | "EMAIL_DELIVERY_GUARD_UNAVAILABLE"
+  | "EMAIL_RETRY_WINDOW_EXPIRED"
   | "EMAIL_INPUT_INVALID"
   | "EMAIL_NOT_CONFIGURED"
   | "EMAIL_CREDENTIALS_REJECTED"

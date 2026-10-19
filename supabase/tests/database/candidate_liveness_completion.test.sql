@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(25);
+select plan(32);
 select pg_temp.create_auth_actor('d1000000-1111-4111-8111-111111111111','d2000000-1111-4111-8111-111111111111','completion-owner@test.local');
 insert into public.candidates(id,primary_owner_user_id,display_name,created_by)
 values ('d3000000-1111-4111-8111-111111111111','d1000000-1111-4111-8111-111111111111','Completion candidate','d1000000-1111-4111-8111-111111111111');
@@ -72,5 +72,17 @@ set local role service_role;
 select pg_temp.set_service_role_claims();
 select is((select count(*)::integer from public.claim_candidate_liveness_emails(5)),0,'revoked proof is not emailed');
 reset role;
+-- Delivery operations clean terminal address material without erasing active
+-- recipients or the candidate's verification proof.
+update app_private.candidate_liveness_email_outbox set updated_at=now()-interval '31 days' where id=:'delivery_id';
+select ok(public.run_email_delivery_retention(500),'liveness terminal retention runs');
+select is((select recipient_email from app_private.candidate_liveness_email_outbox where id=:'delivery_id'),null::text,'old terminal recipient address is erased');
+update app_private.candidate_liveness_email_outbox set status='queued',recipient_email='active-synthetic@test.local',updated_at=now()-interval '31 days' where id=:'delivery_id';
+select ok(public.run_email_delivery_retention(500),'liveness active retention runs');
+select is((select recipient_email from app_private.candidate_liveness_email_outbox where id=:'delivery_id'),'active-synthetic@test.local','active recipient material survives retention');
+update app_private.candidate_liveness_email_outbox set status='failed',updated_at=now()-interval '91 days' where id=:'delivery_id';
+select ok(public.run_email_delivery_retention(500),'liveness completed-row retention runs');
+select is((select count(*)::integer from app_private.candidate_liveness_email_outbox where id=:'delivery_id'),0,'old terminal liveness outbox row is removed');
+select is((select count(*)::integer from app_private.identity_verification_subjects where candidate_id='d3000000-1111-4111-8111-111111111111'),1,'mail retention does not erase verification history');
 select * from finish();
 rollback;

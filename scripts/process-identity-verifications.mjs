@@ -12,6 +12,9 @@ if (!supabaseUrl || !serviceRoleKey) {
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.any([
+    AbortSignal.timeout(10_000), ...(init?.signal ? [init.signal] : []),
+  ]) }) },
 });
 
 const limit = Math.min(Math.max(Number.parseInt(process.env.IDENTITY_VERIFICATION_BATCH_SIZE || "10", 10) || 10, 1), 50);

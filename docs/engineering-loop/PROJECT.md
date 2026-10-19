@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-68 email delivery operations](features/resend-delivery-operations.md):
+  shared suppression/tracking around existing sends, signed minimal Resend
+  receipts, monotonic outcomes, bounded retention and protected delivery health.
+  Development and release evidence are separated in the feature record.
+
 - [Accessible account entry](features/auth-accessibility-feedback.md): concise
   signup guidance, same-route recovery focus, field-associated password/code
   errors, truthful recovery advice and quiet background liveness reads. Isolated

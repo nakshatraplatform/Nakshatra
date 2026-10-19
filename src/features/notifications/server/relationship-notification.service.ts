@@ -209,7 +209,7 @@ export async function processRelationshipNotifications(supabase: Client, limit =
         if (preparation !== "ready") throw new NotificationRenderError("REMINDER_PREPARE_FAILED", true);
       }
       const input = { deliveryId: deliveryId(job.notification_ref), ...message };
-      const result = transport ? await sendResendEmail(input, transport) : await sendResendEmail(input);
+      const result = await sendResendEmail(input, transport, supabase);
       succeeded = result.status === "accepted";
       errorCode = result.status === "failed" ? result.code : null;
       retryable = result.status === "failed" && result.retryable;

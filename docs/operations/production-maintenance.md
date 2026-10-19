@@ -192,3 +192,13 @@ Reminder recovery note: a preparation RPC outage occurs before the provider call
 retry windows and first-attempt clocks still apply. Obsolete backlog is retired
 in bounded 100-row sweeps, so a large expired backlog may need multiple batches.
 Overflow remains queued for those sweeps rather than creating failed-mail alerts.
+
+## Email delivery operations (NAK-68)
+
+Maintenance adds independent `emailRetention`; protected health now also requires
+`emailDelivery.healthy` and configured signing/HMAC secrets. The existing GitHub
+health workflow raises the same single operational alert for mail quota,
+bounce/complaint, unresolved delivery, deferral and retention signals. See the
+[current Resend operator procedure](../resend-api-integration.md#current-delivery-operations-nak-68)
+for coordinated schema/app installation, legacy-job quarantine, local tests,
+release prerequisites and rollback. No additional scheduler is introduced.

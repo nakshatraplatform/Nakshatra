@@ -17,7 +17,9 @@ export async function POST(request: Request) {
   const requestId = getRequestId(request);
   if (!authorized(request)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
-    const result = await processRelationshipNotifications(createServiceRoleClient());
+    const result = await processRelationshipNotifications(createServiceRoleClient((input, init) => fetch(input, {
+      ...init, signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(init?.signal ? [init.signal] : [])]),
+    })));
     return NextResponse.json(result, { status: result.failed > 0 ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     logServerError("relationship_notifications.process_failed", requestId, error);

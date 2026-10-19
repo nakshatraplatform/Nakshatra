@@ -5,6 +5,11 @@ const configSchema = z.object({
     from: z.email().max(254),
     replyTo: z.email().max(254).optional(),
 });
+function configuration() {
+    return configSchema.safeParse({ apiKey: process.env.RESEND_API_KEY, from: process.env.RESEND_FROM_EMAIL,
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL || undefined });
+}
+export function resendConfigurationReady() { return configuration().success; }
 const acceptedSchema = z.object({ id: z.uuid() });
 const errorSchema = z.object({ name: z.string().max(80) });
 const responseByteLimit = 16_384;
@@ -66,11 +71,7 @@ export async function sendResendEmail(input, transport = fetch) {
     if (!message.success)
         return failure("EMAIL_INPUT_INVALID");
     // Resolve at dispatch, not module evaluation: builds need no mail credentials.
-    const config = configSchema.safeParse({
-        apiKey: process.env.RESEND_API_KEY,
-        from: process.env.RESEND_FROM_EMAIL,
-        replyTo: process.env.RESEND_REPLY_TO_EMAIL || undefined,
-    });
+    const config = configuration();
     if (!config.success)
         return failure("EMAIL_NOT_CONFIGURED");
     const controller = new AbortController();
@@ -94,6 +95,7 @@ export async function sendResendEmail(input, transport = fetch) {
                     from: config.data.from,
                     to: [message.data.to],
                     subject: message.data.subject,
+                    tags: [{ name: "vivintro_delivery", value: message.data.deliveryId }],
                     text: message.data.text,
                     ...(message.data.html ? { html: message.data.html } : {}),
                     ...(config.data.replyTo ? { reply_to: config.data.replyTo } : {}),

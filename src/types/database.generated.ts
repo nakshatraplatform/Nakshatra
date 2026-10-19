@@ -1242,6 +1242,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"email_delivery_health":
+{ Args: { "p_daily_limit"?: number,"p_monthly_limit"?: number }; Returns: Json
+                           },
 "enqueue_due_full_view_expiry_reminders":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -1253,6 +1256,9 @@ isOneToOne: false
                            },
 "fail_account_deletion":
 { Args: { "p_claim_token": string,"p_error_code": string,"p_request_id": string }; Returns: boolean
+                           },
+"finish_application_email":
+{ Args: { "p_claim_token": string,"p_delivery_id": string,"p_error_code"?: string,"p_provider_message_id"?: string,"p_retryable"?: boolean }; Returns: boolean
                            },
 "finish_deleted_provider_cleanup":
 { Args: { "p_claim_token": string,"p_error_code"?: string,"p_id": string }; Returns: boolean
@@ -1365,6 +1371,9 @@ isOneToOne: false
 "prepare_account_deletion":
 { Args: { "p_claim_token": string,"p_request_id": string,"p_user_id": string }; Returns: Json
                            },
+"prepare_application_email":
+{ Args: { "p_delivery_id": string,"p_message_digest": string,"p_recipient_hash": string }; Returns: Json
+                           },
 "prepare_broker_introduction":
 { Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
@@ -1393,6 +1402,9 @@ isOneToOne: false
                            },
 "record_public_portfolio_view":
 { Args: { "p_share_token": string }; Returns: boolean
+                           },
+"record_resend_delivery_event":
+{ Args: { "p_delivery_id"?: string,"p_event_digest": string,"p_event_id": string,"p_occurred_at": string,"p_provider_message_id": string,"p_status": string }; Returns: boolean
                            },
 "register_candidate_liveness_provider_create":
 { Args: { "p_attempt_id": string,"p_management_token_hash": string,"p_workflow_id": string,"p_workflow_version": number }; Returns: undefined
@@ -1536,6 +1548,9 @@ isOneToOne: false
                            },
 "run_data_retention":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"run_email_delivery_retention":
+{ Args: { "p_limit"?: number }; Returns: boolean
                            },
 "run_retention_class":
 { Args: { "p_class": string,"p_limit"?: number }; Returns: Json
