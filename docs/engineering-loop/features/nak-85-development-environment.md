@@ -8,8 +8,8 @@ Base: main `96538c9`. Implementation uses an isolated worktree; unrelated change
 in the shared checkout are excluded. Full documentation mode; Critical risk because
 deployment credentials and database targets are security boundaries.
 
-Next step: prepare and review repository controls, then merge the bootstrap PR
-and synchronize development. Live activation needs the development Supabase
+Next step: review the bootstrap PR into development; a later production release
+requires explicit authorization and merge by `NagarjunMa`. Live activation needs the development Supabase
 project reference and Vercel environment configuration. CLI currently lists only
 the Nakshatra production project in its organization. GitHub account has push
 permission but no administration permission, so branch/environment protection
@@ -25,7 +25,10 @@ Postgres, Auth and Storage, synthetic users, and sandbox providers.
 ## Contract and invariants
 
 - AC-1: main and development exist; feature branches target development and
-  tested releases use PRs from development to main. Both integration branches
+  tested releases use PRs from development to main only when `NagarjunMa`
+  explicitly authorizes and merges the release. Main updates must be restricted
+  by an administrator to the owner, with no routine collaborator direct pushes
+  or merges. The bootstrap PR also targets development. Both integration branches
   require the existing quality, database and secret checks.
 - AC-2: CI and secret-scan PR triggers cover both branches. CI quality/builds use
   fake loopback public Supabase configuration, never live credentials. Browser
@@ -84,8 +87,9 @@ where tooling is available and the PR remains subject to hosted CI.
 
 ## Rollout and recovery
 
-1. Bootstrap configuration PR targets main; after merging, synchronize development
-   with main before any feature PR targets development.
+1. Bootstrap configuration PR targets development. Main remains unchanged until
+   an explicit owner-authorized release PR; verify actual hosted CI and default-
+   branch workflow discovery before attempting manual development deployment.
 2. Administrator protects development and restricts each GitHub deployment
    environment to its matching branch. Preserve main rules and production access.
 3. Create an independent development Supabase project, apply migrations using the
@@ -136,3 +140,20 @@ application code does not undo database migrations; use forward compatible fixes
   blocked on separate resources. Graphify command/graph are unavailable here.
 
 No release or readiness claim until the external setup and checks are complete.
+
+## Owner release-control clarification
+
+User's subsequent instruction supersedes the original main-first bootstrap plan:
+all ordinary branches/PRs use development, only `NagarjunMa` may merge/release main,
+and future major-release/freeze conditions will be provided by the owner.
+PR #118 remains draft and is retargeted to development. The operations guide and
+AGENTS now record that instruction, distinct OAuth clients and proposed stable
+testing domain. This is a documentation/PR-routing update, not an applied GitHub
+access-control change. Main's existing PR rule does not yet enforce exclusive
+owner merges; the connected account still lacks admin permission. Live website
+audience is unresolved and is not changed by branch protection.
+
+The earlier independent implementation review and 1,607-test/build evidence apply
+to unchanged executable code at `20bc76a`; this follow-up changes documentation
+and PR metadata only. No additional application tests are needed for prose; diff
+and routing checks plus scoped review cover the follow-up.

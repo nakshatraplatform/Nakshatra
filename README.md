@@ -139,7 +139,9 @@ for rule mapping, verification and future upgrade requirements.
 ## Production releases
 
 `main` is production; `development` is the integration/testing branch. Feature PRs
-target development, then tested releases use PRs into main. Each hosted environment
+target development, then explicitly owner-authorized releases use PRs into main.
+Only `NagarjunMa` is to merge/release production changes; administrator-enforced
+main access restrictions remain required. Each hosted environment
 must use its own Supabase project and credentials. See
 [environment setup and release flow](docs/operations/environments.md) for the
 bootstrap sequence, pending external configuration and activation checks.

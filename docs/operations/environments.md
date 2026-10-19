@@ -14,16 +14,20 @@ checks below are verified.
 
 Create issue-named feature branches from development. Open feature PRs into
 development and run the same required quality, database and secret checks as main.
-After testing the development deployment, open a release PR into main. Create
-urgent production fixes from main and bring them back into development promptly.
+Only the release owner (`NagarjunMa`) may authorize a release PR from development
+to main and merge it when ready. Collaborators must not directly push or merge
+into main. Until the owner issues a release instruction, keep work in development.
+An emergency release/hotfix exception also requires explicit owner direction.
 Preserve shared release ancestry; prefer merge commits when promoting long-lived
 branches so previously released commits do not repeatedly appear as new changes.
 
-The bootstrap configuration PR targets main because main owns production and
-the default-branch workflow definitions. After it merges, synchronize main into
-development before opening feature PRs there. Until then, development still has
-the old CI trigger configuration. Do not treat merely creating the branch as an
-isolated testing deployment.
+The bootstrap configuration PR also targets development, following the owner's
+updated routing instruction. Introduce and validate the configuration there;
+it reaches main only through a later explicitly authorized release PR. Features
+available only from default-branch workflow discovery may require that later
+release before manual dispatch is visible. Verify hosted CI actually runs for
+development PRs. Do not treat merely creating the branch as an isolated testing
+deployment or bypass missing checks to bootstrap it.
 
 Both integration branches must require PRs, block force pushes/deletion and retain:
 
@@ -36,6 +40,24 @@ An administrator must configure it: the connected account has push permission
 but no administration permission as of 2026-10-18. GitHub environments must permit
 only their matching **branch**, rejecting similarly named tags. Preserve the
 existing production and identity-worker environment policies/reviewers.
+
+For main, retain required PRs/checks and configure an administrator-enforced
+restriction so only `NagarjunMa` can update main through a PR merge. Apply
+protections to administrators as supported, avoid collaborator/bot bypasses, and
+review organization administrator access because administrators can change rules.
+Requiring the owner's review alone does not restrict who can press Merge.
+Also limit access to production Supabase/Vercel secrets, deployment controls,
+and production database migration credentials to the release owner. A GitHub
+environment approval alone does not block Vercel's independent Git deployment.
+
+Verified external state on 2026-10-18: main requires PRs and passing checks, but
+does not reserve merges to the owner; production GitHub environments have no
+branch policies/reviewer gates configured. These changes are not yet enforced.
+Do not run `scripts/production-controls.mjs --apply` as a substitute: that helper
+does not implement owner-only merge access. Future release/freeze conditions will
+come from the owner and must be recorded before they are implemented. Public
+website access is a separate control from code/deployment access; the owner's
+intended website audience still needs clarification.
 
 ## Provision the development Supabase project
 
@@ -85,6 +107,14 @@ Keep Vercel's Production branch as main. Give development a branch Preview URL
 or a stable testing subdomain configured for Preview and that branch. Custom
 Vercel environments are optional; ordinary branch previews can supply this setup.
 
+Use a stable address, for example `https://dev.vivintro.com` (proposed, not
+configured). This avoids repeatedly changing OAuth settings for individual
+preview URLs. If developers must also be isolated from production project
+settings/secrets, use a separate Vercel development project with appropriate
+project/team access. In that separate project's settings, development is its
+deployment branch and even its environment named Production must contain only
+development service credentials; do not attach the live production domain.
+
 Review **all Preview and local-development variables**, not just development's
 branch override: feature previews must also avoid production credentials. Configure:
 
@@ -99,6 +129,18 @@ branch override: feature previews must also avoid production credentials. Config
 - Didit Sandbox credentials, its liveness workflow and testing webhook URL/secret;
   isolated email configuration limited to approved test recipients. Application
   notifications and Supabase Auth SMTP are independent integrations.
+
+Use distinct Google OAuth Web application clients for production and development.
+For the development client, configure Authorized JavaScript origins with the
+testing origin (and local origins only if needed). Its Authorized redirect URI
+is the development **Supabase** callback,
+`https://<development-project-ref>.supabase.co/auth/v1/callback`, not the app's
+callback. Put that client's ID/secret only in the development Supabase Google
+provider. In development Supabase, configure the testing Site URL and allow the
+app's `/api/auth/callback` redirects, including the intended bounded continuation
+paths/query parameters. Keep the production client/provider configured for the
+production project/domain. Separate Google Cloud projects are optional when
+independent consent-screen publishing and project IAM are also required.
 
 Rebuild after changing public values: Next embeds `NEXT_PUBLIC_*` at build time.
 Deploy production afresh with Production configuration; do not promote a Preview
