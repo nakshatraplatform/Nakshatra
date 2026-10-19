@@ -89,18 +89,44 @@ test("touch scrolling opens and reverses the mobile bookshelf", async ({ page, c
   const first = page.locator('[data-tour-step="01"]');
   const second = page.locator('[data-tour-step="02"]');
   await expect(first).toHaveAttribute("data-active", "true");
-  const distance = await page.evaluate(() => {
-    const anchors = document.querySelectorAll("[data-shelf-anchor]");
-    return anchors[1].getBoundingClientRect().top - anchors[0].getBoundingClientRect().top;
-  });
+  await page.evaluate(() => document.fonts.ready);
   const input = await context.newCDPSession(page);
-  // Touch outside the paper scrolls the document; overflowing paper has its own
-  // native reading scroll, then chains back to the tour at the page boundary.
-  await input.send("Input.synthesizeScrollGesture", { x: 8, y: 600, yDistance: -distance, speed: 1200, gestureSourceType: "touch" });
+  async function swipeToChapter(index: number) {
+    // Keep each real touch drag inside the viewport and outside the paper's
+    // independent reading scroll. Re-measure to account for native touch slop.
+    for (let swipe = 0; swipe < 8; swipe++) {
+      const remaining = await page.locator("[data-shelf-anchor]").nth(index)
+        .evaluate(anchor => anchor.getBoundingClientRect().top);
+      if (Math.abs(remaining) < 32) return;
+      const before = await page.evaluate(() => scrollY);
+      const travel = Math.max(-320, Math.min(320, remaining));
+      const startY = travel > 0 ? 600 : 200;
+      await input.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 8, y: startY, id: 1 }] });
+      try {
+        for (let frame = 1; frame <= 12; frame++) {
+          await input.send("Input.dispatchTouchEvent", {
+            type: "touchMove", touchPoints: [{ x: 8, y: startY - travel * frame / 12, id: 1 }],
+          });
+          // Pace physical drag samples; this is input timing, not readiness.
+          await page.waitForTimeout(24);
+        }
+        // Hold before release to avoid a fling overshooting the reading pose.
+        await page.waitForTimeout(150);
+      } finally {
+        await input.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      }
+      if (travel > 0) await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 1);
+      else await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(before - 1);
+    }
+    throw new Error(`Touch swipes did not reach chapter ${index + 1}`);
+  }
+  await swipeToChapter(1);
   await expect(second).toHaveAttribute("data-active", "true");
   await expect(second.locator("h3")).toBeInViewport();
-  await expect(second.locator("[data-shelf-cover]")).not.toHaveCSS("transform", "none");
-  await input.send("Input.synthesizeScrollGesture", { x: 8, y: 200, yDistance: distance, speed: 1200, gestureSourceType: "touch" });
+  await expect.poll(() => second.locator("[data-shelf-cover]").evaluate(cover =>
+    new DOMMatrixReadOnly(getComputedStyle(cover).transform).m11
+  )).toBeLessThan(-0.95);
+  await swipeToChapter(0);
   await expect(first).toHaveAttribute("data-active", "true");
   await page.getByRole("link", { name: "Continue past the tour" }).click();
   await expect(page.locator("#viewer h2")).toBeInViewport();
