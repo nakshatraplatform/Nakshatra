@@ -67,18 +67,26 @@ test("inverse demo and landing examples retain readable text in both themes", as
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
-    // Wait for the desktop shelf to replace its static fallback before clicking.
-    if (await page.evaluate(() => matchMedia("(min-width: 860px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)").matches)) {
+    // Wait for the animated shelf to replace its static fallback before clicking.
+    if (await page.evaluate(() => matchMedia("(prefers-reduced-motion: no-preference)").matches)) {
       await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
     }
     await page.evaluate(() => document.fonts.ready);
     await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
-    // The opened cover and the static mobile fallback share one illustration.
-    // Measure the visible copy rather than the hidden alternate rendering.
-    const approval = page.locator('[data-tour-step="04"] [data-visual="approve"]:visible').getByText("Share details", { exact: true });
-    await expect(approval).toHaveCount(1);
-    await expect(approval).toBeVisible();
-    expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
+    const book = page.locator('[data-tour-step="04"]');
+    await expect(book).toHaveAttribute("data-active", "true");
+    const title = book.locator("[data-shelf-paper] h3");
+    await expect(title).toBeInViewport();
+    expect(await contrast(title)).toBeGreaterThanOrEqual(4.5);
+    expect(await contrast(book.locator("[data-shelf-paper] > p"))).toBeGreaterThanOrEqual(4.5);
+    // Narrow layouts show the reading page; the reverse-cover illustration
+    // swings aside. Check illustration text where the two-page spread is shown.
+    if (await page.locator("[data-shelf-stage]").evaluate(element => element.clientWidth >= 800)) {
+      const approval = book.locator('[data-visual="approve"]:visible').getByText("Share details", { exact: true });
+      await expect(approval).toHaveCount(1);
+      await expect(approval).toBeVisible();
+      expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
+    }
     await page.goto("/demo");
     expect(await contrast(page.getByText("Fictional sample introduction", { exact: true }))).toBeGreaterThanOrEqual(4.5);
     if (theme === "dark") await page.evaluate(() => localStorage.clear());

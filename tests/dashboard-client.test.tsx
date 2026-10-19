@@ -1857,7 +1857,8 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required", reviewFingerprint: "a".repeat(64) },
     };
     mocks.loadDashboardView.mockResolvedValue(dashboard);
-    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }))); });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
     expect(mocks.save).not.toHaveBeenCalled();
@@ -1865,7 +1866,7 @@ describe("dashboard client", () => {
       ...dashboard,
       publicationReadiness: { ...dashboard.publicationReadiness, verificationStatus: "verified" },
     });
-    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    await act(async () => { view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }))); });
     expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
     expect(mocks.save).not.toHaveBeenCalled();
   });

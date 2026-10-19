@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { resolveServerTree } from "./resolve-server-tree";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -29,7 +29,7 @@ describe("customer broker relationships page", () => {
         actions: { canPause: true, canRenew: false, canTerminate: true },
       }],
     });
-    render(await resolveServerTree(await CustomerBrokersPage()));
+    await act(async () => { render(await resolveServerTree(await CustomerBrokersPage())); });
     expect(screen.getByRole("heading", { name: "My brokers" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agency A" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause broker access" })).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe("customer broker relationships page", () => {
   it("keeps the empty state simple", async () => {
     getAuthenticatedUser.mockResolvedValue({ supabase: {}, user: { email: "owner@example.test" } });
     resolveRelationships.mockResolvedValue({ available: true, relationships: [] });
-    render(await resolveServerTree(await CustomerBrokersPage()));
+    await act(async () => { render(await resolveServerTree(await CustomerBrokersPage())); });
     expect(screen.getByRole("heading", { name: "No broker relationships yet" })).toBeInTheDocument();
   });
 });
