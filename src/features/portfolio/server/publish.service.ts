@@ -1,6 +1,5 @@
 import "server-only";
 
-import { nanoid } from "nanoid";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 import {
@@ -144,7 +143,7 @@ export async function publishPortfolio({
     );
   }
 
-  const shareToken = portfolio.share_token || nanoid(21);
+  const shareToken = portfolio.share_token || "";
   const expiresAt = resolvePublicationExpiry(
     portfolio.expires_at,
     portfolio.is_published

@@ -58,6 +58,7 @@ export default function PrivacyPage() {
 
       <PolicySection id="browser-storage" title="Cookies and browser storage">
         <p>The personal portfolio flow uses cookies to support sign-in and sensitive account actions, and local storage to remember your appearance preference. Cookie-free analytics does not mean the whole application is cookie-free.</p>
+        <p>To prevent an old Introduction link from later pointing to a different person, we retain a one-way fingerprint of each issued link indefinitely, including after account deletion. This reservation has no account reference or portfolio content. Name-based link fingerprints can still be guessed from names; they are not anonymous records.</p>
         <dl className="space-y-4">
           <div>
             <dt className="font-semibold text-[color:var(--workspace-ink)]">Sign-in cookies — Supabase</dt>

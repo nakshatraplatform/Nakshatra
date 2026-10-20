@@ -1091,7 +1091,7 @@ export default function DashboardClient({
             {viewerAccessAvailable ? (
               <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Share this link for your public introduction. You choose who sees your private details.</p>
+                <p className="dashboard-sharing-description">Share this link for your public introduction. New links include your first and last name and may be guessed. You choose who sees your private details.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1110,7 +1110,7 @@ export default function DashboardClient({
                 </div>
                 <section className="dashboard-link-settings" aria-label="Manage link">
                   <h3 className="text-sm font-semibold">Manage link</h3>
-                  <p>Rotating replaces the URL. Unpublishing turns off viewer access.</p>
+                  <p>Rotating creates a new name-based URL and permanently retires the old link. Duplicate names receive a number. Unpublishing turns off viewer access.</p>
                   <div className="dashboard-link-controls" role="group" aria-label="Manage introduction link">
                   {canCreatePortfolio && (
                     <button

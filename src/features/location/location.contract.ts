@@ -1,3 +1,4 @@
+import { portfolioSharePathSchema } from "@/features/portfolio/share-path";
 import { z } from "zod/v4";
 
 export const SUPPORTED_LOCATION_COUNTRIES = ["IN", "US"] as const;
@@ -89,14 +90,14 @@ export const locationSearchRequestSchema = z.discriminatedUnion("action", [
     query: z.string().trim().min(2).max(100),
     countryCode: locationCountryCodeSchema.optional(),
     sessionToken: z.uuid(),
-    portfolioToken: z.string().min(8).max(160).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    portfolioToken: portfolioSharePathSchema.optional(),
   }),
   z.object({
     action: z.literal("resolve"),
     provider: z.literal("google_places"),
     placeId: z.string().trim().min(5).max(300).regex(/^[A-Za-z0-9_-]+$/),
     sessionToken: z.uuid(),
-    portfolioToken: z.string().min(8).max(160).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    portfolioToken: portfolioSharePathSchema.optional(),
   }),
 ]);
 

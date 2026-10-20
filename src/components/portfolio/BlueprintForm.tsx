@@ -345,7 +345,7 @@ export function BlueprintForm({
               ) : null}
             <fieldset className="space-y-4">
               <legend className="text-[15px] font-semibold text-[color:var(--workspace-ink)]">Full name</legend>
-              <p className="text-sm text-[color:var(--workspace-ink-muted)]">Your full name appears in the public introduction and private details.</p>
+              <p className="text-sm text-[color:var(--workspace-ink-muted)]">Your full name appears in the public introduction and private details. New share links include your first and last name and may be guessed.</p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <TextInput fieldPath="personal.first_name" label="First name" value={nameParts.first_name} onChange={(value) => updateNamePart("first_name", value)} required requirement="Required" audience="All introduction views" autoComplete="given-name" maxLength={NAME_PART_MAX_LENGTH} pattern={NAME_PART_PATTERN} />
               <TextInput fieldPath="personal.middle_name" label="Middle name" value={nameParts.middle_name} onChange={(value) => updateNamePart("middle_name", value)} requirement="Optional" audience="All introduction views" autoComplete="additional-name" maxLength={NAME_PART_MAX_LENGTH} pattern={NAME_PART_PATTERN} />

@@ -17,6 +17,7 @@
     "test:db:start": "supabase start -x edge-runtime,imgproxy,logflare,studio,vector",
     "test:db:reset": "supabase db reset --local",
     "test:db": "supabase test db supabase/tests/database --local",
+    "test:db:share-links:local": "node scripts/test-readable-share-links-local.mjs",
     "test:db:local": "npm run db:verify",
     "db:smoke": "node scripts/check-db-fixtures.mjs",
     "db:verify": "node scripts/verify-local-db.mjs",

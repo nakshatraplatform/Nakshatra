@@ -150,7 +150,7 @@ describe("portfolio lifecycle services", () => {
         actorUserId: "user-id",
         actorSessionId: "session-id",
         portfolioId: "portfolio-id",
-        shareToken: expect.stringMatching(/^.{21}$/),
+        shareToken: "",
         templateId: 1,
         themeColor: "#f7f5ef",
         draftData: expect.objectContaining({

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { nanoid } from "nanoid";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 import { DashboardRepository } from "./dashboard.repository";
@@ -35,7 +34,8 @@ export async function rotatePortfolioLink({
   supabase: SupabaseClient;
 }) {
   const repository = new DashboardRepository(supabase);
-  const shareToken = nanoid(21);
+  // The database allocates the next available name-based path atomically.
+  const shareToken = "";
   const { data, error } = await repository.rotatePortfolioTransaction(shareToken);
   const result = rotateResultSchema.safeParse(data);
   if (error || !result.success) {

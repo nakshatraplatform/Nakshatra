@@ -22,19 +22,19 @@ import {
 describe("portfolio share lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    repository.rotatePortfolioTransaction.mockImplementation((shareToken: string) => Promise.resolve({
-      data: { status: "rotated", shareToken },
+    repository.rotatePortfolioTransaction.mockImplementation(() => Promise.resolve({
+      data: { status: "rotated", shareToken: "aditi-sharma-2" },
       error: null,
     }));
     repository.unpublishPortfolioTransaction.mockResolvedValue({ data: { status: "unpublished" }, error: null });
   });
 
-  it("replaces a published link with a high-entropy canonical token", async () => {
+  it("returns the database-allocated name and numbered suffix when replacing a link", async () => {
     const result = await rotatePortfolioLink({ supabase: {} as never });
 
-    expect(result.shareToken).toMatch(/^.{21}$/);
+    expect(result.shareToken).toBe("aditi-sharma-2");
     expect(result.shareUrl).toContain(`/p/${result.shareToken}`);
-    expect(repository.rotatePortfolioTransaction).toHaveBeenCalledWith(result.shareToken);
+    expect(repository.rotatePortfolioTransaction).toHaveBeenCalledWith("");
   });
 
   it("disables the owner portfolio and its public snapshot without deleting private content", async () => {
