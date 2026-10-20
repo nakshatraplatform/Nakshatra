@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select no_plan();
+select plan(31);
 
 select ok(not has_table_privilege('anon', 'app_private.portfolio_share_path_reservations', 'SELECT'), 'issued paths are not exposed to anonymous users');
 select ok(not has_table_privilege('authenticated', 'app_private.portfolio_share_path_reservations', 'SELECT'), 'issued paths are not exposed to signed-in users');
