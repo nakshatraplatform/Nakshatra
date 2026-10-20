@@ -23,7 +23,6 @@ declare
     pg_catalog.substring(pg_catalog.btrim(p_data #>> '{personal,name}'), '\S+$'));
   base_path text;
   candidate_path text;
-  ordinal integer;
   inserted_rows integer;
 begin
   -- Match canonical ASCII names, never derive a URL from other profile fields.

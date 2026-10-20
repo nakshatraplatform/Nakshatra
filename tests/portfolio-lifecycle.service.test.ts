@@ -170,6 +170,16 @@ describe("portfolio lifecycle services", () => {
     expect(result).toMatchObject({ action: "created", shareUrl: expect.stringContaining("/p/") });
   });
 
+  it("returns the named URL allocated by the database", async () => {
+    repository.publishPortfolioTransaction.mockResolvedValue({
+      data: { status: "ok", action: "created", shareToken: "aditi-rao-2", expiresAt: null },
+      error: null,
+    });
+    const result = await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
+    expect(result.shareToken).toBe("aditi-rao-2");
+    expect(result.shareUrl).toContain("/p/aditi-rao-2");
+  });
+
   it("allows an owner-safe test exemption through the same server-owned publication transaction", async () => {
     getPublicationReadiness.mockResolvedValue({
       portfolioExists: true, lastEditorSection: null, previewedAt: null,
