@@ -172,6 +172,11 @@ jobs:
       - name: Run database tests
         run: npm run test:db
 
+      - name: Verify concurrent readable share-link allocation
+        env:
+          READABLE_LINK_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:share-links:local
+
       - name: Verify signed email webhooks and suppression over local HTTP
         run: npm run test:email:local
 

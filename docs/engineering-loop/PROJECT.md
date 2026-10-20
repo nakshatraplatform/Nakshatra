@@ -1,5 +1,7 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-87 readable share links](features/nak-87-readable-share-links.md): database-owned first/last-name URLs with numbered duplicates, stable legacy links, permanent issued-path digests and existing Complete-access authorization. Rollout and verification are recorded in the feature file.
+
 - [NAK-68 email delivery operations](features/resend-delivery-operations.md):
   shared suppression/tracking around existing sends, signed minimal Resend
   receipts, monotonic outcomes, bounded retention and protected delivery health.
