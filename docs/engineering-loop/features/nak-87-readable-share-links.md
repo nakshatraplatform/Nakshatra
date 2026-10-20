@@ -6,7 +6,7 @@
 - Base: main `6fda9be`; isolated `feat/nak-87-readable-share-links` worktree.
 - Risk: Critical (migration and public link lifecycle). Full record; independent review required.
 - Product decision, October 20, 2026: `/p/aditi-sharma`; duplicate names receive `-2`, `-3`, etc. No random suffix in newly generated links.
-- Next step: finish clean replay, database/browser/static checks and independent review; push/open PR. No production migration, deployment or merge performed.
+- Current implementation snapshot: `a9e5fcf` (parent commit `923d09d`). Independent review and local checks pass. Next: push/open PR; hosted CI and release remain separate. No production migration, deployment or merge performed.
 
 ## Problem and goal
 
@@ -52,13 +52,17 @@ Replace opaque newly generated Introduction URLs with predictable first/last-nam
 
 ## Evidence and progress
 
-- Initial consumer regression failed against the prior parser/rotation request; corrected the interest fixture to include all required fields, then 33 focused unit tests passed.
-- First full unit coverage run: 1,666 tests passed, 61 feature and 21 protected-boundary gates passed. UI disclosure copy and final concurrency script are checked again before handoff.
-- Database iteration: 30 readable-path assertions plus 72 lifecycle assertions passed; old hardcoded rotated-token expiry assertions were updated to follow the actual replacement path, preserving their intent.
-- Initial full database run found that stale hardcoded token; after correction all 61 suites / 1,745 assertions passed. Final replay and added direct-write assertion pending at this record snapshot.
-- Sixteen independent concurrent allocator transactions and a rollback reuse check passed against local Postgres.
-- Lint/typecheck passed initially. Build first lacked required public Supabase settings; with loopback-only build settings the production build passed. No production credentials used.
-- Browser checks, final replay/schema lint/types, secret scan and independent review: pending.
+- **Unit/coverage passed:** full 1,666-test coverage run, 61 feature and 21 protected-boundary gates. After the final publication-return regression, all 34 focused lifecycle/path tests passed. Initial new parser/rotation regressions failed against the old implementation; one incomplete interest fixture was corrected to satisfy existing validation.
+- **Database passed:** clean replay through the forward migration; final 61 suites / 1,746 assertions, including 31 readable-path assertions. Existing access-lifecycle expiry tests now follow the actual replacement identifier rather than a stale hardcoded path. No test control or assertion was weakened.
+- **Concurrency passed:** 16 independent local PostgreSQL transactions allocate distinct consecutive names; a rolled-back reservation leaves the unsuffixed name available. This check runs in CI after pgTAP.
+- **Schema passed:** public generated types match; `db lint --schema public,app_private --fail-on error` passes. The allocator's redundant loop-variable declaration was removed and the corrected schema lint has no new warning. Four existing unused-parameter notices remain outside this change.
+- **Browser passed:** all 12 new route/dialog checks across desktop, tablet and mobile Chromium, covering named, numbered, short and legacy paths and noindex metadata. These use mock Supabase for pages; SQL tests separately establish allocation and access boundaries.
+- **Static/build passed:** final lint/typecheck and optimized production build. The first build lacked required public Supabase environment values; rerun with loopback-only placeholders passed. No production credentials used.
+- **Security passed:** strict dependency audit reports zero affected packages/no exceptions; scoped TruffleHog reports no secrets. Final closing scan runs before push.
+- **Independent review passed:** fresh-context reviewer `/root/nak87_readable_links_review` found no material findings on `6fda9be..923d09d`, then confirmed the two-file delta through `a9e5fcf`. It independently passed all 31 SQL cases, legacy-server compatibility, service-role direct-write denial, rollback on invalid public projection, and function ownership/ACL checks. Exact model identity unavailable; this is not a cross-model claim.
+- **Upgrade test passed:** reset the disposable database to main's last migration (`20261019025046`), published a real legacy Introduction through the guarded service RPC, then applied the new migration. The old URL and anonymous resolution remained intact; its digest was backfilled and a competing allocation received `-2`. The first fixture attempt omitted a transaction, causing local Auth claims to expire between statements; wrapping fixture setup in a transaction corrected the harness. Final clean replay covers 109 migrations.
+- **Tooling limit:** Graphify graph absent and binary unavailable (`graphify update .` reports command not found). Source search, tests and independent review were used; no graph update is claimed.
+- Hosted CI/Preview, actual provider/inbox tests, production migration and deployment remain separate from these local checks.
 
 ## Decisions and lessons
 
