@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { publishedOwnerCookie } from "./support/theme-session.mjs";
 
-test("sample exposes its empty-photo alternative and preloads only primary typography", async ({ page }) => {
+test("sample discloses its fictional portrait and preloads only primary typography", async ({ page }) => {
   await page.goto("/demo");
-  await expect(page.getByRole("img", { name: "Portfolio photo has not been added" })).toBeVisible();
+  const portrait = page.locator(".portfolio-primary-photo").getByRole("img", { name: "AI-generated fictional Ananya wearing a teal saree" });
+  await expect(portrait).toBeVisible();
+  await expect.poll(() => portrait.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+  await expect(page.getByRole("complementary", { name: "Fictional sample disclosure" })).toContainText("AI-generated");
   await expect(page.locator('link[rel="preload"][as="font"]')).toHaveCount(2);
   await expect(page.getByRole("main")).toHaveCount(1);
 });

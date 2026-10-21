@@ -358,3 +358,56 @@ compiler strictness or CI-order change. Existing clean-checkout hosted typecheck
 remains the regression gate; the hosted rerun is pending the corrected push.
 Scoped lesson: do not use a previously generated local `next-env.d.ts` as evidence
 that a pre-build compiler command works from a clean checkout.
+
+### CI browser correction contract — full integrated suite
+
+Hosted run `39626961973` at `9bb05e6` passes quality (audit, lint, generated
+types, full unit coverage and build), pgTAP and secret scanning. The required
+aggregate gate fails because all three browser projects fail. Earlier focused
+browser checks did not exercise the full integrated suite.
+
+Correct stale legacy assertions for the approved Vivara headings, CTA, synthetic
+demo portrait and explicitly scoped Kannada calligraphic font. Preserve signup
+navigation, reduced-motion, primary font preload, disclosure and contrast checks;
+the existing empty-photo unit regression remains required. Fix actual intrinsic
+width overflow in anonymous access verification and BrokerDesk metric cards at
+320px, and restore the desktop login's 720px fit through compact spacing, without
+shrinking controls or clipping reflow. No authentication or disclosure rules change.
+
+Verify all three complete Chromium projects, not just the prior selected files.
+Retain CI's one-worker, 15-minute per-project budget, retries and aggregate gate.
+Do not increase overflow tolerances, hide overflow, skip failing routes or remove
+the font/contrast audit. This correction does not authorize another independent
+review round, production calls, migrations or deployment.
+
+Correction evidence (21 October 2026):
+
+- Complete desktop Chromium run executed all 250 cases with one worker, no local
+  retries and the unchanged 900-second global budget: **245 passed / four existing
+  skips / one stale title assertion failed**, in 8.3 minutes. Both overflow routes,
+  nine-width inventory, enlarged-text auth, theme/contrast audits and demo image
+  checks passed. Log: `/tmp/nak88-ci-repair-chromium.log`.
+- The previously unreached `touchpoint-polish` title check still expected the
+  pre-Vivara home title. Corrected only that expectation and reran the full title
+  journey on all three projects: **three passed**, including protected-page tab
+  titles. `/tmp/nak88-ci-repair-titles.log`. Do not describe the earlier desktop
+  run as an entirely green run; the immutable pushed revision still needs hosted
+  full-matrix evidence.
+- **61 affected unit tests** pass, including empty-photo fallback and access
+  verification. Lint, canonical generated-type check, strict zero-exception
+  dependency audit and production build pass. Logs:
+  `/tmp/nak88-ci-repair-{units,lint-final,types,audit,build}.log`.
+- Batched rendered inspection confirms 1280x720 login fit, zero overflow on the
+  corrected 320px screens, and retained 44/48px controls. Metric cards stack at
+  360px and below to preserve readable labels. Access email/code inputs now
+  constrain intrinsic width rather than clipping content. No domain rules change.
+- Single Impeccable scan reports nine existing aesthetic warnings on unchanged
+  global declarations, none on the correction. Graphify is unavailable.
+  `.impeccable/` remains untracked and excluded. Review-round budget remains
+  exhausted; final independent approval and physical/screen-reader checks remain
+  separate outstanding gates. No CI timeout, retry, tolerance, skip or required
+  gate change is made.
+
+Scoped lesson: an integrated browser run must include legacy presentation tests
+as well as new feature specs. A focused pass is not full-suite evidence, and a
+failed aggregate check does not mean its already-green quality dependency failed.
