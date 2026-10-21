@@ -430,3 +430,35 @@ regressions pass in both themes across all three projects: **nine passed**
 revision's full quality/browser gates, not a rerun of only the failed assertion.
 Fresh lint and production build also pass
 (`/tmp/nak88-ci-repair-{lint-last,build-final}.log`).
+
+### Hosted runtime distribution correction
+
+Run `39634165343` at `c26a387` passes quality (all 1,683 units/coverage/build),
+database checks, secrets and desktop Chromium (**246 passed / four existing
+skips**, 14.2 minutes). Tablet and mobile have **zero assertion failures** but
+reach the unchanged 900-second global deadline: tablet 219 passed / three skips /
+28 not run; mobile 209 passed / 41 not run. Local desktop's 8.3-minute runtime
+did not predict hosted emulated-device runtime. Do not call these complete passes.
+
+Distribute each of the same three projects into two Playwright shards on isolated
+hosted runners. Retain one worker per runner, all tests, existing skips/retries,
+15-minute global and 30-minute job budgets, unconditional uniquely named report
+uploads, fail-fast false and the fail-closed `needs: [quality, browser]` gate.
+The live main ruleset was read: required contexts are the aggregate
+`Lint, Test, Coverage & Build`, `Supabase migrations and pgTAP`, and
+`TruffleHog Secret Scan`; none is renamed or weakened. No branch-rule write.
+
+Before pushing, extend workflow-contract regressions and compare actual
+Playwright discovery for unsharded versus both shards of every project: equal
+test identity unions, disjoint partitions, no missing or extra cases. Then require
+all six hosted shard jobs and the unchanged aggregate gate to pass. This changes
+CI distribution, not runtime application code or release/review requirements.
+
+Partition verification passes for all three projects: **250 = 125 + 125** in
+each, zero overlapping/missing/extra test identities. Discovery uses the actual
+installed Playwright CLI with `--list --reporter=json`, not a file-count estimate.
+`/tmp/nak88-ci-shards-discovery.log`. Workflow regression fails before the YAML
+change and passes afterward; **19 workflow/type-verification unit tests** and lint
+pass (`/tmp/nak88-ci-shards-{red,green,lint}.log`). Runtime source and dependency
+versions are unchanged from `c26a387`'s passing hosted quality/build. The next
+hosted run must execute all six shards; partition discovery is not execution.
