@@ -9,7 +9,7 @@
     "lint": "npm run lint:next && npm run lint:eslint",
     "lint:next": "oxlint --config .oxlintrc.json",
     "lint:eslint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --coverage && npm run coverage:check:features",
     "test:unit": "vitest run",
     "test:unit:coverage": "vitest run --coverage && npm run coverage:check:features",

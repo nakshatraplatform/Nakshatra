@@ -328,3 +328,33 @@ environment files or dependency/build folders are staged.
 Open a draft PR: final independent correction/integration review, hosted CI,
 trusted deployed HTTPS and physical-device/screen-reader evidence remain pending.
 This delivery record changes documentation only after the tested runtime revision.
+
+### CI correction contract — clean-checkout type generation
+
+PR #122 quality job failed at its pre-build TypeScript step with TS2307 for all
+three tracked Ananya PNG imports. The job name includes audit/unit/build, but
+this failure is the TypeScript step; it does not establish three separate failures.
+Local development/build had generated ignored `next-env.d.ts`, which references
+Next's static-image declarations. A Git-only export without generated files
+reproduces the same three errors (`/tmp/nak88-ci-types-red.log`).
+
+Standard tooling fix: make the canonical npm `typecheck` command run Next 16.3.8's
+documented `next typegen && tsc --noEmit`. Preserve static imports/content hashes,
+strict compiler checks, CI order and ignored generated files. Do not commit
+`next-env.d.ts`, add wildcard `any` declarations, suppress TS errors, or move the
+typecheck behind the build. Existing fresh-checkout CI is the continuing automated
+regression gate. Verify the command before any dev/build in an isolated Git export,
+then run affected units/lint and push the correction to the same PR. No new review
+round, deployment, database or provider action is authorized by this correction.
+
+Correction verified: Git-only export of `3062816` plus the package-script edit,
+using the already installed locked dependencies and no `next-env.d.ts`/`.next`
+artifacts. Original command failed with exactly the three PNG TS2307 errors;
+`next typegen && tsc --noEmit` passed and generated both route validators and the
+framework image declaration reference. Logs: `/tmp/nak88-ci-types-{red,green}.log`.
+Lint and 20 affected frontend/metadata unit tests pass
+(`/tmp/nak88-ci-typegen-{lint,units}.log`). No runtime, asset, dependency, lockfile,
+compiler strictness or CI-order change. Existing clean-checkout hosted typecheck
+remains the regression gate; the hosted rerun is pending the corrected push.
+Scoped lesson: do not use a previously generated local `next-env.d.ts` as evidence
+that a pre-build compiler command works from a clean checkout.
