@@ -4,8 +4,9 @@
   reflow, bounded JSON exchanges, dismissible retained interest requests and
   hydration-safe account forms; native select sizing and independent material
   preferences. Follow-up fixes the round-3 interest-verification label clipping
-  and patches locked Vite to 8.1.6; 1,669 tests / all coverage floors, audit and
-  build pass. WebKit/Firefox: 58 pass / two deliberate skips. Fresh correction
+  and patches locked Vite to 8.1.6. Combined with landing/orb work and main
+  `66cfc64`: 1,683 tests / all coverage floors, audit, build and 70 Chromium cases
+  pass. Earlier WebKit/Firefox evidence is pre-integration. Fresh correction
   review (three-round budget exhausted), deployed preview/CI and manual
   accessibility gates remain; not released. See the feature record for evidence.
 

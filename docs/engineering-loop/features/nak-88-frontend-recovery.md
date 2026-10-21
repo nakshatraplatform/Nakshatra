@@ -9,6 +9,11 @@ Work in the existing `vivara-landing-content/nakshatra` worktree based on
 No deployment, remote migration, push or PR is authorized. The 21 October
 follow-up request authorizes the compatible Vite security patch described below.
 
+**Delivery authorization update:** on 21 October the user explicitly requested a
+branch push and PR into `main`, then confirmed including the earlier landing-page
+and loading-orb work in the same PR. This authorizes the delivery below, not a
+direct push to `main`, merge, deployment or additional independent review.
+
 ### Current correction scope — 21 October 2026
 
 The third independent review found **FH-REV-5**, a confirmed medium-severity,
@@ -287,3 +292,39 @@ review of the correction. The default three rounds are exhausted; an additional
 review was requested but is not assumed approved. Trusted deployed HTTPS, hosted
 CI, physical-device and actual screen-reader evidence remain pending. No commit,
 push, PR, deployment, live provider call or production data mutation performed.
+
+### Combined delivery preparation — 21 October 2026
+
+Branch `feat/nak-88-vivara-frontend-hardening` includes the approved landing/demo,
+orb and NAK-88 work. Implementation commit `e11928d` was merged with latest main
+`66cfc64` (NAK-87 readable links) in `d6b5b63`. The sole conflict was the project
+index; both feature entries are retained. Dashboard changes merged without
+discarding either the newer share-link wording or upload-control labels.
+No new migration or server-domain change is added relative to that main.
+
+Fresh integrated checks at `d6b5b63`:
+
+- **201 files / 1,683 unit tests**, all 61 feature / 21 protected coverage floors;
+  `/tmp/nak88-delivery-coverage.log`.
+- **70 Chromium browser checks** covering the landing/story/bookshelf, orb theme,
+  no-JavaScript content, keyboard/navigation, auth/interest recovery and readable
+  link compatibility; `/tmp/nak88-delivery-chromium.log`.
+- Lint, non-incremental TypeScript, strict zero-finding dependency audit, database
+  fixture smoke (not live SQL execution), production build and whitespace pass;
+  `/tmp/nak88-delivery-{lint,types,audit,db-smoke,build}.log`.
+- TruffleHog 3.97.0 with repository custom detectors: zero staged-file findings
+  and zero findings in the explicit `66cfc64..d6b5b63` commit range. Verification
+  disabled to avoid contacting providers; no scanner exclusion/bypass added.
+  Logs `/tmp/nak88-delivery-secrets-{precommit,final}.log`.
+
+Earlier 58 WebKit/Firefox passes remain pre-integration evidence, not a newly
+executed check of the merged revision. Build output is outside source at
+`/tmp/nak88-delivery-compiled-production`; generated tsconfig edits restored.
+The font licence has whitespace-only normalization. The local `.impeccable/`
+critique output is preserved untracked and excluded from delivery; marketing
+context and licensed/disclosed demonstration assets are included. No credentials,
+environment files or dependency/build folders are staged.
+
+Open a draft PR: final independent correction/integration review, hosted CI,
+trusted deployed HTTPS and physical-device/screen-reader evidence remain pending.
+This delivery record changes documentation only after the tested runtime revision.
