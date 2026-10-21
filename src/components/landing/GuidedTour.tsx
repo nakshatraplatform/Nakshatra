@@ -19,15 +19,15 @@ const tourSteps = [
     number: "01",
     label: "Create",
     title: "Begin with a private draft.",
-    body: "Fill in guided sections. Everything saves privately as you go. Add optional details when you’re ready.",
-    points: ["Guided sections", "Save as you go", "Private until publication"],
+    body: "Write about yourself and your family. Add photos, choose your primary picture and include a horoscope document if you wish.",
+    points: ["Guided sections", "Light or dark appearance", "Private until publication"],
     icon: FilePenLine,
   },
   {
     number: "02",
     label: "Review and consent",
     title: "Choose what you share.",
-    body: "Complete the publishing checks, then give consent. Open either preview if you’d like; previews are optional.",
+    body: "Check what a family can see and what stays private. Complete the camera liveness check and give consent before publishing. Previews are optional.",
     points: ["Optional previews", "Clear publication consent", "Private details stay separate"],
     icon: BadgeCheck,
   },
@@ -35,7 +35,7 @@ const tourSteps = [
     number: "03",
     label: "Share",
     title: "Send one link that stays current.",
-    body: "Publish and send one link on WhatsApp or email. Publish future updates at the same link, without sending another PDF.",
+    body: "Publish your Vivara and share its link through WhatsApp, email or your family. Save later edits privately, then publish the update at the same link.",
     points: ["One current link", "No app required", "Unpublish or replace anytime"],
     icon: Send,
   },
@@ -43,8 +43,8 @@ const tourSteps = [
     number: "04",
     label: "Share details",
     title: "Decide when to share more.",
-    body: "When someone taps Show interest, they confirm their email. Share details for up to 15 days, or quietly set their interest aside.",
-    points: ["Show interest", "Your choice", "Access can end early"],
+    body: "A viewer signs in and confirms their email to Show interest. Review the request in your dashboard. Share private details for up to 15 days, or set their interest aside.",
+    points: ["Your approval", "Revoke access early", "Renew for another 15 days"],
     icon: UserCheck,
   },
 ] as const;
@@ -71,7 +71,7 @@ export function GuidedTour() {
       <div className={shelf.scene} data-shelf-scene>
         <header className={shelf.intro}>
           <h2 id="tour-heading">How <span className={shelf.wordmark}><span className={shelf.wordmarkText}>VivIntro</span></span> works</h2>
-          <p>One introduction. Four simple steps.</p>
+          <p>Create your Vivara, share its link and decide who sees more.</p>
         </header>
 
         <div className={shelf.stage} data-shelf-stage>
@@ -143,7 +143,7 @@ export function GuidedTour() {
 function TourVisual({ step }: { step: string }) {
   if (step === "01") {
     return (
-      <div className={styles.tourVisual} data-visual="create" aria-label="Example private introduction draft">
+      <div className={styles.tourVisual} data-visual="create" aria-label="Example private Vivara draft">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Private draft</small></div>
         <dl className={styles.tourFormRows}>
           <div><dt>Name</dt><dd>Ananya Mehta</dd></div>
@@ -157,9 +157,9 @@ function TourVisual({ step }: { step: string }) {
 
   if (step === "02") {
     return (
-      <div className={styles.tourVisual} data-visual="preview" aria-label="Introduction preview choices">
+      <div className={styles.tourVisual} data-visual="preview" aria-label="Vivara preview choices">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Optional previews</small></div>
-        <div className={styles.tourPreviewTabs}><strong>Introduction</strong><strong>Private details</strong></div>
+        <div className={styles.tourPreviewTabs}><strong>Public Vivara</strong><strong>Private details</strong></div>
         <div className={styles.tourPreviewCard}><BadgeCheck aria-hidden="true" /><span><small>Before publishing</small><strong>Confirm your consent</strong></span></div>
       </div>
     );
@@ -167,7 +167,7 @@ function TourVisual({ step }: { step: string }) {
 
   if (step === "03") {
     return (
-      <div className={styles.tourVisual} data-visual="share" aria-label="Current introduction link">
+      <div className={styles.tourVisual} data-visual="share" aria-label="Current Vivara link">
         <div className={styles.tourWindowBar}><span /><span /><span /><small>Published link</small></div>
         <div className={styles.tourLinkCard}><Link2 aria-hidden="true" /><span><small>Example share link</small><strong>vivintro.com/p/…</strong></span></div>
         <div className={styles.tourChannels}><span>WhatsApp</span><span>Email</span><span>Copy link</span></div>

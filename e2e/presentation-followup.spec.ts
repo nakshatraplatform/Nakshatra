@@ -38,7 +38,10 @@ for (const route of [...publicRoutes, ...authenticatedRoutes]) {
           // Fully clipped screen-reader labels have no painted text to audit.
           // Their accessible names remain covered by heading/navigation checks.
           if (style.clipPath === "inset(50%)") continue;
-          const expected = element.closest("h1,h2,h3,h4,h5,h6") ? "Plus Jakarta Sans" : "Inter";
+          // The meaning section deliberately uses the licensed Kannada face;
+          // this is a scoped font contract, not an exemption from contrast.
+          const calligraphic = element.matches('#vivara [lang="kn"], #vivara [data-vivara-word]');
+          const expected = calligraphic ? "Akaya Kanadaka" : element.closest("h1,h2,h3,h4,h5,h6") ? "Plus Jakarta Sans" : "Inter";
           if (!style.fontFamily.includes(expected)) fontFailures.push(`${element.tagName} ${text.slice(0, 65)}: ${style.fontFamily}; expected ${expected}`);
           const ancestors: Element[] = [];
           for (let node: Element | null = element; node; node = node.parentElement) ancestors.unshift(node);

@@ -1666,6 +1666,7 @@ function HoroscopeManager({
         ref={inputRef}
         type="file"
         accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+        aria-label="Choose horoscope image"
         className="sr-only"
         onChange={(event) => onUpload(event.target.files?.[0] || null, language)}
       />
@@ -2560,6 +2561,7 @@ function PhotoManager({
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        aria-label="Choose profile photos"
         multiple
         className="sr-only"
         onChange={(event) => onUpload(event.target.files)}

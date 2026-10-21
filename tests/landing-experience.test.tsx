@@ -1,15 +1,28 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LandingExperience } from "../src/components/landing/LandingExperience";
 import Home from "../src/app/page";
 
 describe("LandingExperience consent-led messaging", () => {
+  it("explains Vivara before asking families to learn the product vocabulary", () => {
+    render(<LandingExperience />);
+    const meaning = screen.getByRole("region", { name: "Why we call it a Vivara" });
+    expect(meaning).toHaveTextContent(/Kannada/i);
+    expect(meaning.querySelector('[lang="kn"]')).toHaveTextContent("ವಿವರ");
+    expect(meaning).toHaveTextContent(/explanation.*detail/i);
+    expect(within(meaning).getByText("VivIntro", { exact: true }).tagName).toBe("DT");
+    expect(within(meaning).getByText("Vivara", { exact: true }).tagName).toBe("DT");
+    expect(meaning).toHaveTextContent(/Vivah.*marriage/i);
+    expect(screen.getByRole("region", { name: "Why Rahul started VivIntro" })).toHaveTextContent(/PDF.*link/i);
+    expect(screen.getAllByRole("link", { name: "Create your Vivara" })).toHaveLength(2);
+  });
+
   it("makes controlled disclosure and honest forwarding boundaries clear", () => {
     render(<LandingExperience variant="clarity" />);
-    expect(screen.getByRole("heading", { name: "Your biodata, as one link you control." })).toBeInTheDocument();
-    expect(document.querySelector("#top")).toHaveTextContent(/without sending a new PDF/i);
+    expect(screen.getByRole("heading", { name: "Share your story before you share your number." })).toBeInTheDocument();
+    expect(document.querySelector("#top")).toHaveTextContent(/Share one Vivara link. Update it without resending/i);
     expect(document.querySelector("#top")).toHaveTextContent(/Free. Private until you publish./i);
     expect(document.body).toHaveTextContent(/first view can be forwarded or screenshotted/i);
     expect(screen.getByRole("heading", { name: "You decide who sees what." })).toBeInTheDocument();
@@ -23,8 +36,8 @@ describe("LandingExperience consent-led messaging", () => {
 
   it("connects every promise to a real route", () => {
     render(<LandingExperience variant="clarity" />);
-    expect(screen.getAllByRole("link", { name: "See an example" })[0]).toHaveAttribute("href", "/demo");
-    for (const link of screen.getAllByRole("link", { name: "Create your introduction" })) expect(link).toHaveAttribute("href", "/signup");
+    expect(screen.getAllByRole("link", { name: "See a sample Vivara" })[0]).toHaveAttribute("href", "/demo");
+    for (const link of screen.getAllByRole("link", { name: "Create your Vivara" })) expect(link).toHaveAttribute("href", "/signup");
     for (const link of screen.getAllByRole("link", { name: /read the viewer guide/i })) expect(link).toHaveAttribute("href", "/received-a-link");
     expect(screen.getByRole("navigation", { name: "Main navigation" })).not.toHaveTextContent(/create your portfolio/i);
     expect(document.querySelector("#beta")).not.toHaveTextContent(/create your portfolio/i);
@@ -32,16 +45,27 @@ describe("LandingExperience consent-led messaging", () => {
 
   it("shows the fictional example before the tour and keeps the viewer path", () => {
     render(<LandingExperience variant="clarity" />);
-    const sample = document.querySelector("#samples");
+    const sample = document.querySelector("#product-story");
     const tour = document.querySelector("#how");
     const viewer = document.querySelector("#viewer");
     expect(sample).toHaveTextContent(/fictional/i);
-    expect(document.querySelector("#top")).toHaveTextContent(/fictional example of the shared Introduction/i);
+    expect(document.querySelector("#top")).toHaveTextContent(/fictional Vivara.*AI-generated portrait/i);
     expect(sample).toHaveTextContent(/Private details are not shown/i);
     expect(sample?.compareDocumentPosition(tour!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(tour?.compareDocumentPosition(viewer!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(viewer?.querySelectorAll("article")).toHaveLength(3);
+    expect(viewer?.querySelectorAll("article")).toHaveLength(2);
     expect(viewer?.querySelector('a[href="/received-a-link"]')).toBeInTheDocument();
+  });
+
+  it("introduces the product and sample before the naming and founder context", () => {
+    render(<LandingExperience />);
+    const ids = [...document.querySelectorAll("main > section[id]")].map(section => section.id);
+    expect(ids).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "questions"]);
+    expect(document.querySelector("#top")).toHaveTextContent(/Vivara, a personal page for marriage conversations/i);
+    expect(document.querySelector("#product-story a")).toHaveAttribute("href", "/demo");
+    expect(document.querySelectorAll("[data-tour-step]")).toHaveLength(4);
+    for (const id of ids) expect(document.querySelectorAll(`[id="${id}"]`)).toHaveLength(1);
+    for (const id of ["samples", "why", "privacy", "trust"]) expect(document.querySelectorAll(`[id="${id}"]`)).toHaveLength(1);
   });
 
   it("keeps the guided lifecycle and 15-day shared details distinct", () => {
@@ -55,9 +79,9 @@ describe("LandingExperience consent-led messaging", () => {
     expect(controls).toHaveTextContent(/unpublishing pauses viewing/i);
     expect(controls).toHaveTextContent(/hasn’t ended or been stopped can resume/i);
     expect(controls).toHaveTextContent(/end access early or renew it/i);
-    const family = screen.getByText("Can a parent or sibling create my profile?").closest("details");
-    expect(family).toHaveTextContent(/family member to create a profile on your behalf is coming soon/i);
-    expect(family).toHaveTextContent(/For now, create and publish your own introduction/i);
+    const family = screen.getByText("Can a parent or sibling create my Vivara?").closest("details");
+    expect(family).toHaveTextContent(/on someone else’s behalf is not currently offered/i);
+    expect(family).toHaveTextContent(/For now, create and publish your own Vivara/i);
   });
 
   it("makes trust and FAQ answers expandable without hiding their questions", () => {
@@ -75,12 +99,13 @@ describe("LandingExperience consent-led messaging", () => {
 
   it("keeps the audience boundaries and current liveness limits explicit", () => {
     render(<LandingExperience />);
-const publicView = screen.getByRole("heading", { name: "Your introduction" }).closest("article");
-    const completeView = screen.getByRole("heading", { name: "Private details" }).closest("article");
-    const ownerView = screen.getByRole("heading", { name: "Private notes" }).closest("article");
-    expect(publicView).toHaveTextContent(/anyone with your link/i);
-    expect(completeView).toHaveTextContent(/when you choose to share/i);
-    expect(completeView).toHaveTextContent(/confirms their email/i);
+    const boundary = within(document.querySelector("#privacy dl")! as HTMLElement);
+    const publicView = boundary.getByText("Your shared Vivara", { exact: true }).closest("div");
+    const completeView = boundary.getByText("Private details", { exact: true }).closest("div");
+    const ownerView = boundary.getByText("Private notes", { exact: true }).closest("div");
+    expect(publicView).toHaveTextContent(/public view/i);
+    expect(completeView).toHaveTextContent(/only with your approval/i);
+    expect(document.querySelector("#privacy")).toHaveTextContent(/signs in and confirms their email/i);
     expect(ownerView).toHaveTextContent(/aren’t included in either shared view/i);
     expect(document.querySelector("#privacy")).toHaveTextContent(/keep phone numbers and other private details out of your public story/i);
     const liveness = screen.getByText("What does “Liveness checked” mean?").closest("details");
@@ -95,7 +120,7 @@ const publicView = screen.getByRole("heading", { name: "Your introduction" }).cl
       question: entry.querySelector("summary")!.textContent,
       answer: entry.querySelector("p")!.textContent,
     }));
-    expect(rendered).toHaveLength(7);
+    expect(rendered).toHaveLength(10);
     expect(faq.mainEntity.map((entry: { name: string; acceptedAnswer: { text: string } }) => ({
       question: entry.name,
       answer: entry.acceptedAnswer.text,

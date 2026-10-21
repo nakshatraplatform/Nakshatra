@@ -16,14 +16,20 @@ describe("shared brand system", () => {
     expect([...references].filter(token => !definitions.has(token))).toEqual([]);
   });
 
-  it("loads only the two agreed web font families", () => {
+  it("keeps the two app fonts and scopes the licensed Vivara display exception", () => {
     const fonts = readFileSync("src/lib/fonts.ts", "utf8");
     expect(fonts).toContain('import { Inter, Plus_Jakarta_Sans } from "next/font/google"');
     expect(fonts).toContain('variable: "--font-portfolio-body"');
     expect(fonts).toContain('variable: "--font-portfolio-display"');
     for (const file of sourceFiles("src").filter(file => /\.(tsx|css)$/.test(file))) {
       const source = readFileSync(file, "utf8");
-      expect(source, file).not.toMatch(/@font-face|font-serif\b|font-mono\b|font-(?:geist|harmond|mango|ranade|hkgrotesk|portfolio-section|form-body)/i);
+      if (source.includes("@font-face")) {
+        expect(file).toBe(join("src", "components", "landing", "LandingExperience.module.css"));
+        expect(source.match(/@font-face/g)).toHaveLength(1);
+        expect(source).toContain('/fonts/AkayaKanadaka-Regular.ttf');
+        expect(readFileSync("docs/assets/licenses/AkayaKanadaka-OFL.txt", "utf8")).toContain("SIL OPEN FONT LICENSE");
+      }
+      expect(source, file).not.toMatch(/font-serif\b|font-mono\b|font-(?:geist|harmond|mango|ranade|hkgrotesk|portfolio-section|form-body)/i);
       expect(source, file).not.toMatch(/\b(?:Manrope|Playfair_Display|Tenor_Sans|Geist_Mono)\b/);
     }
   });
@@ -37,7 +43,14 @@ describe("shared brand system", () => {
         }
         if (!decl.prop.includes("mask")) expect(decl.value, `${file}: ${decl.prop}`).not.toMatch(/#[0-9a-f]{3}|rgba?\(/i);
         if (decl.prop.includes("shadow")) expect(decl.value, file).not.toMatch(/#000|rgb\(0 0 0/);
-        if (decl.prop === "font-family") expect(decl.value, file).toMatch(/^var\(--font-portfolio-(body|display)\), (system-ui, )?sans-serif$/);
+        if (decl.prop === "font-family") {
+          if (decl.value === '"Akaya Kanadaka", serif') {
+            expect(file).toBe(join("src", "components", "landing", "LandingExperience.module.css"));
+            expect(decl.parent?.type === "rule" ? decl.parent.selector : "@font-face").toMatch(/vivaraWord|kannadaWord|@font-face/);
+          } else if (decl.parent?.type === "atrule" && decl.parent.name === "font-face") {
+            expect(decl.value).toBe('"Akaya Kanadaka"');
+          } else expect(decl.value, file).toMatch(/^var\(--font-portfolio-(body|display)\), (system-ui, )?sans-serif$/);
+        }
         if (decl.prop === "font-weight") expect(["400", "500", "600", "700"]).toContain(decl.value);
         if (decl.prop === "transition") expect(decl.value, file).not.toMatch(/(?:^|,)\s*(all|color|background(?:-color)?|border-color)\s/);
         if (/background|color|shadow/.test(decl.prop)) {

@@ -48,8 +48,13 @@ test("direct step links survive reload and motion preference changes", async ({ 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
-  await expect(book).toHaveAttribute("data-active", "true");
+  await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+  await expect(page.locator("#tour-step-03")).toHaveCount(1);
+  await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^03/ }).click();
+  await expect(book.locator("h3")).toBeInViewport();
+  await page.setViewportSize({ width: 932, height: 430 });
+  await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+  await expect(book).toHaveCSS("transform", "none");
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
   await expect(book).toHaveAttribute("data-active", "true");
@@ -82,21 +87,48 @@ test.describe("without JavaScript", () => {
 });
 
 
-test("touch scrolling opens and reverses the mobile bookshelf", async ({ page, context, isMobile }) => {
+test("phone layouts show sequential cards in either orientation", async ({ page }, testInfo) => {
+  for (const [width, height] of [[320, 568], [390, 844], [844, 390], [932, 430]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/#tour-step-02");
+    await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+    await expect(page.locator("#tour-step-02 h3")).toBeInViewport();
+    const boxes = [];
+    for (const step of ["01", "02", "03", "04"]) {
+      const card = page.locator(`[data-tour-step="${step}"]`);
+      await expect(card).toHaveCSS("position", "relative");
+      await expect(card).toHaveCSS("transform", "none");
+      await expect(card.locator("[data-shelf-paper]")).not.toHaveAttribute("aria-hidden", "true");
+      await expect(card.locator("[data-shelf-cover]")).toBeHidden();
+      await expect(card.locator('[class*="staticVisual"]')).toBeVisible();
+      await expect(page.locator(`#tour-step-${step}`)).toHaveCount(1);
+      boxes.push(await card.boundingBox());
+    }
+    for (let index = 1; index < boxes.length; index++) {
+      expect(boxes[index]!.y).toBeGreaterThanOrEqual(boxes[index - 1]!.y + boxes[index - 1]!.height);
+    }
+    await expect(page.locator("[data-shelf-scene]")).toHaveCSS("position", "static");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    if (width === 390) {
+      await page.locator('[data-tour-step="02"]').screenshot({ path: testInfo.outputPath("tour-mobile-card.png") });
+    }
+  }
+});
+
+test("touch scrolling proceeds through the mobile cards", async ({ page, context, isMobile }) => {
   test.skip(!isMobile, "Touch gesture coverage runs on touch projects.");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#tour-step-01");
-  const first = page.locator('[data-tour-step="01"]');
   const second = page.locator('[data-tour-step="02"]');
-  await expect(first).toHaveAttribute("data-active", "true");
+  await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
   await page.evaluate(() => document.fonts.ready);
   const input = await context.newCDPSession(page);
   async function swipeToChapter(index: number) {
     // Keep each real touch drag inside the viewport and outside the paper's
     // independent reading scroll. Re-measure to account for native touch slop.
     for (let swipe = 0; swipe < 8; swipe++) {
-      const remaining = await page.locator("[data-shelf-anchor]").nth(index)
-        .evaluate(anchor => anchor.getBoundingClientRect().top);
+      const remaining = await page.locator("[data-tour-step]").nth(index)
+        .evaluate(anchor => anchor.getBoundingClientRect().top - 112);
       if (Math.abs(remaining) < 32) return;
       const before = await page.evaluate(() => scrollY);
       const travel = Math.max(-320, Math.min(320, remaining));
@@ -118,30 +150,29 @@ test("touch scrolling opens and reverses the mobile bookshelf", async ({ page, c
       if (travel > 0) await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 1);
       else await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(before - 1);
     }
-    throw new Error(`Touch swipes did not reach chapter ${index + 1}`);
+    throw new Error(`Touch swipes did not reach card ${index + 1}`);
   }
   await swipeToChapter(1);
-  await expect(second).toHaveAttribute("data-active", "true");
   await expect(second.locator("h3")).toBeInViewport();
-  await expect.poll(() => second.locator("[data-shelf-cover]").evaluate(cover =>
-    new DOMMatrixReadOnly(getComputedStyle(cover).transform).m11
-  )).toBeLessThan(-0.95);
+  await expect(second).toHaveCSS("transform", "none");
   await swipeToChapter(0);
-  await expect(first).toHaveAttribute("data-active", "true");
+  await expect(page.locator('[data-tour-step="01"] h3')).toBeInViewport();
   await page.getByRole("link", { name: "Continue past the tour" }).click();
   await expect(page.locator("#viewer h2")).toBeInViewport();
 });
 
-test("the closed shelf fits after resizing from desktop to phone", async ({ page }) => {
+test("resizing from desktop to phone removes the shelf and preserves real chapter links", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
   await page.evaluate(() => window.scrollTo(0, document.querySelector("#how")!.getBoundingClientRect().top + scrollY));
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
   await expect.poll(() => page.locator("[data-shelf-book]").evaluateAll(books => books.every(book => {
     const rect = book.getBoundingClientRect();
     return rect.left >= 0 && rect.right <= innerWidth;
   }))).toBe(true);
-  await page.locator('[data-shelf-cover] a').first().click();
-  await expect(page.locator('[data-tour-step="01"]')).toHaveAttribute("data-active", "true");
+  await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^01/ }).click();
+  await expect(page.locator('#tour-step-01 h3')).toBeInViewport();
+  await expect(page.locator("[data-shelf-scene]")).toHaveCSS("position", "static");
 });

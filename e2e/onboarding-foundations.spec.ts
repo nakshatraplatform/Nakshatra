@@ -7,10 +7,12 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       await context.addCookies([publishedOwnerCookie]);
       await page.setViewportSize({ width, height: width < 640 ? 740 : 900 });
       let saves = 0;
+      const savedFirstNames: string[] = [];
       await page.route("**/api/dashboard", async route => {
         if (route.request().method() !== "PUT") return route.continue();
         saves += 1;
         const { data } = route.request().postDataJSON();
+        savedFirstNames.push(data.personal.first_name);
         await route.fulfill({ json: { portfolioId: "e2e-portfolio", draftData: data } });
       });
       await page.goto("/dashboard?edit=1");
@@ -30,18 +32,23 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       await expect(name).toBeFocused();
       await expect(name).toHaveAttribute("aria-invalid", "true");
       await expect(editor.getByRole("alert", { name: "Check these answers" })).toContainText("First name: This field is required.");
-      await page.screenshot({ path: testInfo.outputPath(`validation-${width}-${theme}.png`), animations: "disabled" });
+      // A person may pause on validation while the incomplete draft autosaves.
+      // Exercise that legitimate earlier revision before testing final-save dedup.
+      if (width === 1440) await expect.poll(() => savedFirstNames.at(-1)).toBe("");
+      await page.screenshot({ path: testInfo.outputPath(`validation-${width}-${theme}.png`), animations: "disabled", scale: "css" });
       await name.fill("Mary");
       await name.pressSequentially(" Jane");
       await expect(name).toHaveValue("Mary Jane");
       await expect(name).toHaveAttribute("aria-invalid", "false");
-      await expect.poll(() => saves).toBe(1);
+      await expect.poll(() => savedFirstNames.at(-1)).toBe("Mary Jane");
       await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
+      expect(savedFirstNames.filter(value => value === "Mary Jane")).toHaveLength(1);
       if (width >= 640) {
+        const savesBeforeManual = saves;
         await editor.getByRole("button", { name: "Save draft", exact: true }).click();
         // Saving an already-saved revision must not repeat the database write.
         await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
-        expect(saves).toBe(1);
+        expect(saves).toBe(savesBeforeManual);
         await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
       }
       await expect(editor).toBeVisible();
@@ -74,14 +81,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
           await custom.focus();
           const bounds = await custom.boundingBox();
           expect(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1).toBe(true);
-          await page.screenshot({ path: testInfo.outputPath(`family-other-${width}-${theme}.png`), animations: "disabled" });
+          await page.screenshot({ path: testInfo.outputPath(`family-other-${width}-${theme}.png`), animations: "disabled", scale: "css" });
         }
         expect(await editor.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
         if (width < 1024 && section !== "foundation") {
           await expect(editor.locator(".dashboard-editor-mobile-step")).not.toContainText("Basics:");
         }
-        await page.screenshot({ path: testInfo.outputPath(`${section}-${width}-${theme}.png`), animations: "disabled" });
+        await page.screenshot({ path: testInfo.outputPath(`${section}-${width}-${theme}.png`), animations: "disabled", scale: "css" });
       }
       await editor.getByRole("button", { name: /^(Dashboard|Back to dashboard)$/ }).click();
       await expect(editor).toHaveCount(0);

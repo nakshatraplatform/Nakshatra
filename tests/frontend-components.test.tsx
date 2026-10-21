@@ -33,12 +33,12 @@ describe("landing and shared frontend components", () => {
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /create your introduction/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeInTheDocument();
-    expect(screen.getByText(/For marriage introductions/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /create your Vivara/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /share your story before you share your number/i })).toBeInTheDocument();
+    expect(screen.getByText(/For arranged-marriage conversations/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/shared Vivara/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/private details/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /Your introduction. Your choice/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Why Rahul started VivIntro/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Private until you publish/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/What does “Liveness checked” mean/i).closest("summary")).toBeInTheDocument();
     expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
@@ -46,12 +46,12 @@ describe("landing and shared frontend components", () => {
 
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
-    expect(screen.getByRole("heading", { name: /keep personal details personal/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Shared by choice/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /Your Vivara. Private details shared by your decision/i })).toBeInTheDocument();
+    expect(document.querySelector("#privacy")).toHaveTextContent(/only with your approval/i);
 
     rerender(<LandingExperience variant="story" />);
-    expect(screen.getByRole("heading", { name: /more human way to make a marriage introduction/i })).toBeInTheDocument();
-    expect(screen.getByText(/Present the person, not another attachment/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Let someone get to know the person behind the details/i })).toBeInTheDocument();
+    expect(screen.getByText(/Your Vivara gives you room to share your family/i)).toBeInTheDocument();
   });
 
   it("handles empty, selected, disabled, and selectable rashi palettes", async () => {

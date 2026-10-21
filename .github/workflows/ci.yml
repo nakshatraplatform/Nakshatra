@@ -77,13 +77,14 @@ jobs:
         run: npm run build
 
   browser:
-    name: Browser end-to-end tests (${{ matrix.project }})
+    name: Browser end-to-end tests (${{ matrix.project }}, shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         project: [chromium, tablet-chromium, mobile-chromium]
+        shard: [1, 2, 3]
     # Playwright starts local mock services; no production credentials are needed.
     steps:
       - name: Checkout
@@ -114,15 +115,15 @@ jobs:
         run: npx playwright install chromium
 
       - name: End-to-end tests
-        # Keep every project and its existing timeout; isolate their mock servers
-        # on separate runners instead of increasing workers on one shared server.
-        run: npm run test:e2e -- --global-timeout=900000 --project=${{ matrix.project }}
+        # Partition every project without reducing coverage or extending budgets.
+        # Each shard keeps one worker and its own mock servers on a separate runner.
+        run: npm run test:e2e -- --global-timeout=900000 --project=${{ matrix.project }} --shard=${{ matrix.shard }}/3
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-${{ github.run_id }}-${{ matrix.project }}
+          name: playwright-${{ github.run_id }}-${{ matrix.project }}-shard-${{ matrix.shard }}
           path: |
             playwright-report
             test-results

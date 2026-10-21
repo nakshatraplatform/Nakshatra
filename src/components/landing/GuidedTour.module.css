@@ -27,6 +27,9 @@
 .pageNumber { display: block; margin-top: 1.5rem; color: var(--workspace-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .cover, .spine, .pageEdge, .ledge { display: none; }
 .staticVisual > div { display: grid; }
+.tour:not([data-bookshelf="true"]) .book { border: 1px solid var(--workspace-border); border-radius: 14px; overflow: hidden; }
+.tour:not([data-bookshelf="true"]) .paper > p { font-size: 1rem; }
+.tour:not([data-bookshelf="true"]) .paper li { font-size: 0.9rem; line-height: 1.5; }
 .footer { display: grid; gap: 1rem; }
 .navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--workspace-border); }
 .navigation a { display: flex; min-height: 48px; gap: 0.7rem; align-items: center; padding: 0.6rem 0.4rem; color: var(--workspace-muted); }
@@ -37,7 +40,7 @@
 .navigation a:focus-visible, .coverFront:focus-visible, .skip:focus-visible { outline: 3px solid var(--workspace-teal); outline-offset: 4px; }
 .footerNotes { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; color: var(--workspace-muted); font-size: 0.75rem; }
 .footerNotes .scrollHint { display: none; }
-.skip { margin-left: auto; text-decoration: underline !important; text-underline-offset: 4px; }
+.skip { display: inline-flex; align-items: center; min-height: 44px; margin-left: auto; text-decoration: underline !important; text-underline-offset: 4px; }
 
 /* All content is in normal flow until the animation has mounted successfully. */
 .tour[data-bookshelf="true"] { height: 620svh; scroll-margin-top: 0; }
@@ -110,28 +113,10 @@
   .paper ul { margin-top: 1rem; }
 }
 
-/* Keep the hinged-book sequence on every screen. Narrow books open onto one
-   readable page; the reverse cover swings outside the clipped stage. */
+/* Only the enhanced desktop scene needs clipping and independent page scroll. */
 .tour[data-bookshelf="true"] .scene { overflow: clip; }
 .tour[data-bookshelf="true"] .book { max-height: 100%; }
 .tour[data-bookshelf="true"] .paper { overflow-y: auto; }
-@media (max-width: 859px) {
-  .tour[data-bookshelf="true"] .scene { padding: 12px max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom)); }
-  .tour[data-bookshelf="true"] .intro { padding-block: 8px 12px; }
-  .tour[data-bookshelf="true"] .intro h2 { font-size: clamp(1.4rem, 7vw, 3rem); }
-  .tour[data-bookshelf="true"] .intro p { margin-top: 8px !important; font-size: 0.8rem; }
-  .tour[data-bookshelf="true"] .book { width: min(360px, calc(100% - 24px)); height: min(470px, 100%); }
-  .tour[data-bookshelf="true"] .paper { padding: 20px; }
-  .tour[data-bookshelf="true"] .paper h3 { font-size: 1.8rem; }
-  .tour[data-bookshelf="true"] .paper > p { font-size: 0.9rem; }
-  .tour[data-bookshelf="true"] .pageNumber { position: static; margin-top: 20px; text-align: right; }
-  .tour[data-bookshelf="true"] .footer { gap: 8px; }
-  .tour[data-bookshelf="true"] .navigation { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .tour[data-bookshelf="true"] .navigation a { flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 4px; }
-  .tour[data-bookshelf="true"] .navigation strong { font-size: 0.7rem; }
-  .tour[data-bookshelf="true"] .footerNotes { flex-direction: row; gap: 4px 12px; font-size: 0.65rem; }
-  .tour[data-bookshelf="true"] .skip { margin-left: auto; }
-}
 @media (max-height: 699px) {
   .tour[data-bookshelf="true"] .scene { padding-block: 8px; }
   .tour[data-bookshelf="true"] .intro { padding-block: 0 8px; }

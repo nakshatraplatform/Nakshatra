@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
@@ -50,6 +51,7 @@ const COPY = {
 } as const;
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const hydrated = useHydrated();
   const [screen, setScreen] = useState<Screen>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -252,6 +254,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </aside>
         )}
         <section className="account-panel" aria-labelledby="account-title">
+          <fieldset className="account-interactive" disabled={!hydrated} aria-busy={!hydrated}>
+          {!hydrated && <p role="status" className="account-copy">Preparing secure form…</p>}
+          <noscript>Enable JavaScript to sign in or create an account.</noscript>
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={mode === "login" ? 112 : 142} priority /></div>
           {pendingAction && <LoadingStatus compact className="mb-4" state="connecting" title={pendingAction === "credentials" ? mode === "signup" ? "Creating your account" : "Signing you in" : pendingAction === "google" ? "Connecting to Google" : pendingAction === "verify" ? "Confirming your email" : pendingAction === "resend" ? "Sending a new code" : "Sending your recovery email"} />}
           {screen === "credentials" && (
@@ -374,6 +379,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <button type="button" className="account-change-email" onClick={returnToCredentials}>Back to sign in</button>
             </div>
           )}
+          </fieldset>
         </section>
       </main>
     </div>

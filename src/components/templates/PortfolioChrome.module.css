@@ -151,4 +151,9 @@
   .interest:active, .menuButton:active, .backToTop:active { transform: none; }
 }
 @supports not (backdrop-filter: blur(16px)) { .header { background: var(--portfolio-surface); } }
-@media (prefers-reduced-transparency: reduce) { .header { background: var(--portfolio-surface); backdrop-filter: none; } }
+@media (prefers-reduced-transparency: reduce) { .header { background: var(--portfolio-surface); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-contrast: more) {
+  .header { background: var(--portfolio-surface); border-color: var(--portfolio-primary); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .sections a { color: var(--portfolio-primary); }
+  .sections a[aria-current="location"] { outline: 2px solid var(--portfolio-primary); outline-offset: -2px; }
+}

@@ -19,7 +19,9 @@ export function useBookshelfMotion(
     const element = root.current;
     if (!element) return;
     const media = gsap.matchMedia();
-    media.add("(prefers-reduced-motion: no-preference)", () => {
+    // Phone portrait and landscape use the same in-flow cards as the accessible
+    // fallback. Reverting this context also releases transforms and scroll work.
+    media.add("(min-width: 860px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)", () => {
       const scene = element.querySelector<HTMLElement>("[data-shelf-scene]")!;
       const stage = element.querySelector<HTMLElement>("[data-shelf-stage]")!;
       const books = Array.from(element.querySelectorAll<HTMLElement>("[data-shelf-book]"));

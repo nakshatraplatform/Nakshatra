@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getApiUser = vi.hoisted(() => vi.fn());
@@ -50,6 +50,56 @@ function fillDecisionDetails() {
   }
 }
 describe("interest flow", () => {
+  it("dismisses pending Google work, preserves one operation, and requires explicit continuation after dismissal", async () => {
+    let complete!: (value: unknown) => void;
+    startAuthentication.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    expect(screen.getByRole("button", { name: "Connecting to Google" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Close interest form" }));
+    await act(async () => complete({ ok: true, body: { url: "https://accounts.google.test/oauth" } }));
+    expect(continueToAuthProvider).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Google" }));
+    expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
+    expect(startAuthentication).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a provider success after unmount", async () => {
+    let complete!: (value: unknown) => void;
+    startAuthentication.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
+    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    unmount();
+    await act(async () => complete({ ok: true, body: { url: "https://accounts.google.test/oauth" } }));
+    expect(continueToAuthProvider).not.toHaveBeenCalled();
+  });
+  it("does not submit interest when an email verification response arrives after unmount", async () => {
+    const request = vi.fn(); vi.stubGlobal("fetch", request);
+    let complete!: (value: unknown) => void;
+    verifyAuthenticationCode.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
+    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
+    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 617 555 0123" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
+    fillDecisionDetails();
+    fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
+    const code = await screen.findByLabelText("Six-digit code");
+    fireEvent.change(code, { target: { value: "123456" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Verify email" }).closest("form")!);
+    unmount();
+    await act(async () => complete({ ok: true, body: { verified: true, email: "rohan@example.com" } }));
+    expect(request).not.toHaveBeenCalled();
+    expect(verifyAuthenticationCode.mock.calls[0][1].aborted).toBe(true);
+  });
   it("focuses and describes an incomplete existing-profile location before sending", async () => {
     const request = vi.fn();
     vi.stubGlobal("fetch", request);
@@ -92,7 +142,7 @@ describe("interest flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
     expect(screen.queryByLabelText("Registered email")).not.toBeInTheDocument();
-    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/p/portfolio-token#portfolio-interest" }));
+    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/p/portfolio-token#portfolio-interest" }, expect.any(AbortSignal)));
   });
   it.each(["light", "dark"] as const)("uses the %s dialog artwork independently of the document theme", (appearance) => {
     document.documentElement.dataset.appTheme = appearance === "dark" ? "light" : "dark";
@@ -181,7 +231,7 @@ describe("interest flow", () => {
       method: "email_otp",
       email: "rohan@example.com",
       redirect: "/p/portfolio-token",
-    }));
+    }, expect.any(AbortSignal)));
     fireEvent.change(await screen.findByLabelText("Six-digit code"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Verify email" }));
 
@@ -190,7 +240,7 @@ describe("interest flow", () => {
       email: "rohan@example.com",
       token: "123456",
       redirect: "/p/portfolio-token",
-    }));
+    }, expect.any(AbortSignal)));
     expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
   });
 
@@ -313,7 +363,7 @@ expect(screen.getByRole("textbox", { name: "Phone number" })).toBeRequired();
     await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
       method: "google",
       redirect: "/p/portfolio-token#portfolio-interest",
-    }));
+    }, expect.any(AbortSignal)));
     expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
   });
 

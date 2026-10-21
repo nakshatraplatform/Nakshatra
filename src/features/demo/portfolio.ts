@@ -1,7 +1,17 @@
 import type { PortfolioData } from "@/types/portfolio";
+import type { PortfolioPhoto } from "@/features/media/portfolio-photo";
+
+/** Synthetic, public-only demonstration assets; never a verified person's proof. */
+export const demoPhotos: PortfolioPhoto[] = [{
+  id: "fictional-ananya-portrait", src: "/demo/ananya-traditional.webp",
+  alt: "AI-generated fictional Ananya wearing a teal saree",
+  mediaType: "hero", orientation: "portrait", width: 900, height: 1200,
+  presentation: "clear",
+}];
 
 export const demoPortfolio: PortfolioData = {
   privacy_mode: "balanced",
+  visibility: { family_details: "restricted", astrology_details: "restricted", contact: "restricted" },
   personal: { name: "Ananya Mehta", first_name: "Ananya", last_name: "Mehta", dob: "1995-04-18", place_of_birth: "Pune", current_location: "Bengaluru, Karnataka", gender: "female", marital_status: "Never married", citizenship: "India", religion: "Hindu", community: "Gujarati", short_bio: "Thoughtful, optimistic, and happiest around family, books, and the outdoors.", profile_summary: "I value warm relationships, curiosity, and building a grounded life with room for both families and individual ambitions.", shared_life_plans: "I hope to build a warm home, travel thoughtfully, and support each other’s goals.", relocation_preference: "Open to discussing together" },
   vitals: { height: "5 ft 5 in", gotra: "Kashyap" },
   education: { qualification_level: "Master's degree", degree: "MS in Data Science", institution: "Example University" },

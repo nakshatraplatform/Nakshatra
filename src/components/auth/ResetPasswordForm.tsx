@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
@@ -20,6 +21,7 @@ import {
 } from "@/features/auth/password-policy";
 
 export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
+  const hydrated = useHydrated();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -85,6 +87,9 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
       </header>
       <main id="main-content" tabIndex={-1} className="account-main">
         <section className="account-panel">
+          <fieldset className="account-interactive" disabled={!hydrated} aria-busy={!hydrated}>
+          {!hydrated && <p role="status" className="account-copy">Preparing secure form…</p>}
+          <noscript>Enable JavaScript to update your password.</noscript>
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={142} priority /></div>
           <p className="account-eyebrow">Account security</p>
           <h1 className="account-title">Choose a new password.</h1>
@@ -118,6 +123,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
               {pending ? "Saving..." : "Save new password"}
             </button>
           </form>
+          </fieldset>
         </section>
       </main>
     </div>

@@ -6,16 +6,28 @@ import type { ComponentProps } from "react";
 
 vi.mock("thinking-orbs", () => ({
   ThinkingOrb: (props: ComponentProps<"canvas"> & { state: string; theme: string }) => (
-    <canvas data-state={props.state} data-theme={props.theme} aria-hidden={props["aria-hidden"]} />
+    <canvas data-state={props.state} data-theme={props.theme} data-ink={props.color} aria-hidden={props["aria-hidden"]} />
   ),
 }));
 
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
-import { LoadingStatus } from "@/components/loading/LoadingStatus";
+import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { APP_THEME_STORAGE_KEY } from "@/lib/app-theme";
 
 describe("PortfolioLoadingStatus", () => {
+  let themeStyles: HTMLStyleElement;
+  it.each([
+    ["rgb(36, 52, 67)", "light"],
+    ["rgb(237, 242, 239)", "dark"],
+    ["rgb(255, 253, 248)", "dark"],
+  ])("uses enclosing ink %s, including inverted buttons, rather than a second palette", (color, polarity) => {
+    render(<AppThemeProvider><button style={{ color }}><LoadingOrb size={20} />Saving</button></AppThemeProvider>);
+    const canvas = screen.getByRole("button").querySelector("canvas");
+    expect(canvas).toHaveAttribute("data-ink", color);
+    expect(canvas).toHaveAttribute("data-theme", polarity);
+  });
+
   it("keeps a public dialog's appearance independent of the app theme", () => {
     render(<AppThemeProvider><LoadingStatus compact appearance="dark" title="Sending interest" /></AppThemeProvider>);
     const status = screen.getByRole("status");
@@ -30,9 +42,17 @@ describe("PortfolioLoadingStatus", () => {
     vi.stubGlobal("localStorage", browser.localStorage);
     window.localStorage.clear();
     document.documentElement.dataset.appTheme = "light";
+    // JSDOM does not load the application's global stylesheet. Model its ink
+    // inheritance here; real CSS and canvas colors are covered in Playwright.
+    themeStyles = document.createElement("style");
+    themeStyles.textContent = `:root { color: rgb(36, 52, 67); }
+      :root[data-app-theme="dark"], [data-loading-status][style*="color-scheme: dark"] { color: rgb(237, 242, 239); }
+      [data-loading-status][style*="color-scheme: light"] { color: rgb(36, 52, 67); }`;
+    document.head.append(themeStyles);
   });
 
   afterEach(() => {
+    themeStyles.remove();
     window.localStorage.clear();
     vi.unstubAllGlobals();
   });
