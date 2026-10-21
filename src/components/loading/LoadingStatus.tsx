@@ -1,9 +1,9 @@
 "use client";
 
 import { ThinkingOrb, type OrbState } from "thinking-orbs";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useAppTheme } from "@/components/theme/AppThemeProvider";
 import type { AppTheme } from "@/lib/app-theme";
-import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
 import styles from "./LoadingStatus.module.css";
 
 type LoadingStatusProps = {
@@ -23,10 +23,26 @@ export function LoadingOrb({ size = 32, state = "working", appearance }: {
   appearance?: AppTheme;
 }) {
   const { theme } = useAppTheme();
-  const resolvedTheme = appearance ?? theme;
-  return <span className={styles.orb} data-size={size} aria-hidden="true">
-    <ThinkingOrb size={size} state={state} theme={resolvedTheme}
-      color={CELESTIAL_THEME_COLORS[resolvedTheme].ink} aria-hidden="true" />
+  const host = useRef<HTMLSpanElement>(null);
+  const [ink, setInk] = useState<{ color: string; polarity: AppTheme } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!host.current) return;
+    // Canvas cannot inherit currentColor. Resolve CSS here, not a second palette.
+    // Bright button text needs the dark-substrate ramp even in the Light app.
+    const color = getComputedStyle(host.current).color;
+    const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+    const bright = channels && channels.length === 3
+      ? channels.reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0) > 127
+      : (appearance ?? theme) === "dark";
+    const polarity = bright ? "dark" : "light";
+    setInk(current => current?.color === color && current.polarity === polarity ? current : { color, polarity });
+  }, [theme, appearance]);
+
+  return <span ref={host} className={styles.orb} data-size={size} aria-hidden="true"
+    style={appearance ? { colorScheme: appearance } : undefined}>
+    {ink && <ThinkingOrb size={size} state={state} theme={ink.polarity}
+      color={ink.color} aria-hidden="true" />}
   </span>;
 }
 

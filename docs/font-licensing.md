@@ -1,5 +1,12 @@
 # Runtime font licensing
 
+The landing-page Vivara naming section additionally uses **Akaya Kanadaka
+Regular**, self-hosted from `public/fonts/AkayaKanadaka-Regular.ttf`, with SIL
+OFL notice retained at `docs/assets/licenses/AkayaKanadaka-OFL.txt`. This is a
+scoped display face for the Kannada/Latin naming moment, not a replacement for
+the application fonts. Origin and author details are in
+`docs/assets/ananya-demo-provenance.md`.
+
 The current root layout uses Inter and Plus Jakarta Sans from `src/lib/fonts.ts`
 through `next/font/google` and serves the generated font assets locally. The
 latest-main integration retains these runtime families, rather than restoring

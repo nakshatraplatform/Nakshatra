@@ -3,23 +3,23 @@ import { expect, test } from "@playwright/test";
 test("landing explains the family problem, disclosure boundary, and next step", async ({ page }, testInfo) => {
   await page.goto("/");
 
-  await expect(page.locator("#why")).toContainText("Old versions keep circulating");
-  await expect(page.locator("#privacy")).toContainText("Your introduction");
+  await expect(page.locator("#why")).toContainText("Older versions keep circulating");
+  await expect(page.locator("#privacy")).toContainText("Your shared Vivara");
   await expect(page.locator("#privacy")).toContainText("Anything someone can see, they can screenshot");
-  await expect(page.locator("#privacy").getByRole("heading", { name: "Private details", exact: true })).toBeVisible();
-  await expect(page.locator("#privacy")).toContainText("Your private notes and street address stay in your account");
+  await expect(page.locator("#privacy dt").filter({ hasText: /^Private details$/ })).toBeVisible();
+  await expect(page.locator("#privacy")).toContainText("Your notes and street address aren’t included in either shared view");
   await page.locator("#privacy").screenshot({ path: testInfo.outputPath("disclosure-examples.png"), animations: "disabled" });
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
   await page.locator('[data-tour-step="01"]').screenshot({ path: testInfo.outputPath("fictional-draft-example.png"), animations: "disabled" });
   await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
-  await expect(page.locator("#samples").getByRole("link", { name: "See an example" })).toHaveAttribute("href", "/demo");
+  await expect(page.locator("#product-story").getByRole("link", { name: "Explore Ananya’s Vivara" })).toHaveAttribute("href", "/demo");
   expect(await page.locator("#samples").evaluate((element) => {
     const tour = document.querySelector("#how");
     return tour !== null && Boolean(element.compareDocumentPosition(tour) & Node.DOCUMENT_POSITION_FOLLOWING);
   })).toBe(true);
-  await expect(page.locator("#viewer article")).toHaveCount(3);
+  await expect(page.locator("#viewer article")).toHaveCount(2);
   if (testInfo.project.name === "chromium") {
-    await page.locator("#samples").screenshot({ path: testInfo.outputPath("sample-section-desktop-light.png"), animations: "disabled" });
+    await page.locator("#product-story").screenshot({ path: testInfo.outputPath("sample-section-desktop-light.png"), animations: "disabled" });
   }
 
   await page.locator("#questions").getByText("Can my link be forwarded?").click();
@@ -107,25 +107,25 @@ test("bookshelf fills the viewport and opens every step by keyboard", async ({ p
   }
 });
 
-test("small and short screens animate every chapter with readable scrollable pages", async ({ page }, testInfo) => {
-  for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [844, 390], [1440, 600]] as const) {
+test("small and phone-landscape screens keep every step in normal document flow", async ({ page }, testInfo) => {
+  for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [844, 390], [932, 430], [859, 900], [1440, 599]] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+    await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
     for (const step of ["01", "02", "03", "04"]) {
       await page.locator(`nav[aria-label="Guided tour steps"] a[href="#tour-step-${step}"]`).click();
       const book = page.locator(`[data-tour-step="${step}"]`);
-      await expect(book).toHaveAttribute("data-active", "true");
+      await expect(book).toHaveCSS("transform", "none");
       await expect(book.locator("h3")).toBeInViewport();
       const paper = book.locator("[data-shelf-paper]");
-      await paper.evaluate(element => { element.scrollTop = element.scrollHeight; });
-      await expect(paper.locator("li").last()).toBeInViewport();
+      await expect(paper).not.toHaveAttribute("aria-hidden", "true");
+      await expect(paper.locator("p")).toHaveCSS("font-size", "16px");
+      expect(await paper.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
       const box = await book.boundingBox();
       expect(box!.width).toBeLessThanOrEqual(width);
-      await paper.evaluate(element => { element.scrollTop = 0; });
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    if (width === 390) await page.screenshot({ path: testInfo.outputPath("bookshelf-mobile-open.png") });
+    if (width === 390) await page.screenshot({ path: testInfo.outputPath("tour-stacked-mobile.png") });
   }
 });
 
@@ -149,14 +149,14 @@ test("sample portfolio footer uses an in-flow back-to-top link without a floatin
   }
 });
 
-test("hero callout does not cover the preview label", async ({ page }) => {
+test("the real hero capture keeps its fictional caption outside the phone", async ({ page }) => {
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     const overlap = await page.evaluate(() => {
-      const callout = document.querySelector('[class*="floatingMessage"]')!.getBoundingClientRect();
-      const label = document.querySelector('[class*="portfolioCard"] > header > span:last-child')!.getBoundingClientRect();
-      return callout.left < label.right && callout.right > label.left && callout.top < label.bottom && callout.bottom > label.top;
+      const phone = document.querySelector('#top figure > div')!.getBoundingClientRect();
+      const label = document.querySelector('#top figcaption')!.getBoundingClientRect();
+      return phone.left < label.right && phone.right > label.left && phone.top < label.bottom && phone.bottom > label.top;
     });
     expect(overlap).toBe(false);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
@@ -167,17 +167,17 @@ test("mobile sample explanation and sharing cards have breathing room", async ({
   for (const width of [320, 375, 414]) {
     await page.setViewportSize({ width, height: 812 });
     await page.goto("/");
-    const caption = page.getByText("A fictional example of the shared Introduction");
+    const caption = page.locator("#top figcaption");
     await expect(caption).toBeVisible();
     const positions = await page.evaluate(() => {
-      const caption = document.querySelector('[class*="mobilePreviewLabel"]')!.getBoundingClientRect();
-      const callout = document.querySelector('[class*="floatingMessage"]')!.getBoundingClientRect();
+      const caption = document.querySelector('#top figcaption')!.getBoundingClientRect();
+      const phone = document.querySelector('#top figure > div')!.getBoundingClientRect();
       const control = document.querySelector("#privacy")!.getBoundingClientRect();
-      return { captionBottom: caption.bottom, calloutTop: callout.top, controlLeft: control.left, controlRight: control.right };
+      return { captionTop: caption.top, phoneBottom: phone.bottom, controlLeft: control.left, controlRight: control.right };
     });
-    expect(positions.captionBottom).toBeLessThan(positions.calloutTop);
-    expect(positions.controlLeft).toBeGreaterThanOrEqual(19);
-    expect(positions.controlRight).toBeLessThanOrEqual(width - 19);
+    expect(positions.captionTop).toBeGreaterThan(positions.phoneBottom);
+    expect(positions.controlLeft).toBeGreaterThanOrEqual(16);
+    expect(positions.controlRight).toBeLessThanOrEqual(width - 16);
   }
 });
 
@@ -189,10 +189,10 @@ test("frequent tour feedback is immediate and sample CTA opens the real demo", a
   await step.focus();
   await expect(step).toHaveCSS("outline-style", "solid");
 
-  const sample = page.locator("#top").getByRole("link", { name: "See an example" });
+  const sample = page.locator("#top").getByRole("link", { name: "See a sample Vivara" });
   await expect(sample).toHaveAttribute("href", "/demo");
   await sample.click();
-  await expect(page.getByText("Fictional sample introduction", { exact: true })).toBeVisible();
+  await expect(page.getByText("Fictional sample Vivara", { exact: true })).toBeVisible();
 });
 
 test("reduced motion keeps tour cards readable without sticky stacking", async ({ page }) => {

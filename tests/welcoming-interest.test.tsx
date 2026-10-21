@@ -78,7 +78,7 @@ fireEvent.change(location.getByRole("combobox", { name: "State" }), { target: { 
     expect(JSON.parse(request.mock.calls[0][1].body)).toMatchObject({ city: "Quincy", postalCode: "02171" });
   });
 
-  it("does not dismiss or duplicate an in-flight submission and clears the form after success", async () => {
+  it("dismisses without duplicating an in-flight submission and clears the form after success", async () => {
     let complete!: (response: Response) => void;
     const request = vi.fn(() => new Promise<Response>(resolve => { complete = resolve; }));
     vi.stubGlobal("fetch", request);
@@ -88,8 +88,11 @@ fireEvent.change(location.getByRole("combobox", { name: "State" }), { target: { 
     fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
     await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
+    expect(screen.getByLabelText("Family context")).toHaveValue("Our family values kindness, honesty and mutual respect.");
+    expect(request).toHaveBeenCalledTimes(1);
     complete(new Response('{"ok":true}', { status: 201 }));
     expect(await screen.findByRole("heading", { name: "Interest sent", level: 2 })).toBeInTheDocument();
     expect(screen.queryByLabelText("Family context")).not.toBeInTheDocument();

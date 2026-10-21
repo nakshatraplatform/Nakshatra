@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 
 
@@ -32,6 +33,7 @@ type Action = "profile" | "sessions" | "delete" | "cancel" | "reauth" | null;
 
 /** Presents browser-safe account controls while all privileged work remains in authenticated APIs. */
 export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, profileManagedByPortfolio = false, signInMethods = [], reauthComplete = false }: Props) {
+  const hydrated = useHydrated();
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
   const [savedProfile, setSavedProfile] = useState(initialProfile);
@@ -173,7 +175,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               {(["firstName", "middleName", "lastName"] as const).map((key) => (
                 <label key={key} htmlFor={`account-${key}`}>
                   {key === "firstName" ? "First name" : key === "middleName" ? "Middle name (optional)" : "Last name"}
-                  <input className="biodata-field" id={`account-${key}`} name={key} autoComplete={key === "firstName" ? "given-name" : key === "middleName" ? "additional-name" : "family-name"} required={key !== "middleName"} readOnly={profileManagedByPortfolio} maxLength={80} value={profile[key]} disabled={action !== null || deletionProcessing} onChange={(event) => setProfile({ ...profile, [key]: event.target.value })} />
+                  <input className="biodata-field" id={`account-${key}`} name={key} autoComplete={key === "firstName" ? "given-name" : key === "middleName" ? "additional-name" : "family-name"} required={key !== "middleName"} readOnly={profileManagedByPortfolio} maxLength={80} value={profile[key]} disabled={!hydrated || action !== null || deletionProcessing} onChange={(event) => setProfile({ ...profile, [key]: event.target.value })} />
                 </label>
               ))}
             </div>
@@ -195,7 +197,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               <h3 id="sessions-heading">Other signed-in devices</h3>
               <p>End every other active session. This browser stays signed in.</p>
             </div>
-            <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={action !== null}>
+            <button className="dashboard-secondary-action" onClick={revokeOtherSessions} disabled={!hydrated || action !== null}>
               {action === "sessions" ? <LoadingOrb size={20} /> : <KeyRound />}
               Sign out others
             </button>
@@ -217,14 +219,14 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               )}
             </div>
             {deletionPending ? (
-              <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={action !== null}>
+              <button className="dashboard-secondary-action" onClick={cancelDeletion} disabled={!hydrated || action !== null}>
                 {action === "cancel" ? <LoadingOrb size={20} /> : <ShieldCheck />}
                 Cancel deletion
               </button>
             ) : deletionProcessing ? (
               <p className="account-notice is-error">Deletion is being processed and can no longer be canceled.</p>
             ) : (
-              <button ref={deleteTriggerRef} className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={action !== null}>
+              <button ref={deleteTriggerRef} className="dashboard-danger-action" onClick={() => setConfirmationOpen(true)} disabled={!hydrated || action !== null}>
                 <Trash2 />
                 Delete account
               </button>
@@ -236,7 +238,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
       {confirmationOpen ? (
         <div className="account-confirm-backdrop" role="presentation">
           <section ref={dialogRef} tabIndex={-1} className="account-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-heading">
-            <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={action !== null} onClick={closeConfirmation}>
+            <button className="account-confirm-close" aria-label="Close deletion confirmation" disabled={!hydrated || action !== null} onClick={closeConfirmation}>
               <X />
             </button>
             <p className="site-eyebrow">Permanent action</p>
@@ -256,6 +258,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
                   name="reauth-method"
                   checked={reauthMethod === "google"}
                   onChange={() => setReauthMethod("google")}
+                  disabled={!hydrated || action !== null}
                 />
                 Google
               </label>
@@ -265,6 +268,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
                   name="reauth-method"
                   checked={reauthMethod === "email"}
                   onChange={() => setReauthMethod("email")}
+                  disabled={!hydrated || action !== null}
                 />
                 Email link to {userEmail}
               </label>
@@ -273,7 +277,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               <button
                 className="dashboard-secondary-action"
                 onClick={startDeletionReauth}
-                disabled={!reauthMethod || action !== null}
+                disabled={!hydrated || !reauthMethod || action !== null}
               >
                 {action === "reauth" ? <LoadingOrb size={20} /> : <KeyRound />}
                 Continue to fresh sign-in
@@ -288,11 +292,12 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               autoComplete="off"
+              disabled={!hydrated || action !== null}
             />
             <button
               className="dashboard-danger-action"
               onClick={requestDeletion}
-              disabled={!reauthComplete || confirmation !== "DELETE" || action !== null}
+              disabled={!hydrated || !reauthComplete || confirmation !== "DELETE" || action !== null}
             >
               {action === "delete" ? <LoadingOrb size={20} /> : <Trash2 />}
               Schedule deletion

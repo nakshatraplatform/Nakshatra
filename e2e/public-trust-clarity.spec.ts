@@ -30,7 +30,7 @@ test("a liveness badge explains itself at compact and wide sizes", async ({ page
 
 test("the fictional introduction does not claim a real liveness check", async ({ page }) => {
   await page.goto("/demo");
-  await expect(page.getByText("Fictional sample introduction")).toBeVisible();
+  await expect(page.getByText("Fictional sample Vivara")).toBeVisible();
   await expect(page.getByLabel(/^Liveness checked\./)).toHaveCount(0);
 });
 

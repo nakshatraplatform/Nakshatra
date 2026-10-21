@@ -64,13 +64,22 @@ export function ApplicationSmoothScroll() {
       const onClick = (event: MouseEvent) => {
         if (event.composedPath().some(node => node instanceof HTMLAnchorElement)) interruptSmoothScroll(lenis);
       };
+      // Responsive stories can change geometry while an anchor is still easing.
+      // Cancel its old target before native/GSAP chapter restoration, without
+      // taking ownership of the browser's current scroll position.
+      const onViewportResize = () => {
+        interruptSmoothScroll(lenis);
+        lenis.resize();
+      };
       document.addEventListener("click", onClick, true);
       document.addEventListener("keydown", onKeyDown);
+      window.addEventListener("resize", onViewportResize);
       syncLock();
       return () => {
         observer.disconnect();
         document.removeEventListener("click", onClick, true);
         document.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("resize", onViewportResize);
         controller.current = null;
         lenis.destroy();
       };

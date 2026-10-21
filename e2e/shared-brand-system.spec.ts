@@ -67,28 +67,30 @@ test("inverse demo and landing examples retain readable text in both themes", as
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
-    // Wait for the animated shelf to replace its static fallback before clicking.
-    if (await page.evaluate(() => matchMedia("(prefers-reduced-motion: no-preference)").matches)) {
+    const enhanced = await page.evaluate(() => innerWidth >= 860 && innerHeight >= 600 && matchMedia("(prefers-reduced-motion: no-preference)").matches);
+    if (enhanced) {
       await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+    } else {
+      await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
     }
     await page.evaluate(() => document.fonts.ready);
     await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
     const book = page.locator('[data-tour-step="04"]');
-    await expect(book).toHaveAttribute("data-active", "true");
+    if (enhanced) await expect(book).toHaveAttribute("data-active", "true");
+    else await expect(book).toHaveCSS("transform", "none");
     const title = book.locator("[data-shelf-paper] h3");
     await expect(title).toBeInViewport();
     expect(await contrast(title)).toBeGreaterThanOrEqual(4.5);
     expect(await contrast(book.locator("[data-shelf-paper] > p"))).toBeGreaterThanOrEqual(4.5);
-    // Narrow layouts show the reading page; the reverse-cover illustration
-    // swings aside. Check illustration text where the two-page spread is shown.
-    if (await page.locator("[data-shelf-stage]").evaluate(element => element.clientWidth >= 800)) {
+    // Static cards expose one illustration; wide enhanced books show the spread.
+    if (!enhanced || await page.locator("[data-shelf-stage]").evaluate(element => element.clientWidth >= 800)) {
       const approval = book.locator('[data-visual="approve"]:visible').getByText("Share details", { exact: true });
       await expect(approval).toHaveCount(1);
       await expect(approval).toBeVisible();
       expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
     }
     await page.goto("/demo");
-    expect(await contrast(page.getByText("Fictional sample introduction", { exact: true }))).toBeGreaterThanOrEqual(4.5);
+    expect(await contrast(page.getByText("Fictional sample Vivara", { exact: true }))).toBeGreaterThanOrEqual(4.5);
     if (theme === "dark") await page.evaluate(() => localStorage.clear());
   }
 });

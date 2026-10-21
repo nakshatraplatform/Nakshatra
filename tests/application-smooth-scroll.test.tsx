@@ -68,6 +68,20 @@ it("does not interrupt native restoration when a fresh controller first mounts",
   expect(mocks.resize).not.toHaveBeenCalled();
 });
 
+it("cancels stale anchor momentum on viewport resize and removes its listener", () => {
+  const view = render(<ApplicationSmoothScroll />);
+  mocks.stop.mockClear(); mocks.start.mockClear(); mocks.resize.mockClear(); mocks.scrollTo.mockClear();
+  window.dispatchEvent(new Event("resize"));
+  expect(mocks.stop).toHaveBeenCalledOnce();
+  expect(mocks.start).toHaveBeenCalledOnce();
+  expect(mocks.resize).toHaveBeenCalledOnce();
+  expect(mocks.scrollTo).not.toHaveBeenCalled();
+  view.unmount();
+  mocks.resize.mockClear();
+  window.dispatchEvent(new Event("resize"));
+  expect(mocks.resize).not.toHaveBeenCalled();
+});
+
 it("uses native scrolling when reduced motion is already requested", () => {
   vi.spyOn(window, "matchMedia").mockReturnValue({
     matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),

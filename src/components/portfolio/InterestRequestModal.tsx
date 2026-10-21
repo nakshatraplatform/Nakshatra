@@ -13,6 +13,7 @@ import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
 import type { LocationValue } from "@/components/portfolio/LocationFields";
 import { StructuredInterestLocation, interestLocationError } from "./StructuredInterestLocation";
 import { activateModalLifecycle } from "@/lib/ui/modal-lifecycle";
+import { boundedJsonRequest, JsonRequestInterrupted, withRequestDeadline } from "@/lib/api/bounded-json-request";
 
 type ModalStep = "choice" | "details" | "verify" | "success";
 type InterestPayload = {
@@ -66,8 +67,22 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   const triggerRef = useRef<HTMLButtonElement>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
+  const operation = useRef<AbortController | null>(null);
+  const mayNavigate = useRef(false);
+  const [providerUrl, setProviderUrl] = useState<string | null>(null);
   const portfolioPath = `/p/${encodeURIComponent(portfolioToken)}`;
   const sessionEmail = authenticated ? verifiedEmail?.trim().toLowerCase() || null : null;
+
+  useEffect(() => () => { operation.current?.abort(); }, []);
+
+  function startOperation() {
+    const controller = new AbortController();
+    operation.current = controller;
+    inFlight.current = true;
+    setPending(true);
+    setProviderUrl(null);
+    return controller.signal;
+  }
 
   useEffect(() => {
     if (step === "details" && Object.keys(fieldErrors).length) {
@@ -92,7 +107,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     if (!open) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
-    return activateModalLifecycle(dialog, () => { if (!inFlight.current) setOpen(false); }, triggerRef.current);
+    return activateModalLifecycle(dialog, closeModal, triggerRef.current);
   }, [open]);
 
   useEffect(() => {
@@ -108,7 +123,9 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   }, [resendSeconds]);
 
   function closeModal() {
-    if (!pending) setOpen(false);
+    // Dismissal does not undo a request. Keep the draft and duplicate guard alive.
+    mayNavigate.current = false;
+    setOpen(false);
   }
 
   async function beginRequest(event: React.FormEvent<HTMLFormElement>) {
@@ -148,12 +165,14 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     };
     setError("");
     setFieldErrors({});
-    setPending(true);
-    inFlight.current = true;
+    const signal = startOperation();
 
     // Load authoring validation only when needed, not on the portfolio's first paint.
     try {
-      const { interestSubmissionSchema, interestRequestValidationMessage, interestFieldErrors } = await import("@/features/interest/server/interest.contract");
+      const { interestSubmissionSchema, interestRequestValidationMessage, interestFieldErrors } = await withRequestDeadline(
+        () => import("@/features/interest/server/interest.contract"), signal,
+      );
+      if (signal.aborted) return;
       const parsed = interestSubmissionSchema.safeParse(payload);
       if (!parsed.success) {
         const errors = interestFieldErrors(parsed.error);
@@ -167,6 +186,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       payload.message = parsed.data.message ?? null;
       if (!parsed.data.useExistingProfile) payload.candidate = parsed.data.candidate;
     } catch {
+      if (signal.aborted) return;
       setError("We could not check your details. Please try again.");
       setPending(false);
       inFlight.current = false;
@@ -175,9 +195,10 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     setRequestPayload(payload);
     setEmail(payload.email);
 
-    if (sessionEmail) return void await sendInterest(payload);
+    if (sessionEmail) return void await sendInterest(payload, signal);
 
-    const { ok, body } = await startAuthentication({ method: "email_otp", email: enteredEmail, redirect: portfolioPath });
+    const { ok, body } = await startAuthentication({ method: "email_otp", email: enteredEmail, redirect: portfolioPath }, signal);
+    if (signal.aborted) return;
     if (!ok || !body?.sent) {
       setError(body?.error || "We could not send the verification code. Please try again.");
       setPending(false);
@@ -194,28 +215,35 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
   async function continueWithVivIntro() {
     if (inFlight.current) return;
-    inFlight.current = true;
-    setPending(true);
+    if (providerUrl) return continueToAuthProvider(providerUrl);
+    const signal = startOperation();
+    mayNavigate.current = true;
     setError("");
-    const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest` });
+    const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest` }, signal);
+    if (signal.aborted) return;
     if (!ok || !body?.url) {
       setError(body?.error || "We could not connect to Google. Please try again.");
       setPending(false);
       inFlight.current = false;
       return;
     }
-    continueToAuthProvider(body.url);
+    if (mayNavigate.current) continueToAuthProvider(body.url);
+    else {
+      setProviderUrl(body.url);
+      setPending(false);
+      inFlight.current = false;
+    }
   }
 
   async function verifyAndSend(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
     if (!requestPayload) return setStep("details");
-    inFlight.current = true;
-    setPending(true);
+    const signal = startOperation();
     setVerificationAction("verifying");
     setError("");
-    const { ok, body } = await verifyAuthenticationCode({ purpose: "viewer_interest", email, token: otp, redirect: portfolioPath });
+    const { ok, body } = await verifyAuthenticationCode({ purpose: "viewer_interest", email, token: otp, redirect: portfolioPath }, signal);
+    if (signal.aborted) return;
     if (!ok || !body?.verified) {
       setError(body?.error || "That code is incorrect or has expired.");
       setOtp("");
@@ -226,15 +254,15 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       return;
     }
     setVerificationAction("sending");
-    await sendInterest({ ...requestPayload, email: body.email || email });
+    await sendInterest({ ...requestPayload, email: body.email || email }, signal);
   }
 
   async function resendCode() {
     if (resendSeconds > 0 || inFlight.current) return;
-    inFlight.current = true;
-    setPending(true);
+    const signal = startOperation();
     setError("");
-    const { ok, body } = await startAuthentication({ method: "email_otp", email, redirect: portfolioPath });
+    const { ok, body } = await startAuthentication({ method: "email_otp", email, redirect: portfolioPath }, signal);
+    if (signal.aborted) return;
     if (!ok || !body?.sent) setError(body?.error || "We could not send another code.");
     else {
       setOtp("");
@@ -246,14 +274,15 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     inFlight.current = false;
   }
 
-  async function sendInterest(payload: InterestPayload) {
+  async function sendInterest(payload: InterestPayload, signal: AbortSignal) {
     try {
-      const response = await fetch("/api/interest", {
+      const { response, body: result } = await boundedJsonRequest<{ error?: string }>("/api/interest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal,
       });
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (signal.aborted) return;
       if (response.status === 401) {
         setStep("verify");
         setError("Your verification session ended. Send a new code and try again.");
@@ -265,11 +294,16 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       setRequestPayload(null);
       setOtp("");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to send interest");
+      if (signal.aborted) return;
+      setError(requestError instanceof JsonRequestInterrupted
+        ? "We could not confirm delivery. Your request may have been sent. Your details are saved here; check your requests before sending again."
+        : requestError instanceof Error ? requestError.message : "Unable to send interest");
     } finally {
-      setPending(false);
-      inFlight.current = false;
-      setVerificationAction("idle");
+      if (!signal.aborted) {
+        setPending(false);
+        inFlight.current = false;
+        setVerificationAction("idle");
+      }
     }
   }
 
@@ -320,16 +354,18 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                 <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
                 <p>{step === "choice" ? "Sign in to reuse your details, or continue with email. You don’t need to create an introduction." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : sessionEmail && existingViewerProfile ? "Check your location and add a short introduction. Your signed-in details are already filled in." : "A few details help the family understand who is getting in touch."}</p>
               </div>
-              <button type="button" className="interest-modal-close" disabled={pending} onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
+              <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
+
+            {pending && <p className="interest-verification-help interest-pending-note">You can close this window. Your request may still finish; reopening will keep your progress. We stop waiting after 20 seconds per request.</p>}
 
             {step === "choice" && (
               <div className="interest-account-choice">
                 <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with your usual account to reuse your details.</p></div>
                 {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
                 <Link href={`/login?redirect=${encodeURIComponent(`${portfolioPath}#portfolio-interest`)}`} className="portfolio-button portfolio-button-primary">Sign in to VivIntro</Link>
-                <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : "Continue with Google"}</button>
-                <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setError(""); setStep("details"); }}>Continue as a new visitor</button>
+                <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : providerUrl ? "Continue to Google" : "Continue with Google"}</button>
+                <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setProviderUrl(null); setError(""); setStep("details"); }}>Continue as a new visitor</button>
               </div>
             )}
 

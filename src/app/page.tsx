@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { LandingExperience, landingFaqs } from "@/components/landing/LandingExperience";
 
-const description = "Share your marriage biodata as one link you can update anytime. Your phone number and horoscope file stay hidden until you choose to share them.";
+const description = "Create your Vivara, a personal page for marriage conversations. Share one current link and keep contact details private until you approve access.";
 
 export const metadata: Metadata = {
-  title: { absolute: "Marriage biodata link you control | VivIntro" },
+  title: { absolute: "Vivara: your personal page for marriage | VivIntro" },
   description,
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "/",
-    title: "Your biodata, as one link you control.",
+    title: "Share your story before you share your number.",
     description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Your biodata, as one link you control.",
+    title: "Share your story before you share your number.",
     description,
   },
 };

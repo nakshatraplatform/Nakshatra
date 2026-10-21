@@ -11,17 +11,17 @@ import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-ima
 
 describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
-    expect(metadata.title).toEqual({ absolute: "Marriage biodata link you control | VivIntro" });
-    expect(metadata.description).toMatch(/marriage biodata/i);
-    expect(metadata.description).toMatch(/until you choose to share them/i);
+    expect(metadata.title).toEqual({ absolute: "Vivara: your personal page for marriage | VivIntro" });
+    expect(metadata.description).toMatch(/Vivara.*marriage/i);
+    expect(metadata.description).toMatch(/until you approve access/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
-      title: "Your biodata, as one link you control.",
+      title: "Share your story before you share your number.",
       description: metadata.description,
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
-      title: "Your biodata, as one link you control.",
+      title: "Share your story before you share your number.",
       description: metadata.description,
     });
     expect(metadata.alternates?.canonical).toBe("/");
@@ -31,6 +31,7 @@ describe("marketing metadata", () => {
     expect(size).toEqual({ width: 1200, height: 630 });
     expect(contentType).toBe("image/png");
     expect(alt).toMatch(/VivIntro/i);
+    expect(alt).toMatch(/Vivara.*marriage/i);
     expect(OpenGraphImage()).toMatchObject({ options: size });
   });
 });

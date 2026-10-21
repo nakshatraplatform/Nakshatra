@@ -437,7 +437,7 @@ describe("static app surfaces", () => {
     const { rerender } = render(pages[0]);
     expect(screen.getByRole("heading", { name: /thoughtful way to share marriage introductions/i })).toBeInTheDocument();
     for (const page of pages.slice(1)) rerender(page);
-    expect(screen.getByText(/fictional sample introduction/i)).toBeInTheDocument();
+    expect(screen.getByText(/fictional sample Vivara/i)).toBeInTheDocument();
     expect(screen.getByTestId("template")).toHaveTextContent("Ananya Mehta:public");
   });
 
