@@ -36,17 +36,17 @@ describe("split CI validation", () => {
     expect(job("validate")).toContain("if: always()");
   });
 
-  it("runs every project on two isolated shards without cancelling coverage or colliding reports", () => {
+  it("runs every project on three isolated shards without cancelling coverage or colliding reports", () => {
     const config = readFileSync(new URL("../playwright.config.ts", import.meta.url), "utf8");
     const projects = [...config.matchAll(/\{ name: "([^"]+)", use:/g)].map(match => match[1]);
     const browser = job("browser");
     const matrix = browser?.match(/project: \[([^\]]+)\]/)?.[1].split(",").map(value => value.trim());
     expect(projects).toEqual(["chromium", "tablet-chromium", "mobile-chromium"]);
     expect(matrix).toEqual(projects);
-    expect(browser).toContain("shard: [1, 2]");
-    expect(browser).toContain("name: Browser end-to-end tests (${{ matrix.project }}, shard ${{ matrix.shard }}/2)");
+    expect(browser).toContain("shard: [1, 2, 3]");
+    expect(browser).toContain("name: Browser end-to-end tests (${{ matrix.project }}, shard ${{ matrix.shard }}/3)");
     expect(browser).toContain("fail-fast: false");
-    expect(browser).toContain("--global-timeout=900000 --project=${{ matrix.project }} --shard=${{ matrix.shard }}/2");
+    expect(browser).toContain("--global-timeout=900000 --project=${{ matrix.project }} --shard=${{ matrix.shard }}/3");
     expect(browser).toContain("name: playwright-${{ github.run_id }}-${{ matrix.project }}-shard-${{ matrix.shard }}");
     expect(config).toContain("workers: process.env.CI ? 1 : undefined");
     expect(browser).not.toContain("--grep");

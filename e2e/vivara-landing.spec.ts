@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Route } from "@playwright/test";
 
 test("Vivara meaning and founder rationale are readable in both themes", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -21,11 +21,32 @@ test("Vivara meaning and founder rationale are readable in both themes", async (
   }
 });
 
-test("Vivara definition and FAQ are available without JavaScript", async ({ browser }, testInfo) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, baseURL: testInfo.project.use.baseURL });
-  try {
-    const page = await context.newPage();
-    await page.goto("/");
+test.describe("delayed images without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("no-JavaScript copy does not wait for image optimization", async ({ page }) => {
+    const pending: Route[] = [];
+    await page.route(url => url.pathname === "/_next/image", route => { pending.push(route); });
+    try {
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect.poll(() => pending.length).toBeGreaterThan(0);
+      await expect(page.getByRole("region", { name: "Why we call it a Vivara" })).toContainText("In Kannada");
+      const faq = page.locator("#questions details").filter({ hasText: "Does someone need an account to read my Vivara?" });
+      await faq.locator("summary").focus();
+      await page.keyboard.press("Enter");
+      await expect(faq).toHaveAttribute("open", "");
+      await expect(faq.locator("p")).toBeVisible();
+    } finally {
+      await Promise.all(pending.map(route => route.abort()));
+    }
+  });
+});
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("Vivara definition and FAQ are available without JavaScript", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("region", { name: "Why we call it a Vivara" })).toContainText("In Kannada");
     const faq = page.locator("#questions details").filter({ has: page.locator("summary", { hasText: "Does someone need an account to read my Vivara?" }) });
     await faq.locator("summary").focus();
@@ -39,7 +60,5 @@ test("Vivara definition and FAQ are available without JavaScript", async ({ brow
     for (const figure of await page.locator("#product-story article figure").all()) await expect(figure).toBeVisible();
     await expect(page.locator("#product-story aside")).toBeHidden();
     await expect(page.getByRole("region", { name: "Why Rahul started VivIntro" })).toContainText("Rahul’s idea");
-  } finally {
-    await context.close();
-  }
+  });
 });

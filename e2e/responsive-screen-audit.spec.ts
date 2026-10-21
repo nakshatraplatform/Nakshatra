@@ -44,6 +44,7 @@ async function layout(page: Page, scope: Locator = page.locator("body")) {
       field.getAttribute("aria-label") || field.getAttribute("aria-labelledby") || [...(field.labels ?? [])].map(item => item.textContent?.trim()).join(" ");
     return {
       pathname: location.pathname,
+      deviceScaleFactor: devicePixelRatio,
       overflow: document.documentElement.scrollWidth - innerWidth,
       fields: fields.length,
       unnamed: fields.filter(field => !label(field)).map(field => field.outerHTML.slice(0, 240)),
@@ -65,10 +66,12 @@ async function inspectSizes(page: Page, info: TestInfo, name: string, scope?: Lo
     await expect.poll(async () => (await layout(page, scope)).overflow).toBeLessThanOrEqual(1);
     const report = { viewport, ...await layout(page, scope) };
     reports.push(report);
+    expect(report.deviceScaleFactor).toBe(info.project.use.deviceScaleFactor ?? 1);
     expect.soft(report.unnamed, `${name} ${viewport.width}px unlabelled fields`).toEqual([]);
     expect.soft(report.outside, `${name} ${viewport.width}px fields outside viewport`).toEqual([]);
     if ([390, 1440, 3840].includes(viewport.width)) {
-      await page.screenshot({ path: info.outputPath(`${name}-${viewport.width}.png`), animations: "disabled", caret: "initial" });
+      // Keep the emulated DPR; only export diagnostic PNGs at CSS resolution.
+      await page.screenshot({ path: info.outputPath(`${name}-${viewport.width}.png`), animations: "disabled", caret: "initial", scale: "css" });
     }
   }
   await info.attach(name, { body: JSON.stringify(reports, null, 2), contentType: "application/json" });

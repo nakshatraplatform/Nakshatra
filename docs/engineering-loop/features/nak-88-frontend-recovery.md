@@ -462,3 +462,62 @@ change and passes afterward; **19 workflow/type-verification unit tests** and li
 pass (`/tmp/nak88-ci-shards-{red,green,lint}.log`). Runtime source and dependency
 versions are unchanged from `c26a387`'s passing hosted quality/build. The next
 hosted run must execute all six shards; partition discovery is not execution.
+
+### No-JavaScript navigation regression
+
+The sharded run `39637291748` exposes a single desktop no-JavaScript test timeout.
+Trace of the initial attempt shows `page.goto("/")` beginning at 511103ms and
+never completing before the 30-second test deadline; **no content assertion ran**.
+Two Next image-optimizer requests remain pending. The `finally` context-close
+error is secondary, not evidence that content assertions completed or that the
+browser crashed. Do not change CSP in response to unrelated analytics warnings.
+
+Use the existing bookshelf test's project-managed `test.use` / `page` fixture
+pattern, retaining actual device options for every project. Wait for
+`domcontentloaded` and then explicitly assert every existing SSR section and
+native FAQ keyboard action. Retain real no-JavaScript coverage and add a separate
+held-image regression that fails under load-event navigation, so image work cannot
+prevent testing already-available copy. Do not raise test timeouts, drop content
+checks or mock away images in the real no-JavaScript case.
+
+Mobile shard 2 also exposes an incorrect total-write assumption in onboarding:
+its trace records a valid incomplete draft (`first_name: ""`) at 16:46:34.659Z,
+then the final `first_name: "Mary Jane"` draft at 16:46:37.056Z. Those are different
+revisions, not duplicated writes. Capture persisted names, deliberately exercise
+the earlier autosave in the 1440px cases, wait for acknowledgement of the final
+name and require exactly one write for that name plus zero additional writes
+from manual Save. Do not weaken application revision guards or alter autosave.
+
+That mobile shard's nine-width inventory alone took 8.5 minutes. Use three
+shards per project to separate more of the heavy onboarding/presentation work
+from that inventory, preserving the same budgets and all device scale factors.
+Recheck discovery identity unions after the additional delayed-image regression.
+
+Artifact inspection also confirms each 3840px mobile diagnostic PNG is
+**10080x5670 (57 million pixels)** because the emulated DPR is 2.625. Export only
+the two heavy audit files' diagnostic screenshots at CSS resolution; retain the
+actual browser DPR, viewport/theme matrix and every interaction/geometry check.
+Add an explicit inventory assertion of the configured DPR. These are diagnostic
+captures, not pixel-comparison baselines; no image-comparison tolerance changes.
+
+Verification of this correction:
+
+- Held-image navigation regression reproduces the same default-load timeout
+  (`/tmp/nak88-ci-nojs-red.log`); all **27 repeated landing/no-JavaScript executions**
+  pass across all three projects after the fix (`/tmp/nak88-ci-nojs-green.log`).
+- The deliberate earlier-autosave case reproduces the erroneous global-write
+  assertion (`/tmp/nak88-ci-save-red.log`); all **12 repeated 1440px/theme/project
+  onboarding executions** pass with final-revision and no-extra-manual-write
+  assertions (`/tmp/nak88-ci-save-green.log`).
+- After CSS-resolution diagnostic export, **five focused mobile checks** pass,
+  including both onboarding themes, access, BrokerDesk metrics and every editor
+  section across nine widths/two themes. The DPR assertion remains 2.625 while
+  the 3840px capture is now 3840x2160. `/tmp/nak88-ci-capture-green.log`.
+- Full local coverage: **201 files / 1,683 units**, all 61 feature / 21 protected
+  floors pass. Lint, canonical types and 112 focused dashboard/workflow units
+  pass. `/tmp/nak88-ci-lifecycle-{coverage,lint-final,types-final,units}.log`.
+- Actual discovery rechecked: **251 = 84 + 84 + 83** per project, no overlap,
+  missing or extra test identities. `/tmp/nak88-ci-lifecycle-discovery.log`.
+  The three new executions are the delayed-image case across three projects;
+  no original test was removed. Nine hosted shards must all pass on the pushed
+  revision. Application source is unchanged from the passing hosted quality/build.
