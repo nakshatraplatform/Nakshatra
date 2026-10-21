@@ -411,3 +411,22 @@ Correction evidence (21 October 2026):
 Scoped lesson: an integrated browser run must include legacy presentation tests
 as well as new feature specs. A focused pass is not full-suite evidence, and a
 failed aggregate check does not mean its already-green quality dependency failed.
+
+### Spacing-contract follow-up
+
+Hosted run `39633148944` at `6010333` passed audit/lint/types and database
+verification but failed one unit: `shared-presentation.test.ts` correctly rejects
+12px panel padding and 4px divider margins against the eight-pixel spacing scale.
+The 61 selected units did not include this cross-cutting contract. This is a
+deterministic correction defect, not a flaky test. Build was skipped in that job.
+
+Restore 16px panel padding and use zero divider margins. The combined vertical
+space is unchanged from the tested compact form; every spacing value now follows
+the existing scale. Do not amend/relax the design-system test. Full local unit
+coverage now passes **201 files / 1,683 tests**, all **61 feature / 21 protected
+floors** (`/tmp/nak88-ci-repair-coverage-final.log`). Login fit and doubled-text
+regressions pass in both themes across all three projects: **nine passed**
+(`/tmp/nak88-ci-repair-spacing-browser.log`). Require the new immutable hosted
+revision's full quality/browser gates, not a rerun of only the failed assertion.
+Fresh lint and production build also pass
+(`/tmp/nak88-ci-repair-{lint-last,build-final}.log`).
