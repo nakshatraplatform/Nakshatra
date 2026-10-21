@@ -150,7 +150,7 @@ describe("portfolio lifecycle services", () => {
         actorUserId: "user-id",
         actorSessionId: "session-id",
         portfolioId: "portfolio-id",
-        shareToken: expect.stringMatching(/^.{21}$/),
+        shareToken: "",
         templateId: 1,
         themeColor: "#f7f5ef",
         draftData: expect.objectContaining({
@@ -168,6 +168,16 @@ describe("portfolio lifecycle services", () => {
     expect(createServiceRoleClient).toHaveBeenCalledOnce();
     expect(repository.publishPortfolioTransaction.mock.calls[0][0].expiresAt).toBeNull();
     expect(result).toMatchObject({ action: "created", shareUrl: expect.stringContaining("/p/") });
+  });
+
+  it("returns the named URL allocated by the database", async () => {
+    repository.publishPortfolioTransaction.mockResolvedValue({
+      data: { status: "ok", action: "created", shareToken: "aditi-rao-2", expiresAt: null },
+      error: null,
+    });
+    const result = await publishPortfolio({ supabase: {} as never, userId: "user-id", data: draft });
+    expect(result.shareToken).toBe("aditi-rao-2");
+    expect(result.shareUrl).toContain("/p/aditi-rao-2");
   });
 
   it("allows an owner-safe test exemption through the same server-owned publication transaction", async () => {

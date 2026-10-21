@@ -1,3 +1,4 @@
+import { portfolioSharePathSchema } from "@/features/portfolio/share-path";
 import { z } from "zod/v4";
 import { isValidPhoneNumber } from "@/features/portfolio/phone-number";
 import { isValidPostalCode, locationCountryCodeSchema, locationSourceSchema, normalizePostalCode } from "@/features/location/location.contract";
@@ -27,7 +28,7 @@ const requiredLocationFields = {
 };
 
 const interestRequestBaseSchema = z.object({
-  portfolioToken: z.string().min(8).max(160).regex(/^[A-Za-z0-9_-]+$/),
+  portfolioToken: portfolioSharePathSchema,
   familyContext: optionalText(600),
   message: optionalText(600),
 });
