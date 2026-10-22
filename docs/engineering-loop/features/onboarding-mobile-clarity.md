@@ -6,6 +6,9 @@ Integrated latest main `0587acc` (password-recovery PR #128), without conflicts.
 The prior three-round review and local results below remain snapshot-specific;
 final integrated checks and hosted CI must pass before release. User authorized
 committing/pushing this increment and a Draft PR, not merging or production writes.
+Draft PR: https://github.com/nakshatraplatform/Nakshatra/pull/129 . GitHub CI and
+Vercel preview build started automatically. Checklist entries for hosted checks
+and mobile approval remain open until verified; Draft status is intentional.
 
 Implementation checklist:
 
@@ -120,8 +123,8 @@ run. Earlier runs and snapshots below remain historical, not current evidence.
 Browser cases use loopback fixtures, not real Supabase/customer records. No SQL
 runtime, live email/provider test, physical-phone or screen-reader session claimed.
 
-Delivery: local, uncommitted and unpushed. Next: separate app PR, unchanged CI gates,
-preview review and real-phone UAT. **No database deployment is needed for this
+Delivery: committed/pushed as Draft app PR #129; unchanged CI gates,
+preview review and real-phone UAT are release requirements. **No database deployment is needed for this
 increment.** Existing broad read schemas and stored option values are retained;
 application rollback requires no database rollback. Name/country/eligibility
 policy changes, extra mandatory answers and account-policy changes are deferred.
