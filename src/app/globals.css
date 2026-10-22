@@ -147,6 +147,9 @@
 .dashboard-status.is-expired { background: var(--ui-danger-surface); color: var(--ui-danger); }
 .dashboard-interest-inbox { padding: 1rem; }
 .dashboard-relationship-lifecycle { padding: var(--space-card); }
+.dashboard-manage-link-summary { cursor: pointer; min-height: 44px; display: list-item; align-content: center; font-weight: 600; color: var(--workspace-ink); }
+.dashboard-manage-link-summary:focus-visible { outline: 2px solid var(--workspace-teal); outline-offset: 4px; border-radius: 4px; }
+.dashboard-link-settings[open] > p { margin-top: 0.5rem; }
 .dashboard-relationship-lifecycle > .dashboard-section-heading { padding-bottom: var(--space-card); }
 .dashboard-relationship-stage { border-top: 1px solid var(--workspace-border); padding-top: var(--space-card); }
 .dashboard-relationship-stage + .dashboard-relationship-stage { margin-top: var(--space-section); }

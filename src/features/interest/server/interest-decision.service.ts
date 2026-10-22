@@ -15,6 +15,7 @@ const interestDecisionResultSchema = z.enum([
   "signin_required",
   "verification_required",
   "unauthorized",
+  "review_changed",
 ]);
 
 export type InterestDecisionResult = z.infer<typeof interestDecisionResultSchema>;
@@ -23,9 +24,12 @@ export type InterestDecisionResult = z.infer<typeof interestDecisionResultSchema
 export async function decideInterestRequest(
   supabase: SupabaseClient,
   interestRequestId: string,
-  decision: "approved" | "rejected" | "reopened"
+  decision: "approved" | "rejected" | "reopened",
+  revision?: string
 ): Promise<InterestDecisionResult> {
-  const { data, error } = await supabase.rpc("decide_interest_request", {
+  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_request_reviewed", {
+    p_interest_request_id: interestRequestId, p_revision: revision ?? "",
+  }) : await supabase.rpc("decide_interest_request", {
     p_interest_request_id: interestRequestId,
     p_decision: decision,
   });

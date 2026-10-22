@@ -6,6 +6,7 @@ import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { useModalFocus } from "@/components/useModalFocus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
@@ -77,6 +78,7 @@ import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
 import { interestStatusLabel } from "@/features/interest/presentation";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
+import { relationshipPageSchema, type RelationshipPage, type SharingDisclosure } from "@/features/access/relationship-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { calculatePortfolioCompletion, editorSectionForPath, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import {
@@ -108,6 +110,8 @@ interface Props {
   publicationReadiness?: PublicationReadiness;
   brokerIntroductionResponses?: OwnerBrokerIntroductionResponse[];
   receivedBrokerIntroductions?: ReceivedBrokerIntroduction[];
+  relationshipOverview?: RelationshipPage | null;
+  relationshipsError?: boolean;
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -131,7 +135,10 @@ export default function DashboardClient({
   publicationReadiness = EMPTY_PUBLICATION_READINESS,
   brokerIntroductionResponses = [],
   receivedBrokerIntroductions = [],
+  relationshipOverview = null,
+  relationshipsError = false,
 }: Props) {
+  const hydrated = useHydrated();
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
   const [formOpen, setFormOpen] = useState(initialEditorOpen && canCreatePortfolio);
@@ -169,6 +176,7 @@ export default function DashboardClient({
   const [savedCandidateId, setSavedCandidateId] = useState<string | null>(null);
   const [interestItems, setInterestItems] = useState(interests);
   const [accessGrants, setAccessGrants] = useState(accessSummary.grants);
+  const [relationshipCounts, setRelationshipCounts] = useState(relationshipOverview?.counts);
   const [expandedRelationshipStages, setExpandedRelationshipStages] = useState<Record<RelationshipStage, boolean>>({
     awaiting: false,
     "set-aside": false,
@@ -258,11 +266,6 @@ export default function DashboardClient({
     // Reload server-owned publication readiness only when its proof state differs.
     if ((state === "verified") !== (readinessState.verificationStatus === "verified")) refreshDashboard();
   }, [readinessState.verificationStatus, refreshDashboard]);
-  const disclosedCategories = fullViewDisclosureCategories(
-    draftData,
-    portfolioMedia,
-    portfolioHoroscope
-  );
   const completion = calculatePortfolioCompletion(
     draftData,
     portfolioMedia.some(isShareablePrimaryPhoto)
@@ -284,12 +287,12 @@ export default function DashboardClient({
     && publishedProfileComplete
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
-  const pendingInterestCount = interestItems.filter(
+  const pendingInterestCount = relationshipCounts?.awaiting ?? interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
-  const activeAccessCount = accessGrants.filter((grant) => grant.status === "active").length;
+  const activeAccessCount = relationshipCounts?.active ?? accessGrants.filter((grant) => grant.status === "active").length;
   const showRelationshipDashboard = Boolean(
-    portfolio?.published_at || interestItems.length || accessGrants.length || accessEvents.length || brokerIntroductionResponses.length
+    relationshipsError || portfolio?.published_at || interestItems.length || accessGrants.length || accessEvents.length || brokerIntroductionResponses.length
   );
 
   useEffect(() => {
@@ -1035,6 +1038,7 @@ export default function DashboardClient({
                 <button
                   type="button"
                   onClick={() => setFormOpen(true)}
+                  disabled={!hydrated}
                   className="dashboard-secondary-action"
                 >
                   <PanelRightOpen className="h-4 w-4" />
@@ -1061,7 +1065,7 @@ export default function DashboardClient({
                 </div>
                 {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
-                    <button type="button" onClick={() => setFormOpen(true)} className="dashboard-edit-action dashboard-secondary-action">
+                    <button type="button" onClick={() => setFormOpen(true)} disabled={!hydrated} className="dashboard-edit-action dashboard-secondary-action">
                       <Edit3 className="h-4 w-4" aria-hidden="true" /> <span>Edit details</span>
                     </button>
                   )}
@@ -1072,8 +1076,9 @@ export default function DashboardClient({
                         {renewing ? "Reactivating link..." : "Reactivate public link"}
                       </button>
                     )
-                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>}
+                    : <button type="button" onClick={shareWhatsApp} disabled={!hydrated} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>}
                 </div>}
+                {viewerAccessAvailable && <div className="dashboard-welcome-actions"><a href="#introduction-link" className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share introduction</a></div>}
               </section>
           )}
 
@@ -1087,11 +1092,49 @@ export default function DashboardClient({
           {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="dashboard-liveness-slot scroll-mt-28" tabIndex={-1}>
             <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} hideWhenVerified initiallyVerified={readinessState.verificationStatus === "verified"} />
           </div> : null}
+          {showRelationshipDashboard && <RelationshipLifecycle
+            renderedAt={renderedAt}
+            expandedStages={expandedRelationshipStages}
+            onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
+            interests={interestItems}
+            grants={accessGrants}
+            viewerAccessAvailable={viewerAccessAvailable}
+            events={accessEvents}
+            brokerResponses={brokerIntroductionResponses}
+            overview={relationshipOverview && relationshipCounts ? { ...relationshipOverview, counts: relationshipCounts } : relationshipOverview}
+            loadFailed={relationshipsError}
+            onRetry={refreshDashboard}
+            onDecision={(id, status, previous) => {
+              setRelationshipCounts(current => current ? { ...current,
+                awaiting: Math.max(0, current.awaiting + (status === "pending_review" ? 1 : 0) - (previous && ["new", "pending_review"].includes(previous) ? 1 : 0)),
+                setAside: Math.max(0, current.setAside + (status === "rejected" ? 1 : 0) - (previous === "rejected" ? 1 : 0)),
+                active: current.active + (status === "approved" ? 1 : 0),
+              } : current);
+              setInterestItems((current) =>
+                current.map((interest) =>
+                  interest.id === id ? { ...interest, status } : interest
+                )
+              );
+              refreshDashboard();
+            }}
+            onGrantChange={(grantId, action, expiresAt, previous) => {
+              const wasActive = previous === "active";
+              setRelationshipCounts(current => current ? { ...current, active: Math.max(0, current.active + (action === "revoke" ? -1 : wasActive ? 0 : 1)) } : current);
+              setAccessGrants((current) => current.map((grant) =>
+                grant.id === grantId
+                  ? action === "revoke"
+                    ? { ...grant, status: "revoked", revokedAt: new Date().toISOString() }
+                    : { ...grant, status: "active", expiresAt: expiresAt || grant.expiresAt }
+                  : grant
+              ));
+              refreshDashboard();
+            }}
+          />}
           {portfolio && <section className="dashboard-overview" aria-label="Introduction overview">
             {viewerAccessAvailable ? (
-              <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
+              <section id="introduction-link" className="dashboard-glass dashboard-sharing-card scroll-mt-24" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Share this link for your public introduction. New links include your first and last name and may be guessed. You choose who sees your private details.</p>
+                <p className="dashboard-sharing-description">Anyone with this name-based link can see your public introduction. Private details need your approval.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1105,11 +1148,11 @@ export default function DashboardClient({
                   <span role="status" className="sr-only">{copied ? "Introduction link copied." : ""}</span>
                 </div>
                 <div className="dashboard-sharing-actions">
-                  {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
-                  <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
+                  {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} disabled={!hydrated} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
+                  <button type="button" onClick={shareWhatsApp} disabled={!hydrated} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
                 </div>
-                <section className="dashboard-link-settings" aria-label="Manage link">
-                  <h3 className="text-sm font-semibold">Manage link</h3>
+                <details className="dashboard-link-settings" aria-label="Manage link">
+                  <summary className="dashboard-manage-link-summary">Manage link</summary>
                   <p>Rotating creates a new name-based URL and permanently retires the old link. Duplicate names receive a number. Unpublishing turns off viewer access.</p>
                   <div className="dashboard-link-controls" role="group" aria-label="Manage introduction link">
                   {canCreatePortfolio && (
@@ -1131,7 +1174,7 @@ export default function DashboardClient({
                     {unpublishing ? "Unpublishing..." : "Unpublish"}
                   </button>
                   </div>
-                </section>
+                </details>
               </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
@@ -1143,7 +1186,7 @@ export default function DashboardClient({
                     ? "Review and publish your self-created introduction to activate its link. Test publishing access does not confirm identity."
                     : "Your saved introduction, interests, sharing history, and view totals remain available here. Public sharing requires your own introduction and current verification."}
                 </p>
-                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
+                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" disabled={!hydrated} className="dashboard-primary-action mt-4" onClick={() => {
                   if (completion.readyToPublish) void openFinalReview();
                   else openEditorAtRequiredStep();
                 }}>Update Profile to Resume Sharing</button>}
@@ -1179,21 +1222,21 @@ export default function DashboardClient({
             </div>}
             {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Introduction activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
-                <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
-                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 interests" : "Interests received"}</span>
+                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Interests received</span></div>
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : relationshipCounts?.interests ?? interestItems.length}</p>
+                <span className="dashboard-stat-caption">{relationshipsError ? "Unavailable · retry sharing status" : "All submitted interests"}</span>
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                 <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
-                <p className="dashboard-stat-value">{pendingInterestCount}</p>
-                {pendingInterestCount > 0
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : pendingInterestCount}</p>
+                {relationshipsError ? <span className="dashboard-stat-caption">Unavailable</span> : pendingInterestCount > 0
                   ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review interests</a>
-                  : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
+                  : <span className="dashboard-stat-caption">All caught up</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Currently sharing with</span></div>
-                <p className="dashboard-stat-value">{activeAccessCount}</p>
-                {activeAccessCount > 0
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : activeAccessCount}</p>
+                {relationshipsError ? <span className="dashboard-stat-caption">Unavailable</span> : activeAccessCount > 0
                   ? viewerAccessAvailable
                     ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
                     : <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Viewing unavailable · Manage</a>
@@ -1208,35 +1251,6 @@ export default function DashboardClient({
           </section>}
 
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
-          {showRelationshipDashboard && <RelationshipLifecycle
-            renderedAt={renderedAt}
-            expandedStages={expandedRelationshipStages}
-            onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
-            interests={interestItems}
-            grants={accessGrants}
-            viewerAccessAvailable={viewerAccessAvailable}
-            events={accessEvents}
-            brokerResponses={brokerIntroductionResponses}
-            disclosedCategories={disclosedCategories}
-            onDecision={(id, status) => {
-              setInterestItems((current) =>
-                current.map((interest) =>
-                  interest.id === id ? { ...interest, status } : interest
-                )
-              );
-              refreshDashboard();
-            }}
-            onGrantChange={(grantId, action, expiresAt) => {
-              setAccessGrants((current) => current.map((grant) =>
-                grant.id === grantId
-                  ? action === "revoke"
-                    ? { ...grant, status: "revoked", revokedAt: new Date().toISOString() }
-                    : { ...grant, status: "active", expiresAt: expiresAt || grant.expiresAt }
-                  : grant
-              ));
-              refreshDashboard();
-            }}
-          />}
           </>}
           </div>
           {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
@@ -1368,6 +1382,7 @@ export default function DashboardClient({
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[color:var(--ui-scrim)]/45 backdrop-blur-sm">
           <div ref={editorDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden dashboard-dialog-elevation">
+            <fieldset disabled={!hydrated} className="contents">
             <div className="dashboard-editor-header flex-none border-b border-[var(--workspace-border)] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
                 <div>
@@ -1508,6 +1523,7 @@ export default function DashboardClient({
                 </div>
               </div>
             </div>
+            </fieldset>
           </div>
         </div>
       )}
@@ -1555,6 +1571,7 @@ function CreatorReadinessTracker({
   onVerification: () => void;
   openingReview: boolean;
 }) {
+  const hydrated = useHydrated();
   const steps = [
     { label: "Basics", complete: completion.basicsComplete },
     { label: "Required details", complete: completion.readyToPublish },
@@ -1592,7 +1609,7 @@ function CreatorReadinessTracker({
           {!completion.readyToPublish && <p className="mt-2 text-sm text-[var(--workspace-muted)]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {nextAction && <button type="button" onClick={nextAction.onClick} disabled={openingReview} className="dashboard-primary-action">{openingReview ? "Loading saved review…" : nextAction.label}</button>}
+          {nextAction && <button type="button" onClick={nextAction.onClick} disabled={!hydrated || openingReview} className="dashboard-primary-action">{openingReview ? "Loading saved review…" : nextAction.label}</button>}
         </div>
       </div>
 
@@ -1781,9 +1798,11 @@ function RelationshipLifecycle({
   viewerAccessAvailable,
   events,
   brokerResponses,
-  disclosedCategories,
   onDecision,
   onGrantChange,
+  overview,
+  loadFailed,
+  onRetry,
 }: {
   expandedStages: Record<RelationshipStage, boolean>;
   renderedAt: number;
@@ -1793,9 +1812,11 @@ function RelationshipLifecycle({
   viewerAccessAvailable: boolean;
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
-  disclosedCategories: string[];
-  onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
-  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
+  onDecision: (id: string, status: "approved" | "rejected" | "pending_review", previous: DashboardInterest["status"]) => void;
+  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
+  overview: RelationshipPage | null;
+  loadFailed: boolean;
+  onRetry: () => void;
 }) {
   type ListModal = RelationshipStage | "history" | null;
   type RecordDetail =
@@ -1807,19 +1828,52 @@ function RelationshipLifecycle({
   const waitingInterests = sortByNewest(interests.filter((interest) => interest.status === "new" || interest.status === "pending_review"), (interest) => interest.created_at);
   const setAsideInterests = sortByNewest(interests.filter((interest) => interest.status === "rejected"), (interest) => interest.created_at);
   const activeGrants = sortByNewest(grants.filter((grant) => grant.status === "active"), (grant) => grant.renewedAt || grant.expiresAt);
-  const historicalGrants = sortByNewest(grants.filter((grant) => grant.status !== "active"), (grant) => grant.revokedAt || grant.expiresAt);
-  const archivedInterests = sortByNewest(interests.filter((interest) => !["new", "pending_review", "rejected"].includes(interest.status)), (interest) => interest.created_at);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [approvalCandidate, setApprovalCandidate] = useState<DashboardInterest | null>(null);
+  const [approvalReview, setApprovalReview] = useState<{ data?: SharingDisclosure; error?: string } | null>(null);
+  const [reviewAttempt, setReviewAttempt] = useState(0);
+  useEffect(() => {
+    if (!approvalCandidate) return;
+    const controller = new AbortController();
+    void fetch("/api/dashboard/relationships?queue=overview", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) })
+      .then(async response => {
+        const parsed = relationshipPageSchema.safeParse(await response.json());
+        if (!response.ok || !parsed.success || !parsed.data.disclosure) throw new Error("Review unavailable");
+        if (!controller.signal.aborted) setApprovalReview({ data: parsed.data.disclosure });
+      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published private details. Try again before sharing." }); });
+    return () => controller.abort();
+  }, [approvalCandidate, reviewAttempt]);
   const [listModal, setListModal] = useState<ListModal>(null);
   const [recordDetail, setRecordDetail] = useState<RecordDetail>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [recordFilter, setRecordFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [listAttempt, setListAttempt] = useState(0);
+  const [remotePage, setRemotePage] = useState<{ key: string; data?: RelationshipPage; error?: string } | null>(null);
+  const listQuery = new URLSearchParams({ queue: listModal || "overview", offset: String((page - 1) * 8), query: searchQuery.trim(), filter: recordFilter }).toString();
+  const listKey = `${listAttempt}:${listQuery}`;
+  useEffect(() => {
+    if (!listModal) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void fetch(`/api/dashboard/relationships?${listQuery}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) })
+        .then(async response => {
+          const parsed = relationshipPageSchema.safeParse(await response.json());
+          if (!response.ok || !parsed.success) throw new Error("Queue unavailable");
+          if (!controller.signal.aborted) {
+            const lastPage = Math.max(1, Math.ceil(parsed.data.total / 8));
+            if (page > lastPage) setPage(lastPage);
+            else setRemotePage({ key: listKey, data: parsed.data });
+          }
+        }).catch(() => { if (!controller.signal.aborted) setRemotePage({ key: listKey, error: "We could not load this queue. Your sharing choices have not changed." }); });
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [listModal, listQuery, listKey, page]);
   const isMobileDashboard = useMobileDashboard();
   const approvalTitleId = useId();
   const approvalConfirmRef = useRef<HTMLButtonElement>(null);
+  const approvalCancelRef = useRef<HTMLButtonElement>(null);
   const listTitleId = useId();
   const detailTitleId = useId();
   const closeListRef = useRef<HTMLButtonElement>(null);
@@ -1857,7 +1911,7 @@ function RelationshipLifecycle({
     const previous = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    approvalConfirmRef.current?.focus();
+    approvalCancelRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && workingId === null) {
         setApprovalCandidate(null);
@@ -1879,15 +1933,17 @@ function RelationshipLifecycle({
     try {
       const response = await fetch(`/api/interest/${interest.id}`, {
         method: "PATCH",
+        signal: AbortSignal.timeout(20000),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision, ...(decision === "approved" ? { revision: approvalReview?.data?.revision } : {}) }),
       });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) {
         setActionError(result.error || "This interest could not be updated.");
         return false;
       }
-      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision);
+      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision, interest.status);
+      setListAttempt(value => value + 1);
       setRecordDetail(null);
       return true;
     } catch {
@@ -1912,7 +1968,8 @@ function RelationshipLifecycle({
         setActionError(result.error);
         return;
       }
-      onGrantChange(grant.id, action, result.expiresAt);
+      onGrantChange(grant.id, action, result.expiresAt, grant.status);
+      setListAttempt(value => value + 1);
       setRecordDetail(null);
     } finally {
       setWorkingId(null);
@@ -1924,36 +1981,21 @@ function RelationshipLifecycle({
     setRecordFilter("all");
     setPage(1);
     setListModal(mode);
+    setListAttempt(value => value + 1);
   }
 
-  const listRecords = listModal === "awaiting"
-    ? waitingInterests.map((item) => ({ kind: "interest" as const, item }))
-    : listModal === "set-aside"
-      ? setAsideInterests.map((item) => ({ kind: "interest" as const, item }))
-      : listModal === "access"
-        ? activeGrants.map((item) => ({ kind: "grant" as const, item }))
-        : [
-            ...historicalGrants.map((item) => ({ kind: "grant" as const, item })),
-            ...archivedInterests.map((item) => ({ kind: "interest" as const, item })),
-            ...brokerResponses.map((item) => ({ kind: "broker-response" as const, item })),
-          ];
-  const filteredRecords = listRecords.filter((record) => {
-    const name = record.kind === "interest" ? record.item.viewer_name : record.kind === "grant" ? record.item.viewerName : record.item.recipientLabel;
-    const email = record.kind === "interest" ? record.item.viewer_email : record.kind === "grant" ? record.item.viewerEmail : null;
-    const source = record.kind === "interest" ? record.item.source_type : record.kind === "grant" ? record.item.sourceType || "direct" : "broker";
-    const matchesSearch = `${name || ""} ${email || ""}`.toLowerCase().includes(searchQuery.trim().toLowerCase());
-    if (!matchesSearch) return false;
-    if (recordFilter === "direct" || recordFilter === "broker") return source === recordFilter;
-    if (recordFilter === "verified") return record.kind === "interest" && record.item.email_verified;
-    if (recordFilter === "pending") return record.kind === "interest" && ["new", "pending_review"].includes(record.item.status);
-    if (recordFilter === "active") return record.kind === "grant" && record.item.status === "active";
-    if (recordFilter === "ended") return record.kind === "grant" && record.item.status !== "active";
-    return true;
-  });
   const pageSize = 8;
-  const pageCount = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+  const loadedPage = remotePage?.key === listKey ? remotePage : null;
+  const listLoading = !loadedPage;
+  const pageCount = Math.max(1, Math.ceil((loadedPage?.data?.total ?? 0) / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const visibleRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleRecords = loadedPage?.data?.records ?? [];
+  // Broker responses keep their existing recipient search/source filters. They
+  // are a separate history section, not mixed into the personal queue's pages.
+  const visibleBrokerResponses = brokerResponses.filter(response =>
+    ["all", "broker"].includes(recordFilter)
+    && response.recipientLabel.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
   const listTitle = listModal === "awaiting"
     ? "Awaiting review"
     : listModal === "set-aside"
@@ -1967,18 +2009,19 @@ function RelationshipLifecycle({
       <div className="dashboard-section-heading">
         <div>
           <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
-          <p>Your latest actionable relationships. Open a queue for complete details and history.</p>
+          <p>Review interests and choose who can see your private details.</p>
         </div>
-        <span>{waitingInterests.length} waiting</span>
+        {!loadFailed && <span>{overview?.counts.awaiting ?? waitingInterests.length} waiting</span>}
       </div>
       {workingId && !recordDetail && !approvalCandidate && <LoadingStatus compact className="my-4" title="Updating this interest" />}
-      {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
+      {actionError && !recordDetail && !approvalCandidate && <p className="dashboard-action-error" role="alert">{actionError}</p>}
+      {loadFailed && <p className="dashboard-action-error" role="alert">Requests and sharing access could not be loaded. Existing access has not changed. <button type="button" className="dashboard-secondary-action" onClick={onRetry}>Retry sharing status</button></p>}
 
-      <CompactRelationshipStage
+      {!loadFailed && <><CompactRelationshipStage
         stage="awaiting"
         title="Awaiting review"
         description="New interests ready for your decision. Check each person's verification status before sharing more."
-        count={waitingInterests.length}
+        count={overview?.counts.awaiting ?? waitingInterests.length}
         expanded={!isMobileDashboard || expandedStages.awaiting}
         onToggle={() => onToggleStage("awaiting")}
         onViewAll={() => openList("awaiting")}
@@ -1993,7 +2036,7 @@ function RelationshipLifecycle({
         stage="set-aside"
         title="Interests set aside"
         description="Interests you can revisit when you are ready."
-        count={setAsideInterests.length}
+        count={overview?.counts.setAside ?? setAsideInterests.length}
         expanded={!isMobileDashboard || expandedStages["set-aside"]}
         onToggle={() => onToggleStage("set-aside")}
         onViewAll={() => openList("set-aside")}
@@ -2008,7 +2051,7 @@ function RelationshipLifecycle({
         stage="access"
         title="People you’re sharing with"
         description={viewerAccessAvailable ? "People you’ve shared with can open private details until their sharing period ends." : "Sharing choices remain on record, but private details cannot be opened while your introduction is unavailable."}
-        count={activeGrants.length}
+        count={overview?.counts.active ?? activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
         onToggle={() => onToggleStage("access")}
         onViewAll={() => openList("access")}
@@ -2023,7 +2066,7 @@ function RelationshipLifecycle({
         <History className="h-4 w-4" aria-hidden="true" />
         Sharing history
       </button>
-      <InterestHistoryPanel />
+      <InterestHistoryPanel /></>}
 
       {listModal && !recordDetail && (
         <DashboardModal titleId={listTitleId} title={listTitle} closeLabel="Close and return to dashboard" closeRef={closeListRef} onClose={() => setListModal(null)}>
@@ -2031,7 +2074,7 @@ function RelationshipLifecycle({
             <label>
               <span className="sr-only">Search {listTitle.toLowerCase()}</span>
               <Search aria-hidden="true" />
-              <input name="relationship-search" autoComplete="off" spellCheck={false} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} placeholder="Search by name or email…" />
+              <input name="relationship-search" maxLength={80} autoComplete="off" spellCheck={false} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} placeholder="Search by name or email…" />
             </label>
             <label>
               <span className="sr-only">Filter records</span>
@@ -2047,21 +2090,20 @@ function RelationshipLifecycle({
             </label>
           </div>
           <div className="dashboard-modal-list">
-            {visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
+            {listLoading ? <LoadingStatus compact title="Loading this queue" /> : loadedPage?.error ? <p role="alert">{loadedPage.error} <button type="button" className="dashboard-secondary-action" onClick={() => setListAttempt(value => value + 1)}>Retry queue</button></p> : visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
               <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
-            ) : record.kind === "grant" ? (
-              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
             ) : (
-              <BrokerResponseSummaryCard key={record.item.introductionRef} response={record.item} onPrimary={() => setRecordDetail(record)} />
+              <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
             ))}
           </div>
+          {listModal === "history" && visibleBrokerResponses.length > 0 && <section aria-label="Broker introduction responses"><h3>Broker introduction responses</h3>{visibleBrokerResponses.map(response => <BrokerResponseSummaryCard key={response.introductionRef} response={response} onPrimary={() => setRecordDetail({ kind: "broker-response", item: response })} />)}</section>}
           {listModal === "history" && events.length > 0 && (
             <div className="dashboard-history-timeline">
               <h3>Activity log</h3>
               <ol>{events.slice(0, 20).map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol>
             </div>
           )}
-          {pageCount > 1 && (
+          {!listLoading && !loadedPage?.error && pageCount > 1 && (
             <nav className="dashboard-modal-pagination" aria-label={`${listTitle} pages`}>
               <button type="button" className="dashboard-secondary-action" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft aria-hidden="true" /> Previous</button>
               <span>Page {currentPage} of {pageCount}</span>
@@ -2073,6 +2115,7 @@ function RelationshipLifecycle({
 
       {recordDetail && (
         <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Sharing details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => setRecordDetail(null)} detail inactive={Boolean(approvalCandidate)}>
+          {actionError && <p className="dashboard-action-error" role="alert">{actionError} No change was confirmed. Please try again.</p>}
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
@@ -2089,7 +2132,7 @@ function RelationshipLifecycle({
                 working={workingId === recordDetail.item.id}
                 onSetAside={() => void decide(recordDetail.item, "rejected")}
                 onReopen={() => void decide(recordDetail.item, "reopened")}
-                onGrant={() => setApprovalCandidate(recordDetail.item)}
+                onGrant={() => { setActionError(null); setApprovalReview(null); setApprovalCandidate(recordDetail.item); }}
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
@@ -2115,14 +2158,15 @@ function RelationshipLifecycle({
               <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
                 Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Details are shared for 15 days.
               </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--workspace-muted)]">This shares your published private details. Unpublished draft changes are not included.</p>
               <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
                 <p className="text-sm font-semibold">You will share:</p>
-                {disclosedCategories.length > 0 ? (
+                {!approvalReview ? <LoadingStatus compact title="Checking published private details" /> : approvalReview.error ? <p role="alert">{approvalReview.error} <button type="button" className="dashboard-secondary-action" onClick={() => { setApprovalReview(null); setReviewAttempt(value => value + 1); }}>Retry disclosure review</button></p> : approvalReview.data ? (
                   <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[var(--workspace-ink)]">
-                    {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
+                    {fullViewDisclosureCategories(approvalReview.data).map((category) => <li key={category}>{category}</li>)}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-[var(--workspace-muted)]">No additional private information has been added yet.</p>
+                  <p role="alert">Published private details are unavailable. Nothing has been shared.</p>
                 )}
               </div>
               <p className="mt-4 text-sm leading-6 text-[var(--workspace-muted)]">
@@ -2132,12 +2176,12 @@ function RelationshipLifecycle({
               {workingId && <LoadingStatus compact className="mt-4" title="Sharing private details" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
-              <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
+              <button ref={approvalCancelRef} type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
               <button
                 ref={approvalConfirmRef}
                 type="button"
                 className="dashboard-primary-action"
-                disabled={workingId !== null}
+                disabled={workingId !== null || !approvalReview?.data || loadFailed}
                 onClick={() => void decide(approvalCandidate, "approved").then((approved) => {
                   if (approved) setApprovalCandidate(null);
                 })}
@@ -2392,10 +2436,10 @@ function trapDialogFocus(event: KeyboardEvent, dialog: HTMLElement | null) {
 }
 
 function fullViewDisclosureCategories(
-  data: PortfolioData,
-  media: PortfolioMedia[],
-  horoscope: PortfolioHoroscope | null
+  disclosure: SharingDisclosure | null
 ) {
+  if (!disclosure) return [];
+  const data = disclosure.data;
   const categories: string[] = [];
   if (containsDisclosure({
     name: data.personal.name,
@@ -2438,14 +2482,14 @@ function fullViewDisclosureCategories(
   ) {
     categories.push("Private contact details");
   }
-  if (media.length > 0) {
-    const protectedPhotoCount = media.filter((item) => item.visibility !== "public").length;
+  if (disclosure.photoCount > 0) {
+    const protectedPhotoCount = disclosure.privatePhotoCount;
     const protectedCopy = protectedPhotoCount > 0
       ? `, including ${protectedPhotoCount} private ${protectedPhotoCount === 1 ? "photo" : "photos"}`
       : "";
-    categories.push(`${media.length} introduction ${media.length === 1 ? "photo" : "photos"}${protectedCopy}`);
+    categories.push(`${disclosure.photoCount} introduction ${disclosure.photoCount === 1 ? "photo" : "photos"}${protectedCopy}`);
   }
-  if (horoscope) categories.push("Original horoscope attachment");
+  if (disclosure.hasHoroscope) categories.push("Original horoscope attachment");
   return categories;
 }
 

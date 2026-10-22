@@ -1,5 +1,11 @@
 # VivIntro / Nakshatra project map
 
+- [Personal dashboard and sharing consent](features/sharing-dashboard-clarity.md):
+  published-snapshot consent, stale-review protection, bounded owner relationship
+  queues/search with complete counts, visible failures/retry and task-first
+  dashboard hierarchy. Independent review corrections and current verification
+  are recorded separately from release; database runtime gates remain pending.
+
 - [NAK-88 frontend recovery](features/nak-88-frontend-recovery.md): enlarged-text
   reflow, bounded JSON exchanges, dismissible retained interest requests and
   hydration-safe account forms; native select sizing and independent material

@@ -181,6 +181,11 @@ jobs:
       - name: Verify signed email webhooks and suppression over local HTTP
         run: npm run test:email:local
 
+      - name: Verify reviewed approval against concurrent submission retry
+        env:
+          APPROVAL_RETRY_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:approval-retry:local
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

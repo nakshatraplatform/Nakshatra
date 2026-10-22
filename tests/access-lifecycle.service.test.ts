@@ -49,7 +49,7 @@ describe("access lifecycle service", () => {
 
   it("fails closed when the access summary contract is unavailable", async () => {
     repository.listPortfolioAccess.mockResolvedValue({ data: { grants: "unsafe" }, error: null });
-    await expect(getPortfolioAccessSummary({} as never)).resolves.toEqual({ grants: [], events: [] });
+    await expect(getPortfolioAccessSummary({} as never)).rejects.toMatchObject({ code: "ACCESS_SUMMARY_UNAVAILABLE" });
   });
 
   it("renews and revokes through the atomic grant command", async () => {

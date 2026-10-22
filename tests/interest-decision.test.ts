@@ -21,7 +21,7 @@ function patch(decision: unknown, id = "11111111-1111-4111-8111-111111111111") {
   return PATCH(new Request("http://local/api/interest/request", {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Origin: "http://local" },
-    body: JSON.stringify({ decision }),
+    body: JSON.stringify({ decision, ...(decision === "approved" ? { revision: "a".repeat(32) } : {}) }),
   }), { params: Promise.resolve({ id }) });
 }
 
@@ -42,6 +42,16 @@ describe("interest decision endpoint", () => {
     const rpc = authenticatedClient();
     expect((await patch("maybe")).status).toBe(400);
     expect(rpc).not.toHaveBeenCalled();
+  });
+  it("requires a reviewed revision for approval and rejects a changed publication", async () => {
+    const rpc = authenticatedClient();
+    const missing = await PATCH(new Request("http://local/api/interest/request", { method: "PATCH", headers: { Origin: "http://local", "Content-Type": "application/json" }, body: JSON.stringify({ decision: "approved" }) }), { params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }) });
+    expect(missing.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+    authenticatedClient("review_changed");
+    const changed = await patch("approved");
+    expect(changed.status).toBe(409);
+    await expect(changed.json()).resolves.toMatchObject({ code: "SHARING_REVIEW_CHANGED" });
   });
 
   it("maps unavailable, verification, and authorization outcomes safely", async () => {
@@ -64,9 +74,9 @@ describe("interest decision endpoint", () => {
     const approved = await patch("approved");
     expect(approved.status).toBe(200);
     await expect(approved.json()).resolves.toEqual({ ok: true, status: "approved" });
-    expect(approveRpc).toHaveBeenCalledWith("decide_interest_request", {
+    expect(approveRpc).toHaveBeenCalledWith("decide_interest_request_reviewed", {
       p_interest_request_id: "11111111-1111-4111-8111-111111111111",
-      p_decision: "approved",
+      p_revision: "a".repeat(32),
     });
 
     const rejectRpc = authenticatedClient("rejected");

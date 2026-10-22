@@ -55,7 +55,7 @@ test("WhatsApp uses full public identity without maintenance or draft claims", a
   await context.addCookies([publishedOwnerCookie]);
   await context.route("https://wa.me/**", route => route.fulfill({ contentType: "text/html", body: "<title>Local share capture</title>" }));
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Manage link", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Introduction link", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /download.*(?:pdf|json)/i })).toHaveCount(0);
   const opened = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Share on WhatsApp", exact: true }).click();

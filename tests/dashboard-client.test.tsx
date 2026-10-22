@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
 
 import React from "react";
+import { renderToString } from "react-dom/server";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Portfolio, PortfolioData, PortfolioMedia } from "../src/types/portfolio";
 import { brokerIntroductionRouteRefSchema } from "../src/features/security/public-reference";
+import type { RelationshipPage } from "../src/features/access/relationship-dashboard.contract";
+
+let relationshipFixture: RelationshipPage;
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
@@ -130,11 +134,45 @@ const shareablePublished = {
 };
 
 function renderDashboard(overrides: Partial<React.ComponentProps<typeof DashboardClient>> = {}) {
+  const published = (overrides.portfolio ?? portfolio)?.published_data;
+  const items = overrides.interests ?? [];
+  const grants = overrides.accessSummary?.grants ?? [];
+  relationshipFixture = {
+    records: [...items.map(item => ({ kind: "interest" as const, item })), ...grants.map(item => ({ kind: "grant" as const, item }))],
+    total: items.length + grants.length,
+    counts: { interests: items.length, awaiting: items.filter(item => ["new", "pending_review"].includes(item.status)).length, setAside: items.filter(item => item.status === "rejected").length, active: grants.filter(item => item.status === "active").length },
+    disclosure: published ? { data: published, revision: "a".repeat(32), photoCount: 1, privatePhotoCount: 0, hasHoroscope: false } : null,
+  };
   return render(<CustomerAppFrame currentPage="dashboard" userEmail="aditi@example.com" className="dashboard-shell flex flex-1 flex-col" loadingTitle="Getting your portfolio ready"><DashboardClient portfolio={portfolio} viewCount={12} userEmail="aditi@example.com"
     canCreatePortfolio
+    relationshipOverview={relationshipFixture}
     shareUrl="https://nakshatra.test/p/token" isExpired daysLeft={0} media={[media]}
     mediaUrls={{ "media-1": "https://signed.test/one-thumb.webp" }} {...overrides} /></CustomerAppFrame>);
 }
+
+it("keeps server-rendered editor and WhatsApp controls disabled until hydration", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<DashboardClient {...shareablePublished}
+    canCreatePortfolio viewCount={12} userEmail="owner@example.test"
+    shareUrl="https://nakshatra.test/p/token" isExpired={false} daysLeft={20}
+    publicationReadiness={readyPublicationReadiness} />);
+  const controls = [...container.querySelectorAll("button")].filter(button =>
+    /^(Edit details|Share on WhatsApp)$/.test(button.textContent?.trim() ?? ""));
+  expect(controls.length).toBeGreaterThan(0);
+  for (const control of controls) expect(control).toBeDisabled();
+});
+
+it("keeps directly opened server-rendered editor fields disabled until hydration", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<DashboardClient {...shareablePublished}
+    canCreatePortfolio viewCount={12} userEmail="owner@example.test"
+    shareUrl="https://nakshatra.test/p/token" isExpired={false} daysLeft={20}
+    initialEditorOpen publicationReadiness={{ ...readyPublicationReadiness, lastEditorSection: "foundation" }} />);
+  const editor = container.querySelector<HTMLElement>('[role="dialog"]')!;
+  expect(within(editor).getByRole("textbox", { name: "First name" })).toBeDisabled();
+  expect(within(editor).getByRole("combobox", { name: "Go to introduction section" })).toBeDisabled();
+  expect(within(editor).getByRole("button", { name: "Save draft" })).toBeDisabled();
+});
 
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
   renderDashboard({ isExpired: false, daysLeft: 20, portfolio: { ...portfolio, draft_data: readyData },
@@ -205,6 +243,16 @@ beforeEach(() => {
   vi.clearAllMocks();
   for (const mock of Object.values(mocks)) mock.mockReset();
   vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+    if (String(input).startsWith("/api/dashboard/relationships")) {
+      const params = new URL(String(input), "http://local").searchParams;
+      const query = params.get("query")?.toLowerCase() || "";
+      const offset = Number(params.get("offset") || 0);
+      const records = [...relationshipFixture.records].reverse().filter(record => (record.kind === "interest" ? record.item.viewer_name : record.item.viewerName)?.toLowerCase().includes(query));
+      return Response.json({ ...relationshipFixture, records: records.slice(offset, offset + 8), total: records.length });
+    }
+    return Response.json({ error: "Unexpected test request" }, { status: 500 });
+  }));
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
   vi.spyOn(window, "open").mockImplementation(() => null);
   mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1" } });
@@ -231,6 +279,15 @@ afterEach(() => {
 });
 
 describe("dashboard client", () => {
+  it("shows unavailable sharing status rather than fabricated zero counts", () => {
+    renderDashboard({ relationshipsError: true, relationshipOverview: null });
+    expect(screen.getByRole("alert")).toHaveTextContent("Existing access has not changed");
+    expect(screen.getByRole("button", { name: "Retry sharing status" })).toBeEnabled();
+    const stats = screen.getByLabelText("Introduction activity at a glance");
+    expect(within(stats).getAllByText("—", { exact: true })).toHaveLength(3);
+    expect(within(stats).getAllByText("Unavailable", { exact: true })).toHaveLength(2);
+    expect(within(stats).queryByText("All caught up")).not.toBeInTheDocument();
+  });
   it.each(["input", "option"])("dismisses expanded combobox suggestions from %s before Escape can dismiss the editor", (target) => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData },
       media: [{ ...media, media_type: "hero" }] });
@@ -961,7 +1018,7 @@ describe("dashboard client", () => {
     renderDashboard({ ...shareablePublished, isExpired: false, daysLeft: 20, publicationReadiness: readyPublicationReadiness });
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
     expect(metrics.children).toHaveLength(4);
-    expect(within(metrics).getByText("Latest interests")).toBeInTheDocument();
+    expect(within(metrics).getByText("Interests received")).toBeInTheDocument();
     expect(within(metrics).getByText("Needs review")).toBeInTheDocument();
     expect(within(metrics).getByText("Currently sharing with")).toBeInTheDocument();
     expect(within(metrics).getByText("Introduction views")).toBeInTheDocument();
@@ -979,6 +1036,7 @@ describe("dashboard client", () => {
     expect(new URL(whatsappUrl).searchParams.get("text")).toMatch(/^Here’s my marriage introduction 🙏\n\n/);
     expect(new URL(whatsappUrl).searchParams.get("text")).toContain("If you’d like to know more, tap “Show interest” on the page.");
     expect(new URL(whatsappUrl).searchParams.get("text")).not.toMatch(/latest|up to date|always/i);
+    fireEvent.click(screen.getByText("Manage link", { exact: true }));
     fireEvent.click(screen.getByRole("button", { name: /rotate link/i }));
     await waitFor(() => expect(mocks.rotate).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /unpublish/i }));
@@ -1100,9 +1158,8 @@ describe("dashboard client", () => {
   });
 
   it("lets an owner approve a signed-in interest from the dashboard", async () => {
-    const decisionFetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, status: "approved" }), { status: 200 })
-    );
+    const decisionFetch = vi.fn(async (input: string) => String(input).startsWith("/api/dashboard/relationships")
+      ? Response.json({ ...relationshipFixture, records: [] }) : Response.json({ ok: true, status: "approved" }));
     vi.stubGlobal("fetch", decisionFetch);
     const disclosureData: PortfolioData = {
       ...data,
@@ -1114,7 +1171,9 @@ describe("dashboard client", () => {
       contact: { contacts: [{ name: "Rao", email: "family@example.com" }] },
     };
     renderDashboard({
-      portfolio: { ...portfolio, draft_data: disclosureData, published_data: disclosureData },
+      // A saved but unpublished edit must not change the information described
+      // to the owner when granting the existing published private snapshot.
+      portfolio: { ...portfolio, draft_data: { ...disclosureData, family: undefined, contact: undefined }, published_data: disclosureData },
       interests: [{
         id: "interest-1",
         viewer_name: "Rohan Mehta",
@@ -1135,7 +1194,7 @@ describe("dashboard client", () => {
     });
 
     const metrics = document.querySelector(".dashboard-stats-grid") as HTMLElement;
-    expect(within(metrics).getByText("Latest interests").closest(".dashboard-stat-card")).toHaveTextContent("1");
+    expect(within(metrics).getByText("Interests received").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByText("Needs review").closest(".dashboard-stat-card")).toHaveTextContent("1");
     expect(within(metrics).getByRole("link", { name: "Review interests" })).toHaveAttribute("href", "#introductions-and-access");
 
@@ -1145,14 +1204,14 @@ describe("dashboard client", () => {
 
     const approval = screen.getByRole("dialog", { name: /Share details with Rohan Mehta/i });
     expect(within(approval).getByText(/Details are shared for 15 days/i)).toBeInTheDocument();
-    expect(within(approval).getByText(/Personal profile, location, and story details/i)).toBeInTheDocument();
+    expect(await within(approval).findByText(/Personal profile, location, and story details/i)).toBeInTheDocument();
     expect(within(approval).getByText("Exact date of birth")).toBeInTheDocument();
     expect(within(approval).getByText(/Education, employer, career/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Family members, origins/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Lifestyle, languages/i)).toBeInTheDocument();
     expect(within(approval).getByText(/Partner preferences/i)).toBeInTheDocument();
     expect(within(approval).getByText("Private contact details")).toBeInTheDocument();
-    expect(decisionFetch).not.toHaveBeenCalled();
+    expect(decisionFetch.mock.calls.some(([url]) => String(url).startsWith("/api/interest/"))).toBe(false);
     fireEvent.click(within(approval).getByRole("button", { name: "Share details for 15 days" }));
 
     await waitFor(() => expect(decisionFetch).toHaveBeenCalledWith(
@@ -1438,16 +1497,16 @@ describe("dashboard client", () => {
     expect(screen.getByText("Verified")).toBeInTheDocument();
   });
 
-  it("keeps only the latest three records on the dashboard and paginates the full queue", () => {
+  it("keeps only the latest three records on the dashboard and paginates the full server queue", async () => {
     const interests = Array.from({ length: 9 }, (_, index) => ({
-      id: `interest-${index + 1}`,
+      id: `11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}`,
       viewer_name: `Viewer ${index + 1}`,
       viewer_phone: null,
       viewer_email: `viewer${index + 1}@example.com`,
       viewer_family_context: null,
       message: `Message ${index + 1}`,
       status: "new",
-      requester_user_id: `viewer-${index + 1}`,
+      requester_user_id: `22222222-2222-4222-8222-${String(index + 1).padStart(12, "0")}`,
       metadata: { profile_for: "self" },
       created_at: `2026-08-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
       email_verified: true,
@@ -1465,24 +1524,24 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "View all (9)" }));
     const dialog = screen.getByRole("dialog", { name: "Awaiting review" });
-    expect(within(dialog).getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Page 1 of 2")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 1")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: /Next/i }));
-    expect(within(dialog).getByText("Viewer 1")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Viewer 1")).toBeInTheDocument();
     fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email…"), { target: { value: "Viewer 4" } });
-    expect(within(dialog).getByText("Viewer 4")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Viewer 4")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 5")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close and return to dashboard" }));
     expect(screen.queryByRole("dialog", { name: "Awaiting review" })).not.toBeInTheDocument();
   });
 
-  it("moves ended access out of the active queue and into history", () => {
+  it("moves ended access out of the active queue and into history", async () => {
     renderDashboard({
       accessSummary: {
         grants: [
-          { id: "active-grant", interestRequestId: "interest-active", viewerName: "Active Viewer", status: "active", expiresAt: "2099-01-01T00:00:00.000Z" },
-          { id: "expired-grant", interestRequestId: "interest-expired", viewerName: "Expired Viewer", status: "expired", expiresAt: "2025-01-01T00:00:00.000Z" },
-          { id: "ended-grant", interestRequestId: "interest-ended", viewerName: "Ended Viewer", status: "revoked", expiresAt: "2099-01-01T00:00:00.000Z", revokedAt: "2026-01-01T00:00:00.000Z" },
+          { id: "11111111-1111-4111-8111-111111111111", interestRequestId: "22222222-2222-4222-8222-222222222221", viewerName: "Active Viewer", status: "active", expiresAt: "2099-01-01T00:00:00.000Z" },
+          { id: "11111111-1111-4111-8111-111111111112", interestRequestId: "22222222-2222-4222-8222-222222222222", viewerName: "Expired Viewer", status: "expired", expiresAt: "2025-01-01T00:00:00.000Z" },
+          { id: "11111111-1111-4111-8111-111111111113", interestRequestId: "22222222-2222-4222-8222-222222222223", viewerName: "Ended Viewer", status: "revoked", expiresAt: "2099-01-01T00:00:00.000Z", revokedAt: "2026-01-01T00:00:00.000Z" },
         ],
         events: [],
       },
@@ -1493,7 +1552,7 @@ describe("dashboard client", () => {
     expect(screen.queryByText("Ended Viewer")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
     const history = screen.getByRole("dialog", { name: "Relationship history" });
-    expect(within(history).getByText("Expired Viewer")).toBeInTheDocument();
+    expect(await within(history).findByText("Expired Viewer")).toBeInTheDocument();
     expect(within(history).getByText("Ended Viewer")).toBeInTheDocument();
   });
 
@@ -1514,6 +1573,15 @@ describe("dashboard client", () => {
     const history = screen.getByRole("dialog", { name: "Relationship history" });
     expect(within(history).getByText("Priya Shah")).toBeInTheDocument();
     expect(within(history).getByText("Broker introduction")).toBeInTheDocument();
+    fireEvent.change(within(history).getByRole("textbox"), { target: { value: "Priya" } });
+    expect(within(history).getByText("Priya Shah")).toBeInTheDocument();
+    fireEvent.change(within(history).getByRole("textbox"), { target: { value: "someone else" } });
+    expect(within(history).queryByText("Priya Shah")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByRole("textbox"), { target: { value: "" } });
+    fireEvent.change(within(history).getByRole("combobox"), { target: { value: "direct" } });
+    expect(within(history).queryByText("Priya Shah")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByRole("combobox"), { target: { value: "broker" } });
+    expect(within(history).getByText("Priya Shah")).toBeInTheDocument();
     fireEvent.click(within(history).getByRole("button", { name: "Open details" }));
     expect(screen.getByRole("dialog", { name: "Priya Shah" })).toBeInTheDocument();
     expect(screen.getByText("Sangam Matchmakers")).toBeInTheDocument();

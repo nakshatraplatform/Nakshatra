@@ -26,7 +26,8 @@ export async function getPortfolioAccessSummary(
   const repository = new AccessRepository(supabase);
   const { data, error } = await repository.listPortfolioAccess();
   const parsed = portfolioAccessSummarySchema.safeParse(data);
-  return error || !parsed.success ? { grants: [], events: [] } : parsed.data;
+  if (error || !parsed.success) throw new AccessLifecycleError("Sharing status could not be loaded. Existing access has not changed.", "ACCESS_SUMMARY_UNAVAILABLE", 503);
+  return parsed.data;
 }
 
 /** Renews or revokes one owner-managed Complete Portfolio grant through an atomic command. */

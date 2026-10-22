@@ -93,6 +93,8 @@ async function DashboardContent({ session: { supabase, user }, initialEditorOpen
       initialEditorOpen={initialEditorOpen}
       interests={dashboard.interests}
       accessSummary={dashboard.accessSummary}
+      relationshipOverview={dashboard.relationshipOverview}
+      relationshipsError={dashboard.relationshipsError}
       publicationReadiness={dashboard.publicationReadiness}
       brokerIntroductionResponses={dashboard.brokerIntroductionResponses}
       receivedBrokerIntroductions={dashboard.receivedBrokerIntroductions ?? []}
