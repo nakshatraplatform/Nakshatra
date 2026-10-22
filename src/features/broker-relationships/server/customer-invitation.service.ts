@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { workspaceRefSchema } from "@/features/security/public-reference";
 import { brokerCustomerRelationshipRefSchema } from "@/features/security/public-reference";
 import {
+  brokerRepresentationConsentVersionSchema,
   brokerdeskCustomerDetailSchema,
   brokerdeskCustomersSchema,
   claimedCustomerInvitationSchema,
@@ -11,6 +12,7 @@ import {
   customerBrokerRelationshipsSchema,
   customerBrokerConsentResultSchema,
 } from "./customer-invitation.contract";
+import type { BrokerRepresentationConsentVersion } from "./customer-invitation.contract";
 import { CustomerInvitationRepository } from "./customer-invitation.repository";
 
 export class CustomerInvitationError extends Error {
@@ -44,12 +46,29 @@ export async function createCustomerInvitation(supabase: SupabaseClient, input: 
 export async function claimCustomerInvitation(
   supabase: SupabaseClient,
   tokenHash: string,
-  consentVersion: "broker-representation-v2"
+  consentVersion: BrokerRepresentationConsentVersion
 ) {
   const { data, error } = await new CustomerInvitationRepository(supabase).claim(tokenHash, consentVersion);
   const parsed = claimedCustomerInvitationSchema.safeParse(data);
   if (error || !parsed.success) {
     throw new CustomerInvitationError("The invitation is unavailable.", "BROKERDESK_CUSTOMER_INVITATION_UNAVAILABLE", 403);
+  }
+  return parsed.data;
+}
+
+export async function resolveCustomerInvitationConsentVersion(
+  supabase: SupabaseClient,
+  tokenHash: string
+) {
+  const { data, error } = await new CustomerInvitationRepository(supabase)
+    .resolveConsentVersion(tokenHash);
+  const parsed = brokerRepresentationConsentVersionSchema.safeParse(data);
+  if (error || !parsed.success) {
+    throw new CustomerInvitationError(
+      "The invitation is unavailable.",
+      "BROKERDESK_CUSTOMER_INVITATION_UNAVAILABLE",
+      503
+    );
   }
   return parsed.data;
 }

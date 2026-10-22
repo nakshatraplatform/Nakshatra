@@ -7,13 +7,19 @@ import { CustomerInvitationClient } from "../src/app/join/customer/customer-invi
 import CustomerInvitationPage from "../src/app/join/customer/page";
 
 describe("BrokerDesk customer invitation client", () => {
-  beforeEach(() => history.replaceState(null, "", "/join/customer"));
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    history.replaceState(null, "", "/join/customer");
+  });
 
   it("removes the fragment and waits for explicit customer consent before claiming", async () => {
     const token = "a".repeat(43);
     history.replaceState(null, "", `/join/customer#token=${token}`);
     const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ready: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ready: true,
+        consentVersion: "broker-representation-v3",
+      }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         available: true,
         status: "active",
@@ -26,6 +32,7 @@ describe("BrokerDesk customer invitation client", () => {
     expect(await screen.findByRole("heading", { name: "Connect your portfolio to this broker" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(window.location.hash).toBe("");
+    expect(screen.getByText(/propose up to three family viewers/i)).toBeInTheDocument();
     const accept = screen.getByRole("button", { name: "Accept and continue" });
     expect(accept).toBeDisabled();
     await userEvent.click(screen.getByRole("checkbox", { name: /authorize this broker relationship/i }));
@@ -34,26 +41,36 @@ describe("BrokerDesk customer invitation client", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Broker relationship connected. View your brokers to continue.");
     expect(document.querySelector("[data-loading-status]")).toBeNull();
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/v1/customer/broker-invitations/claim", expect.objectContaining({
-      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
+      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v3" }),
     }));
   });
 
   it("continues the same invitation through sign-in and canonical portfolio completion", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(null, { status: 401 }));
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ready: true,
+        consentVersion: "broker-representation-v3",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }));
     render(<CustomerInvitationClient />);
     await userEvent.click(await screen.findByRole("checkbox", { name: /authorize this broker relationship/i }));
     await userEvent.click(screen.getByRole("button", { name: "Accept and continue" }));
     expect(await screen.findByRole("heading", { name: "Sign in to continue" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in securely" })).toHaveAttribute("href", "/login?next=/join/customer");
 
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ready: true,
+        consentVersion: "broker-representation-v3",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
       available: true,
       status: "portfolio_required",
       invitationRef: `inv_${"b".repeat(32)}`,
       workspaceName: "Agency A",
       relationshipRef: null,
       relationshipEndsAt: "2027-09-10T00:00:00Z",
-    }), { status: 200 }));
+      }), { status: 200 }));
     history.replaceState(null, "", "/join/customer");
     const { unmount } = render(<CustomerInvitationClient />);
     await userEvent.click(await screen.findAllByRole("checkbox", { name: /authorize this broker relationship/i }).then((items) => items.at(-1)!));
@@ -61,6 +78,27 @@ describe("BrokerDesk customer invitation client", () => {
     expect(await screen.findByRole("heading", { name: "Complete your one VivIntro portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Complete my portfolio" })).toHaveAttribute("href", "/dashboard");
     unmount();
+  });
+
+  it("keeps a live V2 invitation on its original consent contract", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ready: true,
+        consentVersion: "broker-representation-v2",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ available: false }), { status: 403 }));
+    history.replaceState(null, "", `/join/customer#token=${"a".repeat(43)}`);
+    render(<CustomerInvitationClient />);
+    await userEvent.click(await screen.findByRole("checkbox", { name: /authorize this broker relationship/i }));
+    expect(screen.queryByText(/propose up to three family viewers/i)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Accept and continue" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/customer/broker-invitations/claim",
+      expect.objectContaining({
+        body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
+      })
+    ));
   });
 
   it("keeps unavailable invitations neutral", async () => {
@@ -72,6 +110,10 @@ describe("BrokerDesk customer invitation client", () => {
   });
 
   it("uses the customer invitation client as the public-shell page", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({
+      ready: true,
+      consentVersion: "broker-representation-v3",
+    }), { status: 200 }));
     render(<CustomerInvitationPage />);
     expect(await screen.findByRole("heading", { name: "Connect your portfolio to this broker" })).toBeInTheDocument();
   });

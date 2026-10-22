@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(24);
+select plan(26);
 
 select has_function(
   'public','manage_customer_broker_consent',array['text','text','text'],
@@ -33,11 +33,11 @@ insert into public.broker_clients (
 );
 insert into app_private.broker_client_mandates (
   organization_id,broker_client_id,purpose,permitted_capabilities,
-  evidence_reference,customer_approved_by,starts_at,ends_at
+  evidence_reference,consent_version,customer_approved_by,starts_at,ends_at
 ) values (
   'e3000000-0000-4000-8000-000000000001','e6000000-0000-4000-8000-000000000001',
   'Matrimonial matchmaking representation',array['customers.read','introductions.create','introductions.send']::app_private.brokerdesk_capability[],
-  'initial-consent','e1000000-0000-4000-8000-000000000001',
+  'initial-consent','broker-representation-v2','e1000000-0000-4000-8000-000000000001',
   pg_catalog.now()-interval '1 day',pg_catalog.now()+interval '1 year'
 );
 insert into app_private.portfolio_disclosure_versions (
@@ -126,6 +126,8 @@ select is((select result->>'relationshipStatus' from renewed_result),'active','r
 reset role;
 select is((select count(*)::integer from app_private.broker_client_mandates where revoked_at is null),1,'renew creates exactly one current mandate');
 select ok((select ends_at > pg_catalog.now()+interval '364 days' from app_private.broker_client_mandates where revoked_at is null),'renew grants a bounded one-year mandate');
+select is((select consent_version from app_private.broker_client_mandates where revoked_at is null),'broker-representation-v2','ordinary renewal preserves the customer consent version');
+select ok(not (select permitted_capabilities @> array['family_viewers.propose']::app_private.brokerdesk_capability[] from app_private.broker_client_mandates where revoked_at is null),'V2 renewal never grants family-assisted authority');
 select is((select status from app_private.broker_introductions where id='e8000000-0000-4000-8000-000000000001'),'revoked','renew never revives an old introduction');
 select is((select count(*)::integer from app_private.broker_introduction_passes where revoked_at is null),0,'renew never revives an old pass');
 select is(

@@ -65,18 +65,20 @@ values (
 
 insert into app_private.broker_client_mandates (
   id, organization_id, broker_client_id, purpose, permitted_capabilities,
-  evidence_reference, customer_approved_by, starts_at, ends_at
+  evidence_reference, consent_version, customer_approved_by, starts_at, ends_at
 ) values
   (
     '99000000-0000-4000-8000-000000000001', '93000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000001', 'Customer authorized Introduction support',
     array['introductions.send']::app_private.brokerdesk_capability[], 'consent:test:customer-a',
+    'broker-representation-v2',
     '91000000-0000-4000-8000-000000000006', now() - interval '1 day', now() + interval '30 days'
   ),
   (
     '99000000-0000-4000-8000-000000000002', '93000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000002', 'Expired test mandate',
     array['introductions.send']::app_private.brokerdesk_capability[], 'consent:test:expired',
+    'broker-representation-v2',
     '91000000-0000-4000-8000-000000000007', now() - interval '31 days', now() - interval '1 day'
   );
 

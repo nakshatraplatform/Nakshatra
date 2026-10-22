@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { BrokerRepresentationConsentVersion } from "./customer-invitation.contract";
 
 export class CustomerInvitationRepository {
   constructor(private readonly supabase: SupabaseClient) {}
@@ -21,10 +22,16 @@ export class CustomerInvitationRepository {
     });
   }
 
-  claim(tokenHash: string, consentVersion: "broker-representation-v2") {
+  claim(tokenHash: string, consentVersion: BrokerRepresentationConsentVersion) {
     return this.supabase.rpc("claim_brokerdesk_customer_invitation", {
       p_token_hash: tokenHash,
       p_consent_version: consentVersion,
+    });
+  }
+
+  resolveConsentVersion(tokenHash: string) {
+    return this.supabase.rpc("resolve_brokerdesk_customer_invitation_consent_version", {
+      p_token_hash: tokenHash,
     });
   }
 

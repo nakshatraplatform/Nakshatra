@@ -1350,6 +1350,9 @@ isOneToOne: false
 "manage_customer_broker_consent":
 { Args: { "p_action": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
                            },
+"reconsent_customer_broker_relationship":
+{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
+                           },
 "manage_pilot_administrator":
 { Args: { "p_action"?: string,"p_email": string }; Returns: Json
                            },
@@ -1485,6 +1488,9 @@ isOneToOne: false
                            },
 "resolve_brokerdesk_customers":
 { Args: { "p_workspace_ref": string }; Returns: Json
+                           },
+"resolve_brokerdesk_customer_invitation_consent_version":
+{ Args: { "p_token_hash": string }; Returns: string
                            },
 "resolve_brokerdesk_dashboard":
 { Args: { "p_workspace_ref": string }; Returns: Json
