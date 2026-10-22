@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
-select plan(77);
+select plan(79);
 
 select has_table('app_private','candidate_family_viewers','Family Viewer roster is private');
 select has_table('app_private','candidate_family_viewer_invitations','family invitations are private');
@@ -317,6 +317,9 @@ create temporary table full_queue_proposal as select public.propose_candidate_fa
   'proposal-full-queue-0001'
 ) result;
 select is((select result from full_queue_proposal),'{"accepted":true}'::jsonb,'a full proposal queue keeps the same non-oracular broker acknowledgement');
+reset role;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('a1010000-0000-4000-8000-000000000002','a2010000-0000-4000-8000-000000000002');
 select is(public.create_candidate_family_viewer(
   pg_catalog.encode(extensions.digest(pg_catalog.convert_to('candidate-overflow','UTF8'),'sha256'),'hex'),
   'ca***@family-viewer.test','Candidate Overflow','relative',null,null,repeat('f',64),
@@ -396,6 +399,7 @@ select is((select result->>'familyViewersRevoked' from family_deletion_result),'
 select ok((select status='revoked' and verified_user_id is null and candidate_approved_by is null and intended_email_hint='Removed' from app_private.candidate_family_viewers where id=(select id from family4_deletion_target)),'deletion preparation removes active identity, approval and contact references');
 select ok((select accepted_by is null and token_hash is null and intended_email_hint='Removed' from app_private.candidate_family_viewer_invitations where family_viewer_id=(select id from family4_deletion_target) order by created_at desc limit 1),'deletion preparation scrubs invitation identity and secret material');
 select lives_ok($$delete from auth.users where id='a1010000-0000-4000-8000-000000000007'$$,'prepared Family Viewer account deletion is no longer blocked by new foreign keys');
+select is((select count(*)::integer from app_private.brokerdesk_audit_events where actor_user_id is null and event_name='family_viewer.activated' and safe_details->>'viewerRef'=(select viewer_ref from family4_deletion_target)),1,'auth deletion nulls only the audit actor reference and preserves the immutable event');
 
 select is((select count(*)::integer from app_private.brokerdesk_audit_events where event_name='family_viewer.activated' and safe_details ?| array['email','emailHash','tokenHash']),0,'family audit details contain no email or token material');
 select is((select count(*)::integer from app_private.brokerdesk_audit_events where event_name='family_viewer.activated' and safe_details->>'viewerRef'=(select viewer_ref from proposal_one_row)),1,'idempotent activation produces one logical audit event');
@@ -419,6 +423,7 @@ create temporary table broker_deletion_result as select public.prepare_account_d
 reset role;
 select cmp_ok((select (result->>'familyProposalOrganizationsScrubbed')::integer from broker_deletion_result),'>',0,'sole-owner deletion scrubs Family Viewer organization provenance before deletion');
 select is((select count(*)::integer from public.organizations where id='a4010000-0000-4000-8000-000000000001'),0,'sole-owner broker organization deletion is not blocked by Family Viewer provenance');
+select cmp_ok((select count(*)::integer from app_private.brokerdesk_audit_events where organization_id is null and actor_user_id='a1010000-0000-4000-8000-000000000001'),'>',0,'organization deletion nulls only the audit organization reference and preserves immutable events');
 select is((select count(*)::integer from app_private.candidate_family_viewers where proposed_by_organization_id='a4010000-0000-4000-8000-000000000001' or proposed_by_user_id='a1010000-0000-4000-8000-000000000001'),0,'deleted broker and organization references are removed from every Family Viewer row');
 
 select * from finish();

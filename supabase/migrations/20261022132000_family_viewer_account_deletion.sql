@@ -1,6 +1,46 @@
 -- NAK-201: make account deletion revoke Family Viewer authority and scrub
 -- user-linked provenance before the Auth user is removed.
 
+-- Foreign-key SET NULL actions are the sole permitted mutation of immutable
+-- BrokerDesk audit rows. PostgreSQL runs those referential actions from a
+-- nested trigger; ordinary UPDATE statements remain at depth one and fail.
+-- Every event field and both non-null reference values remain immutable. This
+-- narrow exception lets account/organization deletion anonymize identifiers
+-- without weakening the append-only audit contract.
+create or replace function app_private.prevent_brokerdesk_audit_mutation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE'
+    and pg_catalog.pg_trigger_depth() > 1
+    and new.id is not distinct from old.id
+    and new.event_name is not distinct from old.event_name
+    and new.resource_type is not distinct from old.resource_type
+    and new.outcome is not distinct from old.outcome
+    and new.safe_details is not distinct from old.safe_details
+    and new.occurred_at is not distinct from old.occurred_at
+    and (
+      new.organization_id is not distinct from old.organization_id
+      or (old.organization_id is not null and new.organization_id is null)
+    )
+    and (
+      new.actor_user_id is not distinct from old.actor_user_id
+      or (old.actor_user_id is not null and new.actor_user_id is null)
+    ) then
+    return new;
+  end if;
+
+  raise exception 'BrokerDesk audit events are append-only'
+    using errcode = '55000';
+end;
+$$;
+
+revoke all on function app_private.prevent_brokerdesk_audit_mutation()
+  from public, anon, authenticated;
+
 create or replace function app_private.prepare_account_deletion(
   p_request_id uuid,
   p_user_id uuid,

@@ -234,5 +234,15 @@ token valid, or relying on UI limits instead of database constraints.
   `created_at`, violating the production chronology constraint. The fixture now
   shifts both timestamps while
   preserving `created_at < expires_at < now()`; the production constraint and
-  neutral expired-token assertion remain unchanged. A fresh complete pgTAP and
-  concurrency run is required on the corrected commit.
+  neutral expired-token assertion remain unchanged. The following full CI run
+  exposed two deeper contract checks: the bounded-roster fixture had retained
+  the broker identity while querying a candidate-only projection, and the
+  original append-only BrokerDesk audit trigger also blocked the schema's own
+  `ON DELETE SET NULL` anonymization actions. The fixture now switches back to
+  the candidate before exercising candidate commands. The audit trigger keeps
+  ordinary updates/deletes forbidden and permits only nested foreign-key
+  actions that change a non-null actor or organization reference to null while
+  every event field remains byte-for-byte unchanged. New assertions cover both
+  account and organization deletion anonymization. A fresh complete pgTAP,
+  concurrency, and generated-type drift run is required on the corrected
+  commit.
