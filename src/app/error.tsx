@@ -2,6 +2,8 @@
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import Link from "next/link";
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export default function Error({
   error,
@@ -10,7 +12,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  console.error("App error:", error.message);
+  useEffect(() => { Sentry.captureException(error); }, [error]);
 
   return (
     <main

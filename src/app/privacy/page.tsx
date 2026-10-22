@@ -39,6 +39,7 @@ export default function PrivacyPage() {
       </PolicySection>
 
       <PolicySection id="providers" title="Storage and service providers">
+        <p>When configured, VivIntro uses Sentry for application error and performance diagnostics. Our configuration filters private URL values and excludes profile content, request bodies, cookies and user identity from diagnostic payloads. Error messages are redacted while source locations and timing information help us investigate failures. Session recording is not enabled. Sentry also processes technical network metadata when receiving these requests.</p>
         <p>VivIntro uses Supabase for account authentication, portfolio records, and file storage; Vercel for hosting and marketing-page analytics; Google when you choose Google sign-in; and Resend for transactional emails when delivery is enabled. Email delivery involves sharing the recipient address and message content with the email provider.</p>
         <p>Our page-view analytics filter allows public marketing pages and removes URL query strings and fragments. It excludes Introduction links and account routes from those page-view events. This filter is not a claim that no scripts or technical requests load elsewhere in the application. See <a href="#browser-storage" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">cookies and browser storage</a> for the distinction between analytics and sign-in cookies.</p>
         <p>Personal Introduction pages are marked not to be indexed by search engines; public marketing pages can appear in search results. This indexing instruction cannot prevent a person who has an Introduction link from saving or forwarding what they can view.</p>
@@ -130,7 +131,7 @@ export default function PrivacyPage() {
         <p>VivIntro is intended for adults aged 18 and over. Do not upload another person&apos;s private information or documents unless you have their permission and are authorized to manage the introduction.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 15, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 21, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }
