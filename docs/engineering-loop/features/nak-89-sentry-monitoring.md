@@ -164,5 +164,9 @@ real serialized boundary and demonstrate the negative control.
   not present locally and has not been inspected. Authenticated map upload,
   production ingestion and readable browser source frames still require testing
   after the Sentry code is deployed.
+- Integrated Chromium theme/loading regression passed: **11 passed, 2
+  viewport-conditional skips**, using one worker and unchanged assertions/timeouts.
+- Next.js 16.4 normalizes its generated AGENTS.md section heading from H1 to H2;
+  retain that generated documentation change to avoid a permanently dirty tree.
 - Branch prepared for publication; GitHub CI/Preview acceptance is separate from
   these local checks. PR creation does not authorize merging or production deployment.
