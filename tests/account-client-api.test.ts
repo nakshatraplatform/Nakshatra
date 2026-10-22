@@ -22,6 +22,20 @@ describe("account browser API", () => {
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
+  it("reports a returned sign-out failure so the caller can retry", async () => {
+    const error = new Error("provider unavailable");
+    signOut.mockResolvedValueOnce({ error });
+    await expect(clearLocalAccountSession()).rejects.toBe(error);
+    signOut.mockResolvedValueOnce({ error: null });
+    await expect(clearLocalAccountSession()).resolves.toBeUndefined();
+  });
+
+  it("preserves thrown sign-out failures", async () => {
+    const error = new Error("network unavailable");
+    signOut.mockRejectedValueOnce(error);
+    await expect(clearLocalAccountSession()).rejects.toBe(error);
+  });
+
   it("returns an export blob and uses explicit methods", async () => {
     const fetch = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetch);
