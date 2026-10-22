@@ -10,6 +10,26 @@ Draft PR: https://github.com/nakshatraplatform/Nakshatra/pull/129 . GitHub CI an
 Vercel preview build started automatically. Checklist entries for hosted checks
 and mobile approval remain open until verified; Draft status is intentional.
 
+Latest-main local rerun: full unit/coverage and 63 feature/21 boundary floors,
+lint, typecheck, static DB fixtures, dependency audit and optimized build passed.
+Sixteen browser cases passed, including the upstream password-recovery flow and
+five-width/light-dark onboarding, consent and layout cases.
+
+Hosted CI on `d8cd162`: quality/build, migration replay/pgTAP, secret scan and
+Vercel passed. The three shard-1 browser failures all came from the same outdated
+test expecting Preview/Save/early Review to be persistent footer actions. The
+approved contract moved these secondary tools to the section end. Corrected
+`dashboard-clarity.spec.ts` to keep strict viewport bounds for persistent
+Back/Continue, then scroll to each secondary tool and assert it clears both fixed
+bars, fits horizontally and retains 44px touch targets. Existing overflow,
+zoom-equivalent viewport, review/consent and focus assertions remain. No runtime,
+design, timeout, retry or CI configuration change for this correction. Hosted CI
+must rerun on the correction commit; do not treat the prior green jobs as final.
+Correction verification: all 18 dashboard-clarity cases passed across desktop,
+tablet and mobile Chromium (seven viewport/zoom sizes in each fit case), with no
+retries; typecheck, lint and diff whitespace passed. Mobile preview approval is
+still a human release gate, not inferred from these automated passes.
+
 Implementation checklist:
 
 - [x] Keep typed multi-select answers in private draft state before Add.
