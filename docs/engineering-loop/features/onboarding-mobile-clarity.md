@@ -1,5 +1,35 @@
 # Onboarding mobile clarity
 
+## Draft app PR preparation (October 22)
+
+Integrated latest main `0587acc` (password-recovery PR #128), without conflicts.
+The prior three-round review and local results below remain snapshot-specific;
+final integrated checks and hosted CI must pass before release. User authorized
+committing/pushing this increment and a Draft PR, not merging or production writes.
+
+Implementation checklist:
+
+- [x] Keep typed multi-select answers in private draft state before Add.
+- [x] Correct field paths/focus, legacy origin recovery and latest-save errors.
+- [x] Share UI/API closed-choice and range checks; preserve owner-stored legacy answers.
+- [x] Keep blank sibling count unanswered, totals 0–20 and detailed records at most 10.
+- [x] Use shared email/phone syntax and actionable numeric errors.
+- [x] Remove repeated field descriptions; retain essential privacy/provider notices.
+- [x] Group related answers and simplify appearance/contact section.
+- [x] Persistent bottom Back/Continue, final Review, secondary draft tools and clear Dashboard exit.
+- [x] Preserve portfolio renderers, fonts, colours and all publication/access guards.
+- [x] Keep incomplete private drafts; Family/Astrology optional; no new mandatory fields.
+- [x] Retain debounced, serialized saves; no added read for normal choices, at most one owner-scoped legacy lookup.
+- [ ] Hosted CI passes on the final PR commit, without weakened/skipped checks.
+- [ ] Mobile preview review and physical-phone/keyboard testing; remain Draft until approved.
+
+Deferred: Unicode/single-name policy, expanded residence countries, marital
+eligibility changes, new mandatory fields and large field-specification refactor.
+No PDF feature, SQL migration, dependency, CI or production configuration changes.
+Release order: green CI + mobile preview approval, then ready/review/merge this app
+PR, verify Vercel production deployment, smoke-test. No database deployment for
+this increment. Rollback is an app rollback; stored values/read schemas unchanged.
+
 ## Current increment: field integrity (October 22)
 
 Full/significant shared UI/API authoring contract increment on fetched main
