@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(26);
+select plan(27);
 
 -- Static lock-order regression complements the required two-session release
 -- check: submissions lock portfolio first, then update the request.
@@ -32,8 +32,15 @@ values('b4000000-0000-4000-8000-000000000001','b3000000-0000-4000-8000-000000000
 select pg_temp.prime_paid_publication('b3000000-0000-4000-8000-000000000001',pg_temp.complete_portfolio_draft());
 update public.portfolios set is_published=true,published_data=draft_data where id='b3000000-0000-4000-8000-000000000001';
 insert into public.approved_portfolio_snapshots(portfolio_id,data,template_id,published_at)
-values('b3000000-0000-4000-8000-000000000001',jsonb_build_object('personal',pg_temp.complete_portfolio_draft()->'personal',
+-- Approved snapshots use the viewer projection, never the owner draft's
+-- internal canonical-location IDs/codes or other owner-only fields.
+values('b3000000-0000-4000-8000-000000000001',jsonb_build_object('personal',
+  jsonb_build_object('name','Sharing Owner','dob','1990-01-01','gender','female'),
   'contact',jsonb_build_object('contact_person','Published contact','email','published@fixture.test')),3,now());
+select throws_ok($$update public.approved_portfolio_snapshots
+  set data=jsonb_set(data,'{personal,country_code}','"US"'::jsonb)
+  where portfolio_id='b3000000-0000-4000-8000-000000000001'$$,
+  '23514','approved snapshot contains an owner-only field','approved snapshot still rejects owner-only location codes');
 insert into public.interest_requests(id,portfolio_id,requester_user_id,viewer_name,viewer_email,viewer_phone,email_verified_at,verification_channel,status,metadata,created_at)
 select ('c2000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'b3000000-0000-4000-8000-000000000001',
   ('c1000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'Viewer '||n,'sharing-viewer-'||n||'@fixture.test','+1 617 555 0123',
