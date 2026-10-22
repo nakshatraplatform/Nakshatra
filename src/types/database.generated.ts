@@ -1389,6 +1389,9 @@ isOneToOne: false
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
                            },
+"reconsent_customer_broker_relationship":
+{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
+                           },
 "record_account_deletion_auth_deleted":
 { Args: { "p_claim_token": string,"p_request_id": string }; Returns: boolean
                            },
@@ -1405,9 +1408,6 @@ isOneToOne: false
                            },
 "record_resend_delivery_event":
 { Args: { "p_delivery_id"?: string,"p_event_digest": string,"p_event_id": string,"p_occurred_at": string,"p_provider_message_id": string,"p_status": string }; Returns: boolean
-                           },
-"reconsent_customer_broker_relationship":
-{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
                            },
 "register_candidate_liveness_provider_create":
 { Args: { "p_attempt_id": string,"p_management_token_hash": string,"p_workflow_id": string,"p_workflow_version": number }; Returns: undefined
