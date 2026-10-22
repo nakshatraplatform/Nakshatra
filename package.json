@@ -19,6 +19,7 @@
     "test:db": "supabase test db supabase/tests/database --local",
     "test:db:share-links:local": "node scripts/test-readable-share-links-local.mjs",
     "test:db:approval-retry:local": "node --test scripts/test-approval-retry-guard.test.mjs && node scripts/test-approval-retry-local.mjs",
+    "test:db:family-viewer-concurrency:local": "node scripts/test-family-viewer-concurrency-local.mjs",
     "test:db:local": "npm run db:verify",
     "db:smoke": "node scripts/check-db-fixtures.mjs",
     "db:verify": "node scripts/verify-local-db.mjs",

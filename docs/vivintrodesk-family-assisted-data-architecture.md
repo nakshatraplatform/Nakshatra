@@ -108,7 +108,7 @@ One row represents one candidate-to-family-account authorization lifecycle.
 | `viewer_ref` | opaque `fvw_` reference, unique and immutable | Safe API identifier |
 | `candidate_id` | FK `public.candidates(id)` | Candidate that owns this roster entry |
 | `intended_email_hash` | normalized confirmed-email SHA-256 using the existing invitation convention | Exact audience binding without raw email |
-| `intended_email_hint` | masked, 5–254 chars | Candidate-facing recovery cue only |
+| `intended_email_hint` | canonical lower-case masked email hint, or internal `Removed` tombstone | Candidate-facing recovery cue only; database rejects raw email |
 | `verified_user_id` | nullable FK `auth.users(id)` | Independently authenticated family account |
 | `display_name` | trimmed, 1–120 chars | Candidate/broker-entered familiar name |
 | `relationship_kind` | controlled value | `father`, `mother`, `parent`, `sibling`, `guardian`, `relative`, or `other` |
@@ -132,12 +132,19 @@ State checks require:
 - a rejected row was never activated;
 - a revoked row has `revoked_at` and cannot return to active;
 - a primary row can be primary only while active; and
-- broker provenance is either wholly present or wholly absent.
+- broker organization provenance remains when only a proposal actor is later
+  deleted; the personal broker actor reference is scrubbed. If sole-owner
+  account deletion removes the organization itself, both provenance references
+  are scrubbed before the restrictive organization foreign key is reached.
 
 The database command, not the browser, also checks that `verified_user_id` is
-not the candidate's current owner. Account deletion must first revoke dependent
-family authorizations; the identity FK should therefore be restrictive rather
-than leaving an active row with a null identity.
+not the candidate's current owner. Account deletion preparation revokes
+dependent family authority, destroys pending tokens, removes verified/approval
+user references and scrubs actor provenance before Auth deletion. It uses both
+UUID links and the deleting account's normalized email hash, and also revokes
+family rows attached to a surviving candidate owned by that account. The
+identity FK remains restrictive so an active row can never silently survive
+with a null identity.
 
 No WhatsApp number is added to this table in V1. The number already belongs in
 the candidate-owned Protected Contact/onboarding data and is used manually for
@@ -154,10 +161,10 @@ Invitations are retryable delivery capabilities, not memberships.
 | `invitation_ref` | opaque `fvi_` reference, unique | Safe invitation identifier |
 | `family_viewer_id` | FK family viewer | Intended roster entry |
 | `token_hash` | nullable unique SHA-256 | One-time secret; cleared after use |
-| `intended_email_hash`, `intended_email_hint` | pinned copy | Prevents an invitation retry from changing audience silently |
-| `invited_by` | FK auth user | Candidate or permitted broker actor |
+| `intended_email_hash`, `intended_email_hint` | pinned while live; scrubbed on consumption/replacement/revocation | Prevents a live invitation retry from changing audience silently without retaining retired audience data |
+| `invited_by` | nullable FK auth user | Candidate actor while live; scrubbed after consumption or account deletion |
 | `expires_at` | creation time plus 7 days | Matches the current customer-invitation operating window |
-| `accepted_by`, `accepted_at` | nullable user/time | Successful exact-email activation |
+| `accepted_by`, `accepted_at` | nullable user/time | Successful exact-email activation; actor may be scrubbed on account deletion while time remains |
 | `revoked_at` | nullable timestamp | Invalidation |
 | `created_at` | timestamp | Ordering |
 
@@ -322,6 +329,13 @@ indexes that duplicate a unique constraint prefix.
 - Use keyset pagination on `(created_at, id)`; never use unbounded reads or
   `OFFSET` for customer, family, Introduction, or timeline lists.
 - Maximum server page size is 50; normal UI page size is 20–25.
+- The candidate's actionable Family Viewer roster is a separate bounded set:
+  at most 10 active/pending rows, at most five pending proposals from one
+  agency, and at most three active viewers. A valid
+  broker proposal always receives the same generic acknowledgement whether it
+  created a row, duplicated an existing cross-agency audience, or reached the
+  safe queue bound. The broker receives no viewer reference or membership
+  result bit.
 - Resolve source-side and recipient-side Introductions with two indexable
   branches joined by `UNION ALL`, not one large `OR` predicate.
 - Filter authorization in SQL before returning JSON. Never load all agency rows
@@ -348,7 +362,7 @@ already supports these commands safely.
 
 | RPC | Caller | Transactional responsibility |
 | --- | --- | --- |
-| `public.decide_family_viewer_proposal` | Candidate owner | Approve or reject one proposal; approval creates/replaces a bound invitation |
+| `public.decide_family_viewer_proposal` | Candidate owner | Approve only when the candidate's re-entered email hashes to the pinned proposal audience, then create/replace the invitation; reject with no email/token material |
 | `public.create_candidate_family_viewer` | Candidate owner | Direct candidate addition, roster lock, duplicate check, invitation creation |
 | `public.accept_family_viewer_invitation` | Intended Google account | Exact-email match, one-time token consume, three-viewer lock, self-check, activation |
 | `public.set_primary_family_viewer` | Candidate owner | Candidate lock, active-viewer validation, clear old primary and set new primary atomically |
@@ -361,7 +375,7 @@ already supports these commands safely.
 
 | RPC | Capability | Transactional responsibility |
 | --- | --- | --- |
-| `public.propose_candidate_family_viewer` | new `family_viewers.propose` | Same-workspace active relationship, bounded fields, proposal only; never activates access |
+| `public.propose_candidate_family_viewer` | new `family_viewers.propose` | Same-workspace active relationship, bounded fields and queue; generic acknowledgement only; never activates access or exposes cross-agency duplication |
 | `public.resolve_brokerdesk_family_setup` | `customers.read` plus resource scope | Own-workspace proposal state and safe aggregate counts; never another broker's provenance |
 | `public.record_introduction_share_action` | new `introductions.manage_sharing` | Side validation, optimistic version, honest state transition, audit event |
 | `public.record_introduction_family_update` | new `introductions.record_family_update` | Same-tenant/side validation, append update, safe event, optional candidate notification |
@@ -419,7 +433,7 @@ types, neutral errors, and calls to one repository/RPC boundary.
 | --- | --- |
 | `GET /api/v1/customer/family-viewers` | Candidate roster and pending proposals |
 | `POST /api/v1/customer/family-viewers` | Candidate-direct invitation |
-| `POST /api/v1/customer/family-viewers/[viewerRef]/decision` | Approve or reject broker proposal |
+| `POST /api/v1/customer/family-viewers/[viewerRef]/decision` | Approve or reject broker proposal; approval requires candidate re-entry of the full email |
 | `POST /api/v1/customer/family-viewers/[viewerRef]/primary` | Make one active viewer primary |
 | `DELETE /api/v1/customer/family-viewers/[viewerRef]` | Immediate candidate revocation with expected version |
 | `POST /api/v1/family-invitations/exchange` | Exchange fragment token for short-lived HttpOnly setup context |
@@ -429,6 +443,13 @@ types, neutral errors, and calls to one repository/RPC boundary.
 
 The family dashboard has no response endpoint in V1. The existing
 `POST /api/v1/introductions/[introductionRef]/response` remains candidate-only.
+
+Broker proposals intentionally retain only a normalized email hash and masked
+hint. On approval, the candidate re-enters the full email; the NAK-202 route
+normalizes and hashes it, passes only the hash into the decision RPC, and sends
+the invitation to the request-scoped address only after the database confirms
+the exact hash. The raw address must never be stored in roster, invitation,
+audit, idempotency, or notification metadata.
 Closed, expired, and revoked Introductions may remain as safe history rows in
 the dashboard, but their profile payload does not remain readable after the
 applicable authorization window closes.
@@ -613,6 +634,16 @@ revokes new entry points; it never broadens old records or reconstructs secrets.
 - wrong-email, unconfirmed-email, expired, replayed, and replaced invitations
   fail neutrally;
 - broker proposal cannot activate a viewer or reveal another broker's proposal;
+- candidate approval with an email that does not hash to the broker's proposal
+  fails neutrally and creates no invitation;
+- public commands and table constraints reject an unmasked email in every
+  family hint field;
+- the actionable roster cannot exceed 10 rows and a full/duplicate proposal
+  remains indistinguishable to the broker;
+- account-deletion preparation revokes Family Viewer authority, clears pending
+  secrets (including address-only pending invitations), revokes family rows on
+  surviving owned candidates, and removes every new Auth and sole-owner
+  organization foreign-key blocker;
 - V1/V2 mandates never authorize family reads;
 - ordinary renewal never becomes V3 reconsent;
 - family user cannot respond, close, revoke, comment, or mutate an Introduction;

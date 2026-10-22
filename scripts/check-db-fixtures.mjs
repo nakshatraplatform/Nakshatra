@@ -12,7 +12,7 @@ const authFixturePattern = /pg_temp\.create_auth_(?:actor|session)\(\s*'([^']+)'
 const directJwtClaimsPattern = /set\s+local\s+request\.jwt\.claims\s*=\s*'(\{.*\})'\s*;/i;
 const invalidAuthClaimsMarker = "-- db:smoke: allow-invalid-auth-claims";
 const pgTapPlanPattern = /^\s*select\s+plan\(\s*(\d+)\s*\)\s*;/im;
-const pgTapAssertionPattern = /^\s*select\s+(?:has_column|has_function|has_index|has_schema|has_table|has_trigger|is|is_empty|isnt|like|lives_ok|ok|results_eq|throws_ok)\s*\(/gim;
+const pgTapAssertionPattern = /^\s*select\s+(?:cmp_ok|has_column|has_function|has_index|has_schema|has_table|has_trigger|is|is_empty|isnt|like|lives_ok|ok|results_eq|throws_ok)\s*\(/gim;
 const qualifiedSpecialSyntaxPattern = /\bpg_catalog\.(?:extract|greatest|least)\s*\(/i;
 
 function fail(message) {
