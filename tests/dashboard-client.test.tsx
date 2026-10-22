@@ -169,9 +169,9 @@ it("keeps directly opened server-rendered editor fields disabled until hydration
     shareUrl="https://nakshatra.test/p/token" isExpired={false} daysLeft={20}
     initialEditorOpen publicationReadiness={{ ...readyPublicationReadiness, lastEditorSection: "foundation" }} />);
   const editor = container.querySelector<HTMLElement>('[role="dialog"]')!;
-  expect(within(editor).getByRole("textbox", { name: "First name", exact: true })).toBeDisabled();
+  expect(within(editor).getByRole("textbox", { name: "First name" })).toBeDisabled();
   expect(within(editor).getByRole("combobox", { name: "Go to introduction section" })).toBeDisabled();
-  expect(within(editor).getByRole("button", { name: "Save draft", exact: true })).toBeDisabled();
+  expect(within(editor).getByRole("button", { name: "Save draft" })).toBeDisabled();
 });
 
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
