@@ -280,6 +280,26 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
+  // Loopback-only password recovery: exercise the real SDK's PKCE cookie bridge.
+  if (request.method === "POST" && url.pathname === "/auth/v1/recover") return sendJson(response, 200, {});
+  if (request.method === "POST" && url.pathname === "/auth/v1/token" && url.searchParams.get("grant_type") === "pkce") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    request.on("end", () => {
+      const payload = JSON.parse(body);
+      if (payload.auth_code !== "loopback-password-recovery" || !payload.code_verifier) {
+        return sendJson(response, 400, { code: "invalid_grant", message: "Invalid fixture exchange" });
+      }
+      return sendJson(response, 200, {
+        access_token: themeTestToken, refresh_token: "local-ui-fixture", expires_in: 3600,
+        token_type: "bearer", user: themeTestUser,
+      });
+    });
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/auth/v1/logout" && request.headers.authorization === `Bearer ${themeTestToken}`) {
+    return sendJson(response, 200, {});
+  }
   if (url.pathname === "/auth/v1/user") {
     if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
