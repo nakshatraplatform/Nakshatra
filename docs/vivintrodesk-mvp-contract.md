@@ -1,8 +1,9 @@
 # VivIntroDesk MVP product, business, and engineering contract
 
-Status: **authoritative current contract**, reconciled through merged NAK-79 on
-22 September 2026. When an older BrokerDesk plan, prototype, feature record, or
-chat summary conflicts with this file, this file wins. See
+Status: **authoritative current contract**, reconciled through merged NAK-79
+and the approved family-assisted V1 decisions on 22 October 2026. When an older
+BrokerDesk plan, prototype, feature record, or chat summary conflicts with this
+file, this file wins. See
 [the document map](./vivintrodesk-document-map.md) before using historical plans.
 
 ## Product and business position
@@ -87,6 +88,40 @@ Introduction.
   second acceptance. There is no second contact-approval step; each customer
   confirms this disclosure consequence when choosing Interested.
 
+### Family-assisted broker workflow
+
+V1 supports candidate-authorized Family Viewers for broker-linked candidates.
+This reflects the normal broker workflow in which parents or close family help
+review profiles, while preserving the candidate's final authority.
+
+- A candidate has one family roster across all active broker relationships,
+  with at most three active Family Viewers excluding the candidate.
+- A broker may collect family details during in-office registration and may
+  propose a viewer, but the proposal grants no access.
+- The candidate must approve the proposal. The family member must then sign in
+  with the exact invited Google email before access becomes active.
+- An active Family Viewer may view the same opposite Broker Standard Profile as
+  the candidate while the Introduction is active.
+- Only the authenticated candidate can submit the authoritative Interested or
+  Decline response. A broker may record a bounded family conversation update,
+  but that update cannot mutate or stand in for the candidate's response.
+- When both candidates choose Interested, the then-eligible Family Viewers are
+  frozen for that Introduction. Those viewers may see the opposite pinned
+  Complete Portfolio for the same 30-day window as the candidate.
+- Adding a Family Viewer later does not grant access to an already-mutual
+  Introduction. Removal, mandate termination, revocation and expiry fail
+  closed.
+- Before mutual interest, each candidate may see the count of active Family
+  Viewers authorized by the opposite candidate, but never their names, email
+  addresses or phone numbers.
+- Broker users remain limited to Broker Standard. Family access never reveals
+  Protected Contact or Complete Portfolio data to the broker workspace.
+
+Personal VivIntro users may still store Protected Contacts for later Complete
+Portfolio disclosure. Family Viewer accounts outside an active broker-linked
+relationship are not part of V1; a future paid personal capability requires a
+separate product decision.
+
 ## URL and authorization contract
 
 An opaque broker URL identifies a possible Introduction but grants no
@@ -103,7 +138,8 @@ its existing B2C progressive-disclosure rules.
 ## Explicitly deferred
 
 - cross-broker discovery, notification or coordination;
-- linked-family accounts and email membership;
+- WhatsApp/phone-only Family Viewer authentication and WhatsApp OTP;
+- paid personal Family Viewer access outside broker-linked relationships;
 - custom agency questionnaires and sensitive package fields;
 - split-representation resolution across different brokers;
 - VivIntro Plus entitlements, payments and usage metering;
