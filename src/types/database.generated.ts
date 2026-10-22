@@ -1219,6 +1219,9 @@ isOneToOne: false
 "decide_interest_request":
 { Args: { "p_decision": string,"p_interest_request_id": string }; Returns: string
                            },
+"decide_interest_request_reviewed":
+{ Args: { "p_interest_request_id": string,"p_revision": string }; Returns: string
+                           },
 "defer_identity_verification_work":
 { Args: { "p_attempt_id": string,"p_claim_token": string,"p_delay_seconds"?: number,"p_error_code": string,"p_task_type": string }; Returns: boolean
                            },
@@ -1294,6 +1297,9 @@ isOneToOne: false
                            },
 "get_owner_dashboard_review_snapshot":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"get_owner_relationship_page":
+{ Args: { "p_filter"?: string,"p_offset"?: number,"p_query"?: string,"p_queue"?: string }; Returns: Json
                            },
 "get_portfolio_publication_readiness":
 { Args: Record<PropertyKey, never>; Returns: Json
