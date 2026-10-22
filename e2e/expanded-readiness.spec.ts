@@ -83,7 +83,14 @@ test("photo deletion requires an explicit choice and cancellation sends nothing"
   });
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Edit details", exact: true }).first().click();
-  const remove = page.getByRole("button", { name: "Delete photo", exact: true }).first();
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
+  await expect(editor).toBeVisible();
+  // The editor resumes the next incomplete section; Photos live in Basics.
+  // Explicit navigation keeps this safeguard test independent of that resume point.
+  const sections = editor.getByLabel("Go to introduction section");
+  if (await sections.isVisible()) await sections.selectOption("foundation");
+  else await editor.locator("aside").getByRole("button", { name: /Basics/ }).click();
+  const remove = editor.getByRole("button", { name: "Delete photo", exact: true }).first();
   await expect(remove).toBeVisible();
   page.once("dialog", dialog => dialog.dismiss());
   await remove.focus(); await page.keyboard.press("Enter");

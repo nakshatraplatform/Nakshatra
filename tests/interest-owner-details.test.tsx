@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
+import { renderToString } from "react-dom/server";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const getApiUser = vi.hoisted(() => vi.fn());
@@ -17,6 +18,12 @@ const request = () => new Request(`http://local/api/interest/${id}`);
 const context = { params: Promise.resolve({ id }) };
 describe("retained owner interest details", () => {
   beforeEach(() => { vi.clearAllMocks(); enforceRateLimit.mockResolvedValue(null); });
+  it("does not advertise an interactive history control before hydration", () => {
+    const html = renderToString(<InterestHistoryPanel />);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*aria-expanded="false"/);
+    render(<InterestHistoryPanel />);
+    expect(screen.getByRole("button", { name: "View all interest submissions" })).toBeEnabled();
+  });
   it("returns private noncached exact-ID details and real lineage after revocation", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: details, error: null });
     getApiUser.mockResolvedValue({ status: "authenticated", supabase: { rpc } });

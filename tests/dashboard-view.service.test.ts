@@ -10,6 +10,7 @@ const repositories = vi.hoisted(() => ({
   horoscope: { findByPortfolio: vi.fn() },
   interest: { listForPortfolio: vi.fn() },
   access: vi.fn(),
+  relationships: vi.fn(),
   mediaUrls: vi.fn(),
 }));
 const canCreatePortfolio = vi.hoisted(() => vi.fn());
@@ -31,6 +32,7 @@ vi.mock("@/features/interest/server/interest.repository", () => ({
 vi.mock("@/features/access/server/access.service", () => ({
   getPortfolioAccessSummary: repositories.access,
 }));
+vi.mock("@/features/access/server/relationship-dashboard.service", () => ({ loadRelationshipPage: repositories.relationships }));
 vi.mock("@/features/media/server/photo-url.service", () => ({
   createOwnerPortfolioMediaPreviewUrls: repositories.mediaUrls,
 }));
@@ -111,6 +113,7 @@ describe("dashboard view service", () => {
     repositories.interest.listForPortfolio.mockResolvedValue({
       data: [projectedInterest], error: null,
     });
+    repositories.relationships.mockResolvedValue({ records: [{ kind: "interest", item: projectedInterest }, { kind: "grant", item: { id: "grant-1" } }], total: 2, counts: { interests: 1, awaiting: 1, setAside: 0, active: 1 }, disclosure: null });
     repositories.access.mockResolvedValue({ grants: [{ id: "grant-1" }], events: [] });
     repositories.mediaUrls.mockResolvedValue({ "media-1": "https://signed.test/media-1" });
   });
@@ -153,6 +156,8 @@ describe("dashboard view service", () => {
       brokerIntroductionResponses: [],
       receivedBrokerIntroductions: [],
       accessSummary: { grants: [], events: [] },
+      relationshipOverview: null,
+      relationshipsError: false,
       publicationReadiness: {
         portfolioExists: false,
         lastEditorSection: null,
@@ -196,8 +201,16 @@ describe("dashboard view service", () => {
       horoscope: { id: "horoscope-1" },
       interests: [{ id: projectedInterest.id, metadata: { city: "Boston" } }],
     });
-    expect(repositories.interest.listForPortfolio).toHaveBeenCalledWith("portfolio-1");
+    expect(repositories.relationships).toHaveBeenCalledWith(expect.anything());
     expect(repositories.mediaUrls).toHaveBeenCalledWith(expect.objectContaining({ media: [{ id: "media-1" }] }));
+  });
+  it("distinguishes failed sharing reads from a successful empty owner queue", async () => {
+    repositories.relationships.mockRejectedValue(new Error("private read failure"));
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).resolves.toMatchObject({ relationshipOverview: null, relationshipsError: true });
+    repositories.relationships.mockResolvedValue({ records: [], total: 0, counts: { interests: 0, awaiting: 0, setAside: 0, active: 0 }, disclosure: null });
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).resolves.toMatchObject({ relationshipsError: false, interests: [] });
+    repositories.access.mockRejectedValue(new Error("audit unavailable"));
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).resolves.toMatchObject({ relationshipsError: true });
   });
 
   it("normalizes nullable child results and valid published data", async () => {
@@ -216,6 +229,7 @@ describe("dashboard view service", () => {
       error: null,
     });
     repositories.mediaUrls.mockResolvedValue({});
+    repositories.relationships.mockResolvedValue({ records: [{ kind: "interest", item: { ...projectedInterest, metadata: null } }], total: 1, counts: { interests: 1, awaiting: 1, setAside: 0, active: 0 }, disclosure: null });
 
     await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" }))
       .resolves.toMatchObject({

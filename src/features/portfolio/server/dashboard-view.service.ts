@@ -12,8 +12,7 @@ import {
 } from "@/types/portfolio";
 import { getPortfolioAccessSummary } from "@/features/access/server/access.service";
 import { HoroscopeRepository } from "@/features/horoscope/server/horoscope.repository";
-import { InterestRepository } from "@/features/interest/server/interest.repository";
-import { dashboardInterestsSchema } from "@/features/interest/server/interest-dashboard.contract";
+import { loadRelationshipPage } from "@/features/access/server/relationship-dashboard.service";
 import { PortfolioMediaRepository } from "@/features/media/server/media.repository";
 import { createOwnerPortfolioMediaPreviewUrls } from "@/features/media/server/photo-url.service";
 import { DashboardRepository } from "./dashboard.repository";
@@ -91,25 +90,26 @@ export async function loadDashboardView({
       publicationReadiness,
       brokerIntroductionResponses: [],
       receivedBrokerIntroductions: [],
+      relationshipOverview: null,
+      relationshipsError: false,
     };
   }
 
   const mediaRepository = new PortfolioMediaRepository(supabase);
   const horoscopeRepository = new HoroscopeRepository(supabase);
-  const interestRepository = new InterestRepository(supabase);
-  const [views, mediaResult, horoscopeResult, interestsResult, accessSummary, brokerIntroductionResponses, receivedBrokerIntroductions] = await Promise.all([
+  const [views, mediaResult, horoscopeResult, relationshipOverview, accessSummary, brokerIntroductionResponses, receivedBrokerIntroductions] = await Promise.all([
     dashboardRepository.countPortfolioViews(portfolio.id),
     snapshot ? Promise.resolve({ data: snapshot.media }) : mediaRepository.findPortfolioPhotos(portfolio.id),
     snapshot ? Promise.resolve({ data: snapshot.horoscope }) : horoscopeRepository.findByPortfolio(portfolio.id),
-    interestRepository.listForPortfolio(portfolio.id),
-    getPortfolioAccessSummary(supabase),
+    loadRelationshipPage(supabase).catch(() => null),
+    getPortfolioAccessSummary(supabase).catch(() => null),
     listOwnerBrokerIntroductionResponses(supabase).catch(() => []),
     listReceivedBrokerIntroductions(supabase).catch(() => []),
   ]);
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
-  const parsedInterests = dashboardInterestsSchema.safeParse(interestsResult.data ?? []);
-  const interests = parsedInterests.success ? parsedInterests.data : [];
+  const interests = relationshipOverview?.records.flatMap(record => record.kind === "interest" ? [record.item] : []) ?? [];
+  const grants = relationshipOverview?.records.flatMap(record => record.kind === "grant" ? [record.item] : []) ?? [];
 
   return {
     portfolio,
@@ -120,7 +120,9 @@ export async function loadDashboardView({
     mediaUrls,
     horoscope: (horoscopeResult.data as PortfolioHoroscope | null) ?? null,
     interests,
-    accessSummary,
+    accessSummary: { grants, events: accessSummary?.events ?? [] },
+    relationshipOverview,
+    relationshipsError: !relationshipOverview || !accessSummary,
     publicationReadiness,
     brokerIntroductionResponses,
     receivedBrokerIntroductions,

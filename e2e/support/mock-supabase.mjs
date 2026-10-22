@@ -349,6 +349,26 @@ const server = createServer((request, response) => {
     if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMediaWithPreviews[0]]);
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
+    if (url.pathname === "/rest/v1/rpc/get_owner_relationship_page") {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => {
+        const { p_queue = "overview", p_offset = 0, p_query = "", p_filter = "all" } = JSON.parse(body || "{}");
+        const records = [...ownerInterests.map(item => ({ kind: "interest", item })), ...ownerAccess.grants.map(item => ({ kind: "grant", item }))].filter(record => {
+          const status = record.item.status;
+          const matchesQueue = p_queue === "overview" || p_queue === "awaiting" && record.kind === "interest" && ["new", "pending_review"].includes(status)
+            || p_queue === "set-aside" && record.kind === "interest" && status === "rejected" || p_queue === "access" && record.kind === "grant" && status === "active"
+            || p_queue === "history" && (record.kind === "grant" && status !== "active" || record.kind === "interest" && !["new", "pending_review", "rejected"].includes(status));
+          const name = record.item.viewer_name ?? record.item.viewerName ?? "";
+          const email = record.item.viewer_email ?? record.item.viewerEmail ?? "";
+          const source = record.item.source_type ?? record.item.sourceType;
+          return matchesQueue && `${name} ${email}`.toLowerCase().includes(p_query.toLowerCase()) && (p_filter === "all" || p_filter === source || p_filter === "verified" && record.item.email_verified || p_filter === "pending" && ["new", "pending_review"].includes(status) || p_filter === "active" && status === "active" || p_filter === "ended" && ["revoked", "expired"].includes(status));
+        });
+        return sendJson(response, 200, { records: records.slice(p_offset, p_offset + (p_queue === "overview" ? 50 : 8)), total: records.length,
+          counts: { interests: ownerInterests.length, awaiting: ownerInterests.filter(item => ["new", "pending_review"].includes(item.status)).length, setAside: ownerInterests.filter(item => item.status === "rejected").length, active: ownerAccess.grants.filter(item => item.status === "active").length },
+          disclosure: draftOwner ? null : { revision: "a".repeat(32), data: dashboardPortfolio.published_data, photoCount: 1, privatePhotoCount: 0, hasHoroscope: false } });
+      });
+    }
     if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
     if (url.pathname === "/rest/v1/rpc/get_interest_details") {
       let body = "";

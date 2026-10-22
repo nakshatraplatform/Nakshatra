@@ -12,6 +12,7 @@ export async function manageAccessGrantRequest(
   try {
     const response = await fetch(`/api/access-grants/${encodeURIComponent(grantId)}`, {
       method: "PATCH",
+      signal: AbortSignal.timeout(20000),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });

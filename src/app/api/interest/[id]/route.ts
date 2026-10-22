@@ -28,7 +28,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 const decisionSchema = z.object({
   decision: z.enum(["approved", "rejected", "reopened"]),
-});
+  revision: z.string().regex(/^[a-f0-9]{32}$/).optional(),
+}).refine(value => value.decision !== "approved" || Boolean(value.revision), "Review the current published details before sharing.");
 
 /** Lets a portfolio owner approve identity-bound Complete Portfolio access or decline an interest. */
 export async function PATCH(
@@ -54,7 +55,7 @@ export async function PATCH(
   const parsed = decisionSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json(
-      { code: "INTEREST_DECISION_INVALID", error: "Choose approve, decline, or reopen." },
+      { code: "INTEREST_DECISION_INVALID", error: "Choose approve, decline, or reopen. To share details, open the current disclosure confirmation first." },
       { status: 400 }
     );
   }
@@ -64,12 +65,13 @@ export async function PATCH(
   if (!requestId.success) {
     return NextResponse.json({ code: "INTEREST_NOT_FOUND", error: "This interest could not be found." }, { status: 404 });
   }
-  const result = await decideInterestRequest(auth.supabase, requestId.data, parsed.data.decision)
+  const result = await decideInterestRequest(auth.supabase, requestId.data, parsed.data.decision, parsed.data.revision)
     .catch(() => "failed" as const);
 
   if (result === "not_found") {
     return NextResponse.json({ code: "INTEREST_NOT_FOUND", error: "This interest could not be found." }, { status: 404 });
   }
+  if (result === "review_changed") return NextResponse.json({ code: "SHARING_REVIEW_CHANGED", error: "Published details changed. Close this confirmation and review them again before sharing." }, { status: 409 });
   if (result === "signin_required") {
     return NextResponse.json(
       { code: "INTEREST_SIGNIN_REQUIRED", error: "Ask this viewer to sign in and verify their email before approving access." },
