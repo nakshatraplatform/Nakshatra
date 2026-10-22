@@ -82,8 +82,9 @@ export function cancelAccountDeletionRequest() {
   return accountRequest<{ ok: true }>("/api/account/deletion", { method: "DELETE" });
 }
 
-/** Clears stale browser credentials after the database atomically revokes every Auth session. */
+/** Signs out this browser, surfacing failures so callers can offer a retry. */
 export async function clearLocalAccountSession() {
   const { createClient } = await import("@/lib/supabase/client");
-  await createClient().auth.signOut({ scope: "local" });
+  const { error } = await createClient().auth.signOut({ scope: "local" });
+  if (error) throw error;
 }

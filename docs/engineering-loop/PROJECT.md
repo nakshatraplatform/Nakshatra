@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [Password recovery routing](features/password-recovery-routing.md): recovery
+  exchanges reach password entry before their safe continuation; returned logout
+  errors reach the existing retry UI. Includes browser regression coverage of the
+  SDK cookie handoff, password save and logout failure/retry.
+
 - [Personal dashboard and sharing consent](features/sharing-dashboard-clarity.md):
   published-snapshot consent, stale-review protection, bounded owner relationship
   queues/search with complete counts, visible failures/retry and task-first

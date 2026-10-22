@@ -42,12 +42,24 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      // Recovery must reach password entry before any ordinary or reserved continuation.
+      if (data && "redirectType" in data && data.redirectType === "recovery") {
+        const resetPath = new URL(next, request.url).pathname === "/reset-password"
+          ? next
+          : `/reset-password?redirect=${encodeURIComponent(next)}`;
+        const response = NextResponse.redirect(createCanonicalAppUrl(
+          user ? resetPath : "/login?error=auth_failed", request.url
+        ));
+        response.headers.set("Cache-Control", "private, no-store");
+        return response;
+      }
 
       if (reauth === "account_deletion" && !deletionTransaction) {
         const response = NextResponse.redirect(createCanonicalAppUrl("/account?reauth=failed", request.url));
