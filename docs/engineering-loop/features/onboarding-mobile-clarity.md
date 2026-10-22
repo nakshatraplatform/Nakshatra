@@ -30,6 +30,18 @@ tablet and mobile Chromium (seven viewport/zoom sizes in each fit case), with no
 retries; typecheck, lint and diff whitespace passed. Mobile preview approval is
 still a human release gate, not inferred from these automated passes.
 
+CI follow-up on `04effeb`: desktop/mobile shard 2 failed the same keyboard test
+at `modal-keyboard.spec.ts:60`, which still targeted the final Review CSS class
+on Basics. Reproduced locally on mobile Chromium before correction. The approved
+Basics footer ends in Continue; the test now uses its accessible role/name,
+checks reverse and forward focus wrapping, and explicitly verifies retained name
+input after cancelling Escape. Existing reduced-motion, confirmation acceptance,
+scroll unlock, dropdown Escape and background inert checks remain. Standard,
+test-only correction: no runtime/design/validation or timeout/retry changes.
+Verification: all 12 modal-keyboard cases passed across desktop, tablet and mobile
+Chromium; lint, typecheck and diff checks passed. Hosted CI must rerun on the fix.
+PR stays Draft pending green CI/mobile approval.
+
 Implementation checklist:
 
 - [x] Keep typed multi-select answers in private draft state before Add.
