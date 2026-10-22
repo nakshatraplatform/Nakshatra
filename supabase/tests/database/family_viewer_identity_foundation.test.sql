@@ -286,7 +286,9 @@ set local role authenticated;
 select pg_temp.set_authenticated_claims('a1010000-0000-4000-8000-000000000002','a2010000-0000-4000-8000-000000000002');
 create temporary table created_five as select public.create_candidate_family_viewer((select family5_hash from family_refs),'fa***@family-viewer.test','Family Five','relative',null,null,repeat('5',64),'candidate-family-five-0001') result;
 reset role;
-update app_private.candidate_family_viewer_invitations set expires_at=now()-interval '1 second' where token_hash=repeat('5',64);
+update app_private.candidate_family_viewer_invitations
+set created_at=now()-interval '2 seconds', expires_at=now()-interval '1 second'
+where token_hash=repeat('5',64);
 set local role authenticated;
 select pg_temp.set_authenticated_claims('a1010000-0000-4000-8000-000000000009','a2010000-0000-4000-8000-000000000009');
 select is(public.accept_family_viewer_invitation(repeat('5',64),'expired-family-five-0001'),'{"available":false}'::jsonb,'expired invitation fails neutrally');

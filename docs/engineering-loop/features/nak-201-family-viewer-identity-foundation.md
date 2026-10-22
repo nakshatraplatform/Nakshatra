@@ -228,5 +228,11 @@ token valid, or relying on UI limits instead of database constraints.
   provide a three-argument `like(text, pattern, description)` helper. The locking
   assertion now uses pgTAP's stable `ok(boolean, description)` contract with the
   native PostgreSQL `LIKE` operator; the assertion, plan count, and required
-  locking behavior are unchanged. A fresh complete pgTAP and concurrency run is
-  required on the corrected commit.
+  locking behavior are unchanged. The next run reached assertion 58 and exposed
+  a fixture-only time-travel error: moving `expires_at` before PostgreSQL's
+  transaction-stable `now()` also placed it before that fixture row's
+  `created_at`, violating the production chronology constraint. The fixture now
+  shifts both timestamps while
+  preserving `created_at < expires_at < now()`; the production constraint and
+  neutral expired-token assertion remain unchanged. A fresh complete pgTAP and
+  concurrency run is required on the corrected commit.
