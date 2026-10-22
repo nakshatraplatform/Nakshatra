@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { withSentryConfig } from "@sentry/nextjs/config";
+import { sentryEnvironment, sentryIngestOrigin } from "./src/lib/observability/sentry-config";
 
 /** Allows the loopback Supabase fixture in development without widening Production CSP. */
 export function resolveLocalSupabaseOrigin(nodeEnv: string | undefined, configuredUrl: string | undefined) {
@@ -13,6 +15,7 @@ export function resolveLocalSupabaseOrigin(nodeEnv: string | undefined, configur
 }
 
 const localSupabaseOrigin = resolveLocalSupabaseOrigin(process.env.NODE_ENV, process.env.NEXT_PUBLIC_SUPABASE_URL);
+const sentryOrigin = sentryIngestOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -23,7 +26,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https://*.supabase.co${localSupabaseOrigin ? ` ${localSupabaseOrigin}` : ""}`,
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${localSupabaseOrigin ? ` ${localSupabaseOrigin}` : ""}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${localSupabaseOrigin ? ` ${localSupabaseOrigin}` : ""}${sentryOrigin ? ` ${sentryOrigin}` : ""}`,
   "media-src 'self' blob: https://*.supabase.co",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -57,6 +60,10 @@ export function resolveOutputMode(vercel = process.env.VERCEL): NextConfig["outp
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: sentryEnvironment(process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.VERCEL_ENV, process.env.NODE_ENV),
+    NEXT_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || "",
+  },
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: resolveOutputMode(),
   // Keep unrelated page styles out of the first-load portfolio stylesheet.
@@ -94,4 +101,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "vivintro",
+  project: "nakshatra",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+  release: { name: process.env.SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA, create: Boolean(process.env.SENTRY_AUTH_TOKEN) },
+});
