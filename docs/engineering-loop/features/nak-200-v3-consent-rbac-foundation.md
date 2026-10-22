@@ -165,6 +165,14 @@ forward migration with an evidence-preserving transition.
 - Local Supabase replay/pgTAP: blocked because this host has neither Docker nor
   Podman. The new 31-assertion pgTAP suite and the full existing database suite
   must pass in hosted CI before merge.
+- First hosted replay completed successfully and the NAK-200 31-assertion suite
+  passed. The full pgTAP run then exposed two legacy inventory assertions: the
+  owner capability projection still expected 15 entries instead of the exact
+  18-entry V3 inventory, and the session perimeter had not classified the
+  deliberately pre-login consent-version resolver. The follow-up replaces the
+  capability count with an exact key/scope contract and documents plus
+  explicitly allowlists only that high-entropy token resolver. The authenticated
+  reconsent command remains session-guarded and is not allowlisted.
 - Fresh independent review found one material backfill risk: choosing a
   relationship's latest intake could relabel an older V1 mandate as V2. The
   migration now classifies each mandate from its own unambiguous evidence,

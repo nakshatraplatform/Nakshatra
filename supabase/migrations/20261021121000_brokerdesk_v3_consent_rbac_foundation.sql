@@ -417,6 +417,9 @@ revoke all on function public.resolve_brokerdesk_customer_invitation_consent_ver
 grant execute on function public.resolve_brokerdesk_customer_invitation_consent_version(text)
   to anon, authenticated;
 
+comment on function public.resolve_brokerdesk_customer_invitation_consent_version(text) is
+  'Pre-login invitation exchange helper. Accepts only a high-entropy token hash and returns only its pinned consent contract, with a neutral V3 fallback.';
+
 create or replace function public.claim_brokerdesk_customer_invitation(
   p_token_hash text,
   p_consent_version text
