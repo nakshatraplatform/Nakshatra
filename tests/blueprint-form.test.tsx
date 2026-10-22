@@ -61,6 +61,61 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it.each(["Mysuru", ""])("replaces the legacy origin alias only when its visible answer is explicitly edited to %s", (value) => {
+    const onUpdate = vi.fn();
+    const legacy = { ...completeBlueprint, family: { ancestral_origin: "x".repeat(201), maternal_origin: "Bengaluru" } };
+    const { rerender } = render(<BlueprintForm data={legacy} onUpdate={onUpdate} activeSection="family" />);
+    expect(onUpdate).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Paternal family origin"), { target: { value } });
+    expect(onUpdate).toHaveBeenLastCalledWith("family", { ancestral_origin: value, paternal_origin: value, maternal_origin: "Bengaluru" });
+    const family = onUpdate.mock.calls.at(-1)![1];
+    rerender(<BlueprintForm data={{ ...legacy, family }} onUpdate={onUpdate} activeSection="family" />);
+    expect(screen.getByLabelText("Paternal family origin")).toHaveValue(value);
+  });
+  it("keeps typed list answers in the private draft without requiring Add", () => {
+    const onUpdate = vi.fn();
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} activeSection="story" />);
+    fireEvent.change(screen.getByLabelText("Languages"), { target: { value: "Kannada" } });
+    expect(onUpdate).toHaveBeenLastCalledWith("lifestyle", expect.objectContaining({ languages: "English, Telugu, Kannada" }));
+    const saved = { ...completeBlueprint, lifestyle: { ...completeBlueprint.lifestyle, languages: "English, Telugu, Kannada" } };
+    rerender(<BlueprintForm data={saved} onUpdate={onUpdate} activeSection="work" />);
+    rerender(<BlueprintForm data={saved} onUpdate={onUpdate} activeSection="story" />);
+    expect(screen.getByRole("button", { name: "Remove Kannada" })).toBeInTheDocument();
+  });
+
+  it("targets the self-described answer rather than only its dropdown", () => {
+    render(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, community: "My roots" } }}
+      onUpdate={vi.fn()} activeSection="family" validationIssues={[{ path: "personal.community", label: "Community", section: "family", message: "Shorten this answer." }]} />);
+    expect(screen.getByLabelText("Describe your community or background")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Describe your community or background")).toHaveAttribute("id", "portfolio-answer-personal-community");
+  });
+
+  it("allows an unanswered sibling count without silently converting it to zero", () => {
+    const onUpdate = vi.fn();
+    render(<BlueprintForm data={{ ...completeBlueprint, family: { sibling_count: 0, siblings: [] } }} onUpdate={onUpdate} activeSection="family" />);
+    fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "" } });
+    expect(onUpdate).toHaveBeenLastCalledWith("family", expect.objectContaining({ sibling_count: undefined }));
+  });
+  it("keeps name inputs concise and moves the public-link disclosure to sharing settings", () => {
+    const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" />);
+    expect(screen.queryByText(/Your full name appears/)).not.toBeInTheDocument();
+    rerender(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="privacy" />);
+    expect(screen.getByRole("group", { name: "Public sharing" })).toHaveTextContent(/full name/);
+    expect(screen.getByRole("group", { name: "Public sharing" })).toHaveTextContent(/may be guessed/);
+    expect(screen.getByRole("group", { name: "Introduction appearance" })).toHaveTextContent(/not your workspace/);
+    expect(screen.getByRole("group", { name: /Private contact/ })).toHaveTextContent(/may save/);
+    expect(screen.queryByText("Sensitive details stay protected")).not.toBeInTheDocument();
+    expect(screen.queryByText("Who can see what")).not.toBeInTheDocument();
+  });
+
+  it("explains optional astrology once without repeating introductory panels", () => {
+    render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="astrology" />);
+    expect(screen.getByText("Optional", { exact: true })).toBeVisible();
+    expect(screen.getByText("Leave unknown details blank.")).toBeVisible();
+    expect(screen.queryByText(/Optional section · Answer only/)).not.toBeInTheDocument();
+    expect(screen.queryByText("No guessing required")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Moon sign (Rashi)")).not.toHaveAccessibleDescription(/Leave blank/);
+  });
   it("retains a self-described legacy answer and can clear it without any option lookup request", () => {
     function Editor() {
       const [data, setData] = useState({ ...completeBlueprint, personal: { ...completeBlueprint.personal, religion: "My own outlook" } });
@@ -240,7 +295,7 @@ describe("blueprint form", () => {
   it("explains ambiguous education and family fields without changing what is shared", () => {
     render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
-    expect(screen.getByText(/City and country where you studied/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Education location")).toHaveAccessibleDescription("City, state or region, and country where you studied.");
     fireEvent.click(within(screen.getByRole("navigation", { name: "Introduction form sections" })).getByRole("button", { name: /04Family/ }));
     expect(screen.getAllByText(/Place or region your family traces its roots to/)).toHaveLength(2);
   });
@@ -351,7 +406,7 @@ describe("blueprint form", () => {
     expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
     expect(screen.getByText(/contacts stay out of the public Introduction/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Family/ }));
-    expect(screen.getByText(/Optional section · Answer only/)).toBeInTheDocument();
+    expect(screen.getByText("Optional", { exact: true })).toBeInTheDocument();
     expect(screen.queryByText("Sibling 1")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "1" } });
@@ -423,7 +478,7 @@ describe("blueprint form", () => {
     const onUpdate = vi.fn();
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={onUpdate} />);
     fireEvent.click(screen.getByRole("button", { name: /Appearance & contact/ }));
-    expect(screen.getByText("Public introduction")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Public sharing" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Brief Introduction|Detailed Introduction/ })).not.toBeInTheDocument();
     rerender(<BlueprintForm data={{ ...completeBlueprint, privacy_mode: "private" }} onUpdate={onUpdate} />);
     fireEvent.click(screen.getByRole("button", { name: "Update sharing setup" }));
@@ -477,7 +532,7 @@ describe("blueprint form", () => {
     }
     expect(screen.getByLabelText("Lagnam")).not.toBeRequired();
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
-    expect(screen.getByText("No guessing required")).toBeInTheDocument();
+    expect(screen.getByText("Leave unknown details blank.")).toBeInTheDocument();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shared only when you choose/);
   });

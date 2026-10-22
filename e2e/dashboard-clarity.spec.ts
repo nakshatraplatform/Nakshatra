@@ -123,15 +123,35 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     await edit.click();
     const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
     const savedFirstName = await editor.getByLabel("First name", { exact: true }).inputValue();
-    for (const action of ["Preview", "Review and publish", ...(width >= 640 ? ["Save draft"] : [])]) {
-      const button = editor.getByRole("button", { name: action, exact: true });
+    const footer = editor.locator(".dashboard-editor-footer");
+    for (const action of ["Back", /^Continue:/]) {
+      const button = footer.getByRole("button", { name: action, exact: true });
       await expect(button).toBeVisible();
       const box = await button.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
       expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
       expect(box!.y + box!.height).toBeLessThanOrEqual(height + 1);
     }
+    // Secondary tools live at the section end, not in persistent navigation.
+    // Keep them reachable inside the editor and clear of both fixed bars.
+    const tools = editor.getByRole("group", { name: "Draft tools", exact: true });
+    for (const action of ["Preview", "Review and publish", "Save draft"]) {
+      const button = tools.getByRole("button", { name: action, exact: true });
+      await button.scrollIntoViewIfNeeded();
+      await expect(button).toBeVisible();
+      const box = (await button.boundingBox())!;
+      const navigation = (await footer.boundingBox())!;
+      const header = (await editor.locator(".dashboard-editor-header").boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(width + 1);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
+      expect(box.y + box.height).toBeLessThanOrEqual(navigation.y + 1);
+    }
+    await editor.locator(".dashboard-editor-scroll").evaluate(element => { element.scrollTop = 0; });
     if (width >= 640) {
       const birth = await editor.getByLabel("Date of birth", { exact: true }).boundingBox();
       const gender = await editor.getByLabel("Gender", { exact: true }).boundingBox();

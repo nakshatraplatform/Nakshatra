@@ -80,6 +80,11 @@ function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, pu
   data.contact?.contacts?.forEach((contact, index) => {
     validatePhone(contact.phone, ["contact", "contacts", index, "phone"]);
   });
+  const validateEmailLength = (email: string | undefined, path: (string | number)[]) => {
+    if (email && email.length > 254) addIssue(ctx, path, "Use an email address of at most 254 characters.");
+  };
+  validateEmailLength(data.contact?.email, ["contact", "email"]);
+  data.contact?.contacts?.forEach((contact, index) => validateEmailLength(contact.email, ["contact", "contacts", index, "email"]));
 
   if (publishing) {
     for (const [path, value, label] of [

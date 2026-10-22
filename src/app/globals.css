@@ -360,6 +360,8 @@
 .dashboard-editor-footer-notes > p + p { margin-top: 0.5rem; }
 .dashboard-editor-actions { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 0.5rem; min-width: 0; }
 .dashboard-editor-actions > button { justify-content: center; min-width: 0; white-space: normal; }
+.dashboard-editor-tools > button { min-height: 44px; }
+.dashboard-editor-scroll { scroll-padding-block: 16px; }
 .dashboard-review-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0)); }
 .dashboard-review-footer > div:first-child { flex: 1 1 20rem; min-width: 0; }
 .dashboard-review-footer > div:last-child { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; }
@@ -395,16 +397,17 @@
 .dashboard-editor .split-phone-inputs { grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr); }
 .dashboard-editor .split-phone-inputs label { grid-template-rows: auto 48px; align-content: start; gap: 0.5rem; font-size: 15px; line-height: 1.5; }
 @media (max-width: 639px) {
+  .dashboard-editor .split-phone-inputs { grid-template-columns: minmax(0, 1fr); }
   .dashboard-editor-header { padding: 0.5rem 1rem; }
-  .dashboard-editor-header-layout { flex-wrap: nowrap; gap: 0.5rem; }
+  .dashboard-editor-header-layout { flex-wrap: wrap; gap: 0.5rem; }
   .dashboard-editor-header-layout > div:first-child { flex: 1; min-width: 0; }
-  .dashboard-editor-header-layout > div:first-child > div { flex-wrap: nowrap; gap: 0.5rem; }
+  .dashboard-editor-header-layout > div:first-child > div { flex-wrap: nowrap; justify-content: space-between; gap: 0.5rem; }
   .dashboard-editor-header-layout h2 { font-size: 0.875rem; white-space: nowrap; }
-  .dashboard-editor-header-layout .dashboard-save-state { display: block; min-width: 0; max-width: 4rem; overflow: hidden; padding-inline: 0.5rem; font-size: 0.75rem; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+  .dashboard-editor-header-layout .dashboard-save-state { display: block; flex: none; padding-inline: 0.5rem; font-size: 0.75rem; line-height: 18px; white-space: nowrap; }
   .dashboard-editor-header-layout > div:first-child > p { display: none; }
-  .dashboard-editor-header-layout .app-header-actions { flex: none; gap: 0.5rem; }
-  .dashboard-editor-header-layout .app-header-actions > button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
-  .dashboard-editor-header-layout .app-header-actions > button > span { display: none; }
+  .dashboard-editor-header-layout .app-header-actions { flex: 1 0 100%; justify-content: space-between; gap: 0.5rem; }
+  .dashboard-editor-header-layout .app-header-actions > button { min-width: 44px; min-height: 44px; padding: 8px 16px; }
+  .dashboard-editor-header-layout .app-header-actions > button > span.sm\:hidden { display: inline; }
   .dashboard-editor-mobile-step { padding-block: 0.5rem; }
   .dashboard-editor-mobile-step .biodata-editor-mobile-nav { padding: 0.5rem; }
   .dashboard-editor-mobile-step [role="progressbar"] { margin-bottom: 0.5rem; }
@@ -1118,6 +1121,30 @@
 .biodata-editor-progress {
   border: 1px solid var(--workspace-border);
   background: var(--workspace-teal-soft);
+}
+
+.biodata-section-heading {
+  border-bottom: 1px solid var(--workspace-border);
+  padding-bottom: 1rem;
+}
+
+.biodata-editor-card > fieldset {
+  min-width: 0;
+  border: 1px solid var(--workspace-border);
+  border-radius: 12px;
+  background: var(--workspace-canvas);
+  padding: 1rem;
+}
+
+.biodata-editor-card > fieldset > legend {
+  padding-inline: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--workspace-ink);
+}
+
+@media (max-width: 639px) {
+  .biodata-editor-card > fieldset { padding-inline: 0.5rem; }
 }
 
 .biodata-field {

@@ -407,6 +407,21 @@ describe("dashboard client", () => {
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
+  it("keeps only section navigation primary in the footer and draft tools separate", () => {
+    renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData },
+      publicationReadiness: { ...readyPublicationReadiness, lastEditorSection: "foundation" },
+      media: [{ ...media, media_type: "hero" }] });
+    const footer = document.querySelector<HTMLElement>(".dashboard-editor-footer")!;
+    expect(within(footer).getByRole("button", { name: "Back" })).toBeDisabled();
+    expect(within(footer).getByRole("button", { name: /Continue: Personal story/ })).toBeEnabled();
+    expect(within(footer).queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Draft tools" })).getByRole("button", { name: "Save draft" })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "privacy" } });
+    expect(within(footer).getByRole("button", { name: "Review saved changes" })).toBeEnabled();
+    expect(within(footer).queryByRole("button", { name: /^Continue:/ })).not.toBeInTheDocument();
+    expect(mocks.publish).not.toHaveBeenCalled();
+  });
+
   it("does not write progress when the current section is selected repeatedly", async () => {
     vi.useFakeTimers();
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData },
@@ -483,7 +498,7 @@ describe("dashboard client", () => {
     expect(screen.getByRole("heading", { name: "Astrology and horoscope" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Continue: Match & future/ }));
     expect(screen.getByRole("heading", { name: "Partner preferences" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByRole("heading", { name: "Astrology and horoscope" })).toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
   });
@@ -1759,6 +1774,22 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     expect(screen.getByLabelText("Short description")).toHaveValue(newerDraft.personal.short_bio);
+  });
+
+  it("shows the same currency error as Continue after clearing and saving a historical income", async () => {
+    const historical = { ...readyData, career: { title: "Engineer", annual_income: "50k-75k" } };
+    const cleared = { ...historical, career: { ...historical.career, annual_income: "" } };
+    mocks.save.mockResolvedValueOnce({ ok: true, data: { portfolioId: "portfolio-1", draftData: cleared } });
+    renderDashboard({ portfolio: { ...portfolio, draft_data: historical }, initialEditorOpen: true,
+      media: [{ ...media, media_type: "hero" }], publicationReadiness: { ...readyPublicationReadiness, lastEditorSection: "work" } });
+    fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "50k-75k" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(screen.getByRole("combobox", { name: /^Income currency/ })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getAllByText("Choose the currency for this income range, or clear the income range.").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Education and work" })).toBeInTheDocument();
   });
 
   it("does not restore publication consent after a persisted photo change and discarded edit", async () => {

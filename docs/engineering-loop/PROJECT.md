@@ -119,6 +119,18 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
   [Options and save efficiency](features/onboarding-options-and-save-efficiency.md)
   adds familiar stable-value dropdowns, bounded Other recovery, currency/count
   confirmations, debounced/coalesced saves and serialized resume-position writes.
+  [Mobile clarity follow-up](features/onboarding-mobile-clarity.md) reduces repeated
+  copy, groups related answers and section-7 settings, and makes manual location
+  entry prominent without changing data/publication/validation contracts.
+  October 22 continuation integrates main `0587acc`, adds persistent validated
+  Back/Continue and final Review, separates secondary draft tools and labels the
+  mobile Dashboard exit. Field-integrity follow-up retains pending typed selections,
+  aligns UI/API dropdown and range checks with owner-stored legacy compatibility,
+  fixes field focus/error baselines, and adds no normal-choice database lookup.
+  Family/Astrology remain optional; no extra required answers or SQL. Current
+  verification and three-round fresh-review evidence are in that record;
+  delivered as Draft app PR #129; hosted CI and mobile preview approval remain
+  release gates. Not merged or production-deployed; no database deployment needed.
 
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab

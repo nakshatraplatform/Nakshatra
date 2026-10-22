@@ -138,6 +138,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
     applyLocation({ country: suggestion.country, countryCode: suggestion.countryCode, region: suggestion.state, regionCode: suggestion.subdivisionCode, city: suggestion.city, cityGeonameId: suggestion.cityGeonameId, postalCode: suggestion.postalCode, locationSource: suggestion.locationSource });
   }
   function beginManualEntry() {
+    focusSelectedView.current = true;
     setActiveId(null); setSuggestionsOpen(false);
     operationId.current += 1;
     if (!value.countryCode || !["IN", "US"].includes(value.countryCode)) chooseCountry(countryCode);
@@ -166,9 +167,13 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[color:var(--workspace-muted)]">Location search sends your entry to a postal lookup provider or Google Places when enabled. Choose manual entry before searching to avoid external lookups. <a href="/privacy#location-search" target="_blank" rel="noopener noreferrer" aria-label="Location search privacy (opens in a new tab)" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <p className="text-sm text-[color:var(--workspace-muted)]">Search by ZIP or PIN code, or</p>
+        <button type="button" aria-describedby={errorDescriptionId} className="workspace-focus inline-flex min-h-11 items-center rounded-md px-2 text-left text-sm font-semibold text-[color:var(--workspace-ink)] underline decoration-2 underline-offset-4" onClick={beginManualEntry}>Enter location manually</button>
+      </div>
+      <p className="text-sm leading-5 text-[color:var(--workspace-muted)]">Search sends your entry to a postal lookup provider or Google Places when enabled. Manual entry avoids external lookups. <a href="/privacy#location-search" target="_blank" rel="noopener noreferrer" aria-label="Location search privacy (opens in a new tab)" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
       <div className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.searchCountry ?? "Search country"}</span><select {...validationProps} aria-label={labels.searchCountry ?? "Search country"} value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
+        <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.searchCountry ?? "Search country"}</span><select {...validationProps} data-portfolio-error-focus="primary" aria-label={labels.searchCountry ?? "Search country"} value={countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
         <label className="relative flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) { setSuggestionsOpen(false); setActiveId(null); } }}>
           <span>{labels.postalCode ?? "ZIP or PIN code"}{locationRequired ? " *" : ""}</span>
@@ -201,9 +206,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
           </ul> : null}
         </label>
       </div>
-      <p aria-live="polite" className="min-h-5 text-sm text-[color:var(--workspace-muted)]">{isSearching ? "Searching locations…" : message}</p>
-      {requireCompleteHierarchy ? <p className="text-sm text-[color:var(--workspace-muted)]">Enter a ZIP/PIN to fill country, state, and city, or enter the location manually.</p> : null}
-      <button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-teal)]" onClick={beginManualEntry}>Enter location manually</button>
+      <p aria-live="polite" className="text-sm text-[color:var(--workspace-muted)]">{isSearching ? "Searching locations…" : message}</p>
     </div>
   );
 }

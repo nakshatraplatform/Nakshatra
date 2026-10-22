@@ -4,6 +4,7 @@ import type { PortfolioData } from "../src/types/portfolio";
 const repository = vi.hoisted(() => ({
   saveDashboardDraftTransaction: vi.fn(),
   probeStructuredLocationSchema: vi.fn(),
+  findPortfolioForUser: vi.fn(),
 }));
 
 vi.mock("../src/features/portfolio/server/dashboard.repository", () => ({
@@ -24,6 +25,30 @@ const baseDraft: PortfolioData = {
 };
 
 describe("saveDashboardDraft", () => {
+  it("preserves a retained legacy contact after another contact is removed", async () => {
+    const aunt = { relationship: "aunt", name: "A" };
+    repository.findPortfolioForUser.mockResolvedValue({ data: { draft_data: { ...baseDraft, contact: { contacts: [{ relationship: "self" }, aunt] } } }, error: null });
+    await saveDashboardDraft({ supabase: {} as never, userId: "owner", data: { ...baseDraft, contact: { contacts: [aunt] } } });
+    expect(repository.findPortfolioForUser).toHaveBeenCalledExactlyOnceWith("owner");
+    expect(repository.saveDashboardDraftTransaction).toHaveBeenCalledOnce();
+  });
+  it("uses no legacy lookup for ordinary choices", async () => {
+    await saveDashboardDraft({ supabase: {} as never, userId: "owner", data: baseDraft });
+    expect(repository.findPortfolioForUser).not.toHaveBeenCalled();
+  });
+  it("rejects a new unknown choice before any save", async () => {
+    repository.findPortfolioForUser.mockResolvedValue({ data: { draft_data: baseDraft }, error: null });
+    await expect(saveDashboardDraft({ supabase: {} as never, userId: "owner", data: { ...baseDraft, career: { job_type: "Arbitrary" } } }))
+      .rejects.toMatchObject({ status: 400, fieldErrors: { "career.job_type": expect.any(Array) } });
+    expect(repository.saveDashboardDraftTransaction).not.toHaveBeenCalled();
+    expect(repository.findPortfolioForUser).toHaveBeenCalledExactlyOnceWith("owner");
+  });
+  it("keeps an existing legacy choice without rewriting it", async () => {
+    const data = { ...baseDraft, career: { job_type: "Historical answer" } };
+    repository.findPortfolioForUser.mockResolvedValue({ data: { draft_data: data }, error: null });
+    await saveDashboardDraft({ supabase: {} as never, userId: "owner", data });
+    expect(repository.saveDashboardDraftTransaction).toHaveBeenCalledOnce();
+  });
   it("returns validated database-normalized geography with saved review state", async () => {
     const draftData = { ...baseDraft, personal: { ...baseDraft.personal, country_code: "US", country: "United States", city: "Boston" } };
     repository.saveDashboardDraftTransaction.mockResolvedValue({ data: {

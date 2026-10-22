@@ -1,6 +1,10 @@
 export type BlueprintOption = { value: string; label: string };
 
 const option = (value: string, label = value): BlueprintOption => ({ value, label });
+export const CONTACT_RELATIONSHIPS: BlueprintOption[] = [
+  option("self", "Me"), option("father", "Father"), option("mother", "Mother"),
+  option("guardian", "Guardian"), option("sibling", "Sibling"), option("other", "Other"),
+];
 
 export const GENDER_OPTIONS = [
   option("", "Select gender"),
