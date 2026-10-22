@@ -223,3 +223,10 @@ token valid, or relying on UI limits instead of database constraints.
   enforcement and regressions. Review-budget policy requires the corrected
   snapshot to receive human/PR review plus its mandatory PostgreSQL CI gates
   before merge.
+- PR #130's first PostgreSQL run replayed all migrations successfully but stopped
+  this file after 13 assertions because the installed pgTAP version does not
+  provide a three-argument `like(text, pattern, description)` helper. The locking
+  assertion now uses pgTAP's stable `ok(boolean, description)` contract with the
+  native PostgreSQL `LIKE` operator; the assertion, plan count, and required
+  locking behavior are unchanged. A fresh complete pgTAP and concurrency run is
+  required on the corrected commit.

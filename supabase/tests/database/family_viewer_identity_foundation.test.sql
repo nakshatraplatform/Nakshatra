@@ -17,9 +17,8 @@ select ok(not has_table_privilege('authenticated','app_private.candidate_family_
 select ok(not has_table_privilege('authenticated','app_private.candidate_family_viewer_invitations','select'),'authenticated clients cannot read invitation secrets directly');
 select ok(not has_function_privilege('anon','public.accept_family_viewer_invitation(text,text)','execute'),'anonymous callers cannot activate viewers');
 select ok(has_function_privilege('authenticated','public.accept_family_viewer_invitation(text,text)','execute'),'authenticated users may invoke the guarded activation command');
-select like(
-  pg_catalog.lower(pg_catalog.pg_get_functiondef('public.accept_family_viewer_invitation(text,text)'::regprocedure)),
-  '%for update%',
+select ok(
+  pg_catalog.lower(pg_catalog.pg_get_functiondef('public.accept_family_viewer_invitation(text,text)'::regprocedure)) like '%for update%',
   'activation takes a database row lock before enforcing the three-viewer limit'
 );
 select ok(app_private.generate_public_reference('fvw') ~ '^fvw_[0-9a-f]{32}$','viewer references use the closed opaque prefix');
