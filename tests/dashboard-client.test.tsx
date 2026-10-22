@@ -162,6 +162,18 @@ it("keeps server-rendered editor and WhatsApp controls disabled until hydration"
   for (const control of controls) expect(control).toBeDisabled();
 });
 
+it("keeps directly opened server-rendered editor fields disabled until hydration", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<DashboardClient {...shareablePublished}
+    canCreatePortfolio viewCount={12} userEmail="owner@example.test"
+    shareUrl="https://nakshatra.test/p/token" isExpired={false} daysLeft={20}
+    initialEditorOpen publicationReadiness={{ ...readyPublicationReadiness, lastEditorSection: "foundation" }} />);
+  const editor = container.querySelector<HTMLElement>('[role="dialog"]')!;
+  expect(within(editor).getByRole("textbox", { name: "First name", exact: true })).toBeDisabled();
+  expect(within(editor).getByRole("combobox", { name: "Go to introduction section" })).toBeDisabled();
+  expect(within(editor).getByRole("button", { name: "Save draft", exact: true })).toBeDisabled();
+});
+
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
   renderDashboard({ isExpired: false, daysLeft: 20, portfolio: { ...portfolio, draft_data: readyData },
     media: [{ ...media, media_type: "hero" }], publicationReadiness: readyPublicationReadiness });
