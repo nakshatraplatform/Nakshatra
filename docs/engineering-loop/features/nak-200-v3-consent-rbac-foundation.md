@@ -173,6 +173,11 @@ forward migration with an evidence-preserving transition.
   capability count with an exact key/scope contract and documents plus
   explicitly allowlists only that high-entropy token resolver. The authenticated
   reconsent command remains session-guarded and is not allowlisted.
+- The follow-up hosted run replayed every migration and passed the complete
+  pgTAP suite. Its final generated-type drift gate then identified that the two
+  new RPC declarations had been added to the committed type file outside the
+  generator's lexical function order. The declarations are now placed in the
+  exact generated order; no type or runtime contract was weakened.
 - Fresh independent review found one material backfill risk: choosing a
   relationship's latest intake could relabel an older V1 mandate as V2. The
   migration now classifies each mandate from its own unambiguous evidence,

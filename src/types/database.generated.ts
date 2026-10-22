@@ -1350,9 +1350,6 @@ isOneToOne: false
 "manage_customer_broker_consent":
 { Args: { "p_action": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
                            },
-"reconsent_customer_broker_relationship":
-{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
-                           },
 "manage_pilot_administrator":
 { Args: { "p_action"?: string,"p_email": string }; Returns: Json
                            },
@@ -1408,6 +1405,9 @@ isOneToOne: false
                            },
 "record_resend_delivery_event":
 { Args: { "p_delivery_id"?: string,"p_event_digest": string,"p_event_id": string,"p_occurred_at": string,"p_provider_message_id": string,"p_status": string }; Returns: boolean
+                           },
+"reconsent_customer_broker_relationship":
+{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
                            },
 "register_candidate_liveness_provider_create":
 { Args: { "p_attempt_id": string,"p_management_token_hash": string,"p_workflow_id": string,"p_workflow_version": number }; Returns: undefined
@@ -1486,11 +1486,11 @@ isOneToOne: false
 "resolve_brokerdesk_customer":
 { Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
-"resolve_brokerdesk_customers":
-{ Args: { "p_workspace_ref": string }; Returns: Json
-                           },
 "resolve_brokerdesk_customer_invitation_consent_version":
 { Args: { "p_token_hash": string }; Returns: string
+                           },
+"resolve_brokerdesk_customers":
+{ Args: { "p_workspace_ref": string }; Returns: Json
                            },
 "resolve_brokerdesk_dashboard":
 { Args: { "p_workspace_ref": string }; Returns: Json
