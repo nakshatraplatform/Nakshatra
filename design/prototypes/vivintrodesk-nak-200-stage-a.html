@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>VivIntroDesk · NAK-200 Stage A wireframes</title>
+  <style>
+    :root { color-scheme: light; --canvas:#f4f4f1; --paper:#fff; --ink:#222b30; --muted:#59646a; --line:#cbd0d0; --line-soft:#e1e4e3; --accent:#315f57; --accent-soft:#e8efed; --warning:#725421; --warning-soft:#f8f2e6; --danger:#8b423c; --danger-soft:#f8eeec; --radius:8px; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:15px; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none!important; }
+    body { margin:0; background:var(--canvas); color:var(--ink); line-height:1.48; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; touch-action:manipulation; }
+    button:disabled { cursor:not-allowed; opacity:.55; }
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #398884; outline-offset:3px; }
+    a { color:var(--accent); }
+    .skip { position:absolute; top:-4rem; left:1rem; z-index:5; background:var(--paper); padding:.6rem; }
+    .skip:focus { top:1rem; }
+    .app { display:grid; grid-template-columns:220px minmax(0,1fr); min-height:100vh; }
+    .sidebar { background:#ebeeec; border-right:1px solid var(--line); padding:1.5rem .9rem; display:flex; flex-direction:column; gap:1.5rem; }
+    .brand { margin:0 .55rem; font-family:Georgia,serif; font-size:1.25rem; line-height:1.1; }
+    .brand small { display:block; margin-top:.35rem; font:600 .7rem system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .workspace { margin:0 .55rem; padding:.65rem .75rem; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); font-size:.85rem; }
+    .workspace span { display:block; color:var(--muted); font-size:.72rem; }
+    .nav { display:grid; gap:.2rem; }
+    .nav a { display:block; width:100%; min-height:44px; text-align:left; border:0; border-radius:6px; padding:.65rem .8rem; background:transparent; color:var(--ink); font-weight:600; text-decoration:none; }
+    .nav a[aria-current="page"] { background:var(--paper); box-shadow:inset 3px 0 var(--accent); }
+    .nav-short { display:none; }
+    .sidebar-note { margin-top:auto; padding:.8rem .55rem 0; border-top:1px solid var(--line); color:var(--muted); font-size:.78rem; }
+    .main { min-width:0; }
+    .topbar { min-height:68px; border-bottom:1px solid var(--line); background:var(--paper); padding:.85rem max(1.4rem,calc((100vw - 1480px)/2)); display:flex; justify-content:space-between; align-items:center; gap:1rem; }
+    .topbar strong { font-size:.85rem; }
+    .topbar span { color:var(--muted); font-size:.8rem; }
+    .content { max-width:1250px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .screen[hidden] { display:none; }
+    .eyebrow { margin:0 0 .35rem; color:var(--accent); font-weight:750; font-size:.71rem; text-transform:uppercase; letter-spacing:.1em; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font:normal clamp(1.8rem,3vw,2.35rem)/1.12 Georgia,serif; margin-bottom:.55rem; text-wrap:balance; }
+    h1[tabindex="-1"]:focus:not(:focus-visible) { outline:none; }
+    h1[tabindex="-1"]:focus-visible { outline:2px solid #398884; outline-offset:3px; }
+    h2 { font-size:1.15rem; margin-bottom:.35rem; }
+    h3 { font-size:1rem; margin-bottom:.25rem; }
+    .lede,.muted { color:var(--muted); }
+    .lede { max-width:68ch; margin-bottom:0; }
+    .pagehead { display:flex; justify-content:space-between; align-items:flex-start; gap:1.4rem; margin-bottom:1.6rem; }
+    .pagehead .actions { justify-content:flex-end; }
+    .actions { display:flex; align-items:center; flex-wrap:wrap; gap:.55rem; }
+    .btn { min-height:44px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:.55rem .95rem; font-weight:650; transition:transform 140ms cubic-bezier(.23,1,.32,1),background-color 140ms ease,border-color 140ms ease; }
+    .btn.primary { border-color:var(--accent); background:var(--accent); color:white; }
+    .btn.quiet { border-color:transparent; background:transparent; color:var(--accent); }
+    .btn.danger { border-color:var(--danger); color:var(--danger); }
+    .btn:active:not(:disabled) { transform:scale(.98); }
+    .chip { display:inline-flex; align-items:center; gap:.35rem; min-height:26px; padding:.1rem .55rem; border-radius:99px; border:1px solid var(--line); background:#f6f7f5; font-size:.74rem; font-weight:650; white-space:nowrap; }
+    .chip.good { background:var(--accent-soft); border-color:#bad1cb; color:#254c45; }
+    .chip.warn { background:var(--warning-soft); border-color:#dfcca9; color:var(--warning); }
+    .chip.bad { background:var(--danger-soft); border-color:#e3c3bf; color:var(--danger); }
+    .panel { border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); padding:1.2rem; margin-bottom:1rem; }
+    .panel.emphasis { border-color:#a8c8be; box-shadow:0 6px 22px #234b680a; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:.85rem; }
+    .panel-head h2,.panel-head p { margin-bottom:0; }
+    .grid { display:grid; gap:1rem; }
+    .two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .metric { padding:.8rem 1rem; border-left:3px solid var(--line); background:var(--paper); }
+    .metric strong { display:block; font-size:1.55rem; line-height:1.15; margin:.25rem 0; font-variant-numeric:tabular-nums; }
+    .metric span { color:var(--muted); font-size:.82rem; }
+    .list { list-style:none; margin:0; padding:0; }
+    .list > li { border-top:1px solid var(--line-soft); padding:.85rem 0; }
+    .list > li:first-child { border-top:0; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .row-main { min-width:0; }
+    .row-main strong,.row-main span { display:block; }
+    .row-main strong { margin-bottom:.15rem; }
+    .row-main span { color:var(--muted); font-size:.82rem; }
+    .row-end { display:flex; align-items:center; justify-content:flex-end; gap:.6rem; flex-wrap:wrap; }
+    .notice { border-left:4px solid var(--accent); background:var(--accent-soft); padding:.9rem 1rem; margin-bottom:1rem; }
+    .notice.warn { border-color:var(--warning); background:var(--warning-soft); }
+    .notice.bad { border-color:var(--danger); background:var(--danger-soft); }
+    .notice strong { display:block; margin-bottom:.2rem; }
+    .notice p { margin:0; font-size:.86rem; }
+    .subtle { font-size:.82rem; color:var(--muted); }
+    .tagline { margin-top:1.6rem; color:var(--muted); font-size:.8rem; }
+    .label { display:block; font-size:.78rem; font-weight:700; color:var(--muted); margin-bottom:.35rem; }
+    .field { width:100%; min-height:44px; border:1px solid #aeb6b6; border-radius:6px; background:var(--paper); color:var(--ink); padding:.55rem .7rem; }
+    .form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
+    .form-grid label { min-width:0; }
+    .form-grid .wide { grid-column:span 2; }
+    .data-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem 1rem; margin:0; }
+    .data-grid dt { color:var(--muted); font-size:.76rem; }
+    .data-grid dd { margin:.15rem 0 0; font-weight:650; overflow-wrap:anywhere; }
+    .checklist { list-style:none; margin:0; padding:0; display:grid; gap:.45rem; }
+    .checklist li { display:flex; align-items:flex-start; gap:.6rem; }
+    .mark { width:1.15rem; flex:none; font-weight:800; color:var(--accent); }
+    .mark.wait { color:var(--warning); }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th { padding:.65rem .7rem; border-bottom:1px solid var(--line); font-size:.72rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+    td { padding:.8rem .7rem; border-bottom:1px solid var(--line-soft); font-size:.86rem; vertical-align:middle; }
+    td:first-child { font-weight:650; }
+    tr:last-child td { border-bottom:0; }
+    .filter-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .filter-row .btn[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+    .match-layout { display:grid; grid-template-columns:minmax(0,240px) minmax(0,1fr); gap:1rem; align-items:start; }
+    .match-layout > aside { position:sticky; top:1rem; }
+    .match-result[data-match-state="eligible"] { border-left:3px solid var(--accent); padding-left:.75rem; }
+    .match-result[data-match-state="attention"] { border-left:3px solid #c1a067; padding-left:.75rem; }
+    .match-result[data-match-state="blocked"] { border-left:3px solid #bd8c87; padding-left:.75rem; }
+    .more-filters { border-top:1px solid var(--line-soft); margin-top:1rem; padding-top:.8rem; }
+    .more-filters summary { color:var(--accent); font-weight:700; cursor:pointer; min-height:44px; display:flex; align-items:center; gap:.55rem; }
+    .more-filters summary::after { content:""; width:.45rem; height:.45rem; border-right:2px solid currentColor; border-bottom:2px solid currentColor; margin-left:auto; transform:rotate(45deg); transition:transform 160ms cubic-bezier(.23,1,.32,1); }
+    .more-filters[open] summary::after { transform:rotate(225deg); }
+    @media (hover:hover) and (pointer:fine) {
+      .nav a:hover { background:#f8f9f7; }
+      .btn:hover:not(:disabled) { background:#f3f7f5; border-color:#97b6ac; }
+      .btn.primary:hover:not(:disabled) { background:#254d47; border-color:#254d47; }
+      tbody tr:hover { background:#fafbf9; }
+      .more-filters summary:hover { text-decoration:underline; }
+    }
+    .more-filters .form-grid { margin-top:.5rem; }
+    .filter-hint { color:var(--muted); font-size:.8rem; margin:0; }
+    .matching-disclaimer { border-left:2px solid #c1a067; padding-left:.65rem; margin:-.6rem 0 1rem; }
+    .queue-kicker { color:var(--accent); font-size:.73rem; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+    .match-result { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.65rem 1rem; align-items:center; }
+    .match-result p { margin:.2rem 0 0; color:var(--muted); font-size:.82rem; }
+    .match-result .row-end { grid-column:2; grid-row:1; }
+    .pair { display:grid; grid-template-columns:1fr auto 1fr; gap:.75rem; align-items:stretch; }
+    .pair > div { border:1px solid var(--line); background:#fafbf9; border-radius:6px; padding:1rem; }
+    .pair .amp { display:grid; place-items:center; font-size:1.3rem; color:var(--muted); }
+    .pair p { font-size:.8rem; color:var(--muted); margin-bottom:.5rem; }
+    .pair h3 { font-family:Georgia,serif; font-size:1.3rem; font-weight:normal; }
+    .pair dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:.3rem .65rem; font-size:.82rem; }
+    .pair dt { color:var(--muted); }.pair dd { margin:0; font-weight:650; }
+    .timeline { list-style:none; margin:0; padding:0; border-left:2px solid var(--line); }
+    .timeline li { padding:0 0 1rem 1.2rem; position:relative; }
+    .timeline li::before { content:""; position:absolute; left:-6px; top:.25rem; width:10px; height:10px; border-radius:50%; background:var(--accent); }
+    .timeline li:last-child { padding-bottom:0; }
+    .timeline strong,.timeline small { display:block; }.timeline small { color:var(--muted); }
+    .preview { border:1px dashed #9aa5a1; border-radius:6px; background:#fbfcfb; padding:1rem; max-width:620px; }
+    .preview p:last-child { margin-bottom:0; }
+    .demo-label { display:inline-block; border:1px dashed var(--line); padding:.2rem .45rem; color:var(--muted); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+    .only-mobile { display:none; }
+    dialog { border:1px solid var(--line); border-radius:10px; padding:0; width:min(92vw,570px); max-height:calc(100vh - 2rem); overflow:auto; overscroll-behavior:contain; box-shadow:0 20px 60px #1d2a2b30; }
+    dialog[open] { animation:dialog-enter 180ms cubic-bezier(.23,1,.32,1) both; }
+    @keyframes dialog-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    dialog::backdrop { background:#14252480; }
+    .dialog-body { padding:1.35rem; }
+    .dialog-footer { padding:1rem 1.35rem; border-top:1px solid var(--line); display:flex; gap:.6rem; justify-content:flex-end; flex-wrap:wrap; }
+    .smallprint { color:var(--muted); font-size:.78rem; }
+    @media (max-width:900px) { .app { grid-template-columns:170px minmax(0,1fr); } .content { padding:1.5rem 1.25rem 5rem; } .match-layout { grid-template-columns:1fr; } .match-layout > aside { position:static; } .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:680px) { .app { display:block; } .sidebar { position:sticky; top:0; z-index:2; padding:.65rem .9rem; gap:.4rem; border-right:0; border-bottom:1px solid var(--line); } .brand { font-size:1rem; margin:0; } .brand small,.workspace,.sidebar-note { display:none; } .nav { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.1rem; } .nav a { min-width:0; min-height:44px; padding:.45rem .15rem; font-size:.72rem; text-align:center; } .nav a[aria-current="page"] { box-shadow:inset 0 -3px var(--accent); } .topbar { min-height:48px; padding:.6rem 1rem; } .topbar span { display:none; } .content { padding:1.35rem 1rem 4rem; } .pagehead { display:block; } .pagehead .actions { justify-content:flex-start; margin-top:1rem; } .two,.three,.form-grid { grid-template-columns:1fr; } .form-grid .wide { grid-column:auto; } .data-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .row { align-items:flex-start; } .row-end { justify-content:flex-start; } .list .row { flex-direction:column; } .pair { grid-template-columns:1fr; } .pair .amp { height:16px; } .table-scroll { overflow:visible; } table,thead,tbody,tr,td { display:block; } thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; } tr { border-top:1px solid var(--line); padding:.65rem 0; } tr:first-child { border-top:0; } td { border:0; padding:.1rem 0; display:flex; gap:.5rem; } td::before { content:attr(data-label) ":"; width:110px; flex:none; color:var(--muted); font-size:.8rem; font-weight:500; } td:first-child::before { display:none; } td:first-child { font-size:1rem; margin-bottom:.3rem; } .match-result { grid-template-columns:1fr; } .match-result .row-end { grid-column:1; grid-row:auto; } .match-layout > aside { padding:.85rem; } .match-layout > aside .data-grid > div:nth-child(n+3) { display:none; } .only-mobile { display:inline; } }
+    @media (max-width:360px) { .nav-long { display:none; } .nav-short { display:inline; } }
+    @media (max-width:680px) { .topbar { display:none; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to main content</a>
+  <div class="app">
+    <aside class="sidebar" aria-label="Broker workspace navigation">
+      <div class="brand">VivIntro <strong>Desk</strong><small>Stage A wireframes</small></div>
+      <div class="workspace"><span>Workspace</span><strong>Saathi Matchmakers</strong></div>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#today" data-go="today">Today</a>
+        <a href="#customers" data-go="customers">Customers</a>
+        <a href="#introductions" data-go="introductions" aria-label="Introductions"><span class="nav-long">Introductions</span><span class="nav-short" aria-hidden="true">Intros</span></a>
+        <a href="#team" data-go="team">Team</a>
+        <a href="#settings" data-go="settings">Settings</a>
+      </nav>
+      <p class="sidebar-note">Fictional sample records. Prototype actions change this page only.</p>
+    </aside>
+    <div class="main">
+      <header class="topbar"><strong>Saathi Matchmakers</strong><span>Scenario frames show successive moments · Advisor Maya</span></header>
+      <main id="content" class="content">
+        <section id="today" class="screen" aria-labelledby="today-title">
+          <div class="pagehead"><div><p class="eyebrow">Today</p><h1 id="today-title">Your next conversations</h1><p class="lede">Follow up on the introductions and customer updates that need your attention.</p></div><div class="actions"><button class="btn primary" type="button" data-go="customers">Open customers</button></div></div>
+          <section class="panel emphasis"><div class="panel-head"><div><span class="queue-kicker">Start here</span><h2>Needs attention</h2><p class="subtle">Only work you can access is listed.</p></div><span class="chip warn">3 items</span></div><ul class="list"><li class="row"><div class="row-main"><strong>Aditi and Rohan: one response received</strong><span>Rohan chose Interested · Aditi is still deciding</span></div><div class="row-end"><span class="chip warn">Follow up</span><button class="btn" type="button" data-go="introduction-detail">View Introduction</button></div></li><li class="row"><div class="row-main"><strong>Introduction expires in 2 days</strong><span>Meera and Nikhil · response window ends 12 October 2026</span></div><div class="row-end"><span class="chip warn">Expiring</span><button class="btn" type="button" data-go="introductions">View Introductions</button></div></li><li class="row"><div class="row-main"><strong>New portfolio version available</strong><span>Aditi published an update. Existing Introductions retain their pinned versions.</span></div><div class="row-end"><button class="btn" type="button" data-go="customer">View customer</button></div></li></ul></section>
+          <div class="grid three" aria-label="Workspace summary"><div class="metric"><span>Active customers</span><strong>48</strong><span>In this agency</span></div><div class="metric"><span>Open Introductions</span><strong>12</strong><span>Waiting or in follow-up</span></div><div class="metric"><span>Responses to review</span><strong>3</strong><span>Action needed</span></div></div>
+          <p class="tagline">A notification may bring someone back to VivIntroDesk. The response and access decision always happen after sign-in.</p>
+        </section>
+
+        <section id="customers" class="screen" hidden aria-labelledby="customers-title">
+          <div class="pagehead"><div><p class="eyebrow">Customers</p><h1 id="customers-title">People you represent</h1><p class="lede">Find customers by name and see what is needed before an Introduction.</p></div><div class="actions"><button class="btn primary" type="button" data-dialog="invite-dialog">Invite customer</button></div></div>
+          <section class="panel"><div class="form-grid"><label class="wide"><span class="label">Search this agency's customers</span><input id="customer-search" name="customerSearch" class="field" type="search" placeholder="Search by name…" autocomplete="off"></label><label><span class="label">Show</span><select class="field" id="customer-state" name="customerState"><option value="all">All customers</option><option value="ready">Ready</option><option value="attention">Needs attention</option></select></label></div></section>
+          <section class="panel"><div class="panel-head"><div><h2>Customer book</h2><p class="subtle">Illustrative list; only agency and assignment-authorized records appear.</p></div><span class="chip">4 shown</span></div><div class="table-scroll"><table><thead><tr><th>Customer</th><th>Readiness</th><th>Assigned to</th><th>Representation</th><th>Next step</th></tr></thead><tbody id="customer-rows"><tr data-name="aditi rao" data-state="ready"><td data-label="Customer">Aditi Rao</td><td data-label="Readiness"><span class="chip good">Ready</span></td><td data-label="Assigned to">Maya, Neha</td><td data-label="Representation">Until 30 Nov 2026</td><td data-label="Next step"><button class="btn" type="button" data-go="customer">Open customer</button></td></tr><tr data-name="rohan iyer" data-state="ready"><td data-label="Customer">Rohan Iyer</td><td data-label="Readiness"><span class="chip good">Ready</span></td><td data-label="Assigned to">Vikram</td><td data-label="Representation">Until 25 Nov 2026</td><td data-label="Next step"><button class="btn" type="button" data-go="customer">Open customer</button></td></tr><tr data-name="dev kulkarni" data-state="attention"><td data-label="Customer">Dev Kulkarni</td><td data-label="Readiness"><span class="chip warn">Needs information</span></td><td data-label="Assigned to">Maya</td><td data-label="Representation">Until 18 Nov 2026</td><td data-label="Next step"><button class="btn" type="button" data-go="customer">Open customer</button></td></tr><tr data-name="meera shah" data-state="attention"><td data-label="Customer">Meera Shah</td><td data-label="Readiness"><span class="chip bad">Mandate paused</span></td><td data-label="Assigned to">Neha</td><td data-label="Representation">Paused by customer</td><td data-label="Next step"><button class="btn" type="button" data-go="customer">Open customer</button></td></tr></tbody></table><p id="customer-empty" class="subtle" hidden>No customers match this search. Try another name or status.</p></div></section>
+          <section class="panel"><h2>Invitations</h2><p class="subtle">One invitation is awaiting the customer's sign-in and consent. No portfolio is created for them by the broker.</p><div class="row"><div class="row-main"><strong>p••••@example.test</strong><span>Invited 8 October 2026 · email delivery only in the current implementation</span></div><span class="chip warn">Awaiting customer</span></div></section>
+        </section>
+
+        <section id="customer" class="screen" hidden aria-labelledby="customer-title">
+          <div class="pagehead"><div><p class="eyebrow">Customers / Aditi Rao</p><h1 id="customer-title">Aditi Rao</h1><p class="lede">One customer-owned VivIntro portfolio, represented by this agency through an active mandate.</p></div><div class="actions"><button class="btn primary" type="button" data-go="matches">Find matches</button></div></div>
+          <div class="notice"><strong>Ready for an Introduction</strong><p>Mandate, published portfolio, and liveness verification are current. The server must recheck these when an Introduction is created.</p></div>
+          <div class="grid two"><section class="panel"><h2>Readiness</h2><ul class="checklist"><li><span class="mark">✓</span>Active agency relationship and mandate until 30 November 2026</li><li><span class="mark">✓</span>Published VivIntro portfolio, version 4</li><li><span class="mark">✓</span>Current approved liveness verification</li><li><span class="mark">✓</span>Broker Standard available to permitted staff</li></ul></section><section class="panel"><h2>People helping Aditi</h2><p>Maya <span class="chip">Advisor</span> · Neha <span class="chip">Coordinator</span></p><p class="subtle">Owners and admins can work across the agency. Other staff see customers allowed by their assignment.</p><button class="btn" type="button" data-go="team">View team</button></section></div>
+          <section class="panel"><div class="panel-head"><div><h2>Published Broker Standard</h2><p class="subtle">Generated from Aditi's portfolio. Aditi controls edits and publication.</p></div><span class="chip good">Version 4 · published 10 Oct</span></div><dl class="data-grid"><div><dt>Age</dt><dd>29</dd></div><div><dt>Location</dt><dd>Pune</dd></div><div><dt>Marital status</dt><dd>Never married</dd></div><div><dt>Gotra</dt><dd>Kashyap</dd></div><div><dt>Manglik</dt><dd>Manglik</dd></div><div><dt>Diet</dt><dd>Vegetarian</dd></div></dl><p class="smallprint" style="margin-top:1rem">Protected Contact, financial details, exact birth time, and owner-private notes are absent from this broker view.</p></section>
+          <section class="panel"><div class="panel-head"><h2>Introductions in this agency</h2><button class="btn quiet" type="button" data-go="introductions">View all</button></div><div class="row"><div class="row-main"><strong>Rohan Iyer</strong><span>One response received · pinned to Aditi's version 3</span></div><button class="btn" type="button" data-go="introduction-detail">Open</button></div></section>
+        </section>
+
+        <section id="matches" class="screen" hidden aria-labelledby="matches-title">
+          <div class="pagehead"><div><p class="eyebrow">Customers / Aditi Rao / Find matches</p><h1 id="matches-title">Find someone for Aditi</h1><p class="lede">Review customers in this agency and check the reason before introducing anyone.</p></div></div>
+          <p class="smallprint matching-disclaimer"><strong>Prototype:</strong> sample matching outcomes, not live rules. Production requires approved server-side checks.</p>
+          <div class="match-layout">
+            <aside class="panel" aria-label="Selected customer">
+              <h2>Aditi Rao</h2><p class="subtle">Published version 3 · Pune · 29</p>
+              <dl class="data-grid" style="grid-template-columns:1fr 1fr"><div><dt>Gotra</dt><dd>Kashyap</dd></div><div><dt>Manglik</dt><dd>Yes</dd></div><div><dt>Diet</dt><dd>Vegetarian</dd></div><div><dt>Location</dt><dd>Pune</dd></div></dl>
+              <button class="btn quiet" type="button" data-go="customer">Review customer</button>
+            </aside>
+            <div>
+              <section class="panel">
+                <div class="panel-head"><div><h2>Search this customer book</h2><p class="filter-hint">Start with a name or place. Use more filters only when needed.</p></div></div>
+                <div class="form-grid">
+                  <label class="wide"><span class="label">Search by name</span><input class="field" id="match-search" name="matchSearch" type="search" placeholder="Search names…" autocomplete="off"></label>
+                  <label><span class="label">Location</span><select class="field match-criterion" name="location" data-field="location"><option value="any">Any location</option><option value="pune">Pune</option><option value="mumbai">Mumbai</option><option value="bengaluru">Bengaluru</option></select></label>
+                </div>
+                <details class="more-filters"><summary>More filters <span id="advanced-count" class="chip" hidden></span></summary><div class="form-grid">
+                  <label><span class="label">Age</span><select class="field match-criterion" name="age" data-field="age"><option value="any">Any age</option><option value="28-30">28–30</option><option value="31-34">31–34</option></select></label>
+                  <label><span class="label">Height</span><select class="field match-criterion" name="height" data-field="height"><option value="any">Any height</option><option value="175+">175 cm or taller</option><option value="180+">180 cm or taller</option></select></label>
+                  <label><span class="label">Marital status</span><select class="field match-criterion" name="maritalStatus" data-field="maritalStatus"><option value="any">Any status</option><option value="never">Never married</option></select></label>
+                  <label><span class="label">Diet</span><select class="field match-criterion" name="diet" data-field="diet"><option value="any">Any diet</option><option value="vegetarian">Vegetarian</option><option value="nonvegetarian">Non-vegetarian</option></select></label>
+                  <label><span class="label">Community</span><select class="field match-criterion" name="community" data-field="community"><option value="any">Any community</option><option value="brahmin">Brahmin</option></select></label>
+                  <label><span class="label">Sub-caste</span><select class="field match-criterion" name="subCaste" data-field="subCaste"><option value="any">Any sub-caste</option><option value="deshastha">Deshastha</option><option value="konkanastha">Konkanastha</option></select></label>
+                  <label><span class="label">Manglik</span><select class="field match-criterion" name="manglik" data-field="manglik"><option value="any">Any status</option><option value="yes">Manglik</option><option value="no">Not Manglik</option><option value="unknown">Not provided</option></select></label>
+                  <label><span class="label">Visa / relocation</span><select class="field match-criterion" name="visa" data-field="visa"><option value="any">Any preference</option><option value="india">India only</option><option value="relocate">Open to relocation</option></select></label>
+                </div><button class="btn quiet" type="button" id="clear-match-filters">Clear search and filters</button></details>
+                <p class="smallprint" style="margin:.9rem 0 0">Filters narrow these fictional examples; they do not calculate eligibility. Proposed same-gotra exclusion always applies. A live server must check the complete pair and explain blocked or missing facts.</p>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Potential matches</h2><span class="subtle">Same agency only</span></div>
+                <div class="filter-row" aria-label="Result status"><button class="btn" type="button" data-match-filter="eligible" aria-pressed="true">Ready to review 1</button><button class="btn" type="button" data-match-filter="attention" aria-pressed="false">Needs information 1</button><button class="btn" type="button" data-match-filter="blocked" aria-pressed="false">Blocked 1</button><button class="btn" type="button" data-match-filter="all" aria-pressed="false">All 3</button></div>
+                <ul class="list" id="match-results">
+                  <li data-match-state="eligible" data-match-name="rohan iyer" data-age="31" data-height="181" data-marital-status="never" data-location="mumbai" data-diet="vegetarian" data-community="brahmin" data-sub-caste="konkanastha" data-manglik="yes" data-visa="relocate" class="match-result"><div><h3>Rohan Iyer <span class="chip good">Ready to review</span></h3><p>31 · Mumbai · Vashishtha gotra · Manglik · Vegetarian</p><p>Both portfolios and mandates are ready. Preferences still need the broker's judgment.</p></div><div class="row-end"><button class="btn primary" type="button" data-go="review">Review pair</button></div></li>
+                  <li data-match-state="attention" data-match-name="dev kulkarni" data-age="30" data-height="177" data-marital-status="never" data-location="pune" data-diet="vegetarian" data-community="brahmin" data-sub-caste="deshastha" data-manglik="unknown" data-visa="india" class="match-result"><div><h3>Dev Kulkarni <span class="chip warn">Needs information</span></h3><p>30 · Pune · Manglik status not provided in published portfolio</p><p>Ask Dev to update his own VivIntro portfolio before evaluating this pair.</p></div><div class="row-end"><button class="btn" type="button" data-dialog="missing-dialog">What is missing?</button></div></li>
+                  <li data-match-state="blocked" data-match-name="arjun rao" data-age="32" data-height="179" data-marital-status="never" data-location="bengaluru" data-diet="nonvegetarian" data-community="brahmin" data-sub-caste="deshastha" data-manglik="no" data-visa="india" class="match-result"><div><h3>Arjun Rao <span class="chip bad">Blocked</span></h3><p>32 · Bengaluru · Kashyap gotra</p><p>Same gotra as Aditi under the proposed agency policy. Introduction creation must be rejected by the server.</p></div><div class="row-end"><button class="btn" type="button" data-dialog="block-dialog">Why blocked?</button></div></li>
+                </ul>
+                <p id="match-empty" class="subtle" role="status" hidden>No sample customers match this view. Try All or clear a search or filter.</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="review" class="screen" hidden aria-labelledby="review-title">
+          <div class="pagehead"><div><p class="eyebrow">Aditi / Match review</p><h1 id="review-title">Review Aditi and Rohan</h1><p class="lede">Compare only information permitted in the agency's Broker Standard view. Make the human decision before creating an Introduction.</p></div><div class="actions"><button class="btn primary" type="button" data-go="create">Continue to Introduction</button></div></div>
+          <div class="pair"><div><h3>Aditi Rao</h3><p>Published portfolio version 3 at this point in the story</p><dl><dt>Age</dt><dd>29</dd><dt>Location</dt><dd>Pune</dd><dt>Gotra</dt><dd>Kashyap</dd><dt>Manglik</dt><dd>Yes</dd><dt>Diet</dt><dd>Vegetarian</dd></dl></div><div class="amp">↔</div><div><h3>Rohan Iyer</h3><p>Published portfolio version 2</p><dl><dt>Age</dt><dd>31</dd><dt>Location</dt><dd>Mumbai</dd><dt>Gotra</dt><dd>Vashishtha</dd><dt>Manglik</dt><dd>Yes</dd><dt>Diet</dt><dd>Vegetarian</dd></dl></div></div>
+          <section class="panel" style="margin-top:1rem"><h2>Why this pair is available</h2><ul class="checklist"><li><span class="mark">✓</span>Both are active customers of Saathi Matchmakers.</li><li><span class="mark">✓</span>Both mandates, portfolios and liveness checks are current.</li><li><span class="mark">✓</span>Gotra values differ under the proposed same-gotra exclusion.</li><li><span class="mark">✓</span>Both published Manglik values are the same.</li><li><span class="mark">✓</span>No active Introduction for this pair in this agency.</li></ul><p class="smallprint" style="margin-top:1rem">These checks are design examples. A live screen must receive the explanation from the server, not infer eligibility in the browser.</p></section>
+          <div class="notice"><strong>Broker Standard only</strong><p>Contact details and restricted data are not available to the broker. The participants will see each other's pinned Broker Standard after sign-in.</p></div>
+        </section>
+
+        <section id="create" class="screen" hidden aria-labelledby="create-title">
+          <div class="pagehead"><div><p class="eyebrow">Aditi / Create Introduction</p><h1 id="create-title">Introduce Aditi and Rohan</h1><p class="lede">Check the pair, published versions, and response deadline before creating a private Introduction.</p></div></div>
+          <div class="grid two"><section class="panel"><h2>The people</h2><ul class="list"><li><strong>Aditi Rao</strong><br><span class="subtle">Broker Standard · publication version 3</span></li><li><strong>Rohan Iyer</strong><br><span class="subtle">Broker Standard · publication version 2</span></li></ul><p class="smallprint">The published versions are pinned when the Introduction is created.</p></section><section class="panel"><h2>Access and timing</h2><ul class="checklist"><li><span class="mark">✓</span>Only Aditi and Rohan can open the Introduction after signing in.</li><li><span class="mark">✓</span>Each responds independently within 15 days.</li><li><span class="mark">✓</span>Both Interested responses open reciprocal pinned Complete access for 30 days.</li><li><span class="mark">✓</span>Revocation or lost readiness ends access early.</li></ul></section></div>
+          <div id="create-before" class="panel"><h2>Create the private Introduction</h2><p class="subtle">The broker cannot see or release Protected Contact. Creating does not yet activate the share link.</p><button class="btn primary" type="button" id="create-demo">Create Introduction</button></div>
+          <div id="create-after" hidden><div class="notice"><strong>Introduction created</strong><p>Illustrative state only. The real server would pin both publication versions and create an opaque Introduction reference.</p></div><section class="panel"><h2>Activate and share</h2><p>Current implementation activates a private participant-only link, then the broker copies it into a trusted WhatsApp conversation. A future WhatsApp provider may deliver the same safe notification.</p><div class="preview"><span class="demo-label">Message preview</span><p>Saathi Matchmakers has a private VivIntro introduction for you. Sign in to review and respond: [opaque participant-only link]</p><p class="smallprint">This message contains no profile details or contact information.</p></div><div class="actions" style="margin-top:1rem"><button class="btn primary" type="button" id="share-demo">Preview activated and copied state</button><button class="btn" type="button" data-go="introduction-detail">View Introduction</button></div><p id="share-status" class="subtle" role="status"></p></section></div>
+        </section>
+
+        <section id="introductions" class="screen" hidden aria-labelledby="introductions-title">
+          <div class="pagehead"><div><p class="eyebrow">Introductions</p><h1 id="introductions-title">Follow each pair</h1><p class="lede">A single agency view of response windows, mutual interest, and closed Introductions.</p></div><div class="actions"><button class="btn primary" type="button" data-go="customers">Find a customer</button></div></div>
+          <div class="notice warn"><strong>Standalone view requires backend work</strong><p>The current broker UI lists Introductions within a customer record. This agency-wide list is a proposed workspace projection.</p></div>
+          <section class="panel"><div class="filter-row"><button class="btn" type="button" data-intro-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-intro-filter="open" aria-pressed="false">Open</button><button class="btn" type="button" data-intro-filter="mutual" aria-pressed="false">Mutual interest</button><button class="btn" type="button" data-intro-filter="closed" aria-pressed="false">Closed</button></div><div class="table-scroll"><table><thead><tr><th>Pair</th><th>Status</th><th>Responses</th><th>Response deadline</th><th>Next action</th></tr></thead><tbody id="intro-rows"><tr data-intro-state="open"><td data-label="Pair">Aditi Rao + Rohan Iyer</td><td data-label="Status"><span class="chip warn">One response</span></td><td data-label="Responses">Rohan Interested · Aditi waiting</td><td data-label="Response deadline">24 Oct 2026</td><td data-label="Next action"><button class="btn" type="button" data-go="introduction-detail">Open</button></td></tr><tr data-intro-state="open"><td data-label="Pair">Meera Shah + Nikhil Joshi</td><td data-label="Status"><span class="chip warn">Expiring</span></td><td data-label="Responses">Both waiting</td><td data-label="Response deadline">12 Oct 2026</td><td data-label="Next action"><button class="btn" type="button" data-go="introduction-detail">Open</button></td></tr><tr data-intro-state="mutual"><td data-label="Pair">Tara Desai + Karan Patel</td><td data-label="Status"><span class="chip good">Mutual interest</span></td><td data-label="Responses">Both Interested</td><td data-label="Response deadline">Complete access until 3 Nov 2026</td><td data-label="Next action"><button class="btn" type="button" data-go="introduction-detail">Open</button></td></tr><tr data-intro-state="closed"><td data-label="Pair">Isha Shah + Aman Kulkarni</td><td data-label="Status"><span class="chip">Closed</span></td><td data-label="Responses">One declined</td><td data-label="Response deadline">Ended 4 Oct 2026</td><td data-label="Next action"><button class="btn" type="button" data-go="introduction-detail">Open</button></td></tr></tbody></table></div></section>
+        </section>
+
+        <section id="introduction-detail" class="screen" hidden aria-labelledby="detail-title">
+          <div class="pagehead"><div><p class="eyebrow">Introductions / Aditi + Rohan</p><h1 id="detail-title">Aditi and Rohan</h1><p class="lede">One private Introduction between two customers of Saathi Matchmakers.</p></div><div class="actions"><button class="btn" type="button" data-go="introductions">All Introductions</button></div></div>
+          <div class="notice"><strong id="intro-state-heading">One response received</strong><p id="intro-state-description">Rohan chose Interested. Aditi has not responded. Protected Contact remains unavailable.</p></div>
+          <div class="grid two"><section class="panel"><h2>Customer responses</h2><ul class="list"><li class="row"><div class="row-main"><strong>Aditi Rao</strong><span id="aditi-response">Waiting to respond</span></div><span id="aditi-chip" class="chip warn">Waiting</span></li><li class="row"><div class="row-main"><strong>Rohan Iyer</strong><span>Interested · confirmed reciprocal disclosure consequence</span></div><span class="chip good">Interested</span></li></ul><p class="smallprint">The broker sees decisions and timing, not either customer's Complete Portfolio or contact details.</p></section><section class="panel"><h2>Dates and pinned versions</h2><dl class="data-grid" style="grid-template-columns:repeat(2,1fr)"><div><dt>Response deadline</dt><dd>24 Oct 2026</dd></div><div><dt>Complete access</dt><dd id="access-date">Not started</dd></div><div><dt>Aditi version</dt><dd>3 at creation</dd></div><div><dt>Rohan version</dt><dd>2 at creation</dd></div></dl><p class="smallprint" style="margin-top:1rem">Aditi's current version 4 does not replace version 3 in this Introduction.</p></section></div>
+          <section class="panel"><div class="panel-head"><h2>What happened</h2><span class="chip">Agency history only</span></div><ol class="timeline" id="intro-timeline"><li><strong>Introduction created</strong><small>9 Oct · both Broker Standard versions pinned</small></li><li><strong>Private link activated</strong><small>9 Oct · each recipient still needs their own VivIntro sign-in</small></li><li><strong>Rohan responded Interested</strong><small>10 Oct · Aditi's response remains private until she chooses</small></li></ol></section>
+          <section class="panel"><h2>Next broker action</h2><p id="broker-followup">Check with Aditi through the agency's usual conversation. Her decision must be submitted by Aditi in VivIntro.</p><div class="actions"><button class="btn" type="button" data-dialog="response-dialog">Preview customer response screen</button><button class="btn danger" type="button" data-dialog="revoke-dialog">Review revocation</button></div></section>
+          <p class="tagline">This view shows sample communication stages. “Provider accepted” must not be presented as “Delivered” without verified delivery evidence.</p>
+        </section>
+
+        <section id="team" class="screen" hidden aria-labelledby="team-title"><div class="pagehead"><div><p class="eyebrow">Team</p><h1 id="team-title">People in this agency</h1><p class="lede">Roles and customer access determine who can work with each record.</p></div></div><section class="panel"><ul class="list"><li class="row"><div class="row-main"><strong>Anil · Owner</strong><span>Workspace administration and customer access</span></div><span class="chip good">Active</span></li><li class="row"><div class="row-main"><strong>Maya · Advisor</strong><span>Assigned to Aditi and Dev</span></div><span class="chip good">Active</span></li><li class="row"><div class="row-main"><strong>Vikram · Advisor</strong><span>Assigned to Rohan</span></div><span class="chip good">Active</span></li><li class="row"><div class="row-main"><strong>Neha · Coordinator</strong><span>Assigned to Aditi</span></div><span class="chip good">Active</span></li></ul></section><p class="tagline">Stage A orientation frame. The existing team settings page already handles invitations, roles and suspension; assignment editing needs its own authorized workflow.</p></section>
+
+        <section id="settings" class="screen" hidden aria-labelledby="settings-title"><div class="pagehead"><div><p class="eyebrow">Settings</p><h1 id="settings-title">Agency settings</h1><p class="lede">Only a few controls are needed for the pilot.</p></div></div><div class="grid two"><section class="panel"><h2>Agency</h2><p>Saathi Matchmakers</p><p class="subtle">Identity and operator approval belong to the existing onboarding process.</p></section><section class="panel"><h2>Communication</h2><p>Email notifications are implemented through a durable outbox. WhatsApp delivery through AiSensy or another provider is planned.</p><span class="chip warn">Provider not connected in this prototype</span></section></div><p class="tagline">Stage A orientation frame. Provider credentials and template settings require an Owner or Admin flow after the communication contract is approved.</p></section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="invite-dialog" aria-labelledby="invite-title"><div class="dialog-body"><p class="eyebrow">Customer invitation</p><h2 id="invite-title">Invite one customer</h2><p>The customer signs in, consents to this agency relationship, and publishes their own portfolio. Current main supports email invitation.</p><label><span class="label">Customer email</span><input class="field" name="customerEmail" type="email" placeholder="customer@example.com" autocomplete="email" spellcheck="false"></label><p class="smallprint">Prototype only. No invitation will be sent.</p></div><div class="dialog-footer"><button class="btn" type="button" data-close>Close</button><button class="btn primary" type="button" data-close>Preview invitation</button></div></dialog>
+  <dialog id="block-dialog" aria-labelledby="block-title"><div class="dialog-body"><p class="eyebrow">Match rule</p><h2 id="block-title">Why this result is blocked</h2><p>Aditi and Arjun both have Kashyap gotra in their published portfolios. The proposed agency rule excludes a same-gotra pairing.</p><p class="smallprint">This rule needs an approved product policy and server-side enforcement before launch. Neither broker nor browser should override a hard block.</p></div><div class="dialog-footer"><button class="btn primary" type="button" data-close>Understood</button></div></dialog>
+  <dialog id="missing-dialog" aria-labelledby="missing-title"><div class="dialog-body"><p class="eyebrow">Information needed</p><h2 id="missing-title">Dev's Manglik status is missing</h2><p>Ask Dev to update his own VivIntro portfolio. The broker cannot fill this field or publish on his behalf.</p><p class="smallprint">The resulting Introduction eligibility must be recalculated on the server after publication.</p></div><div class="dialog-footer"><button class="btn primary" type="button" data-close>Understood</button></div></dialog>
+  <dialog id="response-dialog" aria-labelledby="response-title"><div class="dialog-body"><span class="demo-label">Customer-side decision preview</span><h2 id="response-title" style="margin-top:.7rem">Respond to Rohan's Introduction</h2><p>Aditi signs in and sees Rohan's pinned Broker Standard. His contact details are hidden.</p><div class="notice"><strong>What Interested means</strong><p>If Rohan also chooses Interested, each of you can view the other's pinned Complete Portfolio, including Protected Contact, for 30 days from the second Interested response. This happens automatically. Your choice cannot be changed after submitting.</p></div><p class="smallprint">The broker cannot choose Interested for Aditi. This inset is a wireframe of Aditi's own decision.</p></div><div class="dialog-footer"><button class="btn" type="button" data-close>Close</button><button class="btn primary" type="button" id="mutual-demo">Preview both Interested</button></div></dialog>
+  <dialog id="revoke-dialog" aria-labelledby="revoke-title"><div class="dialog-body"><p class="eyebrow">Review high-impact action</p><h2 id="revoke-title">Revoke this Introduction?</h2><p>Aditi and Rohan would lose access to this Introduction. If Complete access had begun, it would end immediately. Existing response history would remain for the agency's audit record.</p><p class="smallprint">Prototype only. The real action needs a fresh server authorization check.</p></div><div class="dialog-footer"><button class="btn" type="button" data-close>Keep Introduction</button><button class="btn danger" type="button" data-close>Preview revoked state</button></div></dialog>
+  <script>
+    const screens = new Set([...document.querySelectorAll('.screen')].map((node) => node.id));
+    function showScreen(name, updateHash = true, focusHeading = true) {
+      const next = screens.has(name) ? name : 'today';
+      document.querySelectorAll('.screen').forEach((node) => { node.hidden = node.id !== next; });
+      document.querySelectorAll('.nav a').forEach((node) => { if (node.dataset.go === next) node.setAttribute('aria-current','page'); else node.removeAttribute('aria-current'); });
+      if (updateHash && location.hash !== '#' + next) history.pushState(null, '', '#' + next);
+      window.scrollTo(0,0);
+      const heading = document.querySelector('#' + next + ' h1');
+      if (focusHeading) { heading?.setAttribute('tabindex','-1'); heading?.focus({preventScroll:true}); }
+    }
+    document.querySelectorAll('[data-go]').forEach((node) => node.addEventListener('click', (event) => { event.preventDefault(); showScreen(node.dataset.go); }));
+    document.querySelectorAll('[data-dialog]').forEach((node) => node.addEventListener('click', () => document.getElementById(node.dataset.dialog).showModal()));
+    document.querySelectorAll('[data-close]').forEach((node) => node.addEventListener('click', () => node.closest('dialog').close()));
+    document.querySelectorAll('#customer-rows tr:not(:first-child) button, #intro-rows tr:not(:first-child) button').forEach((node) => { node.disabled = true; node.textContent = 'Sample record'; node.title = 'Only the Aditi and Rohan walkthrough is interactive in Stage A'; });
+    document.querySelectorAll('dialog').forEach((node) => node.addEventListener('click', (event) => { if (event.target === node) node.close(); }));
+    function filterCustomers() { const term=document.getElementById('customer-search').value.trim().toLowerCase(); const state=document.getElementById('customer-state').value; let shown=0; document.querySelectorAll('#customer-rows tr').forEach((row)=>{row.hidden=!(row.dataset.name.includes(term)&&(state==='all'||row.dataset.state===state)); if(!row.hidden) shown++;}); document.getElementById('customer-empty').hidden=shown>0; }
+    document.getElementById('customer-search').addEventListener('input',filterCustomers);
+    document.getElementById('customer-state').addEventListener('change',filterCustomers);
+    let currentMatchFilter = 'eligible';
+    const matchFilterLabels = { eligible:'Ready to review', attention:'Needs information', blocked:'Blocked', all:'All' };
+    function filterMatches() {
+      const term = document.getElementById('match-search').value.trim().toLowerCase();
+      const criteria = [...document.querySelectorAll('.match-criterion')];
+      const counts = { eligible:0, attention:0, blocked:0, all:0 };
+      let shown = 0;
+      document.querySelectorAll('[data-match-state]').forEach((result) => {
+        const matchesStatus = currentMatchFilter === 'all' || result.dataset.matchState === currentMatchFilter;
+        const matchesName = result.dataset.matchName.includes(term);
+        const matchesCriteria = criteria.every((criterion) => {
+          const value = criterion.value;
+          if (value === 'any') return true;
+          const fact = result.dataset[criterion.dataset.field];
+          if (criterion.dataset.field === 'age') {
+            const [minimum, maximum] = value.split('-').map(Number);
+            return Number(fact) >= minimum && Number(fact) <= maximum;
+          }
+          if (criterion.dataset.field === 'height') return Number(fact) >= Number(value.replace('+', ''));
+          return fact === value;
+        });
+        const matchesSearch = matchesName && matchesCriteria;
+        if (matchesSearch) { counts.all++; counts[result.dataset.matchState]++; }
+        result.hidden = !(matchesStatus && matchesSearch);
+        if (!result.hidden) shown++;
+      });
+      document.querySelectorAll('[data-match-filter]').forEach((button) => {
+        const state = button.dataset.matchFilter;
+        button.textContent = matchFilterLabels[state] + ' ' + counts[state];
+      });
+      const advancedCount = criteria.filter((criterion) => criterion.dataset.field !== 'location' && criterion.value !== 'any').length;
+      const advancedBadge = document.getElementById('advanced-count');
+      advancedBadge.hidden = advancedCount === 0;
+      advancedBadge.textContent = advancedCount + ' active';
+      document.getElementById('match-empty').hidden = shown > 0;
+    }
+    document.getElementById('match-search').addEventListener('input', filterMatches);
+    document.querySelectorAll('.match-criterion').forEach((node) => node.addEventListener('change', filterMatches));
+    document.querySelectorAll('[data-match-filter]').forEach((node)=>node.addEventListener('click',()=>{currentMatchFilter=node.dataset.matchFilter; document.querySelectorAll('[data-match-filter]').forEach((button)=>button.setAttribute('aria-pressed',String(button===node))); filterMatches(); }));
+    document.getElementById('clear-match-filters').addEventListener('click',()=>{document.getElementById('match-search').value=''; document.querySelectorAll('.match-criterion').forEach((criterion)=>{criterion.value='any';}); currentMatchFilter='eligible'; document.querySelectorAll('[data-match-filter]').forEach((button)=>button.setAttribute('aria-pressed',String(button.dataset.matchFilter==='eligible'))); filterMatches();});
+    document.querySelectorAll('[data-intro-filter]').forEach((node)=>node.addEventListener('click',()=>{const state=node.dataset.introFilter; document.querySelectorAll('[data-intro-filter]').forEach((button)=>button.setAttribute('aria-pressed',String(button===node))); document.querySelectorAll('[data-intro-state]').forEach((result)=>result.hidden=state!=='all'&&result.dataset.introState!==state); }));
+    document.getElementById('create-demo').addEventListener('click',()=>{document.getElementById('create-before').hidden=true; document.getElementById('create-after').hidden=false; document.getElementById('create-after').scrollIntoView({block:'nearest'});});
+    document.getElementById('share-demo').addEventListener('click',()=>{document.getElementById('share-status').textContent='Prototype state: link activated and copied. Only the two signed-in participants can open it.';});
+    document.getElementById('mutual-demo').addEventListener('click',()=>{document.getElementById('response-dialog').close();document.getElementById('intro-state-heading').textContent='Mutual interest confirmed';document.getElementById('intro-state-description').textContent='Both customers chose Interested. Reciprocal pinned Complete access is available for 30 days. Broker follow-up remains active; the broker cannot see contacts.';document.getElementById('aditi-response').textContent='Interested · confirmed reciprocal disclosure consequence';document.getElementById('aditi-chip').className='chip good';document.getElementById('aditi-chip').textContent='Interested';document.getElementById('access-date').textContent='Until 9 Nov 2026';document.getElementById('broker-followup').textContent='Follow up with both customers through the agency relationship. Their contact access is independent of your broker view.';const item=document.createElement('li');const title=document.createElement('strong');title.textContent='Mutual interest confirmed';const date=document.createElement('small');date.textContent='10 Oct · reciprocal 30-day Complete access began';item.append(title,date);document.getElementById('intro-timeline').append(item);document.getElementById('mutual-demo').disabled=true;});
+    window.addEventListener('popstate',()=>showScreen(location.hash.slice(1), false));
+    window.addEventListener('hashchange',()=>showScreen(location.hash.slice(1), false));
+    filterMatches();
+    showScreen(location.hash.slice(1), false, false);
+  </script>
+</body>
+</html>

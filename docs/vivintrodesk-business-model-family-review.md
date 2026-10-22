@@ -89,15 +89,22 @@ and makes confirmed mutual interest useful:
 2. If both choose Interested within the 15-day response window, reciprocal
    identity-bound Complete access begins for 30 days from the second confirmed
    acceptance.
-3. There is no second contact-approval step.
-4. Either customer's revocation or a broken mandate, verification, relationship,
+3. Broker-linked customers may authorize up to three Family Viewers through
+   their exact Google accounts. They may help review Broker Standard profiles,
+   but only the candidate can choose Interested or Decline.
+4. When mutual interest begins, the eligible Family Viewers are fixed for that
+   Introduction and may see the opposite Complete Portfolio for the same
+   30-day window. A person added later does not inherit that access.
+5. There is no second contact-approval step.
+6. Either customer's revocation or a broken mandate, verification, relationship,
    or publication condition ends access immediately.
 
 ## What is deliberately not in the first pilot
 
 - broker-to-broker coordination or visibility;
 - guest or email-only recipients for broker Introductions;
-- linked-family accounts;
+- WhatsApp/phone-only Family Viewer sign-in or WhatsApp OTP;
+- paid Family Viewer access for personal users outside a broker relationship;
 - custom agency questionnaires or financial-package fields;
 - AI matching or compatibility scores;
 - a general Tasks/CRM system;

@@ -82,6 +82,13 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-208 VivIntroDesk UI wireframes](features/nak-208-vivintrodesk-ui-wireframes.md):
+  preserves the isolated Stage A and Stage B prototypes while reconciling them
+  with the approved family-assisted broker contract and a single owned
+  VivIntroDesk component system. The working branch is
+  `feat/nak-208-vivintrodesk-ui-wireframes`; no production route, database rule,
+  authorization boundary, customer data, or delivery provider is connected.
+
 - [Landing bookshelf and signup button](features/landing-bookshelf.md): four scroll-driven 3D books with direct/keyboard chapter access; the [October 20 Vivara follow-up](features/vivara-landing-content.md) supersedes all-screen animation with static phone/short-viewport cards. Reduced-motion/no-JavaScript fallbacks and the compact outlined Google signup button remain. Local implementation and evidence are recorded in the features; no provider or deployment change.
 
 - [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
