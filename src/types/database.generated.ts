@@ -1389,6 +1389,9 @@ isOneToOne: false
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
                            },
+"reconsent_customer_broker_relationship":
+{ Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
+                           },
 "record_account_deletion_auth_deleted":
 { Args: { "p_claim_token": string,"p_request_id": string }; Returns: boolean
                            },
@@ -1482,6 +1485,9 @@ isOneToOne: false
                            },
 "resolve_brokerdesk_customer":
 { Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"resolve_brokerdesk_customer_invitation_consent_version":
+{ Args: { "p_token_hash": string }; Returns: string
                            },
 "resolve_brokerdesk_customers":
 { Args: { "p_workspace_ref": string }; Returns: Json

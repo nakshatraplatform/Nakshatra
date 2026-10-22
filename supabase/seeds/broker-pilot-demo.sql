@@ -73,10 +73,10 @@ alter table public.broker_clients enable trigger assign_broker_client_relationsh
 
 insert into app_private.broker_client_mandates (
   id,organization_id,broker_client_id,purpose,permitted_capabilities,evidence_reference,
-  customer_approved_by,starts_at,ends_at
+  consent_version,customer_approved_by,starts_at,ends_at
 ) values
-  ('a1111111-1111-4111-8111-111111111101','41111111-1111-4111-8111-111111111101','91111111-1111-4111-8111-111111111101','Broker-assisted matchmaking pilot',array['customers.read','customers.edit_relationship','portfolio.review','introductions.create','introductions.send','introductions.record_response','introductions.close','tasks.manage','renewals.manage']::app_private.brokerdesk_capability[],'local-demo-consent-ravi','11111111-1111-4111-8111-111111111103',pg_catalog.now()-interval '9 days',pg_catalog.now()+interval '356 days'),
-  ('a1111111-1111-4111-8111-111111111102','41111111-1111-4111-8111-111111111102','91111111-1111-4111-8111-111111111102','Broker-assisted matchmaking pilot',array['customers.read','customers.edit_relationship','portfolio.review','introductions.create','introductions.send','introductions.record_response','introductions.close','tasks.manage','renewals.manage']::app_private.brokerdesk_capability[],'local-demo-consent-suresh','11111111-1111-4111-8111-111111111103',pg_catalog.now()-interval '7 days',pg_catalog.now()+interval '358 days');
+  ('a1111111-1111-4111-8111-111111111101','41111111-1111-4111-8111-111111111101','91111111-1111-4111-8111-111111111101','Broker-assisted matchmaking pilot',array['customers.read','customers.edit_relationship','portfolio.review','introductions.create','introductions.send','introductions.record_response','introductions.close','tasks.manage','renewals.manage']::app_private.brokerdesk_capability[],'local-demo-consent-ravi','broker-representation-v2','11111111-1111-4111-8111-111111111103',pg_catalog.now()-interval '9 days',pg_catalog.now()+interval '356 days'),
+  ('a1111111-1111-4111-8111-111111111102','41111111-1111-4111-8111-111111111102','91111111-1111-4111-8111-111111111102','Broker-assisted matchmaking pilot',array['customers.read','customers.edit_relationship','portfolio.review','introductions.create','introductions.send','introductions.record_response','introductions.close','tasks.manage','renewals.manage']::app_private.brokerdesk_capability[],'local-demo-consent-suresh','broker-representation-v2','11111111-1111-4111-8111-111111111103',pg_catalog.now()-interval '7 days',pg_catalog.now()+interval '358 days');
 
 alter table public.portfolios disable trigger user;
 alter table public.public_portfolio_snapshots disable trigger user;

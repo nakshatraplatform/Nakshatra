@@ -11,6 +11,15 @@ export const createCustomerInvitationCommandSchema = z.object({
   idempotencyKey: idempotencyKeySchema,
 }).strict();
 
+export const brokerRepresentationConsentVersionSchema = z.enum([
+  "broker-representation-v2",
+  "broker-representation-v3",
+]);
+
+export type BrokerRepresentationConsentVersion = z.infer<
+  typeof brokerRepresentationConsentVersionSchema
+>;
+
 export const createdCustomerInvitationSchema = z.object({
   status: z.literal("created"),
   invitationRef: invitationRefSchema,

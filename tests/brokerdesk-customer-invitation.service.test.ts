@@ -6,6 +6,7 @@ import {
   manageCustomerBrokerConsent,
   resolveBrokerdeskCustomer,
   resolveBrokerdeskCustomers,
+  resolveCustomerInvitationConsentVersion,
   resolveCustomerBrokerRelationships,
 } from "@/features/broker-relationships/server/customer-invitation.service";
 
@@ -29,6 +30,10 @@ describe("BrokerDesk customer invitation service", () => {
       relationshipEndsAt: "2027-09-10T00:00:00Z",
     };
     await expect(claimCustomerInvitation(client(claim) as never, "d".repeat(64), "broker-representation-v2")).resolves.toEqual(claim);
+    await expect(resolveCustomerInvitationConsentVersion(
+      client("broker-representation-v3") as never,
+      "d".repeat(64)
+    )).resolves.toBe("broker-representation-v3");
     await expect(claimCustomerInvitation(client({ available: false }) as never, "d".repeat(64), "broker-representation-v2")).resolves.toEqual({ available: false });
     const customers = { available: true, workspaceRef, customers: [] };
     await expect(resolveBrokerdeskCustomers(client(customers) as never, workspaceRef)).resolves.toEqual(customers);
@@ -65,6 +70,10 @@ describe("BrokerDesk customer invitation service", () => {
       .rejects.toMatchObject({ status: 404 });
     await expect(claimCustomerInvitation(client({ available: true, organizationId: "private" }) as never, "d".repeat(64), "broker-representation-v2"))
       .rejects.toMatchObject({ status: 403 });
+    await expect(resolveCustomerInvitationConsentVersion(
+      client("broker-representation-v1") as never,
+      "d".repeat(64)
+    )).rejects.toMatchObject({ code: "BROKERDESK_CUSTOMER_INVITATION_UNAVAILABLE" });
     await expect(resolveBrokerdeskCustomers(client(null, { code: "x" }) as never, workspaceRef))
       .rejects.toMatchObject({ code: "BROKERDESK_CUSTOMERS_UNAVAILABLE" });
     await expect(resolveBrokerdeskCustomers(client(null) as never, "bad")).resolves.toEqual({ available: false });

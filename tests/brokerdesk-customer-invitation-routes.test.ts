@@ -7,6 +7,7 @@ const claimInvitation = vi.hoisted(() => vi.fn());
 const resolveCustomers = vi.hoisted(() => vi.fn());
 const resolveCustomer = vi.hoisted(() => vi.fn());
 const resolveBrokers = vi.hoisted(() => vi.fn());
+const resolveInvitationConsentVersion = vi.hoisted(() => vi.fn());
 const createClient = vi.hoisted(() => vi.fn());
 const sendCustomerInvitationEmail = vi.hoisted(() => vi.fn());
 
@@ -27,6 +28,7 @@ vi.mock("@/features/broker-relationships/server/customer-invitation.service", ()
     resolveBrokerdeskCustomers: resolveCustomers,
     resolveBrokerdeskCustomer: resolveCustomer,
     resolveCustomerBrokerRelationships: resolveBrokers,
+    resolveCustomerInvitationConsentVersion: resolveInvitationConsentVersion,
   };
 });
 vi.mock("@/lib/security/logging", () => ({ getRequestId: () => "request-id", logServerError: vi.fn() }));
@@ -81,6 +83,7 @@ describe("BrokerDesk customer invitation routes", () => {
       assignedTeam: [], actions: { canReviewPortfolio: true, canCreateIntroduction: true },
     });
     resolveBrokers.mockResolvedValue({ available: true, relationships: [] });
+    resolveInvitationConsentVersion.mockResolvedValue("broker-representation-v3");
   });
 
   it("creates a fragment-only invitation without accepting identity or tenant fields", async () => {
@@ -108,19 +111,42 @@ describe("BrokerDesk customer invitation routes", () => {
       method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ token }),
     }));
     expect(exchanged.status).toBe(200);
+    await expect(exchanged.clone().json()).resolves.toEqual({
+      ready: true,
+      consentVersion: "broker-representation-v3",
+    });
     expect(exchanged.headers.get("set-cookie")).toContain("nakshatra_customer_invitation=");
 
     const cookie = createCustomerInvitationExchangeCookie(token);
+    const resumed = await exchange(new Request(`${origin}/api/v1/customer/broker-invitations/exchange`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        "Content-Type": "application/json",
+        Cookie: `${cookie.name}=${cookie.value}`,
+      },
+      body: "{}",
+    }));
+    await expect(resumed.json()).resolves.toEqual({
+      ready: true,
+      consentVersion: "broker-representation-v3",
+    });
+    expect(resumed.headers.get("set-cookie")).toBeNull();
+    expect(resolveInvitationConsentVersion).toHaveBeenCalledWith(
+      actor.supabase,
+      expect.stringMatching(/^[a-f0-9]{64}$/)
+    );
+
     const accepted = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
       method: "POST",
       headers: { Origin: origin, "Content-Type": "application/json", Cookie: `${cookie.name}=${cookie.value}` },
-      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v2" }),
+      body: JSON.stringify({ consent: true, consentVersion: "broker-representation-v3" }),
     }));
     expect(accepted.status).toBe(200);
     expect(claimInvitation).toHaveBeenCalledWith(
       actor.supabase,
       expect.stringMatching(/^[a-f0-9]{64}$/),
-      "broker-representation-v2"
+      "broker-representation-v3"
     );
     expect(accepted.headers.get("set-cookie")).toContain("nakshatra_customer_invitation=;");
     const noConsent = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
@@ -149,7 +175,10 @@ describe("BrokerDesk customer invitation routes", () => {
     const malformed = await exchange(new Request(`${origin}/api/v1/customer/broker-invitations/exchange`, {
       method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ token: "short" }),
     }));
-    await expect(malformed.json()).resolves.toEqual({ ready: true });
+    await expect(malformed.json()).resolves.toEqual({
+      ready: true,
+      consentVersion: "broker-representation-v3",
+    });
     expect(malformed.headers.get("set-cookie")).toBeNull();
     const noCookie = await claim(new Request(`${origin}/api/v1/customer/broker-invitations/claim`, {
       method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({
