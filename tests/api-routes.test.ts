@@ -166,6 +166,17 @@ describe("dashboard and portfolio lifecycle routes", () => {
     expect(await unknown.json()).toMatchObject({ error: "Unable to save portfolio details" });
   });
 
+  it("returns field-specific authoring errors on draft and publish without publishing", async () => {
+    const fieldErrors = { "career.job_type": ["Choose an option from the list."] };
+    for (const handler of [dashboardPut, publishPost]) {
+      saveDashboardDraft.mockRejectedValueOnce(new DashboardSaveError("Review your answers.", "DASHBOARD_DATA_REJECTED", 400, fieldErrors));
+      const response = await handler(jsonRequest("http://local/api/dashboard", "PUT", { data }));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ fieldErrors });
+    }
+    expect(publishPortfolio).not.toHaveBeenCalled();
+  });
+
   it("publishes valid data and reports validation and domain errors", async () => {
     expect((await publishPost(mutationRequest("http://local/api/portfolio/publish", "POST", "{"))).status).toBe(400);
     const success = await publishPost(jsonRequest("http://local/api/portfolio/publish", "POST", { data }));

@@ -9,6 +9,19 @@ import { getLocationReferences, resolveLocationSuggestion, searchLocationSuggest
 afterEach(() => vi.unstubAllGlobals());
 
 describe("location reference client", () => {
+  it("offers prominent manual entry before lookup, with no external request", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LocationFields value={{}} onChange={vi.fn()} requireCompleteHierarchy />);
+    const manual = screen.getByRole("button", { name: "Enter location manually" });
+    const search = screen.getByRole("combobox", { name: "ZIP or PIN code" });
+    expect(manual.className).toContain("workspace-focus");
+    expect(manual.className).toContain("underline");
+    expect(manual.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(manual);
+    expect(screen.getByLabelText("City")).toBeRequired();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
   it("opens location privacy help separately so unsaved editor answers remain intact", () => {
     render(<LocationFields value={{}} onChange={() => {}} />);
     const help = screen.getByRole("link", { name: "Location search privacy (opens in a new tab)" });

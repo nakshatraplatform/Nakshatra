@@ -49,7 +49,7 @@ export async function PUT(request: Request) {
   } catch (error) {
     if (error instanceof DashboardSaveError) {
       return NextResponse.json(
-        { code: error.code, error: error.message },
+        { code: error.code, error: error.message, ...(error.fieldErrors && { fieldErrors: error.fieldErrors }) },
         { status: error.status }
       );
     }

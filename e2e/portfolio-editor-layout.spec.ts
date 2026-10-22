@@ -26,8 +26,13 @@ test("mobile chrome leaves room for answers and contact controls align", async (
     if (width < 640) {
       const title = await editor.getByRole("heading", { name: "Introduction details", exact: true }).boundingBox();
       const back = await editor.getByRole("button", { name: /^(Dashboard|Back to dashboard)$/ }).boundingBox();
-      expect(Math.abs(title!.y + title!.height / 2 - back!.y - back!.height / 2)).toBeLessThan(4);
-      expect(await editor.locator(".dashboard-editor-scroll").evaluate(el => el.clientHeight)).toBeGreaterThan(400);
+      const header = await editor.locator(".dashboard-editor-header").boundingBox();
+      // Labelled exit sits on its own row instead of overlapping the title.
+      expect(title!.y).toBeGreaterThanOrEqual(header!.y);
+      expect(back!.y).toBeGreaterThanOrEqual(title!.y + title!.height);
+      expect(back!.x + back!.width).toBeLessThanOrEqual(width);
+      expect(back!.height).toBeGreaterThanOrEqual(44);
+      expect(await editor.locator(".dashboard-editor-scroll").evaluate(el => el.clientHeight)).toBeGreaterThan(667 / 2);
       await editor.getByLabel("Go to introduction section").selectOption("privacy");
     } else if (width < 1024) {
       await editor.getByLabel("Go to introduction section").selectOption("privacy");

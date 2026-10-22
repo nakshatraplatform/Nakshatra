@@ -14,6 +14,7 @@ import {
 import { DashboardRepository } from "./dashboard.repository";
 import { publicationReadinessSchema } from "./publication-readiness.contract";
 import { portfolioEditorDraftSchema } from "../form-contract";
+import { authoringChoiceErrors } from "../authoring-choices";
 
 export type DashboardSaveErrorCode =
   | "DASHBOARD_DATABASE_UPDATE_REQUIRED"
@@ -26,7 +27,8 @@ export class DashboardSaveError extends Error {
   constructor(
     message: string,
     readonly code: DashboardSaveErrorCode = "DASHBOARD_SAVE_FAILED",
-    readonly status = 500
+    readonly status = 500,
+    readonly fieldErrors?: Record<string, string[]>
   ) {
     super(message);
   }
@@ -88,6 +90,14 @@ export async function saveDashboardDraft({
     );
   }
   const repository = new DashboardRepository(supabase);
+  if (Object.keys(authoringChoiceErrors(data)).length) {
+    // Only exceptional/legacy choices cost a read. Never trust a client baseline.
+    const stored = await repository.findPortfolioForUser(userId);
+    if (stored.error) throw new DashboardSaveError("We could not check your saved answers. Please try again.", "DASHBOARD_SAVE_FAILED", 503);
+    const fieldErrors = authoringChoiceErrors(data, stored.data?.draft_data);
+    if (Object.keys(fieldErrors).length) throw new DashboardSaveError(
+      "Review the highlighted answers before saving.", "DASHBOARD_DATA_REJECTED", 400, fieldErrors);
+  }
   const hasCandidate = Boolean(data.personal.name?.trim());
   const { data: result, error } = await repository.saveDashboardDraftTransaction({
     portfolio: mapPortfolioDraft(data, null),

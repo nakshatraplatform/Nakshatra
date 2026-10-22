@@ -26,8 +26,11 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       if (width < 1024) await expect(editor.locator(".dashboard-editor-mobile-step")).toContainText("Basics:");
       const name = editor.getByLabel("First name", { exact: true });
       await name.fill("");
-      if (width < 640) await editor.getByRole("button", { name: "Next section", exact: true }).click();
-      else await editor.getByRole("button", { name: /Continue: Personal story/ }).click();
+      const footer = editor.locator(".dashboard-editor-footer");
+      await expect(footer.getByRole("button", { name: "Back", exact: true })).toBeDisabled();
+      await editor.locator(".dashboard-editor-scroll").evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await expect(footer.getByRole("button", { name: /Continue: Personal story/ })).toBeInViewport();
+      await footer.getByRole("button", { name: /Continue: Personal story/ }).click();
       await expect(editor.getByRole("heading", { name: "The essentials", exact: true })).toBeVisible();
       await expect(name).toBeFocused();
       await expect(name).toHaveAttribute("aria-invalid", "true");
@@ -53,6 +56,16 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       }
       await expect(editor).toBeVisible();
       await expect(name).toHaveValue("Mary Jane");
+      await footer.getByRole("button", { name: /Continue: Personal story/ }).click();
+      await expect(editor.getByRole("heading", { name: "Personal story", exact: true })).toBeFocused();
+      await footer.getByRole("button", { name: "Back", exact: true }).click();
+      await expect(name).toHaveValue("Mary Jane");
+      await chooseSection("story", /Personal story & lifestyle/);
+      await editor.getByLabel("Languages", { exact: true }).fill("Tulu");
+      // Navigate without Add: the visible text must already belong to the draft.
+      await footer.getByRole("button", { name: /Continue: Education/ }).click();
+      await footer.getByRole("button", { name: "Back", exact: true }).click();
+      await expect(editor.getByRole("button", { name: "Remove Tulu", exact: true })).toBeVisible();
       for (const [section, label] of [
         ["foundation", /Basics/], ["story", /Personal story & lifestyle/],
         ["work", /Education & work/], ["family", /Family/],
@@ -62,10 +75,37 @@ for (const width of [320, 390, 768, 1024, 1440]) {
         await chooseSection(section, label);
         await expect(editor).toBeVisible();
         if (section === "work") {
+          await expect(editor.getByLabel("Education location")).toHaveAccessibleDescription("City, state or region, and country where you studied.");
           await editor.getByLabel("Highest qualification", { exact: true }).selectOption("Other");
           await editor.getByLabel("Describe your qualification").fill("Professional training");
           await expect(editor.getByLabel("Describe your qualification")).toHaveAttribute("maxlength", "100");
           await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
+        }
+        if (section === "astrology") {
+          await expect(editor.getByText("Leave unknown details blank.")).toBeVisible();
+          await expect(editor.getByText("No guessing required")).toHaveCount(0);
+        }
+        if (section === "privacy") {
+          await expect(footer.getByRole("button", { name: "Review saved changes", exact: true })).toBeInViewport();
+          await expect(footer.getByRole("button", { name: /^Continue:/ })).toHaveCount(0);
+          await expect(editor.getByRole("group", { name: "Public sharing" })).toContainText("may be guessed");
+          await expect(editor.getByRole("group", { name: "Introduction appearance" })).toContainText("not your workspace");
+          for (const name of ["Light", "Dark"]) {
+            const appearance = editor.getByRole("button", { name, exact: true });
+            expect(await appearance.evaluate(button => [...button.querySelectorAll("svg")].every(icon => icon.getBoundingClientRect().width >= 16))).toBe(true);
+            expect(await appearance.evaluate(button => button.scrollWidth <= button.clientWidth + 1)).toBe(true);
+          }
+          await page.screenshot({ path: testInfo.outputPath(`privacy-top-${width}-${theme}.png`), animations: "disabled", scale: "css" });
+          if (width < 640) {
+            const phone = editor.getByLabel("Phone number", { exact: true }).first();
+            await expect(phone).toBeVisible();
+            expect((await phone.boundingBox())!.width).toBeGreaterThanOrEqual(160);
+          }
+          const email = editor.getByLabel("Email", { exact: true }).first();
+          await email.scrollIntoViewIfNeeded();
+          const field = await email.boundingBox();
+          const footerBounds = await editor.locator(".dashboard-editor-footer").boundingBox();
+          expect(field && footerBounds && field.y + field.height <= footerBounds.y + 1).toBe(true);
         }
         if (section === "family") {
           await editor.getByLabel("Community or cultural background", { exact: true }).selectOption("Other / self-describe");
@@ -96,3 +136,25 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     });
   }
 }
+
+test("manual location entry is keyboard-visible and makes no lookup request", async ({ page, context }, testInfo) => {
+  await context.addCookies([publishedOwnerCookie]);
+  await page.setViewportSize({ width: 390, height: 740 });
+  let lookups = 0;
+  await page.route("**/api/reference/location-suggestions", route => { lookups += 1; return route.fulfill({ json: { options: [] } }); });
+  await page.goto("/dashboard?edit=1");
+  const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
+  await editor.getByLabel("Go to introduction section").selectOption("foundation");
+  await editor.getByRole("button", { name: "Change", exact: true }).click();
+  const manual = editor.getByRole("button", { name: "Enter location manually" });
+  await manual.focus();
+  await expect(manual).toBeFocused();
+  await expect(manual).toHaveCSS("text-decoration-line", "underline");
+  const bounds = await manual.boundingBox();
+  expect(bounds && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= 390).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("manual-location-action.png"), animations: "disabled" });
+  await manual.press("Enter");
+  await expect(editor.getByLabel("Current country", { exact: true })).toBeFocused();
+  await expect(editor.getByLabel("Current city", { exact: true })).toBeVisible();
+  expect(lookups).toBe(0);
+});

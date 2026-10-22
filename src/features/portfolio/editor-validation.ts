@@ -1,6 +1,7 @@
 import { portfolioEditorPublishSchema } from "@/features/portfolio/form-contract";
 import { calculatePortfolioCompletion, editorSectionForPath } from "@/features/portfolio/readiness";
 import type { PortfolioDraftData } from "@/types/portfolio";
+import { authoringChoiceErrors } from "./authoring-choices";
 
 export type EditorFieldIssue = { path: string; label: string; section: string; message: string };
 
@@ -19,6 +20,11 @@ const fieldLabels: Record<string, string> = {
   "personal.country": "Current country", "personal.region": "Current state", "personal.city": "Current city",
   "personal.postal_code": "ZIP or PIN code", "career.title": "Current profession title",
   "astrology.time_of_birth": "Time of birth", "privacy_mode": "Sharing settings",
+  "family.paternal_origin": "Paternal family origin", "family.maternal_origin": "Maternal family origin",
+  "family.ancestral_origin": "Paternal family origin", "family.sibling_count": "Number of siblings",
+  "preferences.age_range": "Preferred age range", "preferences.height_range": "Preferred height range",
+  "career.income_currency": "Income currency", "career.job_type": "Work status",
+  "personal.community": "Community or cultural background", "personal.religion": "Religion or outlook",
 };
 
 export function editorFieldLabel(path: string) {
@@ -36,21 +42,26 @@ export function portfolioFieldAnchor(path: string) {
 
 /** Both local and API errors must target a control that exists in the active UI mode. */
 export function editorFieldTarget(path: string) {
+  if (path === "family.ancestral_origin") return "family.paternal_origin";
   return /^personal\.(country|country_code|region|region_code|city|postal_code|location_source|city_geoname_id)$/.test(path)
     ? "personal.current_location" : path;
 }
 
 /** UI guidance uses the same publication schema/checklist as the server; never authorizes publication. */
-export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boolean): EditorFieldIssue[] {
+export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boolean, stored?: unknown): EditorFieldIssue[] {
   const issues = new Map<string, EditorFieldIssue>();
   const parsed = portfolioEditorPublishSchema.safeParse(data);
   if (!parsed.success) for (const issue of parsed.error.issues) {
     const path = issue.path.join(".");
     if (path === "personal.name") continue; // The editable name parts have their own errors.
-    const message = issue.code === "too_big" && "maximum" in issue ? `Use at most ${issue.maximum} ${issue.origin === "array" ? "items" : "characters"}.`
+    const message = path === "family.sibling_count" ? "Enter a whole number from 0 to 20, or leave it blank."
+      : issue.code === "too_big" && "maximum" in issue ? `Use at most ${issue.maximum} ${issue.origin === "array" ? "items" : "characters"}.`
       : issue.code === "invalid_format" && path.endsWith("email") ? "Enter an email address such as name@example.com, or leave it blank."
       : issue.message;
     issues.set(path, { path, label: editorFieldLabel(path), section: editorSectionForPath(path), message });
+  }
+  for (const [path, messages] of Object.entries(authoringChoiceErrors(data, stored))) {
+    issues.set(path, { path, label: editorFieldLabel(path), section: editorSectionForPath(path), message: messages[0] });
   }
   // Checklist order is the natural reading order, and also covers photo/geography rules beyond Zod.
   const required = calculatePortfolioCompletion(data, hasPrimaryPhoto).missing.map(requirement => {
@@ -65,13 +76,13 @@ export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boo
         : typeof value !== "string" || !value.trim() ? "This field is required."
         : existing?.message || "Check this answer before continuing." };
   });
-  // Location is one composite answer with search and manual modes. Route schema
-  // errors to its stable group instead of offering links to non-rendered controls.
+  // Composite and legacy fields resolve to their actual rendered controls.
   for (const [path, issue] of issues) {
-    if (editorFieldTarget(path) !== path) {
+    const target = editorFieldTarget(path);
+    if (target !== path) {
       issues.delete(path);
-      if (!required.some(item => item.path === "personal.current_location") && !issues.has("personal.current_location")) {
-        issues.set("personal.current_location", { ...issue, path: "personal.current_location", label: "Current location" });
+      if (!required.some(item => item.path === target) && !issues.has(target)) {
+        issues.set(target, { ...issue, path: target, label: editorFieldLabel(target), section: editorSectionForPath(target) });
       }
     }
   }
