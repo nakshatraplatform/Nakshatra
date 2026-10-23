@@ -94,7 +94,19 @@ Screenshot inspection: narrow light header/footer and 390px dark final section;
 no overlap or clipped actions, dashboard theme control reused. Real-phone Safari,
 assistive technology and production/provider verification remain manual gates.
 
-Status: implemented and verified locally, not committed/pushed/released. No
-database deployment needed. Reviewed runtime hashes verified unchanged after
-the final checks. Next: app PR/hosted CI and real-phone preview review before
-merge/deployment. No production data was changed.
+## PR preparation against latest main
+
+Integrated main `fa01bc9` (#130) without conflicts. That upstream database-only
+foundation changes no onboarding/menu runtime; its migrations are already in
+main, not additions in this PR's diff. Retain its own release process separately.
+Post-integration rerun: all 148 focused unit tests, typecheck, lint and diff checks
+pass. The full 1,758-test/coverage, build and browser results above predate this
+integration and are not substituted for hosted CI on the resulting PR head.
+
+Implementation is committed on `fix/nak-107-editor-actions-signout`. User authorized
+push and Draft app PR creation, not merge/deployment. CLI/connector GitHub write
+access is disconnected and browser control cannot initialize; prepare the full
+PR description/compare form rather than claim a PR was created. No database
+deployment is required by this app diff. Reviewed runtime hashes are unchanged.
+Next: submit Draft PR, require all hosted CI and real-phone review before release.
+No production data was changed.
