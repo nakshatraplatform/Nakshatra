@@ -18,6 +18,7 @@ export default function PrivacyPage() {
         <p>Depending on what you choose to complete, VivIntro may store identity and contact details, education and work information, family background, lifestyle and partner preferences, astrology details, photos, and an optional horoscope document.</p>
         <p>We use this information to save your private draft, create your public Introduction and owner-approved Complete Portfolio, operate your personal sharing controls, and maintain your account. The sharing descriptions below cover the portfolio you create and share through your own VivIntro link.</p>
         <p>After completing your portfolio details, you may optionally rate the onboarding experience, choose the step you found hardest, and leave a short comment. This feedback is kept separate from your portfolio, is never shown to viewers, and is available only to the VivIntro platform administrator to improve onboarding.</p>
+        <p>Our public feedback form lets creators, viewers and families describe their experience. We keep these submissions separately from introductions. You may choose to provide an email so we can ask about using part of your feedback as a testimonial. This choice does not publish your words. We request your separate approval before displaying a quote. Public feedback submissions are removed from the live database after 180 days by the retention job, subject to the job running successfully and backup retention described below.</p>
       </PolicySection>
 
       <PolicySection title="Creating and publishing your portfolio">
