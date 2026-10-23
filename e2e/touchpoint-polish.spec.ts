@@ -4,7 +4,7 @@ import { publishedOwnerCookie, themeTestCookie } from "./support/theme-session.m
 test("consumer tab titles use one brand suffix", async ({ page, context }) => {
   test.setTimeout(90_000);
   for (const [path, title] of [
-    ["/", "Vivara: your personal page for marriage | VivIntro"],
+    ["/", "Marriage biodata as a link | VivIntro"],
     ["/login", "Sign in | VivIntro"],
     ["/signup", "Create your introduction | VivIntro"],
     ["/demo", "Example introduction | VivIntro"],

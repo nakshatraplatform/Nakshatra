@@ -5,7 +5,7 @@ import { join } from "node:path";
 const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-primary-og.png"), "base64");
 const logoSrc = `data:image/png;base64,${logoData}`;
 
-export const alt = "VivIntro: Your Vivara, a personal page for marriage conversations.";
+export const alt = "VivIntro: Your Vivara link for sharing marriage biodata.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -51,12 +51,12 @@ export default function OpenGraphImage() {
               Your Vivara. Shared on your terms.
             </div>
             <div style={{ display: "flex", maxWidth: "870px", marginTop: "28px", color: "#52666d", fontFamily: "Arial, sans-serif", fontSize: 27, lineHeight: 1.45 }}>
-              A personal page for marriage conversations. Share one current link and approve access to private details.
+              Marriage biodata, shared through your Vivara link. You choose who sees private details.
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", color: "#246d75", fontFamily: "Arial, sans-serif", fontSize: 20, fontWeight: 700 }}>
-            <span>Create</span><span>→</span><span>Share</span><span>→</span><span>Approve</span>
+            <span>Create</span><span>→</span><span>Share</span><span>→</span><span>Share details</span>
           </div>
         </div>
       </div>

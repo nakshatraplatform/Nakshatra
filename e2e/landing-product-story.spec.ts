@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("the Ananya story pairs real demo captures with concise sharing controls", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#top")).toContainText("Share one Vivara link. Update it without resending.");
+  await expect(page.locator("#top")).toContainText("Vivara is the link you share.");
   await expect(page.getByRole("heading", { name: "See what a family receives." })).toHaveCount(0);
   await expect(page.locator("#product-story article")).toHaveCount(3);
   for (const id of ["samples", "why", "privacy", "viewer", "trust", "vivara"]) await expect(page.locator(`#${id}`)).toHaveCount(1);
@@ -23,7 +23,9 @@ test("desktop story follows the chapter while phone and reduced motion remain in
   await expect(story.locator("[data-story-shot]").nth(2)).toHaveCSS("opacity", "1");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(story).not.toHaveAttribute("data-story-motion", "true");
-  for (const image of await story.locator("article figure").all()) await expect(image).toBeVisible();
+  await expect(page.locator("#top figure")).toBeVisible();
+  await expect(story.locator("article figure").first()).toBeHidden();
+  for (const image of await story.locator("article figure").all().then(images => images.slice(1))) await expect(image).toBeVisible();
   await expect(story.locator("aside")).toBeHidden();
   await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
   await page.setViewportSize({ width: 932, height: 430 });

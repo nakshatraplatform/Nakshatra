@@ -6,10 +6,13 @@ test("phone captures preserve their complete viewport inside the hardware", asyn
     await page.goto("/");
     const hero = page.locator("#top figure img");
     await expect.poll(() => hero.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-    const images = viewport.width >= 1000
-      ? [hero, page.locator("#product-story aside img").first()]
-      : [hero, ...await page.locator("#product-story article figure img").all()];
-    for (const image of images) {
+    // The desktop story swaps a sticky phone's three captures and hides its
+    // duplicate chapter figures. Only rendered phones can be scrolled into view.
+    const story = page.locator("#product-story");
+    await story.locator("article").first().scrollIntoViewIfNeeded();
+    let checkedStoryPhones = 0;
+    for (const image of [hero, ...await story.locator("img").all()]) {
+      if (!(await image.isVisible())) continue;
       await image.scrollIntoViewIfNeeded();
       await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
       const dimensions = await image.evaluate(element => {
@@ -23,7 +26,10 @@ test("phone captures preserve their complete viewport inside the hardware", asyn
       expect(dimensions.fit).toBe("contain");
       expect(Math.abs(dimensions.screenWidth / dimensions.screenHeight - 0.5)).toBeLessThan(0.002);
       expect(Math.abs(dimensions.width / dimensions.height - dimensions.naturalWidth / dimensions.naturalHeight)).toBeLessThan(0.002);
+      if (image !== hero) checkedStoryPhones++;
     }
+    // The compact story shows two chapter phones; desktop uses one sticky phone.
+    expect(checkedStoryPhones).toBeGreaterThanOrEqual(viewport.width >= 1000 && viewport.height >= 600 ? 1 : 2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`phone-frame-${viewport.width}.png`), animations: "disabled" });
   }

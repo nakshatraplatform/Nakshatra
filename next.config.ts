@@ -93,7 +93,7 @@ const nextConfig: NextConfig = {
       { source: "/dashboard/:path*", headers: privateNoStoreHeaders },
       { source: "/preview/:path*", headers: privateNoStoreHeaders },
       { source: "/approved-preview/:path*", headers: privateNoStoreHeaders },
-      { source: "/p/:path*", headers: privateNoStoreHeaders },
+      { source: "/p/:path*", headers: [...privateNoStoreHeaders, { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }] },
       { source: "/verify/:path*", headers: privateNoStoreHeaders },
       { source: "/invite/:path*", headers: privateNoStoreHeaders },
       { source: "/verification/:path*", headers: privateNoStoreHeaders },

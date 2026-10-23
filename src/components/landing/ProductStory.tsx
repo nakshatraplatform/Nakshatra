@@ -49,34 +49,34 @@ export function ProductStory() {
     return () => media.revert();
   }, { scope: root });
 
-  return <section id="product-story" className={styles.story} ref={root} aria-label="Explore Ananya’s sample Vivara">
+  return <section id="product-story" className={styles.story} ref={root} aria-label="Explore Ananya’s sample introduction">
     <span id="samples" className={styles.anchor} />
     <article className={styles.chapter} data-story-chapter>
       <div className={styles.copy}>
         <h2>Meet Ananya.<br />There’s more to her story.</h2>
-        <p>Her work, family, everyday joys and hopes for the future, brought together in one Vivara. A prospective partner can get a first sense of the person before a conversation begins.</p>
-        <Link href="/demo" className={landing.primaryButton}>Explore Ananya’s Vivara <ArrowRight aria-hidden="true" /></Link>
+        <p>Her work, family, everyday joys and hopes for the future, brought together in one introduction. A prospective partner can get a first sense of the person before a conversation begins.</p>
+        <Link href="/demo" className={landing.primaryButton}>Explore Ananya’s introduction <ArrowRight aria-hidden="true" /></Link>
         <p className={styles.disclosure}>Ananya and every detail in the sample are fictional. AI-generated portrait. Private details are not shown.</p>
-        <details className={styles.recording}><summary>Watch the sample walkthrough</summary><video controls preload="none" poster={ananyaScreens[0].image.src} aria-label="Recorded walkthrough of Ananya’s fictional public Vivara"><source src="/demo/ananya-walkthrough.webm" type="video/webm" /><track kind="captions" src="/demo/ananya-walkthrough.vtt" srcLang="en" label="English" default />Your browser can’t play this recording. <Link href="/demo">Explore the sample Vivara instead.</Link></video><p>Silent recording: public view, personal story, then the private-access explanation. No request is submitted.</p></details>
+        <details className={styles.recording}><summary>Watch the sample walkthrough</summary><video controls preload="none" poster={ananyaScreens[0].image.src} aria-label="Recorded walkthrough of Ananya’s fictional public introduction"><source src="/demo/ananya-walkthrough.webm" type="video/webm" /><track kind="captions" src="/demo/ananya-walkthrough.vtt" srcLang="en" label="English" default />Your browser can’t play this recording. <Link href="/demo">Explore the sample introduction instead.</Link></video><p>Silent recording: public view, personal story, then the private-access explanation. No request is submitted.</p></details>
       </div>
-      <AnanyaPhone screen={0} />
+      <div className={styles.firstChapterPhone}><AnanyaPhone screen={0} /></div>
     </article>
     <article id="why" className={styles.chapter} data-story-chapter>
       <div className={styles.copy}>
         <h2>Your details travel further than you expect.</h2>
         <p>A PDF can reach families you have never spoken to. Older versions keep circulating after your work, photos or plans change.</p>
-        <p>Share your Vivara link once. Save changes privately, then publish them at that same link. The next person who opens it sees the version you published.</p>
-        <p className={styles.linkExample}>vivintro.com/p/… <span>One link, kept current by you</span></p>
+        <p>Share your Vivara link once. Save changes privately, then publish them at that same link. The next person who opens it sees your latest published introduction.</p>
+        <p className={styles.linkExample}>vivintro.com/p/… <span>One link you can update</span></p>
       </div>
       <AnanyaPhone screen={1} />
     </article>
     <article id="privacy" className={styles.chapter} data-story-chapter>
       <div className={styles.copy}>
         <h2>You decide who sees what.</h2>
-        <p>Anyone with your link can read the public view. To request private details, a viewer signs in and confirms their email. You review their request and decide.</p>
+        <p>Anyone with your link can read the public introduction. To ask for private details, a viewer signs in and confirms their email. You decide whether to share more.</p>
         <dl className={styles.boundaries}>
-          <div><dt>Your shared Vivara</dt><dd>Your published name, age, marital status and the story and photos you choose for the public view.</dd></div>
-          <div><dt>Private details</dt><dd>Shared only with your approval, for up to 15 days. Renew access or revoke it early.</dd></div>
+          <div><dt>Public introduction</dt><dd>Your published name, age, marital status and the story and photos you choose for the public view.</dd></div>
+          <div><dt>Private details</dt><dd>Shared only when you approve, for up to 15 days. Share again or stop sharing early.</dd></div>
           <div><dt>Private notes</dt><dd>Your notes and street address aren’t included in either shared view.</dd></div>
         </dl>
         <p className={styles.disclosure}>Anything someone can see, they can screenshot. Keep phone numbers and other private details out of your public story. Copies already saved can’t be recalled.</p>
@@ -87,7 +87,7 @@ export function ProductStory() {
       <AnanyaPhoneFrame>
         {ananyaScreens.map(capture => <div key={capture.name} className={styles.shot} data-story-shot><Image src={capture.image} alt="" width={1024} height={2048} sizes="340px" /></div>)}
       </AnanyaPhoneFrame>
-      <p>Ananya’s fictional Vivara · AI-generated portrait</p>
+      <p>Ananya’s fictional introduction · AI-generated portrait</p>
     </aside>
   </section>;
 }

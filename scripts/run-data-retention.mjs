@@ -12,4 +12,6 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 const { data, error } = await supabase.rpc("run_data_retention");
 if (error) throw new Error("The data-retention job failed.");
+const { error: feedbackError } = await supabase.rpc("purge_landing_feedback");
+if (feedbackError) throw new Error("The landing-feedback retention job failed.");
 console.log("Data-retention run complete.", data);

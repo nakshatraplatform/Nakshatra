@@ -21,15 +21,11 @@
 .chapter { display: block; font-size: 0.75rem; font-weight: 600; color: var(--workspace-muted); }
 .paper h3 { margin-top: 1.5rem !important; font-family: var(--font-portfolio-display), sans-serif; font-size: clamp(1.8rem, 2.5vw, 2.5rem); line-height: 1.1; font-weight: 500; letter-spacing: -0.03em; text-wrap: balance; }
 .paper > p { margin-top: 1rem !important; font-size: 0.95rem; line-height: 1.65; max-width: 55ch; }
-.paper ul { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 0.65rem; }
-.paper li { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; }
-.paper li svg { width: 0.9rem; height: 0.9rem; }
 .pageNumber { display: block; margin-top: 1.5rem; color: var(--workspace-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .cover, .spine, .pageEdge, .ledge { display: none; }
 .staticVisual > div { display: grid; }
 .tour:not([data-bookshelf="true"]) .book { border: 1px solid var(--workspace-border); border-radius: 14px; overflow: hidden; }
 .tour:not([data-bookshelf="true"]) .paper > p { font-size: 1rem; }
-.tour:not([data-bookshelf="true"]) .paper li { font-size: 0.9rem; line-height: 1.5; }
 .footer { display: grid; gap: 1rem; }
 .navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--workspace-border); }
 .navigation a { display: flex; min-height: 48px; gap: 0.7rem; align-items: center; padding: 0.6rem 0.4rem; color: var(--workspace-muted); }
@@ -110,7 +106,6 @@
   .tour[data-bookshelf="true"] .paper { padding: 1.5rem; }
   .paper h3 { font-size: 1.9rem; margin-top: 1rem !important; }
   .paper > p { font-size: 0.88rem; line-height: 1.5; }
-  .paper ul { margin-top: 1rem; }
 }
 
 /* Only the enhanced desktop scene needs clipping and independent page scroll. */
@@ -126,7 +121,6 @@
   .tour[data-bookshelf="true"] .paper { padding: 16px; }
   .tour[data-bookshelf="true"] .paper h3 { font-size: 1.4rem; margin-top: 10px !important; }
   .tour[data-bookshelf="true"] .paper > p { font-size: 0.85rem; margin-top: 10px !important; }
-  .tour[data-bookshelf="true"] .paper ul { margin-top: 12px; }
   .tour[data-bookshelf="true"] .pageNumber { position: static; text-align: right; margin-top: 12px; }
   .tour[data-bookshelf="true"] .footer { gap: 4px; }
   .tour[data-bookshelf="true"] .footerNotes { gap: 4px 12px; font-size: 0.65rem; }
