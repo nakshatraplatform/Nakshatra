@@ -22,14 +22,22 @@ test("mobile chrome leaves room for answers and contact controls align", async (
     await page.goto("/dashboard");
     await page.getByRole("button", { name: "Edit details", exact: true }).click();
     const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
+    const birth = editor.getByLabel("Date of birth", { exact: true });
+    await birth.scrollIntoViewIfNeeded();
+    expect(await birth.evaluate(input => {
+      const field = input.closest("label")!.getBoundingClientRect();
+      const box = input.getBoundingClientRect();
+      return box.left >= field.left && box.right <= field.right + 1 && box.right <= innerWidth;
+    })).toBe(true);
+    await editor.locator(".dashboard-editor-scroll").evaluate(el => { el.scrollTop = 0; });
     await page.screenshot({ path: testInfo.outputPath(`basics-${width}.png`), animations: "disabled" });
     if (width < 640) {
       const title = await editor.getByRole("heading", { name: "Introduction details", exact: true }).boundingBox();
       const back = await editor.getByRole("button", { name: /^(Dashboard|Back to dashboard)$/ }).boundingBox();
       const header = await editor.locator(".dashboard-editor-header").boundingBox();
-      // Labelled exit sits on its own row instead of overlapping the title.
+      // Actions sit beside the title/status block, not on a second full-width row.
       expect(title!.y).toBeGreaterThanOrEqual(header!.y);
-      expect(back!.y).toBeGreaterThanOrEqual(title!.y + title!.height);
+      expect(back!.x).toBeGreaterThanOrEqual(title!.x + title!.width);
       expect(back!.x + back!.width).toBeLessThanOrEqual(width);
       expect(back!.height).toBeGreaterThanOrEqual(44);
       expect(await editor.locator(".dashboard-editor-scroll").evaluate(el => el.clientHeight)).toBeGreaterThan(667 / 2);

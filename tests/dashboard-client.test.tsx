@@ -171,7 +171,7 @@ it("keeps directly opened server-rendered editor fields disabled until hydration
   const editor = container.querySelector<HTMLElement>('[role="dialog"]')!;
   expect(within(editor).getByRole("textbox", { name: "First name" })).toBeDisabled();
   expect(within(editor).getByRole("combobox", { name: "Go to introduction section" })).toBeDisabled();
-  expect(within(editor).getByRole("button", { name: "Save draft" })).toBeDisabled();
+  expect(within(editor).getByRole("button", { name: "Save & review" })).toBeDisabled();
 });
 
 it("locks sharing of a legacy incomplete published snapshot even when the draft and publication flags are ready", () => {
@@ -207,7 +207,7 @@ function goToFoundation() {
 }
 
 async function acceptPublicationDisclosure() {
-  await screen.findByRole("dialog", { name: /review and publish/i });
+  await screen.findByRole("dialog", { name: /review and publish|save & review/i });
   await waitFor(() => expect(screen.getByRole("checkbox", { name: /I consent to publish/i })).toBeInTheDocument());
   fireEvent.click(screen.getByRole("checkbox", { name: /I consent to publish/i }));
 }
@@ -221,7 +221,7 @@ it("publishes a saved complete revision with fresh consent without mandatory pre
   } }));
   renderDashboard({ portfolio: { ...portfolio, draft_data: readyData, is_published: false },
     media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
-  fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+  fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
   const review = await screen.findByRole("dialog");
   const consent = within(review).getByRole("checkbox", { name: /I consent to publish/i });
   expect(consent).not.toBeChecked();
@@ -349,13 +349,14 @@ describe("dashboard client", () => {
     goToFoundation();
     const name = screen.getByLabelText("First name");
     fireEvent.change(name, { target: { value: "Mary" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await act(async () => { await Promise.resolve(); });
     expect(mocks.save).toHaveBeenCalledOnce();
     fireEvent.change(name, { target: { value: "Mary Jane" } });
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
     expect(mocks.save).toHaveBeenCalledOnce();
-    for (const button of screen.getAllByRole("button", { name: /Saving/ })) expect(button).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save & review" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save & review" })).toHaveTextContent("Saving");
     await act(async () => resolveSave({ ok: true, data: { portfolioId: "portfolio-1", draftData: {
       ...readyData, personal: { ...readyData.personal, first_name: "Mary" },
     } } }));
@@ -402,12 +403,12 @@ describe("dashboard client", () => {
 
   it("does not write an unchanged saved draft", async () => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await act(async () => { await Promise.resolve(); });
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
-  it("keeps only section navigation primary in the footer and draft tools separate", () => {
+  it("groups editor header actions and keeps save/review between footer arrows", () => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData },
       publicationReadiness: { ...readyPublicationReadiness, lastEditorSection: "foundation" },
       media: [{ ...media, media_type: "hero" }] });
@@ -415,9 +416,13 @@ describe("dashboard client", () => {
     expect(within(footer).getByRole("button", { name: "Back" })).toBeDisabled();
     expect(within(footer).getByRole("button", { name: /Continue: Personal story/ })).toBeEnabled();
     expect(within(footer).queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
-    expect(within(screen.getByRole("group", { name: "Draft tools" })).getByRole("button", { name: "Save draft" })).toBeEnabled();
+    expect(within(footer).getByRole("button", { name: "Save & review" })).toBeEnabled();
+    expect(screen.queryByRole("group", { name: "Draft tools" })).not.toBeInTheDocument();
+    const header = document.querySelector<HTMLElement>(".dashboard-editor-header")!;
+    expect([...header.querySelectorAll("button")].map(button => button.getAttribute("aria-label"))).toEqual(["Preview", "Dark mode", "Back to dashboard"]);
+    expect(within(footer).getAllByRole("button").map(button => button.getAttribute("aria-label"))).toEqual(["Back", "Save & review", "Continue: Personal story & lifestyle"]);
     fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "privacy" } });
-    expect(within(footer).getByRole("button", { name: "Review saved changes" })).toBeEnabled();
+    expect(within(footer).getByRole("button", { name: "Save & review" })).toBeEnabled();
     expect(within(footer).queryByRole("button", { name: /^Continue:/ })).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
   });
@@ -444,7 +449,7 @@ describe("dashboard client", () => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio,
       draft_data: { ...readyData, contact: { contacts: [{ relationship: "self", phone: "123" }] } } },
       media: [{ ...media, media_type: "hero" }], publicationReadiness: readyPublicationReadiness });
-    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await waitFor(() => expect(screen.getByLabelText("Country calling code")).toHaveFocus());
     expect(screen.getByLabelText("Phone number")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Phone number")).toHaveAccessibleDescription(/Enter a valid phone number/);
@@ -473,7 +478,7 @@ describe("dashboard client", () => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData }, media: [{ ...media, media_type: "hero" }] });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Change" })).toHaveFocus());
     expect(screen.getByRole("button", { name: "Change" })).toHaveAccessibleDescription("Choose a valid city.");
     expect(within(screen.getByRole("alert", { name: "Check these answers" })).getAllByRole("button")).toHaveLength(1);
@@ -517,11 +522,11 @@ describe("dashboard client", () => {
     expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next section" }));
     expect(screen.getByRole("heading", { name: "The essentials" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     expect(mocks.publish).not.toHaveBeenCalled();
     expect(mocks.updateProgress.mock.calls.some(([value]) => value.action === "confirm_disclosure")).toBe(false);
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
   });
 
@@ -531,7 +536,7 @@ describe("dashboard client", () => {
     renderDashboard({ initialEditorOpen: true });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("Current profession title"), { target: { value: "Typed profession" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await waitFor(() => expect(screen.getByLabelText("Current profession title")).toHaveFocus());
     expect(screen.getByLabelText("Current profession title")).toHaveValue("Typed profession");
     expect(screen.getByLabelText("Current profession title")).toHaveAccessibleDescription(/Use a shorter profession title/);
@@ -587,11 +592,11 @@ describe("dashboard client", () => {
 
   it.each([
     [null, undefined, "Preview"],
-    [null, undefined, "Review and publish"],
+    [null, undefined, "Save & review"],
     ["a".repeat(64), undefined, "Preview"],
-    ["a".repeat(64), undefined, "Review and publish"],
+    ["a".repeat(64), undefined, "Save & review"],
     ["a".repeat(64), "b".repeat(64), "Preview"],
-    ["a".repeat(64), "b".repeat(64), "Review and publish"],
+    ["a".repeat(64), "b".repeat(64), "Save & review"],
   ] as const)("retains versioned review requirements after a save with older API responses (%s/%s/%s)", async (initialHash, savedHash, entry) => {
     const readiness = { ...readyPublicationReadiness, published: false, reviewFingerprint: initialHash, publicPreviewReviewed: false, completePreviewReviewed: false };
     mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1", readiness: { ...readyPublicationReadiness, published: false, reviewFingerprint: savedHash } } });
@@ -601,7 +606,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
     fireEvent.click(screen.getByRole("button", { name: entry }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(window.open).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
     expect(mocks.updateProgress.mock.calls.filter(([request]) => ["public_preview", "complete_preview", "confirm_disclosure"].includes(request.action))).toHaveLength(0);
@@ -615,12 +620,12 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Saving" } });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Latest" } });
     await act(async () => { finishSave({ ok: true, data: { portfolioId: "portfolio-1", readiness: { ...readiness, reviewFingerprint: "b".repeat(64) } } }); });
     expect(screen.getByLabelText("First name")).toHaveValue("Latest");
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(mocks.updateProgress.mock.calls.filter(([request]) => request.action !== "editor_section")).toHaveLength(0);
     expect(mocks.publish).not.toHaveBeenCalled();
   });
@@ -634,10 +639,10 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(mocks.refresh).toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
   });
@@ -682,7 +687,7 @@ describe("dashboard client", () => {
     expect(mocks.updateProgress).toHaveBeenCalledTimes(1);
     expect(mocks.updateProgress).toHaveBeenCalledWith({ action: "previewed" });
     expect(await screen.findByText(/could not confirm your latest saved introduction/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
@@ -695,11 +700,11 @@ describe("dashboard client", () => {
     renderDashboard({ portfolio: { ...portfolio, draft_data: readyData, is_published: false },
       media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
     fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
   });
   it("reloads changed saved answers rather than reopening an obsolete review or saving stale data", async () => {
     const readiness = { ...readyPublicationReadiness, published: false, reviewFingerprint: "a".repeat(64),
@@ -708,8 +713,8 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" as const }], publicationReadiness: readiness };
     mocks.updateProgress.mockResolvedValue({ ok: true, data: { readiness } });
     const { unmount } = renderDashboard(props);
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
-    await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
+    await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     mocks.updateProgress.mockResolvedValueOnce({ ok: false, error: { code: "PORTFOLIO_REVIEW_CHANGED", message: "Your saved introduction changed.", status: 409 } });
     fireEvent.click(screen.getByRole("link", { name: /^review public introduction$/i }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
@@ -720,8 +725,8 @@ describe("dashboard client", () => {
     const latest = { ...readiness, reviewFingerprint: "b".repeat(64) };
     mocks.updateProgress.mockImplementation(async ({ action }) => ({ ok: true, data: { readiness: { ...latest, publicPreviewReviewed: action === "public_preview" } } }));
     renderDashboard({ ...props, portfolio: { ...props.portfolio, draft_data: { ...readyData, personal: { ...readyData.personal, short_bio: "Latest saved introduction" } } }, publicationReadiness: latest });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
-    await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
+    await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     fireEvent.click(screen.getByRole("link", { name: /^review public introduction$/i }));
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenLastCalledWith({ action: "public_preview", value: "b".repeat(64) }));
   });
@@ -745,7 +750,7 @@ describe("dashboard client", () => {
       return { ok: true, data: { readiness: { ...readiness, reviewFingerprint: "b".repeat(64),
         publicPreviewReviewed: publicOpened, completePreviewReviewed: completeOpened } } };
     });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     // The refreshed server page remounts the workspace with authoritative answers/media.
@@ -753,7 +758,7 @@ describe("dashboard client", () => {
     renderDashboard({ portfolio: { ...portfolio, draft_data: readyData, is_published: false },
       media: [{ ...media, media_type: "hero", visibility: "interest_required" }],
       publicationReadiness: { ...readiness, reviewFingerprint: "b".repeat(64), publicPreviewReviewed: false, completePreviewReviewed: false } });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await acceptPublicationDisclosure();
     expect(mocks.save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("link", { name: /^review public introduction$/i }));
@@ -780,7 +785,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("link", { name: /^preview public introduction/i }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
     expect(mocks.updateProgress).not.toHaveBeenCalledWith({ action: "public_preview", value: "b".repeat(64) });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
@@ -803,7 +808,7 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({ action: "public_preview", value: "a".repeat(64) }));
     fireEvent.click(screen.getByRole("link", { name: /preview private details/i }));
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalledWith({ action: "complete_preview", value: "a".repeat(64) }));
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(await screen.findByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Save and publish" })).toBeDisabled();
   });
@@ -825,14 +830,14 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" as const }], publicationReadiness: readiness };
     mocks.updateProgress.mockResolvedValue({ ok: true, data: { readiness } });
     const { unmount } = renderDashboard(props);
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(await screen.findByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     fireEvent.click(screen.getByRole("button", { name: "Back to dashboard" }));
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(await screen.findByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     unmount();
     renderDashboard(props);
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     expect(await screen.findByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     expect(mocks.updateProgress).toHaveBeenCalledTimes(3);
     expect(mocks.updateProgress).toHaveBeenLastCalledWith({ action: "previewed" });
@@ -848,7 +853,7 @@ describe("dashboard client", () => {
       return { ok: true, data: { readiness: { ...readiness, publicPreviewReviewed: publicOpened, completePreviewReviewed: completeOpened } } };
     });
     renderDashboard({ portfolio: { ...portfolio, draft_data: readyData, is_published: false }, media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
     await screen.findByRole("dialog");
     fireEvent.click(screen.getByRole("link", { name: /^review public introduction$/i }));
     fireEvent.click(screen.getByRole("link", { name: /^review private details$/i }));
@@ -862,8 +867,8 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "My revised introduction." } });
     mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1", readiness: { ...readiness, reviewFingerprint: "b".repeat(64) } } });
     mocks.updateProgress.mockResolvedValue({ ok: true, data: { readiness: { ...readiness, reviewFingerprint: "b".repeat(64) } } });
-    fireEvent.click(screen.getByRole("button", { name: /review and publish/i }));
-    await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /review and publish|save & review/i }));
+    await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     expect(screen.getByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
     expect(screen.getByRole("button", { name: "Save and publish" })).toBeDisabled();
   });
@@ -1017,10 +1022,10 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /add photos/i }));
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /review and publish/i }));
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /review and publish|save & review/i }));
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(screen.getByRole("alert", { name: "Check these answers" })).toHaveTextContent("Country, state, city, and ZIP/PIN");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
     expect(mocks.publish).not.toHaveBeenCalled();
@@ -1116,14 +1121,14 @@ describe("dashboard client", () => {
     });
 
     expect(screen.queryByRole("button", { name: "Introduction details" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Review and publish" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit details" }).compareDocumentPosition(screen.getByRole("button", { name: "Review and publish" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Review and publish" }));
-    expect(await screen.findByRole("dialog", { name: /review and publish/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit details" }).compareDocumentPosition(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^(Review and publish|Save & review)$/ }));
+    expect(await screen.findByRole("dialog", { name: /review and publish|save & review/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Back to editing" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Back to dashboard" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Back to editing" }));
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: "Introduction details" })).toBeInTheDocument();
   });
 
@@ -1146,7 +1151,7 @@ describe("dashboard client", () => {
     mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1", candidateId: "candidate-1" } });
     renderDashboard({ portfolio: null, media: [], shareUrl: null });
     fireEvent.click(screen.getByRole("button", { name: /start with the basics/i }));
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(await screen.findByRole("heading", { name: "Liveness check" })).toBeInTheDocument();
@@ -1161,12 +1166,12 @@ describe("dashboard client", () => {
       publicationReadiness: unverified,
     });
     fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    fireEvent.click(screen.getByRole("button", { name: /review and publish/i }));
-    const review = await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /review and publish|save & review/i }));
+    const review = await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     expect(within(review).queryByRole("checkbox", { name: /I consent to publish/i })).not.toBeInTheDocument();
     expect(within(review).queryByRole("button", { name: "Save and publish" })).not.toBeInTheDocument();
     fireEvent.click(await within(review).findByRole("button", { name: "Go to liveness check" }));
-    expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Liveness check" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("heading", { name: "Liveness check" })).toHaveFocus());
     expect(mocks.publish).not.toHaveBeenCalled();
@@ -1346,7 +1351,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_expired"));
     first.unmount();
     mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1" } });
@@ -1356,8 +1361,8 @@ describe("dashboard client", () => {
       publicationReadiness: readyPublicationReadiness,
     });
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
-    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
-    expect(await screen.findByRole("dialog", { name: /review and publish/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    expect(await screen.findByRole("dialog", { name: /review and publish|save & review/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^review public introduction$/i })).toHaveAttribute("href", "/preview");
     expect(screen.getByRole("link", { name: /^review private details$/i })).toHaveAttribute("href", "/approved-preview");
     expect(document.querySelector("iframe")).not.toBeInTheDocument();
@@ -1386,8 +1391,8 @@ describe("dashboard client", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
-    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
-    expect(await screen.findByRole("dialog", { name: /review and publish/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    expect(await screen.findByRole("dialog", { name: /review and publish|save & review/i })).toBeInTheDocument();
     await acceptPublicationDisclosure();
     fireEvent.click(screen.getByRole("button", { name: /save and publish/i }));
 
@@ -1411,8 +1416,8 @@ describe("dashboard client", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
-    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
-    const review = await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    const review = await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     await acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /save and publish/i }));
 
@@ -1424,7 +1429,7 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledOnce());
 
     await act(async () => { finishPublish({ ok: true, data: {} }); });
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument());
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });
 
@@ -1438,8 +1443,8 @@ describe("dashboard client", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
-    fireEvent.click(screen.getByRole("button", { name: /review saved changes/i }));
-    const review = await screen.findByRole("dialog", { name: /review and publish/i });
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    const review = await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     await acceptPublicationDisclosure();
     fireEvent.click(within(review).getByRole("button", { name: /save and publish/i }));
     expect(within(review).getByRole("status")).toHaveTextContent("Publishing your changes");
@@ -1452,7 +1457,7 @@ describe("dashboard client", () => {
 
     fireEvent.click(within(review).getByRole("button", { name: /save and publish/i }));
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument());
   });
 
   it("distinguishes direct and broker introductions and only links authenticated portfolios", () => {
@@ -1619,13 +1624,13 @@ describe("dashboard client", () => {
 
   it("cancels publication review without changing the public portfolio", async () => {
     renderDashboard({ initialEditorOpen: true, portfolio: { ...portfolio, draft_data: readyData }, media: [{ ...media, media_type: "hero" }] });
-    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
-    expect(await screen.findByRole("dialog", { name: /review and publish/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
+    expect(await screen.findByRole("dialog", { name: /review and publish|save & review/i })).toBeInTheDocument();
     await waitFor(() => expect(document.body.style.overflow).toBe("hidden"));
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /review and publish|save & review/i })).not.toBeInTheDocument());
     expect(mocks.publish).not.toHaveBeenCalled();
   });
 
@@ -1678,7 +1683,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "privacy" } });
     fireEvent.change(screen.getByLabelText("Go to introduction section"), { target: { value: "work" } });
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Employer or organisation")).toHaveAccessibleDescription(/Shared only when you choose/);
+    expect(screen.getByLabelText("Employer or organisation")).toHaveAccessibleDescription(/Shared with your approval/);
   });
 
   it("requires explicit sharing-setup update for a historical draft before review", () => {
@@ -1710,7 +1715,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(screen.getByRole("heading", { name: "Introduction details" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: "Try saving again" }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
@@ -1729,8 +1734,8 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    await waitFor(() => expect(screen.getAllByRole("alert").some(alert => alert.textContent?.includes("Your answers are still on this screen."))).toBe(true));
 
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Discard them"));
@@ -1764,12 +1769,12 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: newerDraft.personal.short_bio } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText("Short description"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
+    await waitFor(() => expect(screen.getAllByRole("alert").some(alert => alert.textContent?.includes("Your answers are still on this screen."))).toBe(true));
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
@@ -1777,14 +1782,15 @@ describe("dashboard client", () => {
   });
 
   it("shows the same currency error as Continue after clearing and saving a historical income", async () => {
+    vi.useFakeTimers();
     const historical = { ...readyData, career: { title: "Engineer", annual_income: "50k-75k" } };
     const cleared = { ...historical, career: { ...historical.career, annual_income: "" } };
     mocks.save.mockResolvedValueOnce({ ok: true, data: { portfolioId: "portfolio-1", draftData: cleared } });
     renderDashboard({ portfolio: { ...portfolio, draft_data: historical }, initialEditorOpen: true,
       media: [{ ...media, media_type: "hero" }], publicationReadiness: { ...readyPublicationReadiness, lastEditorSection: "work" } });
     fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
+    await act(async () => { await vi.advanceTimersByTimeAsync(2100); });
+    expect(screen.getByText("Draft saved")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Annual income range"), { target: { value: "50k-75k" } });
     fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
     expect(screen.getByRole("combobox", { name: /^Income currency/ })).toHaveAttribute("aria-invalid", "true");
@@ -1810,7 +1816,7 @@ describe("dashboard client", () => {
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
     fireEvent.change(screen.getByLabelText("Photo visibility"), { target: { value: "interest_required" } });
     await waitFor(() => expect(mocks.update).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     expect(reviewStep()?.className).not.toContain("bg-[var(--workspace-surface-muted)]");
@@ -1830,7 +1836,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: /delete photo/i }));
     await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith("media-1"));
@@ -1839,7 +1845,7 @@ describe("dashboard client", () => {
     await waitFor(() => expect(screen.getByText("Changes not saved")).toBeInTheDocument());
 
     mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "DASHBOARD_SAVE_FAILED", message: "Save unavailable" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your answers are still on this screen.");
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     const reviewStep = within(screen.getByRole("list", { name: "Publication steps" }))
@@ -1874,6 +1880,7 @@ describe("dashboard client", () => {
   });
 
   it("keeps a saved editor open and defers its server refresh until returning to the dashboard", async () => {
+    vi.useFakeTimers();
     const readiness = { ...readyPublicationReadiness, reviewFingerprint: "a".repeat(64), disclosureConfirmed: false };
     mocks.save.mockResolvedValue({ ok: true, data: { portfolioId: "portfolio-1", readiness } });
     mocks.updateProgress.mockResolvedValue({ ok: true, data: { readiness } });
@@ -1881,22 +1888,23 @@ describe("dashboard client", () => {
       media: [{ ...media, media_type: "hero" }], publicationReadiness: readiness });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
+    await act(async () => { await vi.advanceTimersByTimeAsync(2100); });
+    expect(screen.getByText("Draft saved")).toBeInTheDocument();
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Introduction details" })).toBeInTheDocument();
     expect(screen.getByLabelText("First name")).toHaveValue("Changed");
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
     expect(mocks.save).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByText("Draft saved")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "Review saved changes" }));
+    expect(screen.getByText("Draft saved")).toBeInTheDocument();
+    vi.useRealTimers();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed again" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save & review" }));
     await waitFor(() => expect(mocks.updateProgress).toHaveBeenCalled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    const review = await screen.findByRole("dialog", { name: /review and publish/i });
+    const review = await screen.findByRole("dialog", { name: /review and publish|save & review/i });
     expect(mocks.refresh).not.toHaveBeenCalled();
     fireEvent.click(within(review).getByRole("button", { name: "Back to editing" }));
-    expect(screen.getByLabelText("First name")).toHaveValue("Changed");
+    expect(screen.getByLabelText("First name")).toHaveValue("Changed again");
     expect(mocks.refresh).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /back to dashboard/i }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
@@ -1935,7 +1943,7 @@ describe("dashboard client", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Changed" } });
-    fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save & review/i }));
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/login?error=session_revoked"));
   });
 

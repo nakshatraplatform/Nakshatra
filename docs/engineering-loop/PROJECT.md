@@ -127,10 +127,15 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
   mobile Dashboard exit. Field-integrity follow-up retains pending typed selections,
   aligns UI/API dropdown and range checks with owner-stored legacy compatibility,
   fixes field focus/error baselines, and adds no normal-choice database lookup.
-  Family/Astrology remain optional; no extra required answers or SQL. Current
-  verification and three-round fresh-review evidence are in that record;
-  delivered as Draft app PR #129; hosted CI and mobile preview approval remain
-  release gates. Not merged or production-deployed; no database deployment needed.
+  Family/Astrology remain optional; no extra required answers or SQL. Delivered
+  through #129, merged as `cc817c9`; historical verification is in that record.
+  [Editor actions and touch sign-out](features/editor-actions-signout.md) follows
+  merged #129: adjacent header Preview/theme/Dashboard, quiet saved status,
+  footer Back/Save & review/Continue, native-date sizing and touch-menu handling.
+  It supersedes the secondary draft-tools placement, not section navigation or
+  publication/validation rules; implementation and release evidence are separate.
+  This follow-up remains local, with hosted CI and real-phone preview approval
+  required before release. No database deployment is needed.
 
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab

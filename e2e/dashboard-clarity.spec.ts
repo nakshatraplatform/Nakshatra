@@ -76,7 +76,7 @@ test("editor hints and footer notes meet normal-text contrast in both themes", a
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", theme);
     const ratios = await editor.evaluate((dialog, hintId) => {
       const targets = [dialog.querySelector(`[id="${hintId}"]`),
-        dialog.querySelector(".dashboard-editor-header-layout > div:first-child > p"),
+        dialog.querySelector(".dashboard-editor-heading .dashboard-save-state"),
         ...dialog.querySelectorAll(".dashboard-editor-footer-notes > p")].filter(Boolean) as Element[];
       const rgb = (color: string) => color.match(/[\d.]+/g)!.map(Number);
       const luminance = (channels: number[]) => channels.slice(0, 3).map(value => {
@@ -124,7 +124,7 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
     const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
     const savedFirstName = await editor.getByLabel("First name", { exact: true }).inputValue();
     const footer = editor.locator(".dashboard-editor-footer");
-    for (const action of ["Back", /^Continue:/]) {
+    for (const action of ["Back", "Save & review", /^Continue:/]) {
       const button = footer.getByRole("button", { name: action, exact: true });
       await expect(button).toBeVisible();
       const box = await button.boundingBox();
@@ -135,21 +135,18 @@ test("editor and review fit narrow, desktop and zoom-equivalent viewports", asyn
       expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
       expect(box!.y + box!.height).toBeLessThanOrEqual(height + 1);
     }
-    // Secondary tools live at the section end, not in persistent navigation.
-    // Keep them reachable inside the editor and clear of both fixed bars.
-    const tools = editor.getByRole("group", { name: "Draft tools", exact: true });
-    for (const action of ["Preview", "Review and publish", "Save draft"]) {
-      const button = tools.getByRole("button", { name: action, exact: true });
-      await button.scrollIntoViewIfNeeded();
+    await expect(editor.getByRole("group", { name: "Draft tools" })).toHaveCount(0);
+    const header = editor.locator(".dashboard-editor-header");
+    for (const action of ["Preview", "Dark mode", "Back to dashboard"]) {
+      const button = action === "Dark mode" ? header.getByRole("switch", { name: action }) : header.getByRole("button", { name: action, exact: true });
       await expect(button).toBeVisible();
       const box = (await button.boundingBox())!;
-      const navigation = (await footer.boundingBox())!;
-      const header = (await editor.locator(".dashboard-editor-header").boundingBox())!;
+      const bounds = (await header.boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(width + 1);
       expect(box.height).toBeGreaterThanOrEqual(44);
-      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
-      expect(box.y + box.height).toBeLessThanOrEqual(navigation.y + 1);
+      expect(box.y).toBeGreaterThanOrEqual(bounds.y);
+      expect(box.y + box.height).toBeLessThanOrEqual(bounds.y + bounds.height + 1);
     }
     await editor.locator(".dashboard-editor-scroll").evaluate(element => { element.scrollTop = 0; });
     if (width >= 640) {
@@ -210,7 +207,7 @@ test("dashboard previews count toward review without accepting publication conse
   }
   await expect.poll(() => publicReviewed && completeReviewed).toBe(true);
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+  await page.getByRole("button", { name: "Save & review", exact: true }).click();
   const review = page.getByRole("dialog", { name: /review and publish/i });
   await expect(review.getByRole("checkbox", { name: /I consent to publish/i })).not.toBeChecked();
   await expect(review.getByRole("button", { name: "Review and publish", exact: true })).toHaveCount(0);

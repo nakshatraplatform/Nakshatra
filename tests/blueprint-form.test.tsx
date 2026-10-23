@@ -242,10 +242,10 @@ describe("blueprint form", () => {
     expect(dob.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(dob).toHaveAccessibleDescription(/You must be at least 18/);
     expect(screen.queryByText("Required to publish and shown in your public Introduction.")).not.toBeInTheDocument();
-    expect(screen.getByText(/Fields marked with a lock/)).toBeVisible();
+    expect(screen.getByText(/Private · Shared with your approval/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /Education & work/ }));
     const employer = screen.getByLabelText("Employer or organisation", { exact: true });
-    expect(employer).toHaveAccessibleDescription(/Shared only when you choose/);
+    expect(employer).toHaveAccessibleDescription(/Shared with your approval/);
     expect(screen.queryByText("Shared when you choose", { exact: true })).not.toBeInTheDocument();
   });
   beforeEach(() => {
@@ -534,7 +534,7 @@ describe("blueprint form", () => {
     expect(screen.getByLabelText("Maternal gotra")).not.toBeRequired();
     expect(screen.getByText("Leave unknown details blank.")).toBeInTheDocument();
     expect(screen.queryByText(/Shown in:/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shared only when you choose/);
+    expect(screen.getByLabelText("Place of birth")).toHaveAccessibleDescription(/Shared with your approval/);
   });
 
   it("labels protected contact visibility once at the section level", () => {

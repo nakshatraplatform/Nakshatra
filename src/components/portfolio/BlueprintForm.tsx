@@ -550,7 +550,7 @@ export function BlueprintForm({
           </FormSection>
         )}
 
-        <p className="mt-5 flex items-start gap-2 text-sm leading-5 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>Fields marked with a lock are shared only when you choose.</span></p>
+        <p className="mt-5 flex items-start gap-2 text-sm leading-5 text-[color:var(--workspace-ink-muted)]"><LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>Private · Shared with your approval</span></p>
 
         {showSectionNavigation && <div className="mt-6 hidden flex-wrap items-center justify-between gap-4 border-t border-[color:var(--workspace-border)] pt-6 sm:flex">
           <button type="button" disabled={activeIndex === 0} onClick={() => goTo(PORTFOLIO_EDITOR_SECTIONS[activeIndex - 1].id)} className="workspace-focus inline-flex min-h-12 items-center gap-2 rounded-lg border border-[color:var(--workspace-border)] bg-[var(--workspace-surface)] px-4 text-sm font-semibold text-[color:var(--workspace-ink)] hover:bg-[color:var(--workspace-surface-muted)] disabled:invisible"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Previous</button>
@@ -592,7 +592,7 @@ function FieldLabel({ label, required, audience }: { label: string; hint?: strin
 }
 
 function FieldHelp({ id, hint, audience }: { id: string; hint?: string; audience?: string }) {
-  return <>{hint && <span id={`${id}-hint`} className="text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}{approvalOnlyAudience(audience) && <span id={`${id}-privacy`} className="sr-only">Shared only when you choose, never in your public introduction.</span>}</>;
+  return <>{hint && <span id={`${id}-hint`} className="text-sm font-normal leading-5 text-[color:var(--workspace-ink-muted)]">{hint}</span>}{approvalOnlyAudience(audience) && <span id={`${id}-privacy`} className="sr-only">Private · Shared with your approval, never in your public introduction.</span>}</>;
 }
 
 function fieldDescriptionIds(id: string, hint: string | undefined, audience: string | undefined, errorId?: string) {
