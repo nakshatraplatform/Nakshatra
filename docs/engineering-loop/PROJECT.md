@@ -95,6 +95,13 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-201 Family Viewer identity foundation](features/nak-201-family-viewer-identity-foundation.md):
+  adds the candidate-owned, cross-broker roster authority beneath the approved
+  V3 contract. Brokers may propose but cannot activate viewers; the candidate
+  approves, and only the exact confirmed Google identity may activate. The
+  private schema, bounded RPCs, concurrency rules, indexes and pgTAP contract
+  are isolated from B2C and from later Introduction disclosure work.
+
 - [NAK-208 VivIntroDesk UI wireframes](features/nak-208-vivintrodesk-ui-wireframes.md):
   preserves the isolated Stage A and Stage B prototypes while reconciling them
   with the approved family-assisted broker contract and a single owned
