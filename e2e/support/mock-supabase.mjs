@@ -272,7 +272,7 @@ const server = createServer((request, response) => {
 
   if (request.method === "OPTIONS") {
     response.writeHead(204, {
-      "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+      "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info, x-supabase-api-version",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Origin": "*",
     });

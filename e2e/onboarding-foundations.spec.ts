@@ -46,14 +46,11 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       await expect.poll(() => savedFirstNames.at(-1)).toBe("Mary Jane");
       await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
       expect(savedFirstNames.filter(value => value === "Mary Jane")).toHaveLength(1);
-      if (width >= 640) {
-        const savesBeforeManual = saves;
-        await editor.getByRole("button", { name: "Save draft", exact: true }).click();
-        // Saving an already-saved revision must not repeat the database write.
-        await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
-        expect(saves).toBe(savesBeforeManual);
-        await expect(editor.getByText("Draft saved", { exact: true })).toBeVisible();
-      }
+      // Pure presentation changes must not trigger another saved-draft write.
+      const savesBeforeTheme = saves;
+      await editor.getByRole("switch", { name: "Dark mode" }).click();
+      await editor.getByRole("switch", { name: "Dark mode" }).click();
+      expect(saves).toBe(savesBeforeTheme);
       await expect(editor).toBeVisible();
       await expect(name).toHaveValue("Mary Jane");
       await footer.getByRole("button", { name: /Continue: Personal story/ }).click();
@@ -86,7 +83,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
           await expect(editor.getByText("No guessing required")).toHaveCount(0);
         }
         if (section === "privacy") {
-          await expect(footer.getByRole("button", { name: "Review saved changes", exact: true })).toBeInViewport();
+          await expect(footer.getByRole("button", { name: "Save & review", exact: true })).toBeInViewport();
           await expect(footer.getByRole("button", { name: /^Continue:/ })).toHaveCount(0);
           await expect(editor.getByRole("group", { name: "Public sharing" })).toContainText("may be guessed");
           await expect(editor.getByRole("group", { name: "Introduction appearance" })).toContainText("not your workspace");
