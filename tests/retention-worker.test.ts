@@ -4,17 +4,29 @@ import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-c
 
 describe("independent retention work", () => {
   it("runs every fixed class despite one failure and reports deferred backlog", async () => {
-    const rpc = vi.fn(async (_name: string, args: { p_class: string; p_limit: number }): Promise<{ data: unknown; error: unknown }> => {
+    const rpc = vi.fn(async (name: string, args?: { p_class: string; p_limit: number }): Promise<{ data: unknown; error: unknown }> => {
+      if (name === "purge_landing_feedback") return { data: 0, error: null };
+      if (!args) throw new Error("missing retention class");
       if (args.p_class === "viewerSessionsDeleted") throw new Error("private failure");
       return { data: { affected: 500, remaining: args.p_class === "rateLimitsDeleted" ? 1 : 0 }, error: null };
     });
     expect(await processRetention({ rpc } as never)).toBe(false);
-    expect(rpc).toHaveBeenCalledTimes(7);
+    expect(rpc).toHaveBeenCalledTimes(8);
     expect(rpc).toHaveBeenCalledWith("run_retention_class", { p_class: "accessAuditEventsDeleted", p_limit: 500 });
-    rpc.mockResolvedValue({ data: { affected: 0, remaining: 0 }, error: null });
+    expect(rpc).toHaveBeenCalledWith("purge_landing_feedback");
+    rpc.mockImplementation(async name => ({ data: name === "purge_landing_feedback" ? 0 : { affected: 0, remaining: 0 }, error: null }));
     expect(await processRetention({ rpc } as never)).toBe(true);
     rpc.mockResolvedValue({ data: { affected: 0 }, error: null });
     expect(await processRetention({ rpc } as never)).toBe(false);
+  });
+
+  it("marks scheduled retention incomplete when feedback purge fails without skipping other classes", async () => {
+    const rpc = vi.fn(async (name: string) => name === "purge_landing_feedback"
+      ? { data: null, error: { message: "private database detail" } }
+      : { data: { affected: 0, remaining: 0 }, error: null });
+    expect(await processRetention({ rpc } as never)).toBe(false);
+    expect(rpc).toHaveBeenCalledWith("purge_landing_feedback");
+    expect(rpc.mock.calls.filter(([name]) => name === "run_retention_class")).toHaveLength(7);
   });
 });
 

@@ -5,7 +5,7 @@ test("the revised landing copy uses the product-first section order in both them
   for (const theme of ["light", "dark"]) {
     if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your marriage biodata, shared through one link.");
-    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "questions"]);
+    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "testimonials", "questions"]);
     await expect(page.locator("#how article")).toHaveCount(4);
     await expect(page.locator("#questions details")).toHaveCount(6);
     await expect(page.locator("#top").getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");

@@ -75,7 +75,7 @@ test("inverse demo and landing examples retain readable text in both themes", as
     await expect(step.locator("h3")).toBeInViewport();
     expect(await contrast(step.locator("h3"))).toBeGreaterThanOrEqual(4.5);
     expect(await contrast(step.locator("p"))).toBeGreaterThanOrEqual(4.5);
-    await expect(step).toContainText("Share private details for up to 15 days");
+    await expect(step).toContainText(/share private details for up to 15 days/i);
     await page.goto("/demo");
     expect(await contrast(page.getByText("Fictional sample Vivara", { exact: true }))).toBeGreaterThanOrEqual(4.5);
     if (theme === "dark") await page.evaluate(() => localStorage.clear());

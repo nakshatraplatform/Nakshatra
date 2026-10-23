@@ -58,7 +58,12 @@ test("native anchors clear the sticky header at narrow and wide widths", async (
     if (width >= 1081) await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "How it works" }).click();
     else await page.goto("/#how");
     await expect(page.locator("#how h2")).toBeInViewport();
-    expect(await page.locator("#how h2").evaluate(el => el.getBoundingClientRect().top)).toBeGreaterThan(68);
+    // Smooth scrolling may expose the heading before reaching its final anchor.
+    await expect.poll(() => page.evaluate(() => {
+      const heading = document.querySelector("#how h2")!.getBoundingClientRect();
+      const header = document.querySelector("header")!.getBoundingClientRect();
+      return heading.top - header.bottom;
+    })).toBeGreaterThan(8);
   }
 });
 

@@ -9,7 +9,7 @@ The landing page invites creators, viewers, and family helpers to share their ex
 - The server accepts same-origin, bounded JSON only. The service-role key stays server-side. Direct table access and the RPC are unavailable to browser roles.
 - A honeypot filters simple bots. The database atomically caps submissions at three per hashed network hint per day, using the existing HMAC network-hint scheme. No raw IP is saved in feedback. The cap fails closed when the configured HMAC key, database, or service key is unavailable.
 - Submissions live in `app_private.landing_feedback_submissions`. They are not in portfolio rows, visitor views, account exports, public APIs, or analytics.
-- The existing retention job calls `purge_landing_feedback()` after the main cleanup routine. This removes submissions older than 180 days from the live database. Provider backup retention follows the Privacy Policy.
+- Scheduled production maintenance calls `purge_landing_feedback()` alongside its existing retention classes; a purge failure marks that maintenance run incomplete. The manual retention command also invokes it. This removes submissions older than 180 days from the live database. Provider backup retention follows the Privacy Policy.
 - Reviewers use approved database administration access to read submissions. A public quote requires a second, separately recorded approval; no automatic publication path is provided.
 
 ## Release order and checks
