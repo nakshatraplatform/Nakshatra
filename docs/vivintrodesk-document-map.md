@@ -19,6 +19,7 @@ rules from multiple generations of the design.
    [`NAK-78`](./engineering-loop/features/nak-78-authenticated-broker-introduction-access.md),
    [`NAK-79`](./engineering-loop/features/nak-79-mutual-interest-complete-access.md),
    [`NAK-200`](./engineering-loop/features/nak-200-v3-consent-rbac-foundation.md),
+   [`NAK-201`](./engineering-loop/features/nak-201-family-viewer-identity-foundation.md),
    or [`NAK-208`](./engineering-loop/features/nak-208-vivintrodesk-ui-wireframes.md).
 4. Current source, migrations, and tests. Documentation never overrides the
    implemented security boundary silently; reconcile any mismatch explicitly.
@@ -36,8 +37,9 @@ rules from multiple generations of the design.
   defines the service-only country-safe geographic expansion RPC and index strategy.
 - [`vivintrodesk-family-assisted-data-architecture.md`](./vivintrodesk-family-assisted-data-architecture.md)
   defines the planned family-assisted tables, constraints, indexes, RPCs,
-  endpoints, query shapes, migration order, and performance evidence. Only the
-  NAK-200 consent/RBAC slice is implemented by the current feature branch.
+  endpoints, query shapes, migration order, and performance evidence. NAK-200
+  is merged; NAK-201 implements only its candidate-owned identity and roster
+  foundation. Later Introduction access and UI slices remain deferred.
 - [`vivintrodesk-business-model-family-review.md`](./vivintrodesk-business-model-family-review.md)
   is a plain-language explanation for family, friends, and pilot brokers.
 - [`design/brokerdesk/nak-208-vivintrodesk-ui-contract.md`](../design/brokerdesk/nak-208-vivintrodesk-ui-contract.md)

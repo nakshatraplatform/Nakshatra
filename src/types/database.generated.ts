@@ -1025,6 +1025,9 @@ isOneToOne: false
 "accept_brokerdesk_team_invitation":
 { Args: { "p_token_hash": string }; Returns: Json
                            },
+"accept_family_viewer_invitation":
+{ Args: { "p_idempotency_key": string,"p_token_hash": string }; Returns: Json
+                           },
 "acknowledge_broker_portfolio_update":
 { Args: { "p_notice_ref": string,"p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
@@ -1204,6 +1207,9 @@ isOneToOne: false
 "create_brokerdesk_workspace":
 { Args: { "p_idempotency_key": string,"p_profile": Json }; Returns: Json
                            },
+"create_candidate_family_viewer":
+{ Args: { "p_display_name": string,"p_email_hash": string,"p_email_hint": string,"p_idempotency_key": string,"p_preferred_locale": string,"p_relationship_kind": string,"p_relationship_label": string,"p_token_hash": string }; Returns: Json
+                           },
 "create_identity_bound_broker_introduction":
 { Args: { "p_idempotency_key": string,"p_recipient_relationship_ref": string,"p_source_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
@@ -1215,6 +1221,9 @@ isOneToOne: false
                            },
 "current_user_can_create_portfolio":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"decide_family_viewer_proposal":
+{ Args: { "p_decision": string,"p_email_hash": string,"p_idempotency_key": string,"p_token_hash": string,"p_viewer_ref": string }; Returns: Json
                            },
 "decide_interest_request":
 { Args: { "p_decision": string,"p_interest_request_id": string }; Returns: string
@@ -1389,6 +1398,9 @@ isOneToOne: false
 "production_worker_health":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"propose_candidate_family_viewer":
+{ Args: { "p_display_name": string,"p_email_hash": string,"p_email_hint": string,"p_idempotency_key": string,"p_preferred_locale": string,"p_relationship_kind": string,"p_relationship_label": string,"p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
 "publish_owned_horoscope":
 { Args: { "p_portfolio_id": string,"p_published_at": string }; Returns: undefined
                            },
@@ -1507,6 +1519,9 @@ isOneToOne: false
 "resolve_brokerdesk_team":
 { Args: { "p_workspace_ref": string }; Returns: Json
                            },
+"resolve_candidate_family_roster":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "resolve_complete_portfolio_access":
 { Args: { "p_grant_id": string }; Returns: Json
                            },
@@ -1552,6 +1567,9 @@ isOneToOne: false
 "revoke_broker_introduction":
 { Args: { "p_expected_version": number,"p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
+"revoke_family_viewer":
+{ Args: { "p_expected_row_version": number,"p_idempotency_key": string,"p_viewer_ref": string }; Returns: Json
+                           },
 "rotate_portfolio_transaction":
 { Args: { "p_share_token": string }; Returns: Json
                            },
@@ -1581,6 +1599,9 @@ isOneToOne: false
                            },
 "set_portfolio_hero":
 { Args: { "p_media_id": string }; Returns: boolean
+                           },
+"set_primary_family_viewer":
+{ Args: { "p_expected_row_version": number,"p_idempotency_key": string,"p_viewer_ref": string }; Returns: Json
                            },
 "start_account_deletion_reauth":
 { Args: { "p_initiating_session_id": string }; Returns: Json

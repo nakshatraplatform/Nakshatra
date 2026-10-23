@@ -98,8 +98,11 @@ review profiles, while preserving the candidate's final authority.
   with at most three active Family Viewers excluding the candidate.
 - A broker may collect family details during in-office registration and may
   propose a viewer, but the proposal grants no access.
-- The candidate must approve the proposal. The family member must then sign in
-  with the exact invited Google email before access becomes active.
+- The candidate must approve the proposal and re-enter the family member's full
+  email. VivIntro hashes it and requires an exact match with the broker's
+  proposal before sending an invitation; the raw address is request-scoped and
+  is not stored in the roster or invitation. The family member must then sign
+  in with that exact invited Google email before access becomes active.
 - An active Family Viewer may view the same opposite Broker Standard Profile as
   the candidate while the Introduction is active.
 - Only the authenticated candidate can submit the authoritative Interested or
@@ -163,12 +166,15 @@ Merged on `main`:
 - fail-closed revocation, cross-agency isolation, audit foundations, and
   customer-dashboard visibility; and
 - 30-day reciprocal pinned Complete Portfolio access, including Protected
-  Contact, after both customers explicitly confirm Interested.
+  Contact, after both customers explicitly confirm Interested; and
+- transactionally queued Broker Introduction, response, mutual-interest,
+  revocation and expiry notifications through the provider-neutral outbox.
 
-In progress on NAK-80: transactionally queued Broker Introduction, response,
-mutual-interest, revocation and expiry notifications through the existing
-provider-neutral outbox. Email delivery remains informational and never grants
-access.
+In progress on NAK-201: the private candidate-owned Family Viewer roster,
+broker proposal/candidate approval lifecycle, exact Google-email activation,
+three-viewer limit, sole-primary rule, revocation and bounded owner projection.
+This slice grants no Introduction or portfolio access; those remain later
+authorization phases.
 
 ## Verification provider decision
 
@@ -186,14 +192,21 @@ its active credentials are revoked/scrubbed by NAK-78.
 
 ## Recommended next implementation sequence
 
-1. **Complete NAK-80 notifications and recovery.** Validate the migration in
-   hosted pgTAP, configure Resend privately, rehearse one real inbox, then
-   enable the existing authenticated worker schedule.
-2. **Reconcile Didit liveness-only verification.** Remove document-oriented
+1. **Complete NAK-201 identity foundation.** Replay the complete three-migration
+   chain and the complete pgTAP suite against the real Postgres runtime before
+   merge.
+2. **Build NAK-202 assisted onboarding.** Add the candidate and broker proposal
+   screens, candidate email re-entry and exact-hash approval, server-owned
+   invitation-token creation, email delivery status and manual WhatsApp handoff
+   without granting portfolio access or persisting the raw family email.
+3. **Build NAK-203 read-only family dashboard.** Resolve only the activated
+   viewer's bounded cross-broker Introduction list; keep candidate responses
+   authoritative.
+4. **Reconcile Didit liveness-only verification.** Remove document-oriented
    provider inputs and copy, validate the exact provider decision contract, and
    complete biometric retention/deletion and consent evidence before activation.
-3. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+5. **Pilot operations.** Add only the minimum operator activation, expiry worker,
    monitoring, and two-broker staging evidence needed for a bounded pilot.
-4. **Broker UX refinement.** Validate dashboard, customer selection, response
+6. **Broker UX refinement.** Validate dashboard, customer selection, response
    follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
    analytics, recommendations, questionnaires, or payments.
