@@ -1407,6 +1407,9 @@ isOneToOne: false
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
                            },
+"purge_landing_feedback":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "reconsent_customer_broker_relationship":
 { Args: { "p_consent_version": string,"p_idempotency_key": string,"p_relationship_ref": string }; Returns: Json
                            },
@@ -1622,6 +1625,9 @@ isOneToOne: false
                            },
 "submit_interest_details":
 { Args: { "p_details": Json }; Returns: boolean
+                           },
+"submit_landing_feedback":
+{ Args: { "p_audience": string,"p_contact_email": string,"p_contact_permission": boolean,"p_credit_name": string,"p_experience": string,"p_improvement": string,"p_subject_hash": string }; Returns: Json
                            },
 "submit_pilot_access_request":
 { Args: { "p_contact_consent_version": string,"p_display_name": string,"p_idempotency_key": string,"p_phone_e164": string }; Returns: Json
