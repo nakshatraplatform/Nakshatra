@@ -3,11 +3,13 @@ import { ChevronDown } from "lucide-react";
 import { PolicyLayout } from "@/components/legal/PolicyLayout";
 import type { ReactNode } from "react";
 import styles from "./TrustPage.module.css";
+import { MarketingBreadcrumb } from "@/components/marketing/StructuredData";
 
 export const metadata: Metadata = { title: "Trust", description: "What VivIntro’s liveness check and personal sharing controls establish—and their limits.", alternates: { canonical: "/trust" } };
 
 export default function TrustPage() {
   return <PolicyLayout eyebrow="Trust and safety" title="What VivIntro can and cannot protect." summary="VivIntro limits access to private details. It cannot stop someone from saving information they can already see.">
+    <MarketingBreadcrumb name="Trust" path="/trust" />
     <div className={styles.list}><TrustDisclosure title="Liveness checks" defaultOpen>
       <p>Standard creator publication requires Didit liveness checks. These checks do not establish identity or photo ownership. A limited pilot test exemption can allow publication without that check; exempt introductions do not receive the Liveness checked badge.</p>
       <p>This is not a legal-ID check, a check of profile statements, or an endorsement of a match. VivIntro records consent and result, not the live camera capture.</p>

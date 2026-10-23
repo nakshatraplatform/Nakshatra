@@ -109,7 +109,7 @@ function trustedNetworkHint(request: Request) {
 }
 
 /** HMACs bounded network hints before persistence so raw or correlatable IP values are never stored. */
-async function anonymousSubjectHash(request: Request) {
+export async function anonymousSubjectHash(request: Request) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",

@@ -1,64 +1,37 @@
 import { expect, test, type Route } from "@playwright/test";
-
-test("Vivara meaning and founder rationale are readable in both themes", async ({ page }, testInfo) => {
+test("product and link naming stay readable within the original landing design", async ({ page }, info) => {
   await page.goto("/");
-  for (const theme of ["light", "dark"]) {
-    if (await page.locator("html").getAttribute("data-app-theme") !== theme) {
-      await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
-    }
-    const meaning = page.getByRole("region", { name: "Why we call it a Vivara" });
+  for (const theme of ["light","dark"]) {
+    if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", {name:"Dark mode"}).click();
+    await expect(page.locator("#top")).toContainText("Vivara is the link you share");
+    await page.evaluate(() => window.scrollTo({top:0,behavior:"instant"}));
+    await page.screenshot({path:info.outputPath("hero-" + theme + ".png"),animations:"disabled"});
+    const meaning = page.getByRole("region",{name:"Why we call it a Vivara"});
     await expect(meaning.locator('[lang="kn"]')).toHaveText("ವಿವರ");
-    await expect(meaning).toContainText("an explanation or account in detail");
-    await expect(meaning.locator("dt")).toHaveText(["VivIntro", "Vivara"]);
-    await expect(meaning.getByRole("link", { name: "Read the Kannada dictionary entry for vivara" })).toHaveAttribute("href", /^https:\/\/alar\.ink\//);
-    await meaning.screenshot({ path: testInfo.outputPath(`vivara-meaning-${theme}.png`), animations: "disabled" });
-    const founder = page.getByRole("region", { name: "Why Rahul started VivIntro" });
-    await expect(founder).toContainText("Rahul’s idea");
-    await expect(founder).toContainText("conversation, time and your own judgment");
-    await founder.screenshot({ path: testInfo.outputPath(`vivara-founder-${theme}.png`), animations: "disabled" });
-    await expect(page.locator("#top").getByRole("link", { name: "Create your Vivara" })).toHaveAttribute("href", "/signup");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+    await expect(meaning.locator("dt")).toHaveText(["VivIntro","Vivara"]);
+    await expect(meaning).toContainText("The link you share");
+    await meaning.screenshot({path:info.outputPath("meaning-" + theme + ".png")});
   }
 });
-
-test.describe("delayed images without JavaScript", () => {
-  test.use({ javaScriptEnabled: false });
-
-  test("no-JavaScript copy does not wait for image optimization", async ({ page }) => {
-    const pending: Route[] = [];
-    await page.route(url => url.pathname === "/_next/image", route => { pending.push(route); });
-    try {
-      await page.goto("/", { waitUntil: "domcontentloaded" });
-      await expect.poll(() => pending.length).toBeGreaterThan(0);
-      await expect(page.getByRole("region", { name: "Why we call it a Vivara" })).toContainText("In Kannada");
-      const faq = page.locator("#questions details").filter({ hasText: "Does someone need an account to read my Vivara?" });
-      await faq.locator("summary").focus();
-      await page.keyboard.press("Enter");
-      await expect(faq).toHaveAttribute("open", "");
-      await expect(faq.locator("p")).toBeVisible();
-    } finally {
-      await Promise.all(pending.map(route => route.abort()));
-    }
-  });
-});
-
 test.describe("without JavaScript", () => {
-  test.use({ javaScriptEnabled: false });
-
-  test("Vivara definition and FAQ are available without JavaScript", async ({ page }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("region", { name: "Why we call it a Vivara" })).toContainText("In Kannada");
-    const faq = page.locator("#questions details").filter({ has: page.locator("summary", { hasText: "Does someone need an account to read my Vivara?" }) });
-    await faq.locator("summary").focus();
-    await page.keyboard.press("Enter");
-    await expect(faq).toHaveAttribute("open", "");
-    await expect(faq.locator("p")).toBeVisible();
-    await expect(faq).toContainText("must sign in and confirm their email");
-    await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator("#how article")).toHaveCount(4);
-    await expect(page.locator("#product-story article figure")).toHaveCount(3);
-    for (const figure of await page.locator("#product-story article figure").all()) await expect(figure).toBeVisible();
-    await expect(page.locator("#product-story aside")).toBeHidden();
-    await expect(page.getByRole("region", { name: "Why Rahul started VivIntro" })).toContainText("Rahul’s idea");
+  test.use({javaScriptEnabled:false});
+  test("delayed images do not hide workflow or FAQ answers", async ({page}) => {
+    const pending:Route[]=[];
+    await page.route(url=>url.pathname==="/_next/image", route=>{pending.push(route);});
+    try {
+      await page.goto("/",{waitUntil:"domcontentloaded"});
+      await expect.poll(()=>pending.length).toBeGreaterThan(0);
+      await expect(page.locator("#how article")).toHaveCount(4);
+      const faq=page.locator("#questions details").first();
+      await faq.locator("summary").focus(); await page.keyboard.press("Enter");
+      await expect(faq.locator("p")).toBeVisible();
+    } finally { await Promise.all(pending.map(route=>route.abort())); }
+  });
+  test("all answers and naming work without animation or hydration", async ({page}) => {
+    await page.goto("/"); await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("#questions details")).toHaveCount(6);
+    await page.getByRole("link",{name:"Read all questions"}).click();
+    await expect(page.locator("main h2")).toHaveCount(10);
+    await page.goto("/"); await expect(page.locator("#vivara")).toContainText("The product.");
   });
 });

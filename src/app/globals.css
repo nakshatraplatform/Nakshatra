@@ -1347,7 +1347,7 @@ body {
   font-weight: 700;
 }
 
-.skip-link:focus {
+.skip-link:focus-visible {
   transform: translateY(0);
   outline: 3px solid var(--workspace-gold);
   outline-offset: 3px;

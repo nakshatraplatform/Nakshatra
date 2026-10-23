@@ -3,7 +3,7 @@ import { render, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   create: vi.fn(), destroy: vi.fn(), stop: vi.fn(), start: vi.fn(), resize: vi.fn(), scrollTo: vi.fn(),
-  pathname: "/",
+  pathname: "/demo",
 }));
 vi.mock("next/navigation", () => ({ usePathname: () => mocks.pathname }));
 vi.mock("lenis", () => ({ default: class {
@@ -12,7 +12,13 @@ vi.mock("lenis", () => ({ default: class {
   resize = mocks.resize; scrollTo = mocks.scrollTo;
 } }));
 import { ApplicationSmoothScroll } from "@/components/motion/ApplicationSmoothScroll";
-afterEach(() => { document.body.style.overflow = ""; mocks.pathname = "/"; });
+afterEach(() => { document.body.style.overflow = ""; mocks.pathname = "/demo"; });
+
+it.each(["/", "/landing/control", "/landing/story", "/landing/family"])("keeps %s scroll motion available", pathname => {
+  mocks.pathname = pathname;
+  render(<ApplicationSmoothScroll />);
+  expect(mocks.create).toHaveBeenCalledTimes(1);
+});
 
 it("enables one accessible root controller with native touch and nested scrolling", () => {
   render(<ApplicationSmoothScroll />);

@@ -31,7 +31,11 @@
   .story[data-story-motion="true"] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr); column-gap: clamp(3rem, 7vw, 7rem); align-items: start; }
   .story[data-story-motion="true"] .chapter { display: flex; align-items: center; grid-column: 1; padding-block: 5rem; }
   .story[data-story-motion="true"] .chapter > figure { display: none; }
+  .story[data-story-motion="true"] .firstChapterPhone { display: none; }
   .story[data-story-motion="true"] .stickyPhone { display: block; position: sticky; top: 100px; grid-column: 2; grid-row: 1 / 4; width: min(100%, 340px, calc((100svh - 170px) / 2)); margin: 2rem auto; }
+}
+@media (max-width: 999px) {
+  .firstChapterPhone { display: none; }
 }
 @media (max-width: 699px) {
   .story { width: calc(100% - 2rem); padding-block: 1rem; }

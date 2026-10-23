@@ -1,5 +1,16 @@
 # VivIntro / Nakshatra project map
 
+- [Landing P0/P1 clarity](features/landing-p0-p1.md): October23 local content/SEO
+  continuation keeps the approved book, phone and name-reveal animations. The
+  familiar category is stated once in the hero; VivIntro is the product and
+  Vivara its shared link. Six homepage/ten full FAQs, search metadata,
+  breadcrumbs and two optional fixed public CTA counters remain. A follow-up
+  marriage-biodata-format guide provides a practical privacy-aware first format,
+  linked unobtrusively from the questions section. The temporary
+  static tour, comparison, family-share action and native-scroll substitution
+  were withdrawn after the owner's preview. No portfolio/auth/database change;
+  production, physical-device and measurement gates remain separate.
+
 - [Password recovery routing](features/password-recovery-routing.md): recovery
   exchanges reach password entry before their safe continuation; returned logout
   errors reach the existing retry UI. Includes browser regression coverage of the
@@ -23,8 +34,14 @@
   review (three-round budget exhausted), deployed preview/CI and manual
   accessibility gates remain; not released. See the feature record for evidence.
 
-- [Vivara landing content](features/vivara-landing-content.md): founder-selected
-  name for the shared personal page, Kannada naming explanation and Rahul's
+- [VivIntro/Vivara naming and landing clarity](features/landing-terminology.md):
+  October 22 owner clarification supersedes historical page naming: VivIntro is
+  the product; Vivara is the shared link to the introduction. Local content/SEO
+  increment defines that relationship and restores marriage-biodata category
+  words, without changing privacy rules. Its temporary family-share action was
+  withdrawn in the subsequent content-only P0/P1 correction.
+- [Vivara landing content](features/vivara-landing-content.md): historical
+  shared-page naming, Kannada naming explanation and Rahul's
   rationale within the existing landing design. October 20 product-demo follow-up
   uses a disclosed fictional AI portrait in the real demo renderer, actual public
   screen captures, a desktop phone/explanation scroll story and a scoped OFL

@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Vivara: your personal page for marriage | VivIntro");
-  await expect(page.getByRole("heading", { name: /share your story before you share your number/i })).toBeVisible();
-  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your vivara/i }).first();
+  await expect(page).toHaveTitle("Marriage biodata as a link | VivIntro");
+  await expect(page.getByRole("heading", { name: /Your marriage biodata, shared through one link/i })).toBeVisible();
+  const primaryCta = page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");
   await page.goto("/waitlist");
   await expect(page).toHaveURL(/\/signup$/);
@@ -55,20 +55,20 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const main = page.getByRole("main");
-  await expect(main.getByRole("link", { name: /create your vivara/i }).first()).toBeVisible();
-  await expect(page.locator("#top").getByRole("link", { name: /see a sample vivara/i })).toBeVisible();
+  await expect(main.getByRole("link", { name: /create your introduction/i }).first()).toBeVisible();
+  await expect(page.locator("#top").getByRole("link", { name: /see a sample introduction/i })).toBeVisible();
 });
 
 test("landing concepts keep the same clear path to signup", async ({ page }) => {
   const concepts = [
-    ["/landing/control", /your vivara\. private details shared by your decision/i],
-    ["/landing/story", /let someone get to know the person behind the details/i],
+    ["/landing/control", /share your biodata\. choose when to share more/i],
+    ["/landing/story", /introduce yourself the way you want to be known/i],
   ] as const;
 
   for (const [path, heading] of concepts) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("link", { name: /create your vivara/i }).first()).toHaveAttribute(
+    await expect(page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first()).toHaveAttribute(
       "href",
       "/signup"
     );
