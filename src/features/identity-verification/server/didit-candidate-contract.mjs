@@ -1,3 +1,4 @@
+import { observeOperation } from "../../../lib/observability/operations.mjs";
 import { z } from "zod/v4";
 
 // Runtime-neutral candidate boundary: Next's server adapter and the Node worker
@@ -57,10 +58,10 @@ export async function candidateDiditRequest(url, { apiKey, fetchImpl = fetch, ti
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let reader;
   try {
-    const response = await fetchImpl(url, { ...init,
+    const response = await observeOperation("provider.didit.request", () => fetchImpl(url, { ...init,
       headers: { ...init.headers, Accept: "application/json", "x-api-key": apiKey },
       cache: "no-store", redirect: "error", signal: controller.signal,
-    });
+    }));
     reader = response.body?.getReader();
     if (allowMissing && response.status === 404) return DIDIT_SESSION_ABSENT;
     if (response.ok && expectedStatus != null && response.status !== expectedStatus) throw new DiditCandidateError("DIDIT_PROVIDER_REJECTED", response.status);

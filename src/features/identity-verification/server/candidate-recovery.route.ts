@@ -1,25 +1,27 @@
 import "server-only";
+import { flush } from "@sentry/core";
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
 import { after, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
-import { AUTH_BODY_LIMIT, readJsonBody, requireSameOrigin, requestSecurityErrorResponse } from "@/lib/api/request-security";
+import { RequestSecurityError, AUTH_BODY_LIMIT, readJsonBody, requireSameOrigin, requestSecurityErrorResponse } from "@/lib/api/request-security";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
 import { IdentityVerificationSessionError } from "./session.service";
 import { cancelCandidateVerification, getCurrentCandidateVerification, resumeCandidateVerification } from "./candidate-recovery.service";
 import { verificationResponse } from "./verification-diagnostics";
 import { checkCandidateResult, dispatchOwnerLivenessConfirmation } from "./candidate-result.service";
-import { getRequestId, logServerError } from "@/lib/security/logging";
+import { logServerError } from "@/lib/security/logging";
 
 const actionSchema = z.object({ candidateId: z.uuid(), attemptId: z.uuid() }).strict();
 const noStore = { "Cache-Control": "private, no-store" };
 
 /** Shared HTTP boundary only; lifecycle decisions belong to the guarded database RPCs. */
 export async function candidateRecoveryRoute(request: Request, action: "current" | "resume" | "cancel" | "check-result") {
-  return verificationResponse(action, () => handleCandidateRecovery(request, action));
+  return verificationResponse(action, reference => handleCandidateRecovery(request, action, reference));
 }
 
-async function handleCandidateRecovery(request: Request, action: "current" | "resume" | "cancel" | "check-result") {
+async function handleCandidateRecovery(request: Request, action: "current" | "resume" | "cancel" | "check-result", reference: string) {
   try {
     if (action !== "current") requireSameOrigin(request);
     const input = action === "current"
@@ -39,7 +41,7 @@ async function handleCandidateRecovery(request: Request, action: "current" | "re
       && "emailStatus" in data && data.emailStatus === "queued"
       && typeof data.attemptId === "string" && data.attemptId === (input as z.infer<typeof actionSchema>).attemptId) {
       const attemptId = data.attemptId;
-      const requestId = getRequestId(request);
+      const requestId = reference;
       const report = () => logServerError("identity_verification.email_dispatch_failed", requestId, new Error("LIVENESS_EMAIL_DISPATCH_FAILED"));
       try {
         after(async () => {
@@ -47,6 +49,7 @@ async function handleCandidateRecovery(request: Request, action: "current" | "re
             const result = await dispatchOwnerLivenessConfirmation(input.candidateId, attemptId, auth.user);
             if (result.failed > 0) report();
           } catch { report(); }
+          finally { await flush(2000).catch(() => false); }
         });
       } catch { report(); } // A scheduling problem cannot undo a committed proof.
     }
@@ -54,6 +57,7 @@ async function handleCandidateRecovery(request: Request, action: "current" | "re
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ code: "INVALID_REQUEST", error: "Refresh your check and try again." }, { status: 400, headers: noStore });
     if (error instanceof IdentityVerificationSessionError) return NextResponse.json({ code: error.code, error: error.message }, { status: error.status, headers: noStore });
+    if (!(error instanceof RequestSecurityError)) reportOperationFailure(`verification.${action}`, error, { code: "IDENTITY_VERIFICATION_REQUEST_FAILED", reference });
     const response = requestSecurityErrorResponse(error); response.headers.set("Cache-Control", noStore["Cache-Control"]); return response;
   }
 }

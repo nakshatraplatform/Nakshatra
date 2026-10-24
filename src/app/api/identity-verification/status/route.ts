@@ -1,9 +1,10 @@
+import { verificationResponse } from "@/features/identity-verification/server/verification-diagnostics";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { hashIdentityVerificationToken, isIdentityVerificationToken } from "@/features/identity-verification/server/identity-verification.tokens";
 import { getIdentityVerificationLinkStatus, IdentityVerificationSessionError, withdrawIdentityVerificationConsent } from "@/features/identity-verification/server/session.service";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
-import { AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
+import { RequestSecurityError, AUTH_BODY_LIMIT, readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
 import { createClient } from "@/lib/supabase/server";
 
 const tokenSchema = z.object({ token: z.string().refine(isIdentityVerificationToken, "Invalid verification token") }).strict();
@@ -22,6 +23,7 @@ async function requestToken(request: Request) {
     }
     return { supabase, tokenHash: await hashIdentityVerificationToken(parsed.data.token) };
   } catch (error) {
+    if (!(error instanceof RequestSecurityError)) throw error;
     const response = requestSecurityErrorResponse(error);
     response.headers.set("Cache-Control", noStore["Cache-Control"]);
     return { response };
@@ -29,9 +31,13 @@ async function requestToken(request: Request) {
 }
 
 /** Resolves a bearer link to generic invitation or management state without revealing candidate information. */
-export async function POST(request: Request) {
+export function POST(request: Request) {
+  return verificationResponse("status", () => handlePOST(request));
+}
+
+async function handlePOST(request: Request) {
   const input = await requestToken(request);
-  if ("response" in input) return input.response;
+  if (input.response) return input.response;
   try {
     return NextResponse.json({ link: await getIdentityVerificationLinkStatus(input.supabase, input.tokenHash) }, { headers: noStore });
   } catch (error) {
@@ -44,9 +50,13 @@ export async function POST(request: Request) {
 }
 
 /** Uses a management bearer credential once to withdraw consent and revoke VivIntro verification. */
-export async function DELETE(request: Request) {
+export function DELETE(request: Request) {
+  return verificationResponse("withdraw", () => handleDELETE(request));
+}
+
+async function handleDELETE(request: Request) {
   const input = await requestToken(request);
-  if ("response" in input) return input.response;
+  if (input.response) return input.response;
   try {
     await withdrawIdentityVerificationConsent(input.supabase, input.tokenHash);
     return NextResponse.json({ withdrawn: true }, { headers: noStore });

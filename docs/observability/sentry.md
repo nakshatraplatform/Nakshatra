@@ -32,7 +32,12 @@ No Vercel environment or deployment is changed by this branch.
 
 - Browser uncaught exceptions/rejections and React error boundaries; Next server
   request/render/action failures and Edge errors through SDK instrumentation.
-- Automatic performance traces: 100% during development and 10% otherwise.
+- Automatic performance traces: local 100% sampling during development and
+  probabilistic 10% sampling otherwise. A local sampling hook replaces incoming
+  sampling randomness on both core and incoming OpenTelemetry scopes, and a local
+  sampler ignores remote sampled flags; the span
+  envelope reports the resulting local decision. This is a target rate, not an
+  exact per-minute quota.
   Missing DSN disables transmission. Sampling is not complete request logging.
 - One shared privacy policy for Node, Edge and browser. Private URL segments,
   all query strings/fragments, bodies, cookies, headers, identity, locals, DOM
@@ -46,12 +51,60 @@ No Vercel environment or deployment is changed by this branch.
   not an anonymity guarantee. Review Sentry account retention/access/DPA settings
   before production activation.
 
-A caught error converted into a normal API response needs deliberate safe
-capture if monitoring that case is desired. This change does not rewrite every
-handler or forward all console output. GitHub workers run outside Next and still
-need separate SDK/flush/error instrumentation. Provider-internal logs, queue
-health monitors, alert delivery and completeness of end-to-end operations are
-not established here. Refer to the earlier observability investigation.
+## Handled failures and background workers
+
+`src/lib/observability/operations.mjs` reports deliberately handled failures and
+names important spans. `operation-contract.mjs` owns the explicit vocabulary;
+only approved operations/codes and UUIDv4 diagnostic references survive the final
+privacy filter. Arbitrary tags, error text, reference strings and context still
+cannot cross the boundary. Do not add user content, provider IDs or email addresses
+to this vocabulary. Original exceptions keep their scrubbed source stack; calls
+with only a failed result use a synthetic operational exception.
+
+Coverage includes verification start/current/resume/cancel/check-result and
+management status/retry/withdraw, failed Didit webhook receipt, portfolio draft
+save/publication/dashboard load, the shared `logServerError` callers, confirmation
+email work in `after()`, and maintenance task failures/deferrals. Expected
+verification 4xx responses are not reported as errors. After-response confirmation
+failures use the response's request reference and await bounded SDK flushing.
+This is explicit coverage, not automatic collection of every returned 5xx or all
+console output. New handled failure boundaries must opt into the shared reporter.
+
+The native verification, account-deletion, retention and broker-maintenance CLIs
+use `scripts/observed-worker.mjs`. It initializes the pinned Node SDK with the same
+runtime-neutral privacy policy, retains the job's business result, reports errors
+and awaits up to two seconds of flushing/closing on either outcome. Native
+telemetry requests also have a 1.5-second absolute deadline that destroys stalled
+sockets, including responses that start but never finish. Worker telemetry uses
+direct connections to the validated Sentry destination, bypassing environment
+HTTP proxies so the deadline owns the socket throughout connection setup. A
+flush timeout alone does not release those connections. The Node SDK
+already existed transitively; it is now an explicit pinned dependency. Nothing
+loads TypeScript or Next.js framework initialization inside the native CLIs.
+
+For scheduled GitHub workers, add the public repository/environment variable
+`NEXT_PUBLIC_SENTRY_DSN` in GitHub Actions. The verification and broker worker
+steps pass it through along with `SENTRY_ENVIRONMENT=production` and
+`SENTRY_RELEASE=${{ github.sha }}`. A Vercel variable does not reach GitHub Actions.
+Do not copy `SENTRY_AUTH_TOKEN`, service-role keys or provider credentials into
+telemetry configuration. An absent or invalid DSN disables transmission and does
+not prevent required worker processing. Local/manual CLIs use the same public
+DSN and may set `SENTRY_ENVIRONMENT` and `SENTRY_RELEASE` explicitly.
+
+Approved logical operation labels identify dashboard/draft RPCs and shared Didit
+and Resend transports, including SDK child spans. Raw URLs, query strings, SQL,
+credentials and request/response contents remain excluded. Concurrent operation
+scopes are isolated by the SDK's async-context lifecycle.
+
+Recognized source paths retain their artifact-relative name. Unknown paths use
+their source-map debug ID when available, or a distinct event-local alias without
+exposing the original path. Source frames and debug-image references use the same
+mapping. This fixes filename collisions; it does not prove authenticated upload
+or original production TypeScript resolution. Those remain release checks.
+
+Provider-internal logs, new API boundaries without explicit reporting, missed-job
+Sentry monitors, alert inbox receipt, and completeness of end-to-end operations
+remain outside this change. Existing GitHub worker/health alerts are preserved.
 
 ## Verify before rollout
 

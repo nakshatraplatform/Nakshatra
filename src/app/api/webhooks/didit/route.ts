@@ -1,3 +1,5 @@
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
+import { getRequestId } from "@/lib/security/logging";
 import { NextResponse } from "next/server";
 import { readLimitedBody } from "@/lib/api/request-security";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -26,6 +28,7 @@ export async function POST(request: Request) {
     });
     const { data, error } = await new IdentityVerificationWebhookRepository(createServiceRoleClient()).record(event);
     if (error || typeof data !== "boolean") {
+      reportOperationFailure("verification.webhook", error, { code: "DIDIT_WEBHOOK_UNAVAILABLE", reference: getRequestId(request) });
       return NextResponse.json({ code: "DIDIT_WEBHOOK_UNAVAILABLE" }, { status: 503, headers: noStore });
     }
     // A signed event may refer to a retired or otherwise unknown local attempt.
@@ -36,6 +39,7 @@ export async function POST(request: Request) {
     if (error instanceof DiditWebhookError) {
       return NextResponse.json({ code: error.code }, { status: 401, headers: noStore });
     }
+    reportOperationFailure("verification.webhook", error, { code: "DIDIT_WEBHOOK_UNAVAILABLE", reference: getRequestId(request) });
     return NextResponse.json({ code: "DIDIT_WEBHOOK_UNAVAILABLE" }, { status: 503, headers: noStore });
   }
 }

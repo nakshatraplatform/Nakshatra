@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { observeOperation, reportOperationFailure } from "@/lib/observability/operations.mjs";
 
 const safeCodes = new Set([
   "IDENTITY_VERIFICATION_PROVIDER_CREDENTIALS", "IDENTITY_VERIFICATION_PROVIDER_CREDITS",
@@ -14,13 +15,15 @@ const safeCodes = new Set([
 
 /** Correlates our safe error classes, never provider bodies or subject IDs. */
 export async function verificationResponse(
-  operation: "start" | "current" | "resume" | "cancel" | "check-result",
-  handler: () => Promise<Response>,
+  operation: "start" | "current" | "resume" | "cancel" | "check-result" | "status" | "retry" | "withdraw",
+  handler: (reference: string) => Promise<Response>,
 ) {
   const reference = randomUUID();
   let response: Response;
-  try { response = await handler(); }
-  catch {
+  let failure: unknown;
+  try { response = await observeOperation(`verification.${operation}`, () => handler(reference)); }
+  catch (error) {
+    failure = error;
     response = Response.json({ code: "IDENTITY_VERIFICATION_REQUEST_FAILED", error: "This action is temporarily unavailable. Please try again." }, { status: 503 });
   }
   response.headers.set("Cache-Control", "private, no-store");
@@ -29,6 +32,7 @@ export async function verificationResponse(
     const body = await response.clone().json().catch(() => null);
     const code = safeCodes.has(body?.code) ? body.code : "IDENTITY_VERIFICATION_REQUEST_FAILED";
     console.warn("identity_verification_request_failed", { operation, code, status: response.status, reference });
+    if (response.status >= 500) reportOperationFailure(`verification.${operation}`, failure, { code, reference });
   }
   return response;
 }

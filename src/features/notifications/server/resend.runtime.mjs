@@ -1,3 +1,4 @@
+import { observeOperation } from "../../../lib/observability/operations.mjs";
 import { z } from "zod/v4";
 import { emailMessageSchema } from "./email-message.schema.mjs";
 const configSchema = z.object({
@@ -84,7 +85,7 @@ export async function sendResendEmail(input, transport = fetch) {
     });
     const dispatch = async () => {
         try {
-            const response = await transport("https://api.resend.com/emails", {
+            const response = await observeOperation("provider.resend.send", () => transport("https://api.resend.com/emails", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${config.data.apiKey}`,
@@ -103,7 +104,7 @@ export async function sendResendEmail(input, transport = fetch) {
                 signal: controller.signal,
                 cache: "no-store",
                 redirect: "error",
-            });
+            }));
             const body = await readResponse(response, controller.signal);
             if (!response.ok)
                 return classify(response.status, body);

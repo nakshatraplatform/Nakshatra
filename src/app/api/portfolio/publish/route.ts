@@ -1,3 +1,5 @@
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
+import { getRequestId } from "@/lib/security/logging";
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const portfolioError = error instanceof PortfolioPublishError || error instanceof DashboardSaveError ? error : null;
+    if (!portfolioError || portfolioError.status >= 500) reportOperationFailure("portfolio.publish", error, { code: portfolioError?.code, reference: getRequestId(request) });
     return NextResponse.json(
       {
         code: portfolioError?.code || "PORTFOLIO_PUBLISH_FAILED",

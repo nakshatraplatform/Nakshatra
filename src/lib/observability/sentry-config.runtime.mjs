@@ -1,5 +1,7 @@
+// @ts-check
 /** Shared by the build and runtimes; never accepts an arbitrary telemetry destination. */
-export function sentryIngestOrigin(dsn: string | undefined): string | undefined {
+/** @param {string | undefined} dsn */
+export function sentryIngestOrigin(dsn) {
   if (!dsn) return undefined;
   try {
     const url = new URL(dsn);
@@ -13,7 +15,8 @@ export function sentryIngestOrigin(dsn: string | undefined): string | undefined 
   }
 }
 
-export function sentryEnvironment(env: string | undefined, fallback: string | undefined) {
+/** @param {string | undefined} env @param {string | undefined} fallback */
+export function sentryEnvironment(env, fallback) {
   return env && /^(development|preview|production|test)$/.test(env) ? env
     : fallback === "production" ? "production" : "development";
 }

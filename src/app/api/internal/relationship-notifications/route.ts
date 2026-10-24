@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const result = await processRelationshipNotifications(createServiceRoleClient((input, init) => fetch(input, {
       ...init, signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(init?.signal ? [init.signal] : [])]),
     })));
+    if (result.failed > 0) logServerError("relationship_notifications.process_failed", requestId, new Error("TASK_DEFERRED"));
     return NextResponse.json(result, { status: result.failed > 0 ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     logServerError("relationship_notifications.process_failed", requestId, error);

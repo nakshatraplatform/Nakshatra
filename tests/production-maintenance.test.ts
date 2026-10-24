@@ -3,13 +3,14 @@ vi.mock("@/features/operations/server/retention.service", () => ({ processRetent
 vi.mock("@/features/horoscope/server/horoscope-cleanup.service", () => ({ processHoroscopeCleanup: mocks.horoscopeCleanup }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), retention: vi.fn(), horoscopeCleanup: vi.fn(), factory: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), retention: vi.fn(), horoscopeCleanup: vi.fn(), factory: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn(), report: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("../scripts/identity-verification-worker.mjs", () => ({ createIdentityVerificationWorker: mocks.factory }));
 vi.mock("../scripts/deleted-provider-cleanup.mjs", () => ({ processDeletedProviderCleanup: mocks.cleanup }));
 vi.mock("../scripts/candidate-liveness-email-worker.mjs", () => ({ processCandidateLivenessEmails: mocks.email }));
 vi.mock("../scripts/account-deletion-worker.mjs", () => ({ createAccountDeletionWorker: () => ({ run: mocks.deletion }) }));
 vi.mock("@/features/notifications/server/relationship-notification.service", () => ({ processRelationshipNotifications: mocks.relationship }));
+vi.mock("@/lib/observability/operations.mjs", async original => ({ ...await original<typeof import("@/lib/observability/operations.mjs")>(), reportOperationFailure: mocks.report }));
 import { productionHealth, runProductionMaintenance, workerAuthorized } from "@/features/operations/server/production-maintenance";
 import { GET } from "@/app/api/internal/production-health/route";
 import { POST } from "@/app/api/internal/production-maintenance/route";
@@ -186,4 +187,17 @@ it("isolates email retention failure while still running proof and mail tasks", 
   const batch = await runProductionMaintenance();
   expect(batch.tasks?.emailRetention).toBe("deferred"); expect(batch.failed).toBe(true);
   expect(mocks.email).toHaveBeenCalledOnce(); expect(mocks.relationship).toHaveBeenCalledOnce();
+});
+
+// Failure reporting must survive Promise.allSettled and boolean worker summaries.
+it("reports deferred and rejected maintenance tasks with a safe operation and dispatch reference", async () => {
+  const reference = "11111111-1111-4111-8111-111111111111";
+  mocks.identity.mockResolvedValueOnce({ deferred: 1 });
+  mocks.cleanup.mockRejectedValueOnce(new Error("private provider payload"));
+  const result = await runProductionMaintenance(reference);
+  expect(result.tasks?.identity).toBe("deferred");
+  expect(mocks.report).toHaveBeenCalledWith("maintenance.identity", undefined, { code: "TASK_DEFERRED", reference });
+  expect(mocks.report).toHaveBeenCalledWith("maintenance.providerCleanup", expect.any(Error), { code: "TASK_FAILED", reference });
+  expect(mocks.report).toHaveBeenCalledTimes(2);
+  expect(result.tasks?.livenessEmail).toBe("completed");
 });
