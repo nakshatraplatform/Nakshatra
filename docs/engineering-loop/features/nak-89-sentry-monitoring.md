@@ -2,6 +2,174 @@
 
 ## Execution context
 
+### Current remediation — October 24, 2026
+
+#### Follow-up NAK89-V1 — verification catch classification
+
+Publication requested after local verification. Main's current rules require a
+pull request plus the quality/browser, database and secret-scan checks; no
+approving review is required. Publish the existing conventional fix branch and
+merge only after required checks pass. This does not activate worker DSN settings
+or establish deployed source-map/alert delivery evidence.
+
+Fresh verification found a remaining confirmed P2: legacy status setup and retry
+catches map unexpected internal errors to 400 before the monitoring wrapper sees
+them. The mapping exists at base `5249adf`; this is incomplete remediation, not
+an introduced HTTP regression. User authorized the fix. Significant integration
+scope remains; no production mutation or UI/domain changes.
+
+Acceptance: actual status POST/DELETE and retry POST handlers return a safe 503
+and exactly one scrubbed Sentry event for an internal client-initialization
+failure, with the response's diagnostic reference. Preserve genuine validation,
+same-origin, body-size and known verification-session responses; client failures
+must not produce Sentry errors. Only typed request-security/session errors are
+handled locally; other errors reach the existing shared wrapper. Add real SDK /
+actual-client configuration regressions before correcting the catches, then run
+affected tests, full coverage/static/build gates and independent correction review.
+Earlier completion/review results below describe the preceding snapshot.
+
+Initial correction evidence: the three actual-client configuration regressions
+failed with 400 rather than 503 before the fix; all nine expected-client-failure
+controls passed. The catches now distinguish typed request-security/session
+errors and rethrow everything else to `verificationResponse`. Its existing
+scrubbed capture remains the single owner of reporting unexpected errors.
+Status POST/DELETE and retry POST each now produce one safe event and matching
+`X-Request-Id`. Focused 27 tests pass, including unchanged known-session statuses
+and management-token recovery, plus rejection of arbitrary errors carrying
+provider-controlled `code`/`status`. No dependencies, schema, production
+configuration or UI changed.
+
+NAK89-V1 is **resolved** on final packet `nak89-v1-final-bx9p78cq`, manifest
+SHA256 `72bf019acfbc436154be948313b8a420152a76fca033d5d434ba2479496c0a01`.
+All 1,224 runtime/test/config/source bytes match the final review packet;
+subsequent feature-record edits only record final evidence. Fresh-context
+reviewer (model unknown) independently passed 189 tests/17 files, nine additional
+semantic probes using the actual session-error class and all 12 final
+configuration/security controls. Original four reviewer reproductions are green;
+unexpected Error, lookalike code/status object, plain object and string each
+produce exactly one safe correlated event. Known statuses, management URLs and
+`Retry-After` remain. Final verdict: no material findings.
+
+Final full unit/coverage gate: **217 files / 1,815 tests passed**, all 63 feature
+and 21 protected-boundary coverage floors passed. Lint and production build
+passed; build used only placeholder public Supabase settings with Sentry upload
+disabled. An initial build caught two missing test-only type annotations; fixed.
+An initial full run had one focus assertion timeout in unchanged
+`dashboard-client.test.tsx` while build ran concurrently. The original isolated
+case and subsequent full run passed without assertion/timeout changes. No
+dashboard source changed. Standalone final typecheck passed. Regression coverage
+lives in `tests/verification-configuration-errors.test.ts` and
+`tests/identity-verification-routes.test.ts`.
+
+Graphify update attempted again; command unavailable. No new migration or browser
+UI behavior; prior browser evidence remains historical, not rerun for this API
+correction. Deployment/provider delivery/source-map/alert-recipient evidence
+remains separate. Work stays uncommitted/unpushed on the same remediation branch.
+
+Narrow lesson: a response-status-only reporting wrapper cannot detect internal
+errors misclassified as client failures by inner catches. Test actual route
+boundaries with a failing real adapter, and keep expected-client-error controls.
+
+#### Initial remediation evidence (preceding NAK89-V1 correction)
+
+Significant integration; full documentation retained. User authorized the five
+audit corrections. Working on `fix/nak-89-sentry-operational-coverage`, based on
+`5249adf` (latest main; merged PR127). Existing unrelated checkouts remain untouched.
+Next 16.4.1 and Sentry 11.8.0 remain pinned. Linear NAK-89 holds the approved plan.
+
+The runtime-neutral privacy module is shared with native Node workers;
+operational reporting accepts only explicit static labels/codes and UUID
+request references. Raw logs, personal data, replay, attachments and arbitrary
+context remain excluded. SDK delivery failures must not fail business operations.
+
+| ID | Remediation acceptance / wrong implementation rejected | Evaluation |
+| --- | --- | --- |
+| FIX1 | Unexpected handled verification/API failures produce one safe error event, while expected 4xx and successes produce none; background dispatch failures retain a request reference | Real SDK route wrapper + transport, existing API tests and private sentinels |
+| FIX2 | Node workers initialize the shared policy and await bounded flushing on success/failure; maintenance reports each deferred task without raw rejected reasons | Native Node subprocess/SDK transport, worker/maintenance tests and workflow configuration checks |
+| FIX3 | Distinct unsupported artifact paths remain distinct and match their debug-image references without exposing their source paths | Frame/debug-ID collision regression plus built app check; hosted authenticated symbolication remains a deployment gate |
+| FIX4 | Important dashboard, Didit and Resend operations retain approved logical names in real streamed spans, including concurrent calls | Real SDK span envelopes + affected service tests; no SQL, URL parameters or arbitrary labels |
+| FIX5 | Local production sampling cannot be overridden by incoming sampled flags or hostile sampling baggage | Deterministic real SDK trace tests with both sampled and unsampled parents; development keeps full local sampling |
+
+Baseline audit: 44 targeted tests passed, including probes confirming a handled
+503 with zero captured errors, distinct-path collisions and 30/30 forced incoming
+sampled spans. Production ingestion exists; standard Next chunk identities survive
+the current browser filter. Older production mapping problems are observed, but
+their exact cause is unconfirmed. No production mutation or real personal data
+tests are authorized. No database schema changes are planned.
+
+Implemented the five corrections through `sentry.runtime.mjs`,
+`operation-contract.mjs`, `operations.mjs` and `scripts/observed-worker.mjs`.
+Existing TypeScript privacy/config modules moved to native `.mjs` so workers use
+the same boundary without importing Next framework initialization. Promoted the
+already locked Node SDK to an explicit dependency; no resolved versions changed.
+
+Regression-first evidence: four initial remediation cases failed on the original
+policy (missing handled error, artifact collision, inherited sampling). The
+independent review exposed the separate OTel request path and a stalled native
+socket. Removing each correction reproduces wrong sampling and worker subprocess
+timeouts, including a stalled environment proxy. Final focused regressions pass.
+
+#### Independent review / resolution ledger
+
+Significant work uses a fresh-context reviewer, actual model identity unknown.
+Review packets are isolated complete source copies with SHA256 manifests and the
+full dirty diff. Earlier rounds are retained as history; final readiness depends
+on the final corrected packet. No cross-model claim is made.
+
+| ID | Severity / classification / origin | Evidence and disposition | Resolution check |
+| --- | --- | --- | --- |
+| NAK89-R1 | P1; confirmed; original sampling defect incompletely corrected in round 1; resolved | Next's remote OTel parent clones the sampling scope. `src/lib/observability/sentry.runtime.mjs:117` refreshes randomness on that actual scope; the existing core hook remains. | Real Next SDK + OTel propagator subprocess tests reject parent/baggage forcing in both directions; selected span reports local rate 0.1. Final round 3 confirmed resolution. |
+| NAK89-R2 | P2; confirmed; introduced by native monitoring lifecycle; resolved | SDK close timeout leaves stalled native sockets alive. `scripts/observed-worker.mjs:14` owns direct sockets; absolute 1.5s deadline destroys them and `agent:false` excludes proxy CONNECT sockets. | Subprocesses naturally exit with original job result for missing config, success/failure, no response headers, unfinished response body and stalled environment proxy. Negative controls without deadline/direct socket time out at 6s. Final round 3 confirmed resolution, including a separate local HTTPS handshake stall. |
+
+Round 1 independently passed 144 tests/15 files and required both corrections.
+Round 2 independently passed 149 tests/15 files; R1 resolved, R2's direct stalls
+fixed but proxy case remained. Both 1,223-file manifests matched before/after.
+Final round 3: **no material findings**, both findings resolved; independently
+passed 150 tests/15 files and an additional loopback HTTPS handshake-stall probe.
+All 1,223 source hashes matched at start/finish. Final packet
+`nak89-review-r3-jyqpo0a3`, supplied base `5249adf`, manifest SHA256
+`cdfa11e7069154f14474f253b43fd29e500a70298b4cfcee7104e69c4884bbaa`.
+The later edits to this feature record only record final check/review results;
+runtime, tests, dependencies and configuration still match that reviewed packet.
+
+#### Current verification / release boundaries
+
+- Final full unit/coverage run: **216 files / 1,796 tests passed**; all 63 feature
+  and 21 protected-boundary gates passed. Final 14 focused regression cases pass,
+  including the proxy/missing-configuration tests.
+- Lint and typecheck passed. Production build passed with isolated placeholder public Supabase
+  URL/key and Sentry upload disabled. Initial build exposed a test-only missing
+  `NODE_ENV` type requirement, corrected without changing runtime behavior.
+- Dependency audit passed with zero affected packages; fixture smoke passed.
+  No schema change; database migrations/production data were not exercised.
+- Browser regression: **17 Chromium cases passed, 2 device-conditional skips**
+  across theme and candidate liveness recovery tests, one worker, unchanged
+  timeouts/assertions. Full tablet/mobile browser matrix was not rerun.
+  Production static output contained no public `.map` files with upload disabled.
+- Actual development signals confirmed in Sentry: native verification CLI
+  [NAKSHATRA-5](https://vivintro.sentry.io/issues/NAKSHATRA-5) and handled Next API
+  [NAKSHATRA-6](https://vivintro.sentry.io/issues/NAKSHATRA-6). The API reference
+  matched `X-Request-Id`; private query sentinel was absent, and original local
+  TypeScript frames survived. Worker check deliberately omitted provider/DB
+  credentials and failed before external business I/O. These confirm ingestion,
+  not successful provider jobs or production source-map upload.
+- Temporary development route removed and server stopped. Graphify update
+  attempted; CLI unavailable and no preexisting graph found.
+- GitHub worker public DSN variable, authenticated production source mapping,
+  deployed browser/Edge delivery and alert-recipient inbox evidence remain
+  rollout checks. No production configuration, customer data, deployment,
+  publication or new Sentry monitors changed. This does not collect all logs.
+- Local implementation and required review are complete on
+  `fix/nak-89-sentry-operational-coverage`; not committed, pushed or deployed.
+  Latest fetched `origin/main` remains the supplied base `5249adf`.
+
+Reusable lesson (Sentry 11.8): test both core and Next OTel remote-parent sampling;
+`continueTrace` alone misses remapped scopes. Test actual subprocess exit against
+stalled sockets/proxies; an in-memory transport and SDK flush timeout cannot prove
+natural process termination. Keep these regressions when upgrading the SDK.
+
+## Historical initial implementation and PR evidence
+
 October 21, 2026. Branch `feat/nak-89-sentry-monitoring`, base `d88f14e`
 (`origin/main` at setup). Linear NAK-89 is the durable plan. Significant risk;
 full record because the SDK introduces an external telemetry boundary. SDK

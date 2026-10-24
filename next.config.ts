@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 import { withSentryConfig } from "@sentry/nextjs/config";
-import { sentryEnvironment, sentryIngestOrigin } from "./src/lib/observability/sentry-config";
+import { sentryEnvironment, sentryIngestOrigin } from "./src/lib/observability/sentry-config.runtime.mjs";
 
 /** Allows the loopback Supabase fixture in development without widening Production CSP. */
 export function resolveLocalSupabaseOrigin(nodeEnv: string | undefined, configuredUrl: string | undefined) {

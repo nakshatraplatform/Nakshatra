@@ -27,7 +27,7 @@
   dashboard hierarchy. Independent review corrections and current verification
   are recorded separately from release; database runtime gates remain pending.
 
-- [NAK-89 Sentry monitoring](features/nak-89-sentry-monitoring.md): browser/Node/Edge errors and sampled traces with a shared privacy boundary. Local synthetic browser event and traces confirmed; production source maps, deployment and worker instrumentation remain separate gates. See [setup and limits](../observability/sentry.md).
+- [NAK-89 Sentry monitoring](features/nak-89-sentry-monitoring.md): browser/Node/Edge errors and sampled traces with a shared runtime-neutral privacy boundary. October 24 remediation adds approved handled-error reporting, native worker initialization/bounded flush, operation labels, distinct artifact aliases and locally controlled sampling. GitHub workers need the public DSN variable separately from Vercel; hosted original-source mapping and rollout remain release gates. See [setup and limits](../observability/sentry.md).
 
 - [NAK-88 frontend recovery](features/nak-88-frontend-recovery.md): enlarged-text
   reflow, bounded JSON exchanges, dismissible retained interest requests and

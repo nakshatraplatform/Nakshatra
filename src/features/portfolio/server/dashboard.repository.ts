@@ -1,4 +1,5 @@
 import "server-only";
+import { observeOperation } from "@/lib/observability/operations.mjs";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SHAREABLE_PRIMARY_PHOTO_VISIBILITIES } from "@/features/media/portfolio-photo";
@@ -84,7 +85,7 @@ export class DashboardRepository {
 
   /** Answers, attachment facts and review evidence share one owner-scoped SQL snapshot. */
   async findDashboardReviewSnapshot() {
-    return this.supabase.rpc("get_owner_dashboard_review_snapshot");
+    return observeOperation("portfolio.dashboard.load", () => this.supabase.rpc("get_owner_dashboard_review_snapshot"));
   }
 
   /** Loads only the portfolio fields needed by owner preview pages. */
@@ -105,9 +106,9 @@ export class DashboardRepository {
 
   /** Persists the complete dashboard draft graph in one database transaction. */
   async saveDashboardDraftTransaction(payload: SaveDashboardDraftTransactionPayload) {
-    return this.supabase.rpc("save_dashboard_draft_transaction", {
+    return observeOperation("portfolio.draft.save", () => this.supabase.rpc("save_dashboard_draft_transaction", {
       p_payload: payload,
-    });
+    }));
   }
 
   /** Read-only capability probe used only after a geography command rejects a save. */

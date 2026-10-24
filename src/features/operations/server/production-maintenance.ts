@@ -1,4 +1,6 @@
 import "server-only";
+import { approvedCode } from "@/lib/observability/operation-contract.mjs";
+import { observeOperation, reportOperationFailure } from "@/lib/observability/operations.mjs";
 import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-cleanup.service";
 import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -78,7 +80,16 @@ export async function runProductionMaintenance(dispatchId?: string) {
     },
     accountDeletion: async () => (await createAccountDeletionWorker(client).run(1)).deferred === 0,
   };
-  const outcomes = await Promise.allSettled(Object.values(tasks).map(task => task()));
+  const entries = Object.entries(tasks);
+  const outcomes = await Promise.allSettled(entries.map(([name, task]) => observeOperation(`maintenance.${name}`, task)));
+  for (const [i, outcome] of outcomes.entries()) {
+    if (outcome.status === "rejected" || outcome.value !== true) {
+      const reason: unknown = outcome.status === "rejected" ? outcome.reason : undefined;
+      const code = approvedCode(reason instanceof Error ? reason.message : undefined);
+      reportOperationFailure(`maintenance.${entries[i][0]}`, reason,
+        { code: code !== "OPERATION_FAILED" ? code : outcome.status === "rejected" ? "TASK_FAILED" : "TASK_DEFERRED", reference: dispatchId });
+    }
+  }
   const failed = outcomes.some(outcome => outcome.status !== "fulfilled" || outcome.value !== true);
   const completion = await control.rpc("finish_production_maintenance", { p_claim_token: token, p_succeeded: !failed });
   if (completion.error || completion.data !== true) throw new Error("MAINTENANCE_COMPLETION_FAILED");

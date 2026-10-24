@@ -39,6 +39,7 @@ import { POST as createInvitationRoute } from "../src/app/api/identity-verificat
 import { POST as startRoute } from "../src/app/api/identity-verification/start/route";
 import { DELETE as withdrawRoute, POST as statusRoute } from "../src/app/api/identity-verification/status/route";
 import { POST as retryRoute } from "../src/app/api/identity-verification/retry/route";
+import { IdentityVerificationSessionError } from "@/features/identity-verification/server/session.service";
 
 const supabase = { rpc: vi.fn() };
 const authenticated = { status: "authenticated" as const, user: { id: "actor", sessionId: "session" }, supabase };
@@ -134,5 +135,30 @@ describe("identity-verification API routes", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ url: "https://verify.didit.test/retry", managementUrl: "http://local/verify/generated-token" });
     expect(retryVerification).toHaveBeenCalledWith(expect.objectContaining({ tokenHash: "valid-token-hash", managementTokenHash: "generated-token-hash" }));
+  });
+
+  it.each([
+    [400, "IDENTITY_VERIFICATION_LINK_INVALID"], [403, "IDENTITY_VERIFICATION_FORBIDDEN"],
+    [409, "IDENTITY_VERIFICATION_STATE_CONFLICT"], [429, "RATE_LIMITED"],
+    [503, "IDENTITY_VERIFICATION_CONFIGURATION_INVALID"],
+  ] as const)("preserves known verification-session response %s", async (status, code) => {
+    const error = new IdentityVerificationSessionError("Known verification result", code, status, "replacement-token");
+    retryVerification.mockRejectedValueOnce(error);
+    const response = await retryRoute(request("http://local/api/identity-verification/retry", {
+      token: "valid-token", consent: true, consentVersion: "2026-10-05-liveness-only",
+    }));
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toMatchObject({ code: error.code, managementUrl: "http://local/verify/replacement-token" });
+  });
+
+  it.each([false, true])("does not mistake an unexpected retry error for a client error (hasCode=%s)", async hasCode => {
+    const error = new Error("PRIVATE_PROVIDER_DETAIL");
+    if (hasCode) Object.assign(error, { code: "PRIVATE_PROVIDER_CODE", status: 400 });
+    retryVerification.mockRejectedValueOnce(error);
+    const response = await retryRoute(request("http://local/api/identity-verification/retry", {
+      token: "valid-token", consent: true, consentVersion: "2026-10-05-liveness-only",
+    }));
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ code: "IDENTITY_VERIFICATION_REQUEST_FAILED", error: "This action is temporarily unavailable. Please try again." });
   });
 });

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NodeClient, defaultStackParser, init, continueTrace, startSpan, flush, close } from "@sentry/nextjs";
 import type { Envelope, EventEnvelope, ErrorEvent, StreamedSpanJSON } from "@sentry/core";
-import { sentryEnvironment, sentryIngestOrigin } from "../src/lib/observability/sentry-config";
-import { privateErrorEvent, privateSpan, sentryOptions, telemetryRoute, VERIFICATION_MESSAGE } from "../src/lib/observability/sentry";
+import { sentryEnvironment, sentryIngestOrigin } from "../src/lib/observability/sentry-config.runtime.mjs";
+import { privateErrorEvent, privateSpan, sentryOptions, telemetryRoute, VERIFICATION_MESSAGE } from "../src/lib/observability/sentry.runtime.mjs";
 
 const dsn = "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@o123.ingest.us.sentry.io/456";
 const secret = "PRIVATE_SENTINEL_CANDIDATE_918273";
@@ -26,9 +26,9 @@ describe("Sentry destination and runtime configuration", () => {
     vi.stubEnv("NEXT_PUBLIC_SENTRY_ENVIRONMENT", "preview");
     vi.stubEnv("NEXT_PUBLIC_SENTRY_RELEASE", "abcdef1234");
     vi.stubEnv("NODE_ENV", "production");
-    expect(sentryOptions()).toMatchObject({ enabled: true, dsn, environment: "preview", release: "abcdef1234", tracesSampleRate: 0.1, tracePropagationTargets: [] });
+    expect(sentryOptions()).toMatchObject({ enabled: true, dsn, environment: "preview", release: "abcdef1234", tracesSampler: expect.any(Function), tracePropagationTargets: [] });
     vi.stubEnv("NODE_ENV", "development");
-    expect(sentryOptions().tracesSampleRate).toBe(1);
+    expect(sentryOptions().tracesSampler()).toBe(1);
     expect(sentryOptions().beforeBreadcrumb()).toBeNull();
     expect(sentryOptions().beforeSendLog()).toBeNull();
     expect(sentryOptions().beforeSendMetric()).toBeNull();
@@ -98,7 +98,7 @@ describe("Sentry privacy boundary", () => {
   it("does not forward hostile inbound baggage into real streamed-span envelopes", async () => {
     vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", dsn);
     const sent: Envelope[] = [];
-    init({ ...sentryOptions(), tracesSampleRate: 1, transport: () => ({ send: async (envelope: Envelope) => { sent.push(envelope); return { statusCode: 200 }; }, flush: async () => true }) });
+    init({ ...sentryOptions(), tracesSampler: () => true, transport: () => ({ send: async (envelope: Envelope) => { sent.push(envelope); return { statusCode: 200 }; }, flush: async () => true }) });
     await continueTrace({ sentryTrace: `${"a".repeat(32)}-${"b".repeat(16)}-1`, baggage: `sentry-trace_id=${"a".repeat(32)},sentry-public_key=${secret}%40example.invalid,sentry-sampled=${secret},sentry-sample_rate=${secret},sentry-transaction=${secret}` }, async () => {
       await startSpan({ name: "/account", op: "http.server" }, async () => undefined);
     });

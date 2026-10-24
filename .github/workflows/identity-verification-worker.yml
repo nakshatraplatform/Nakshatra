@@ -64,6 +64,9 @@ jobs:
 
       - name: Process bounded verification batch
         env:
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_ENVIRONMENT: production
+          SENTRY_RELEASE: ${{ github.sha }}
           EMAIL_RECIPIENT_HMAC_KEY: ${{ secrets.EMAIL_RECIPIENT_HMAC_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
