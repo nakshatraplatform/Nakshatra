@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-66 transactional email completion](features/transactional-email-completion.md):
+  atomic first-publication and requester receipts through the existing queue;
+  watchdog surfaces disabled configuration. Operational activation and inbox
+  verification are separate from implementation.
+
 - [Password recovery routing](features/password-recovery-routing.md): recovery
   exchanges reach password entry before their safe continuation; returned logout
   errors reach the existing retry UI. Includes browser regression coverage of the

@@ -32,8 +32,9 @@ activated during local implementation.
    batch, an overdue identity/deleted-provider queue, or overdue/held relationship
    mail. No addresses, media paths or provider/session IDs are returned.
    The included `Production Maintenance Health` GitHub workflow is a secondary
-   ten-minute watchdog: set repository variable `PRODUCTION_WORKER_ENABLED=true`
-   and the matching environment secret in `production`. It opens one actionable
+   ten-minute watchdog: set the matching `PRODUCTION_WORKER_SECRET` environment
+   secret in GitHub's `production` environment. On main it runs even if the
+   dispatcher is disabled or its configuration is missing. It opens one actionable
    operational issue on unhealthy results. GitHub scheduling can also be delayed,
    so it does not replace the independent monitor or establish a hard alert SLA.
 6. Observe at least six scheduled runs over 30 minutes with real run timestamps,
@@ -79,8 +80,42 @@ expired or revoked grants cannot produce a fresh access-granted email.
 - Bulk recovery accepts only recent known-safe failures. It does not release
   quarantine or reset the durable first-attempt clock.
 
-The ten old production messages have **not** been replayed or suppressed here.
-A deployment must quarantine them first, then operators must decide per message.
+Historical production messages have **not** been replayed or suppressed here.
+A deployment must quarantine stale work first, then operators decide per message.
+
+## Publication and request-receipt activation (NAK-66)
+
+The October 23 transactional-email migration adds first-publication confirmation
+and requester receipts to the existing relationship queue. Publication updates do
+not send another confirmation. Previously published/issued portfolios are marked
+without sending retrospective mail. A requester receipt is not private access.
+
+Pause relationship dispatch during the schema/app transition: an old renderer
+cannot parse the two new types. Deploy the migration through protected database
+CD, then matching app code. Migration success alone does not run the email worker.
+Do not activate shared maintenance solely to test email without first reviewing
+its retention, account-deletion and provider-cleanup queues.
+
+| Runtime | Required configuration |
+| --- | --- |
+| Vercel Production | Existing Supabase service credentials, `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`, verified-domain `RESEND_FROM_EMAIL`, independent `EMAIL_RECIPIENT_HMAC_KEY` (32+ characters), `RESEND_WEBHOOK_SECRET`; optional `RESEND_REPLY_TO_EMAIL`; existing Didit configuration for the shared worker; `PRODUCTION_WORKER_SECRET` and `PRODUCTION_WORKER_ENABLED=true` |
+| Supabase | Explicit authorized `configure_production_worker_schedule(secret, true)` with the same worker secret; Cron/Net/Vault available |
+| GitHub production environment | Matching `PRODUCTION_WORKER_SECRET` for the read-only watchdog, not Resend credentials |
+| Resend | Verified sender domain, sending key, signed webhook to `/api/webhooks/resend`; tracking disabled for sensitive action links |
+
+GitHub secrets do not populate Vercel or Vault. Redeploy after changing Vercel
+environment values. Preserve the recipient HMAC key: rotating it without a
+suppression migration loses continuity of bounced/complained recipient checks.
+Supabase Auth emails (verification/reset) are a separate SMTP/Auth delivery path.
+
+After authorized activation, publish a synthetic user's first Vivara and submit
+one synthetic interest request. Confirm owner publication, owner request notice
+and requester receipt in actual inboxes; verify opaque delivery IDs advance from
+queued to provider accepted and signed `delivered` receipt. Provider acceptance
+alone is not inbox evidence. Check spam/domain reputation when delivery receipts
+exist but the inbox is empty. Observe six scheduled runs and independent health.
+Keep NAK-82 real-inbox UAT open until this evidence exists. Do not blindly release
+held historical mail or reset quotas to manufacture a passing result.
 
 ## Deleted-account provider cleanup
 

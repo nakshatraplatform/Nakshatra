@@ -11,7 +11,8 @@ concurrency:
 
 jobs:
   health:
-    if: ${{ github.ref == 'refs/heads/main' && vars.PRODUCTION_WORKER_ENABLED == 'true' }}
+    # The watchdog must report disabled/missing configuration, not skip it.
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     environment: production
@@ -31,7 +32,7 @@ jobs:
 
   alert:
     needs: health
-    if: ${{ always() && github.ref == 'refs/heads/main' && vars.PRODUCTION_WORKER_ENABLED == 'true' && needs.health.result != 'success' }}
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.health.result != 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions:
