@@ -1,5 +1,10 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-66 transactional email completion](features/transactional-email-completion.md):
+  atomic first-publication and requester receipts through the existing queue;
+  watchdog surfaces disabled configuration. Operational activation and inbox
+  verification are separate from implementation.
+
 - [Landing P0/P1 clarity](features/landing-p0-p1.md): October23 local content/SEO
   continuation keeps the approved book, phone and name-reveal animations. The
   familiar category is stated once in the hero; VivIntro is the product and

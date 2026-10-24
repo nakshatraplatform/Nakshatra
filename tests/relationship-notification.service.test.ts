@@ -65,6 +65,8 @@ describe("relationship notification delivery", () => {
   });
 
   it.each([
+    ["vivara_published", "Your Vivara has been published", "/dashboard"],
+    ["interest_received", "Your request has been received", "does not grant access"],
     ["new_introduction", "Someone has shown interest", "/dashboard"],
     ["introduction_declined", "Update on your VivIntro introduction", "not sharing"],
     ["full_view_revoked", "Sharing has stopped", "no longer open"],
