@@ -4,13 +4,13 @@ test("the revised landing copy uses the product-first section order in both them
   await page.goto("/");
   for (const theme of ["light", "dark"]) {
     if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Share your story before you share your number.");
-    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "questions"]);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your marriage biodata, shared through one link.");
+    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "testimonials", "questions"]);
     await expect(page.locator("#how article")).toHaveCount(4);
-    await expect(page.locator("#questions details")).toHaveCount(10);
-    await expect(page.locator("#top").getByRole("link", { name: "Create your Vivara" })).toHaveAttribute("href", "/signup");
-    await expect(page.locator("#top").getByRole("link", { name: "See a sample Vivara" })).toHaveAttribute("href", "/demo");
-    await expect(page.locator("#beta")).toContainText("For this release, you create and publish your own Vivara.");
+    await expect(page.locator("#questions details")).toHaveCount(6);
+    await expect(page.locator("#top").getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
+    await expect(page.locator("#top").getByRole("link", { name: "See a sample introduction" })).toHaveAttribute("href", "/demo");
+    await expect(page.locator("#beta")).toContainText("create and publish your own introduction");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
     await page.screenshot({ path: testInfo.outputPath(`welcoming-landing-${theme}.png`), animations: "disabled" });
   }

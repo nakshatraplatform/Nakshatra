@@ -5,6 +5,17 @@
   watchdog surfaces disabled configuration. Operational activation and inbox
   verification are separate from implementation.
 
+- [Landing P0/P1 clarity](features/landing-p0-p1.md): October23 local content/SEO
+  continuation keeps the approved book, phone and name-reveal animations. The
+  familiar category is stated once in the hero; VivIntro is the product and
+  Vivara its shared link. Six homepage/ten full FAQs, search metadata,
+  breadcrumbs and two optional fixed public CTA counters remain. A follow-up
+  marriage-biodata-format guide provides a practical privacy-aware first format,
+  linked unobtrusively from the questions section. The temporary
+  static tour, comparison, family-share action and native-scroll substitution
+  were withdrawn after the owner's preview. No portfolio/auth/database change;
+  production, physical-device and measurement gates remain separate.
+
 - [Password recovery routing](features/password-recovery-routing.md): recovery
   exchanges reach password entry before their safe continuation; returned logout
   errors reach the existing retry UI. Includes browser regression coverage of the
@@ -28,8 +39,14 @@
   review (three-round budget exhausted), deployed preview/CI and manual
   accessibility gates remain; not released. See the feature record for evidence.
 
-- [Vivara landing content](features/vivara-landing-content.md): founder-selected
-  name for the shared personal page, Kannada naming explanation and Rahul's
+- [VivIntro/Vivara naming and landing clarity](features/landing-terminology.md):
+  October 22 owner clarification supersedes historical page naming: VivIntro is
+  the product; Vivara is the shared link to the introduction. Local content/SEO
+  increment defines that relationship and restores marriage-biodata category
+  words, without changing privacy rules. Its temporary family-share action was
+  withdrawn in the subsequent content-only P0/P1 correction.
+- [Vivara landing content](features/vivara-landing-content.md): historical
+  shared-page naming, Kannada naming explanation and Rahul's
   rationale within the existing landing design. October 20 product-demo follow-up
   uses a disclosed fictional AI portrait in the real demo renderer, actual public
   screen captures, a desktop phone/explanation scroll story and a scoped OFL
@@ -100,6 +117,13 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
+- [NAK-201 Family Viewer identity foundation](features/nak-201-family-viewer-identity-foundation.md):
+  adds the candidate-owned, cross-broker roster authority beneath the approved
+  V3 contract. Brokers may propose but cannot activate viewers; the candidate
+  approves, and only the exact confirmed Google identity may activate. The
+  private schema, bounded RPCs, concurrency rules, indexes and pgTAP contract
+  are isolated from B2C and from later Introduction disclosure work.
+
 - [NAK-208 VivIntroDesk UI wireframes](features/nak-208-vivintrodesk-ui-wireframes.md):
   preserves the isolated Stage A and Stage B prototypes while reconciling them
   with the approved family-assisted broker contract and a single owned
@@ -124,6 +148,23 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
   [Options and save efficiency](features/onboarding-options-and-save-efficiency.md)
   adds familiar stable-value dropdowns, bounded Other recovery, currency/count
   confirmations, debounced/coalesced saves and serialized resume-position writes.
+  [Mobile clarity follow-up](features/onboarding-mobile-clarity.md) reduces repeated
+  copy, groups related answers and section-7 settings, and makes manual location
+  entry prominent without changing data/publication/validation contracts.
+  October 22 continuation integrates main `0587acc`, adds persistent validated
+  Back/Continue and final Review, separates secondary draft tools and labels the
+  mobile Dashboard exit. Field-integrity follow-up retains pending typed selections,
+  aligns UI/API dropdown and range checks with owner-stored legacy compatibility,
+  fixes field focus/error baselines, and adds no normal-choice database lookup.
+  Family/Astrology remain optional; no extra required answers or SQL. Delivered
+  through #129, merged as `cc817c9`; historical verification is in that record.
+  [Editor actions and touch sign-out](features/editor-actions-signout.md) follows
+  merged #129: adjacent header Preview/theme/Dashboard, quiet saved status,
+  footer Back/Save & review/Continue, native-date sizing and touch-menu handling.
+  It supersedes the secondary draft-tools placement, not section navigation or
+  publication/validation rules; implementation and release evidence are separate.
+  This follow-up remains local, with hosted CI and real-phone preview approval
+  required before release. No database deployment is needed.
 
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab

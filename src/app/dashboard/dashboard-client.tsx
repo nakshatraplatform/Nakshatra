@@ -7,6 +7,7 @@ import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingSta
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { useModalFocus } from "@/components/useModalFocus";
 import { useHydrated } from "@/lib/ui/use-hydrated";
+import { authoringChoiceErrors } from "@/features/portfolio/authoring-choices";
 import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
@@ -43,6 +44,7 @@ import {
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
 import {
   Eye,
+  ArrowRight,
   Clock,
   Edit3,
   Share2,
@@ -145,7 +147,8 @@ export default function DashboardClient({
   const [draftData, setDraftData] = useState<PortfolioData>(() =>
     normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode)
   );
-  const savedDraftRef = useRef<PortfolioData>(normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode));
+  const [savedAuthoringBaseline, setSavedAuthoringBaseline] = useState<PortfolioData>(() => normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode));
+  const savedDraftRef = useRef(savedAuthoringBaseline);
   const [preparingPreview, setPreparingPreview] = useState(false);
   const [mediaMutations, setMediaMutations] = useState(0);
   const [removingHoroscope, setRemovingHoroscope] = useState(false);
@@ -198,7 +201,7 @@ export default function DashboardClient({
   const focusedFieldRequestRef = useRef(pendingFieldFocus);
   const [serverFieldIssues, setServerFieldIssues] = useState<EditorFieldIssue[]>([]);
   const validationIssues = validationRequested
-    ? editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto)) : [];
+    ? editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto), savedAuthoringBaseline) : [];
 
   useEffect(() => {
     if (!pendingFieldFocus || !formOpen || focusedFieldRequestRef.current === pendingFieldFocus) return;
@@ -234,6 +237,7 @@ export default function DashboardClient({
   const pendingEditorSectionRef = useRef<PortfolioEditorSection | null>(null);
   const persistedEditorSectionRef = useRef(publicationReadiness.lastEditorSection);
   const currentEditorSectionRef = useRef(editorSection);
+  const sectionFocusRequestedRef = useRef(false);
   const editorMountedRef = useRef(true);
   const previewRequestQueue = useRef(Promise.resolve());
   const router = useRouter();
@@ -260,6 +264,11 @@ export default function DashboardClient({
   }, [formOpen, reviewOpen, router]);
 
   useEffect(() => { currentEditorSectionRef.current = editorSection; }, [editorSection]);
+  useEffect(() => {
+    if (!sectionFocusRequestedRef.current || !formOpen) return;
+    sectionFocusRequestedRef.current = false;
+    editorDialogRef.current?.querySelector<HTMLElement>(".biodata-section-heading h3")?.focus({ preventScroll: true });
+  }, [editorSection, formOpen]);
 
   const onVerificationStatusChange = useCallback((state: CandidateRecovery["state"]) => {
     // Transient status refreshes can race the external Didit navigation in Safari.
@@ -270,6 +279,9 @@ export default function DashboardClient({
     draftData,
     portfolioMedia.some(isShareablePrimaryPhoto)
   );
+  const editorSectionIndex = PORTFOLIO_EDITOR_SECTIONS.findIndex(section => section.id === editorSection);
+  const previousEditorSection = PORTFOLIO_EDITOR_SECTIONS[editorSectionIndex - 1];
+  const nextEditorSection = PORTFOLIO_EDITOR_SECTIONS[editorSectionIndex + 1];
   const nextRequiredSection = navigableSection(completion.nextEditorSection as PortfolioEditorSection);
   const nextRequiredSectionLabel = PORTFOLIO_EDITOR_SECTIONS.find((section) => section.id === nextRequiredSection)?.label || "introduction details";
   const verificationComplete = canPublishWithVerificationStatus(readinessState.verificationStatus);
@@ -310,6 +322,7 @@ export default function DashboardClient({
     // Intermediate dates/phones/names may be malformed while typing. Manual save
     // still returns actionable errors; autosave need not send a known rejection.
     if (!portfolioEditorDraftSchema.safeParse(draftData).success) return;
+    if (Object.keys(authoringChoiceErrors(draftData, savedDraftRef.current)).length) return;
     const revision = draftRevisionRef.current;
     if (lastAutosaveAttemptRevisionRef.current === revision) return;
     const timer = window.setTimeout(() => {
@@ -580,6 +593,7 @@ export default function DashboardClient({
         return false;
       }
       savedDraftRef.current = result.data.draftData ?? draftData;
+      setSavedAuthoringBaseline(savedDraftRef.current);
       if (result.data.readiness) {
         savedReadinessRef.current = draftRevisionRef.current === savingRevision
           ? result.data.readiness
@@ -622,14 +636,16 @@ export default function DashboardClient({
     return persistDashboardDraft();
   }
 
-  async function reviewPortfolio() {
+  async function saveAndReviewPortfolio() {
+    const needsSave = draftSaveState !== "saved" || !activePortfolioId;
+    // The editor's explicit Save action preserves incomplete private work too.
+    // Its refresh remains deferred until the owner leaves both editor and review.
+    if (needsSave && !await persistDashboardDraft()) return;
     if (!validateEditor()) return;
     if (draftData.privacy_mode === "private") {
       setDraftError("Update the saved sharing setup in Appearance & contact, then review the public introduction before publishing.");
       return;
     }
-    const needsSave = draftSaveState !== "saved" || !activePortfolioId;
-    if (needsSave && !await persistDashboardDraft({ refresh: false })) return;
     await openFinalReview(needsSave);
   }
 
@@ -770,6 +786,7 @@ export default function DashboardClient({
     const destination = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === navigableSection(section));
     const current = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === editorSection);
     if (destination > current && !validateEditor(destination)) return;
+    sectionFocusRequestedRef.current = true;
     setEditorSection(navigableSection(section));
     currentEditorSectionRef.current = section;
     const editorScroll = document.querySelector<HTMLElement>(".dashboard-editor-scroll");
@@ -825,7 +842,7 @@ export default function DashboardClient({
   }
 
   function validateEditor(beforeSection = PORTFOLIO_EDITOR_SECTIONS.length) {
-    const issues = editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto)).filter(issue =>
+    const issues = editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto), savedDraftRef.current).filter(issue =>
       PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === issue.section) < beforeSection);
     setValidationRequested(true);
     if (!issues.length) return true;
@@ -1385,30 +1402,25 @@ export default function DashboardClient({
             <fieldset disabled={!hydrated} className="contents">
             <div className="dashboard-editor-header flex-none border-b border-[var(--workspace-border)] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
-                <div>
-                  <div className="flex flex-wrap items-center gap-4">
+                <div className="dashboard-editor-heading">
                     <h2 id="portfolio-editor-heading" tabIndex={-1} className="text-lg font-semibold">Introduction details</h2>
                     <span className={`dashboard-save-state is-${draftSaveState}`} aria-live="polite">
                       {draftSaveState === "saving"
                         ? "Saving..."
                         : draftSaveState === "saved"
-                          ? portfolio?.is_published ? "Draft saved" : "Saved"
+                          ? "Draft saved"
                           : "Changes not saved"}
                     </span>
-                  </div>
-                  <p className="text-sm text-[var(--workspace-muted)]">
-                    Complete what you know. Save your work and continue later.
-                  </p>
                 </div>
-                <div className="app-header-actions"><ThemeSwitch /><button
+                <div className="dashboard-editor-header-actions"><button type="button" aria-label="Preview" title="Preview introduction" onClick={openEarlyPreview} disabled={savingDraft || preparingPreview || !completion.basicsComplete} className="dashboard-secondary-action dashboard-editor-icon-action"><Eye className="h-4 w-4" aria-hidden="true" /></button><ThemeSwitch /><button
                   type="button"
                   aria-label="Back to dashboard"
+                  title="Back to dashboard"
                   onClick={closePortfolioEditor}
-                  className="dashboard-secondary-action flex-none"
+                  className="dashboard-secondary-action dashboard-editor-icon-action"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Back to dashboard</span>
-                  <span className="sm:hidden">Dashboard</span>
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  <span className="dashboard-editor-dashboard-label">Dashboard</span>
                 </button></div>
               </div>
             </div>
@@ -1423,6 +1435,7 @@ export default function DashboardClient({
                   onUpdate={updateSection}
                   activeSection={editorSection}
                   onSectionChange={rememberEditorSection}
+                  showSectionNavigation={false}
                   validationIssues={[...validationIssues, ...serverFieldIssues.filter(issue => !validationIssues.some(local => local.path === issue.path))]}
                   onErrorSelect={showFieldIssue}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
@@ -1454,7 +1467,8 @@ export default function DashboardClient({
                     </>
                   }
                 />
-                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                <p className="mt-4 text-xs leading-5 text-[var(--workspace-muted)]">Drafts stay private. Only publishing updates what people see.</p>
+                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[var(--workspace-muted)]">Share accurate details you have permission to use. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
               </div>
             </div>
 
@@ -1475,50 +1489,26 @@ export default function DashboardClient({
                 )}
                 <div className="dashboard-editor-footer-layout">
                   <div className="dashboard-editor-footer-notes"><p className="dashboard-editor-footer-copy text-sm leading-6 text-[var(--workspace-muted)]">
-                    {editorSection === "privacy"
-                      ? "Save your answers, then confirm consent in Review and publish. Previews are optional."
-                      : portfolio?.is_published
-                      ? "Changes autosave as a draft. Review and publish to update what people see."
-                      : "Changes autosave as a draft. Publishing creates the introduction people can view."}
+                    Changes save privately. Review before publishing.
                   </p>
-                  <p className="text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                  <p className="text-xs leading-5 text-[var(--workspace-muted)]">Share accurate details you have permission to use. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
                   </div><div className="dashboard-editor-actions">
-                    <button
-                      type="button"
-                      onClick={openEarlyPreview}
-                      disabled={savingDraft || preparingPreview || !completion.basicsComplete}
-                      className="dashboard-secondary-action flex-1 sm:flex-none"
-                    >
-                      <Eye className="h-4 w-4" />
-                      Preview
+                    <button type="button" aria-label="Back" title="Previous section" disabled={!previousEditorSection || savingDraft || openingReview} onClick={() => previousEditorSection && rememberEditorSection(previousEditorSection.id)} className="dashboard-secondary-action dashboard-editor-step-action">
+                      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
-                      onClick={saveDashboardDraft}
-                      disabled={savingDraft}
-                      className="dashboard-editor-save-action dashboard-secondary-action flex-1 sm:flex-none"
-                    >
-                      <Save className="h-4 w-4" />
-                      {savingDraft ? "Saving..." : "Save draft"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={reviewPortfolio}
+                      onClick={saveAndReviewPortfolio}
                       disabled={publishing || savingDraft || openingReview}
-                      aria-label={savingDraft
-                        ? "Saving..."
-                        : portfolio?.is_published
-                          ? "Review saved changes"
-                          : "Review and publish"}
-                      className="dashboard-editor-review-action dashboard-primary-action flex-1 sm:flex-none"
+                      aria-label="Save & review"
+                      className={`dashboard-editor-review-action ${nextEditorSection ? "dashboard-secondary-action" : "dashboard-primary-action"}`}
                     >
-                      <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
-                      <span>{savingDraft
-                          ? "Saving..."
-                          : portfolio?.is_published
-                            ? "Review saved changes"
-                            : "Review and publish"}</span>
+                      <Save className="h-4 w-4" aria-hidden="true" />
+                      <span>{savingDraft ? "Saving…" : openingReview ? "Opening review…" : "Save & review"}</span>
                     </button>
+                    {nextEditorSection && <button type="button" aria-label={`Continue: ${nextEditorSection.label}`} title={`Continue: ${nextEditorSection.label}`} onClick={() => rememberEditorSection(nextEditorSection.id)} disabled={savingDraft || openingReview} className="dashboard-primary-action dashboard-editor-step-action">
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </button>}
                   </div>
                 </div>
               </div>

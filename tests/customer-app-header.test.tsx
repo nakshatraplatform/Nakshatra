@@ -69,6 +69,18 @@ describe("customer application header", () => {
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/"));
   });
 
+  it("keeps a touch-opened menu actionable when blur has no next focus target", async () => {
+    const { container } = render(<CustomerAppHeader currentPage="dashboard" />);
+    const trigger = openMenu();
+    trigger.focus();
+    // Touch browsers may blur summary without focusing the tapped button.
+    fireEvent.blur(trigger, { relatedTarget: null });
+    expect(container.querySelector("details")!.open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(mocks.clearSession).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/"));
+  });
+
   it("closes with Escape and restores avatar focus, then dismisses on outside interaction", () => {
     const { container } = render(<CustomerAppHeader currentPage="brokers" />);
     const trigger = openMenu();

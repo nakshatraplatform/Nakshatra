@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { editorFieldIssues } from "@/features/portfolio/editor-validation";
 import {
   formListValues,
   portfolioEditorDraftSchema,
@@ -13,7 +14,7 @@ const validPortfolio = {
     middle_name: "",
     last_name: "O'Neil",
     dob: "1998-01-30",
-    gender: "female",
+    gender: "female" as const,
     marital_status: "Single",
     country: "United States",
     city: "Boston",
@@ -26,6 +27,19 @@ const validPortfolio = {
 };
 
 describe("portfolio editor contract", () => {
+  it.each([-1, 21, 1.5])("gives a numeric sibling-count correction for %s, not a text-length message", (sibling_count) => {
+    expect(editorFieldIssues({ ...validPortfolio, family: { sibling_count } }, true))
+      .toContainEqual(expect.objectContaining({ path: "family.sibling_count", message: "Enter a whole number from 0 to 20, or leave it blank." }));
+  });
+  it.each([true, false])("keeps legacy ancestry errors on the editable origin with complete location %s", (completeLocation) => {
+    const issues = editorFieldIssues({ ...validPortfolio,
+      personal: { ...validPortfolio.personal, country_code: "US", region: "Massachusetts", region_code: "US-MA", postal_code: "02108", location_source: "manual",
+        current_location: "Boston, Massachusetts, United States", ...(completeLocation ? {} : { city: "", current_location: "" }) },
+      family: { ancestral_origin: "x".repeat(201) },
+    }, true);
+    expect(issues).toContainEqual(expect.objectContaining({ path: "family.paternal_origin", label: "Paternal family origin", section: "family" }));
+    expect(issues.filter(issue => issue.path === "personal.current_location")).toHaveLength(completeLocation ? 0 : 1);
+  });
   it("accepts concise optional narratives without a minimum while retaining maximum lengths", () => {
     const concise = { ...validPortfolio, personal: { ...validPortfolio.personal,
       profile_summary: "Quiet and kind.", long_term_goals: "A caring home.", shared_life_plans: "Evening walks.",
@@ -74,8 +88,9 @@ describe("portfolio editor contract", () => {
     } finally { vi.useRealTimers(); }
   });
   it("rejects control characters and punctuation-only portfolio name parts", () => {
-    for (const first_name of ["Ana\nMarie", "---", "''"]) {
+    for (const first_name of ["Ana\nMarie", "---", "''", "Rahul2", "Rahul@", "<script>"]) {
       expect(portfolioEditorDraftSchema.safeParse({ ...validPortfolio, personal: { ...validPortfolio.personal, first_name } }).success).toBe(false);
+      expect(portfolioEditorPublishSchema.safeParse({ ...validPortfolio, personal: { ...validPortfolio.personal, first_name } }).success).toBe(false);
     }
   });
   it("counts list selections case-insensitively like the database", () => {

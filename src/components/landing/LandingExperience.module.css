@@ -51,6 +51,7 @@
 .familySection,
 .samplesSection,
 .betaSection,
+.testimonialSection,
 .faqSection,
 .finalCta,
 .footer {
@@ -258,29 +259,6 @@
 .heroNote { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem !important; color: var(--workspace-muted); font-size: 0.8rem; }
 .heroNote svg { width: 1rem; height: 1rem; color: var(--workspace-ink); }
 
-.heroAssurances {
-  display: grid;
-  gap: 0;
-  margin: 1.5rem 0 0;
-  border-block: 1px solid var(--line);
-  padding: 0;
-  list-style: none;
-}
-
-.heroAssurances li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.heroAssurances li:last-child { border-bottom: 0; }
-.heroAssurances svg { width: 1rem; height: 1rem; margin-top: 0; color: var(--workspace-ink); }
-.heroAssurances span { display: grid; grid-template-columns: minmax(170px, 0.65fr) 1fr; gap: 1rem; }
-.heroAssurances strong { color: var(--ink); font-size: 0.76rem; }
-.heroAssurances small { color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
 
 .visual { position: relative; min-width: 0; padding: 5rem 0.5rem 0; }
 .mobilePreviewLabel { display: none; }
@@ -378,6 +356,7 @@
 .problemSection,
 .meaningSection,
 .betaSection,
+.testimonialSection,
 .faqSection { padding-block: clamp(4.5rem, 7vw, 6rem); }
 
 .sectionHeading { max-width: 760px; }
@@ -503,7 +482,17 @@
 .trustList p, .faqList p { max-width: 62ch; margin: 0; padding: 0 1rem 1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.65; overflow-wrap: anywhere; }
 
 .faqSection { display: grid; grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1fr); gap: clamp(3rem, 8vw, 7rem); }
+.guideLink { color: var(--workspace-teal); font-weight: 700; text-decoration: underline; text-underline-offset: .2em; }
+.guideLink:focus-visible { outline: 3px solid var(--workspace-ink); outline-offset: 3px; }
 .faqList summary { justify-content: space-between; }
+.testimonialSection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .72fr); gap: clamp(2rem, 7vw, 6rem); align-items: center; border-top: 1px solid var(--line); }
+.testimonialSection h2 { font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(2.5rem, 4.4vw, 4.25rem); font-weight: 500; line-height: 1.05; letter-spacing: -.035em; }
+.testimonialSection > div:first-child p { max-width: 54ch; margin-top: 1rem; color: var(--muted); line-height: 1.7; }
+.testimonialInvitation { border-left: 1px solid var(--line); padding: 1.5rem 0 1.5rem 2.5rem; }
+.testimonialInvitation > svg { width: 1.6rem; height: 1.6rem; }
+.testimonialInvitation h3 { margin-top: 1rem; font-size: 1.25rem; }
+.testimonialInvitation p { margin-top: .6rem; color: var(--muted); line-height: 1.6; }
+.testimonialInvitation a { margin-top: 1.5rem; }
 
 .finalCta { display: flex; align-items: center; justify-content: space-between; gap: 3rem; border-radius: 1.2rem; padding: clamp(2rem, 5vw, 4rem); background: var(--teal); color: var(--workspace-canvas); }
 .finalCta .eyebrow { color: inherit; }
@@ -537,7 +526,6 @@
   .navigationLinks { display: none; }
   .hero { grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr); gap: 2rem; }
   .hero h1 { font-size: clamp(3.15rem, 6vw, 4.4rem); }
-  .heroAssurances span { grid-template-columns: 1fr; gap: 0.5rem; }
 }
 
 @media (max-width: 1280px) {
@@ -545,7 +533,7 @@
 }
 
 @media (max-width: 860px) {
-  .header, .hero, .meaningSection, .problemSection, .stepsSection > *, .controlSection, .familySection, .samplesSection, .betaSection, .faqSection, .finalCta, .footer { width: min(100% - 2rem, 680px); }
+  .header, .hero, .meaningSection, .problemSection, .stepsSection > *, .controlSection, .familySection, .samplesSection, .betaSection, .testimonialSection, .faqSection, .finalCta, .footer { width: min(100% - 2rem, 680px); }
   .header { width: 100%; padding-inline: max(1rem, calc((100% - 680px) / 2)); }
   .hero { min-height: auto; grid-template-columns: 1fr; padding-block: 3.5rem; }
   .heroDemo > figure { max-width: 300px; }
@@ -553,7 +541,6 @@
   .heroCopy { max-width: 640px; }
   .hero h1 { max-width: 13ch; }
   .visual { margin-top: 1rem; }
-  .heroAssurances span { grid-template-columns: minmax(170px, 0.65fr) 1fr; gap: 1rem; }
   .stepsGrid { grid-template-columns: repeat(2, 1fr); }
   .stepsGrid article { border-bottom: 1px solid var(--workspace-border); }
   .stepsGrid article:nth-child(2n) { border-right: 0; }
@@ -562,6 +549,8 @@
   .problemGrid { gap: 1.5rem; }
   .controlSection { gap: 2.5rem; }
   .faqSection { gap: 2rem; }
+  .testimonialSection { grid-template-columns: 1fr; }
+  .testimonialInvitation { border-left: 0; border-top: 1px solid var(--line); padding: 1.5rem 0 0; }
   .familyGrid { grid-template-columns: 1fr; }
   .trustList { grid-template-columns: 1fr; }
   .familyGrid article { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -588,8 +577,6 @@
   .mobilePreviewLabel { position: absolute; top: 0; left: 0; display: block; max-width: 24ch; color: var(--muted); font-size: 0.84rem; font-weight: 600; line-height: 1.45; }
   .floatingMessage { top: 3rem; right: 0; }
   .floatingNote { right: 0.5rem; bottom: 0; }
-  .heroAssurances { margin-top: 1.5rem; }
-  .heroAssurances span { grid-template-columns: 1fr; gap: 0.5rem; }
   .controlSection { width: calc(100% - 2.5rem); }
   .portfolioBody { min-height: 420px; grid-template-columns: 1fr; grid-template-rows: 180px 1fr; }
   .portrait::before { width: 160px; height: 160px; }
@@ -603,7 +590,7 @@
   .previewLifecycle > span { grid-template-columns: 112px 1fr; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
   .previewLifecycle > svg { display: none; }
   .previewLifecycle [data-approved] { border-top: 1px solid var(--line); border-left: 0; padding-left: 0; }
-  .problemSection, .meaningSection, .betaSection, .faqSection, .stepsSection, .controlSection, .familySection, .samplesSection { padding-block: 3rem; }
+  .problemSection, .meaningSection, .betaSection, .testimonialSection, .faqSection, .stepsSection, .controlSection, .familySection, .samplesSection { padding-block: 3rem; }
   .sectionHeading h2, .controlIntro h2, .finalCta h2 { font-size: clamp(2.35rem, 11vw, 3.3rem); }
   .problemGrid, .stepsGrid, .familyGrid { margin-top: 2rem; }
   .problemGrid, .stepsGrid, .familyGrid, .betaDetails { grid-template-columns: 1fr; }

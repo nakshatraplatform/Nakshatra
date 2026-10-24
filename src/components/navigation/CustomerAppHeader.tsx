@@ -79,7 +79,9 @@ export function CustomerAppHeader({ currentPage, userEmail, accountProfile }: { 
             ref={menuRef}
             className={styles.accountMenu}
             onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeMenu();
+              // Safari touch can blur summary without focusing the tapped action.
+              // Outside pointers still dismiss; keyboard focus leaving has a target.
+              if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) closeMenu();
             }}
             onKeyDown={(event) => {
               const details = menuRef.current;

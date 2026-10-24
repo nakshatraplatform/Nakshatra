@@ -186,6 +186,11 @@ jobs:
           APPROVAL_RETRY_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: npm run test:db:approval-retry:local
 
+      - name: Verify concurrent Family Viewer limits and primary selection
+        env:
+          FAMILY_VIEWER_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:family-viewer-concurrency:local
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

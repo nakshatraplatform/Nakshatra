@@ -33,10 +33,10 @@ describe("landing and shared frontend components", () => {
   it("renders the concise product promise, access model, and primary actions", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /create your Vivara/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /share your story before you share your number/i })).toBeInTheDocument();
-    expect(screen.getByText(/For arranged-marriage conversations/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/shared Vivara/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /create your introduction/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /Your marriage biodata, shared through one link/i })).toBeInTheDocument();
+    expect(screen.getByText(/A simple way to introduce yourself/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Vivara.*link/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/private details/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /Why Rahul started VivIntro/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Private until you publish/i).length).toBeGreaterThan(0);
@@ -46,12 +46,12 @@ describe("landing and shared frontend components", () => {
 
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
-    expect(screen.getByRole("heading", { name: /Your Vivara. Private details shared by your decision/i })).toBeInTheDocument();
-    expect(document.querySelector("#privacy")).toHaveTextContent(/only with your approval/i);
+    expect(screen.getByRole("heading", { name: /Share your biodata. Choose when to share more/i })).toBeInTheDocument();
+    expect(document.querySelector("#privacy")).toHaveTextContent(/viewer signs in and confirms their email/i);
 
     rerender(<LandingExperience variant="story" />);
-    expect(screen.getByRole("heading", { name: /Let someone get to know the person behind the details/i })).toBeInTheDocument();
-    expect(screen.getByText(/Your Vivara gives you room to share your family/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Introduce yourself the way you want to be known/i);
+    expect(screen.getByText(/Bring your story, family and photos together with VivIntro/i)).toBeInTheDocument();
   });
 
   it("handles empty, selected, disabled, and selectable rashi palettes", async () => {

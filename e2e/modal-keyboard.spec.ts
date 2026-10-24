@@ -56,8 +56,14 @@ test("editor Escape preserves the dirty-draft decision in reduced motion", async
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("hidden");
   const heading = dialog.getByRole("heading", { name: "Introduction details" });
   await expect(heading).toBeFocused();
+  // Basics now ends with persistent Continue; Review is primary only on the last section.
+  const lastAction = dialog.locator(".dashboard-editor-footer").getByRole("button", { name: /^Continue:/ });
   await page.keyboard.press("Shift+Tab");
-  await expect(dialog.locator(".dashboard-editor-review-action")).toBeFocused();
+  await expect(lastAction).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("switch", { name: "Dark mode" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(lastAction).toBeFocused();
   await heading.focus();
   await page.keyboard.press("Tab");
   await expect(dialog.getByRole("switch", { name: "Dark mode" })).toBeFocused();
@@ -65,6 +71,7 @@ test("editor Escape preserves the dirty-draft decision in reduced motion", async
   page.once("dialog", dialog => dialog.dismiss());
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("First name", { exact: true })).toHaveValue("Unsaved");
   page.once("dialog", dialog => dialog.accept());
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
