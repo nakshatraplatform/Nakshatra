@@ -109,10 +109,10 @@ NAK-66 lifecycle work or production delivery is finished.
   and 21 protected-boundary gates passed. An initial unrestricted run failed
   one existing `IntersectionObserver` fixture; its isolated rerun and the full
   bounded rerun passed without changing the test or application.
-- Current dependency audit is **failed**: high-severity `zod` and `undici`
+- Initial PR-preparation dependency audit **failed**: high-severity `zod` and `undici`
   advisories are now reported. `package-lock.json` is byte-identical to main;
   these dependencies are not introduced by this increment. No exception or
-  audit bypass was added. Dependency remediation is required before merge.
+  audit bypass was added. The follow-up below resolves this audit blocker.
 - Fresh integrated clean database replay is **blocked** because local Docker
   commands do not respond. The earlier 64-suite / 1,836-assertion replay and
   four mocked-provider integration checks are historical evidence; hosted CI
@@ -129,3 +129,40 @@ NAK-66 lifecycle work or production delivery is finished.
   reruns. Model identifier unavailable. Merge/release remain blocked by the
   audit, integrated database gate and production/UAT requirements above.
   This final review-result addition is documentation only.
+
+## Dependency audit remediation — October 24, 2026
+
+Follow-up contract: remove the confirmed audit blocker using supported same-major
+releases while preserving the strict audit policy, input validation, runtime
+boundaries and existing coverage floors. Raise the direct Zod minimum to 4.6.6,
+keep Vitest and its exact-peer coverage provider aligned on 4.1.12, and refresh
+jsdom's compatible transitive Undici to 7.30.1 without an override or direct
+runtime dependency. Verify exact lockfile changes and reproducible installation,
+production/full audit, lint/typecheck, full coverage and production build. Obtain
+a fresh review of this dependency correction; database changes and production
+activation are outside this follow-up.
+
+Implemented locked Zod 4.6.7, Undici 7.30.1 and Vitest/coverage 4.1.12. Only
+eleven package entries changed, including Vitest's exact-version internal
+packages; incidental updates were removed. Direct manifests require at least
+the patched versions. No new dependency, override, audit exception, source,
+schema or test-policy changes.
+
+Verification: `npm ci --ignore-scripts` passed; strict production/full audit
+reports zero affected packages; lint, typecheck, fixture smoke and synthetic
+production build passed. Full coverage passed on patched dependencies:
+213 suites / 1,778 tests, 89.16% lines / 81.78% branches, all 63 feature-file
+and 21 protected-boundary gates. Fresh independent dependency review found no
+material findings on snapshot
+`f25c673bcf76be03b8705c021d5d695757805ad7c2c5ae8f74504f2db7471499`;
+reviewer verified all eleven cached artifact SHA-512 integrities, lock/manifest
+and installed metadata, peer/engine compatibility, unchanged audit/coverage/CI
+controls and source provenance. Model identifier unavailable. This final
+results addition is documentation only.
+
+Hosted run `40063817488` on pre-remediation head `b39f9b8` passed integrated
+clean migrations/pgTAP, HTTP email integration, concurrency and generated-type
+checks, plus all nine browser shards and secret scan. Its quality job failed
+at the old dependency audit. Those passes establish the earlier integrated
+database gate; hosted CI must rerun on the patched lockfile before merge.
+Production activation and actual inbox delivery remain unverified.
