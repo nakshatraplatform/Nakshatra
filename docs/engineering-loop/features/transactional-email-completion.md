@@ -2,7 +2,8 @@
 
 ## Contract — critical risk / full record
 
-Base: main 0587acc. Reuse the private notification outbox and Resend delivery
+Original base: main 0587acc; integrated main 0c2e9d2 for PR preparation.
+Reuse the private notification outbox and Resend delivery
 ledger; no second scheduler, per-route provider call, or public send endpoint.
 First publication queues one owner confirmation. Each successful interest
 submission queues a requester receipt in addition to the existing owner email.
@@ -86,9 +87,45 @@ UAT remains NAK-82; other NAK-66 lifecycle events are outside this increment.
 
 ## Remaining release gates
 
-Not pushed or deployed. Pause dispatch during schema/app compatibility transition,
+Not deployed. Pause dispatch during schema/app compatibility transition,
 deploy protected CD migration and matching application, authorize shared scheduler
 activation after queue review, configure actual runtime credentials, then verify
 owner/requester inboxes and signed delivery events. Browser journeys and real
 provider sends were not run in this backend-only increment. No claim that all
 NAK-66 lifecycle work or production delivery is finished.
+
+## PR integration verification — October 24, 2026
+
+- Integrated main `0c2e9d2`; the only merge conflict was the project-map entry.
+  Both the email and landing entries are retained. Application email logic,
+  SQL content and its tests remain unchanged from the reviewed implementation.
+- Renamed the unpublished migration to
+  `20261024044101_transactional_email_completion.sql`, after the latest migration
+  on main. Its content hash exactly matches the round-2 reviewed migration.
+  This keeps normal protected CD forward-only without `--include-all`.
+- Lint, typecheck, fixture smoke and synthetic-configuration production build
+  passed on the integrated branch. Full bounded-worker coverage rerun passed:
+  213 suites / 1,778 tests; 89.16% lines, 81.78% branches; all 63 feature-file
+  and 21 protected-boundary gates passed. An initial unrestricted run failed
+  one existing `IntersectionObserver` fixture; its isolated rerun and the full
+  bounded rerun passed without changing the test or application.
+- Current dependency audit is **failed**: high-severity `zod` and `undici`
+  advisories are now reported. `package-lock.json` is byte-identical to main;
+  these dependencies are not introduced by this increment. No exception or
+  audit bypass was added. Dependency remediation is required before merge.
+- Fresh integrated clean database replay is **blocked** because local Docker
+  commands do not respond. The earlier 64-suite / 1,836-assertion replay and
+  four mocked-provider integration checks are historical evidence; hosted CI
+  must verify the renamed migration alongside the newly merged migrations.
+- Production remains unactivated: latest protected health reports email
+  configuration incomplete, scheduler disabled and no successful worker run.
+  Vercel runtime settings must be picked up by a production redeployment.
+  Actual inbox delivery and stale-message review remain separate release gates.
+- Fresh-context independent integration review (round 3 of 3) found no material
+  code findings on manifest
+  `f71657e921bce97dc00a64b1c9d128af4823442b3f27f873f417832531f07804`.
+  Reviewer verified provenance, main lockfile equality, unchanged SQL content,
+  all six consumers and integration compatibility; no provider calls or test
+  reruns. Model identifier unavailable. Merge/release remain blocked by the
+  audit, integrated database gate and production/UAT requirements above.
+  This final review-result addition is documentation only.
