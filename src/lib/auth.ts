@@ -71,4 +71,3 @@ export async function getApiUser(): Promise<ApiUserResult> {
 }
 
 // Re-export for server-side usage
-export { isAuthError } from "@/lib/auth-utils";

@@ -1,5 +1,6 @@
 import "server-only";
 import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-cleanup.service";
+import { processPhotoCleanup } from "@/features/media/server/photo-cleanup.service";
 import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -54,6 +55,7 @@ export async function runProductionMaintenance(dispatchId?: string) {
   const tasks = {
     retention: () => processRetention(client),
     horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
+    photoCleanup: async () => (await processPhotoCleanup(client)).deferred === 0,
     identity: async () => (await identityRun).deferred === 0,
     providerCleanup: async () => (await processDeletedProviderCleanup(client, { fetchImpl: transport, limit: 2 })).deferred === 0,
     livenessEmail: async () => {

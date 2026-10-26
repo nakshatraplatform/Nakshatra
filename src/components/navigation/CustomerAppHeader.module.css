@@ -1,9 +1,4 @@
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
+.header { position: sticky; top: 0; z-index: 30; }
 .inner {
   width: min(100% - 2rem, 1100px);
   min-height: 68px;
@@ -12,172 +7,99 @@
   align-items: center;
   gap: clamp(1rem, 3vw, 2rem);
 }
-
-.desktopNav,
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.desktopNav {
-  margin-left: auto;
-}
-
-.actions {
-  flex: none;
-  gap: 0.5rem;
-}
-
-.navLink,
-.desktopSignOut,
-.menuLink,
-.menuSignOut {
+.desktopNav, .actions { display: flex; align-items: center; gap: 0.25rem; }
+.desktopNav { margin-left: auto; }
+.actions { flex: none; gap: 0.5rem; }
+.navLink, .menuLink, .menuSignOut {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  gap: 0.6rem;
   border-radius: 9px;
   padding: 0.6rem 0.8rem;
   color: var(--workspace-ink);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
-
-.navLink:hover,
-.desktopSignOut:hover,
-.menuLink:hover,
-.menuSignOut:hover {
-  background: var(--workspace-surface-muted);
-}
-
-.navLink[aria-current="page"],
-.menuLink[aria-current="page"] {
-  background: var(--workspace-surface-muted);
-  color: var(--workspace-ink);
-}
-
-.desktopSignOut,
+.navLink:hover, .menuLink:hover, .menuSignOut:hover:not(:disabled),
+.navLink[aria-current="page"], .menuLink[aria-current="page"] { background: var(--workspace-surface-muted); }
 .menuSignOut {
-  gap: 0.5rem;
   border: 0;
+  border-top: 1px solid var(--workspace-border);
+  border-radius: 0 0 8px 8px;
   background: transparent;
+  text-align: left;
   cursor: pointer;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-family: var(--font-portfolio-body), sans-serif;
 }
-
-.desktopSignOut:disabled,
-.menuSignOut:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.navLink:focus-visible,
-.desktopSignOut:focus-visible,
-.menuLink:focus-visible,
-.menuSignOut:focus-visible,
-.mobileMenu summary:focus-visible {
-  outline: 3px solid var(--workspace-ink);
+.menuSignOut:disabled { cursor: wait; opacity: 0.65; }
+.navLink:focus-visible, .menuLink:focus-visible, .menuSignOut:focus-visible, .accountMenu summary:focus-visible {
+  outline: 3px solid var(--workspace-teal);
   outline-offset: 2px;
 }
-
-.mobileMenu {
-  display: none;
+.accountMenu { position: relative; }
+.accountMenu summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  color: var(--workspace-ink);
+  cursor: pointer;
+  list-style: none;
 }
-
-.error {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1rem 0.5rem;
-  color: var(--ui-danger);
+.accountMenu summary::-webkit-details-marker { display: none; }
+.accountMenu summary:hover, .accountMenu[open] summary { background: var(--workspace-surface-muted); }
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 50%;
+  background: var(--workspace-surface-muted);
+  color: var(--workspace-ink);
   font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
-
+.triggerLabel { font-size: 0.875rem; font-weight: 600; }
+.chevron { margin-right: 0.5rem; }
+.accountMenu[open] .chevron { transform: rotate(180deg); }
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: min(18rem, calc(100vw - 1.25rem));
+  padding: 0.4rem;
+  border: 1px solid var(--workspace-border);
+  border-radius: 14px;
+  background: var(--workspace-surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--workspace-ink) 14%, transparent);
+  max-height: calc(100svh - 90px);
+  overflow-y: auto;
+}
+.identity { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem; margin-bottom: 0.35rem; border-bottom: 1px solid var(--workspace-border); }
+.identity > div { min-width: 0; }
+.identity strong { color: var(--workspace-ink); font-size: 0.875rem; font-weight: 600; letter-spacing: -0.02em; }
+.identity p { margin: 0.2rem 0 0; color: var(--workspace-muted); font-size: 0.75rem; line-height: 1.4; overflow-wrap: anywhere; }
+.menuLink, .menuSignOut { width: 100%; }
+.mobileNav { display: none; }
+.error { max-width: 1100px; margin: 0 auto; padding: 0 1rem 0.5rem; color: var(--ui-danger); font-size: 0.85rem; }
+@media (max-width: 900px) {
+  .triggerLabel { display: none; }
+}
 @media (max-width: 700px) {
-  .inner {
-    width: calc(100% - 1.25rem);
-    min-height: 62px;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .desktopNav,
-  .desktopSignOut {
-    display: none;
-  }
-
-  .mobileMenu {
-    display: block;
-    position: relative;
-  }
-
-  .mobileMenu summary {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--workspace-border);
-    border-radius: 9px;
-    color: var(--workspace-ink);
-    background: var(--workspace-surface);
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .mobileMenu summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .menuPanel {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    width: min(19rem, calc(100vw - 1.25rem));
-    padding: 0.5rem;
-    border: 1px solid var(--workspace-border);
-    border-radius: 12px;
-    background: var(--workspace-surface);
-    box-shadow: 0 16px 32px color-mix(in srgb, var(--ui-ink) 16%, transparent);
-  }
-
-  .accountEmail {
-    overflow-wrap: anywhere;
-    margin: 0 0 0.35rem;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--workspace-border);
-    color: var(--workspace-muted);
-    font-size: 0.75rem;
-  }
-
-  .menuPanel nav {
-    display: grid;
-  }
-
-  .menuLink,
-  .menuSignOut {
-    width: 100%;
-  }
-
-  .menuSignOut {
-    border-top: 1px solid var(--workspace-border);
-    border-radius: 0 0 8px 8px;
-    text-align: left;
-  }
+  .inner { width: calc(100% - 1.25rem); min-height: 62px; justify-content: space-between; gap: 0.5rem; }
+  .desktopNav { display: none; }
+  .mobileNav { display: grid; }
+  .chevron { display: none; }
 }
 
-@media (max-width: 350px) {
-  .mobileMenu summary span {
-    display: none;
-  }
-
-  .mobileMenu summary {
-    min-width: 44px;
-    justify-content: center;
-  }
-}
+.triggerLabel { max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.identity strong { overflow-wrap: anywhere; }

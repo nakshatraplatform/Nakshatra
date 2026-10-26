@@ -19,7 +19,7 @@ const gsap = vi.hoisted(() => ({
   }),
   from: vi.fn(() => animation),
   killTweensOf: vi.fn(),
-  timeline: vi.fn(() => ({ to: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), kill: vi.fn() })),
+  timeline: vi.fn(() => ({ set: vi.fn().mockReturnThis(), to: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), time: () => 0, duration: () => 15, kill: vi.fn() })),
   matchMedia: vi.fn(() => ({
     add: vi.fn((_query: unknown, callback: () => void) => callback()),
     revert: vi.fn(),
@@ -37,6 +37,9 @@ const scrollTrigger = vi.hoisted(() => ({
     options.onLeaveBack?.();
     return trigger;
   }),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock("gsap", () => ({ default: gsap }));
@@ -56,10 +59,6 @@ vi.mock("next/image", () => ({
     return React.createElement("img", { alt: "", ...imageProps });
   },
 }));
-vi.mock("shaders/react", () => {
-  const Part = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
-  return { Shader: Part, ChromaFlow: Part, FilmGrain: Part, FlutedGlass: Part, Swirl: Part };
-});
 
 import Home from "../src/app/page";
 import { LandingExperience } from "../src/components/landing/LandingExperience";

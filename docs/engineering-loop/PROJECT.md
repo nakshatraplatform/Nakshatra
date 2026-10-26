@@ -1,5 +1,20 @@
 # VivIntro / Nakshatra project map
 
+- [Implementation audit remediation](features/implementation-audit-remediation.md):
+  adds durable retired-photo cleanup, complete owner
+  relationship queues, partial-upload recovery and serialized photo-cap checks.
+  Failures surface as unavailable reads; retained tests await streamed layout.
+  The follow-up batches authorized signing, reuses request reads and modal lifecycle,
+  extracts dashboard responsibilities, removes dead code/dependencies and repairs
+  account/landing integration gates. Evidence, independent review and rollout
+  limitations are recorded in the feature; existing local features are preserved.
+
+- [Password recovery routing](features/password-recovery-routing.md): recovery
+  exchanges reach new-password entry before their safe continuation; returned
+  sign-out errors reach the existing retry UI. Local browser coverage exercises
+  the SDK cookie handoff, save and logout across desktop/tablet/mobile Chromium.
+  Current checks and separate hosted-provider evidence are recorded in the feature.
+
 - [NAK-84 test coverage hardening](features/nak-84-test-coverage-hardening.md):
   continues the completed NAK-17 baseline in risk order. The authenticated
   theme E2E hydration race is stabilized and passes repeated no-retry plus all
@@ -39,7 +54,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Observed stack and boundaries
 
-- Next.js 16.3.8 App Router observed locally (package range ^16.3.4), React 19, TypeScript 6, Vitest and Playwright; npm lockfile controls dependencies. Consult `node_modules/next/dist/docs/` before modifying framework behavior.
+- Next.js 16.4.3 App Router observed locally (package range ^16.3.4), React 19, TypeScript 6, Vitest and Playwright; npm lockfile controls dependencies. Consult `node_modules/next/dist/docs/` before modifying framework behavior.
 - Supabase Postgres, Auth and private Storage store portfolio and normalized verification state. Forward-only SQL migrations are in `supabase/migrations`; pgTAP tests are in `supabase/tests/database`. Protected CD applies production migrations.
 - Didit hosted sessions use server-only API credentials. `src/features/identity-verification/server/` owns candidate/representative session creation, signed webhooks and repositories. `scripts/identity-verification-worker.mjs` fetches decisions and deletes provider sessions; database RPCs own authoritative state transitions.
 - `src/features/media/server/` stores private portfolio photos. A `portfolio_media` hero row is the primary photo and can change after verification.
@@ -48,6 +63,8 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 ## Relevant feature status
 
 - [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
+
+- [Landing bookshelf and signup button](features/landing-bookshelf.md): four full-viewport, scroll-driven 3D books with direct/keyboard chapter access and static small-screen/reduced-motion/no-JavaScript fallbacks; compact outlined Google signup button. Local implementation and evidence are recorded in the feature; no provider or deployment change.
 
 - [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
 - [Onboarding foundations](features/onboarding-foundations.md): local increments
@@ -149,3 +166,5 @@ cleanup, server-only protected signing, durable email retry fences and dormant
 maintenance/health scheduling require coordinated migration/application rollout.
 Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
+
+- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, keyboard dismissal and existing session handling. The shared theme control now uses a sun/moon slider before the avatar; My brokers navigation is deferred.

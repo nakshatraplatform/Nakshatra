@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PortfolioData } from "../src/types/portfolio";
 import { resolveServerTree } from "./resolve-server-tree";
@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
   }]),
   rpc: vi.fn(),
   signedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/hero" } })),
+  after: vi.fn(),
+  signedUrls: vi.fn(async (paths: string[]) => ({ data: paths.map(path => ({ path, signedUrl: "https://signed.test/hero", error: null })) })),
   imageResponse: vi.fn(),
   authUser: null as { id: string; email?: string; email_confirmed_at?: string } | null,
   apiAuthStatus: "missing_session" as "missing_session" | "authenticated",
@@ -45,11 +47,12 @@ function databaseClient() {
     }),
     rpc: mocks.rpc,
     auth: { getUser: vi.fn(async () => ({ data: { user: mocks.authUser }, error: null })) },
-    storage: { from: () => ({ createSignedUrl: mocks.signedUrl }) },
+    storage: { from: () => ({ createSignedUrl: mocks.signedUrl, createSignedUrls: mocks.signedUrls }) },
   };
 }
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound, useRouter: () => ({ push: vi.fn(), refresh: mocks.refresh }) }));
+vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }) }));
 vi.mock("next/font/google", () => ({
   Inter: () => ({ variable: "portfolio-body" }),
@@ -303,7 +306,10 @@ describe("public portfolio pages", () => {
     mocks.outcomes.record_public_portfolio_view = { data: true };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
-    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" }));
+    expect(mocks.after).toHaveBeenCalledOnce();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("record_public_portfolio_view", expect.anything());
+    await mocks.after.mock.calls[0][0]();
+    expect(mocks.rpc).toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" });
   });
 
   it("uses the approved projection only when row-level access returns an approved snapshot", async () => {

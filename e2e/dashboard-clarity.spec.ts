@@ -50,7 +50,7 @@ test("dashboard landmarks and photo controls stay usable across themes", async (
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
   const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
     const remove = editor.getByRole("button", { name: "Delete photo", exact: true }).first();
     await remove.scrollIntoViewIfNeeded();
     const target = await remove.boundingBox();
@@ -72,7 +72,7 @@ test("editor hints and footer notes meet normal-text contrast in both themes", a
   const editor = page.getByRole("dialog", { name: "Introduction details", exact: true });
   const birthHintId = (await editor.getByLabel("Date of birth", { exact: true }).getAttribute("aria-describedby"))!.split(" ")[0];
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", theme);
     const ratios = await editor.evaluate((dialog, hintId) => {
       const targets = [dialog.querySelector(`[id="${hintId}"]`),

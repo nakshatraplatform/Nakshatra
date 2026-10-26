@@ -172,6 +172,15 @@ jobs:
       - name: Run database tests
         run: npm run test:db
 
+      - name: Verify simultaneous photo uploads respect the cap
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 54322
+          PGUSER: postgres
+          PGDATABASE: postgres
+          PGPASSWORD: postgres
+        run: npm run test:db:concurrency
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

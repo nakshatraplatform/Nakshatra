@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculatePortfolioCompletion, isProfileFullyComplete } from "@/features/portfolio/readiness";
+import { editorFieldIssues } from "@/features/portfolio/editor-validation";
+import { portfolioEditorPublishSchema } from "@/features/portfolio/form-contract";
 import type { PortfolioDraftData } from "@/types/portfolio";
 
 const completeDraft: PortfolioDraftData = {
@@ -35,6 +37,19 @@ const completeDraft: PortfolioDraftData = {
 };
 
 describe("portfolio completion", () => {
+  it.each([true, false])("keeps reused validation consistent after answers and photo eligibility change (%s)", (hasPhoto) => {
+    for (const draft of [completeDraft,
+      { ...completeDraft, personal: { ...completeDraft.personal, first_name: "", postal_code: "invalid" } },
+      { ...completeDraft, personal: { ...completeDraft.personal, profile_summary: "x".repeat(1601) } },
+    ]) {
+      const parsed = portfolioEditorPublishSchema.safeParse(draft);
+      const completion = calculatePortfolioCompletion(draft, hasPhoto, parsed);
+      expect(completion).toEqual(calculatePortfolioCompletion(draft, hasPhoto));
+      expect(editorFieldIssues(draft, hasPhoto, completion, parsed)).toEqual(editorFieldIssues(draft, hasPhoto));
+      expect(completion.missing.some(item => item.key === "primary_photo")).toBe(!hasPhoto);
+    }
+  });
+
   it("fails closed for missing and malformed published snapshots", () => {
     for (const snapshot of [null, undefined, {}, [], "published", { personal: { dob: "1990-99-99" } }]) {
       expect(isProfileFullyComplete(snapshot, true)).toBe(false);

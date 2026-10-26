@@ -19,6 +19,7 @@
     "test:db": "supabase test db supabase/tests/database --local",
     "test:db:local": "npm run db:verify",
     "db:smoke": "node scripts/check-db-fixtures.mjs",
+    "test:db:concurrency": "node scripts/check-photo-cap-concurrency.mjs",
     "db:verify": "node scripts/verify-local-db.mjs",
     "ci:db:start": "node scripts/start-supabase-ci.mjs",
     "ci:db:diagnose": "node scripts/diagnose-supabase-ci.mjs",
@@ -55,7 +56,6 @@
     "next": "^16.3.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "shaders": "^2.5.133",
     "sharp": "0.35.5",
     "thinking-orbs": "^0.3.2",
     "zod": "^4.4.3"
@@ -72,7 +72,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.39.4",
     "eslint-import-resolver-node": "0.3.10",
     "eslint-import-resolver-typescript": "3.10.1",
@@ -89,6 +89,6 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "8.59.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }

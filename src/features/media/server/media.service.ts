@@ -275,8 +275,7 @@ async function createAndStoreBlurredPreview(
 }
 
 /**
- * Removes one authorized media record and its associated private Storage objects.
- * Input: authenticated Supabase client and media ID. Output: resolves after both deletion steps complete.
+ * Removes an authorized photo; its database trigger durably queues private-object cleanup.
  */
 export async function deletePortfolioPhoto({
   supabase,
@@ -290,10 +289,4 @@ export async function deletePortfolioPhoto({
   if (error || !media) {
     throw new PortfolioMediaError("Photo not found", 404);
   }
-  const blurPath = (media.metadata as PortfolioMediaMetadata | null)?.blurPath;
-  const paths = [media.storage_path, media.thumbnail_path, blurPath].filter(
-    (path): path is string => Boolean(path)
-  );
-  const { error: storageError } = await repository.remove(paths);
-  if (storageError) throw new PortfolioMediaError("Photo was removed from the portfolio but not storage", 500);
 }

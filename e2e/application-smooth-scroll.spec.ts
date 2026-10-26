@@ -24,7 +24,7 @@ test("wheel, keyboard, anchors and browser back remain usable", async ({ page })
   await page.keyboard.press("PageDown");
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(50);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.locator('a[href="#tour-step-01"]').click();
+  await page.getByRole("link", { name: "01 Create", exact: true }).click();
   await expect(page).toHaveURL(/#tour-step-01$/);
   await expect(page.locator("#tour-step-01")).toBeInViewport();
   // A fresh path exercises native back restoration, rather than the hash history entry.
@@ -69,7 +69,7 @@ test("reduced motion tracks wheel without an animated tail and keeps anchors", a
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   expect(await page.evaluate(() => scrollY)).toBe(settled);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.locator('a[href="#tour-step-01"]').click();
+  await page.getByRole("link", { name: "01 Create", exact: true }).click();
   await expect(page.locator("#tour-step-01")).toBeInViewport();
 });
 

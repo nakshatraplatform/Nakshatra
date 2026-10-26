@@ -1,0 +1,115 @@
+.tour {
+  position: relative;
+  width: 100%;
+  background: var(--workspace-surface-muted);
+  color: var(--workspace-ink);
+}
+
+.anchor { display: none; }
+.tour[data-bookshelf="true"] .anchor { display: block; position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; scroll-margin-top: 0; }
+
+.scene { padding: 3rem max(1.5rem, calc((100% - 1240px) / 2)); }
+.intro { padding-block: clamp(1rem, 3svh, 2.5rem); }
+.intro h2 { font-family: var(--font-portfolio-display), sans-serif; font-size: clamp(2.6rem, min(7.6vw, 11svh), 7rem); font-weight: 500; letter-spacing: -0.035em; line-height: 1.12; }
+.intro p { margin-top: 1rem !important; color: var(--workspace-muted); font-size: 0.95rem; }
+.wordmark { display: inline-block; position: relative; width: 4.1em; aspect-ratio: 996 / 208; vertical-align: -0.04em; background: light-dark(var(--ui-action), color-mix(in srgb, var(--ui-action) 45%, var(--ui-on-action))); mask: url("/brand/vivintro/vivintro-wordmark.svg") center / contain no-repeat; }
+.intro .wordmark { margin-inline: 0.08em; }
+.wordmarkText { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.stage { display: grid; gap: 1.5rem; margin-block: 2rem; }
+.book { position: relative; scroll-margin-top: 7rem; min-width: 0; background: var(--workspace-surface); }
+.paper { position: relative; padding: clamp(1.5rem, 3vw, 2.5rem); }
+.chapter { display: block; font-size: 0.75rem; font-weight: 600; color: var(--workspace-muted); }
+.paper h3 { margin-top: 1.5rem !important; font-family: var(--font-portfolio-display), sans-serif; font-size: clamp(1.8rem, 2.5vw, 2.5rem); line-height: 1.1; font-weight: 500; letter-spacing: -0.03em; text-wrap: balance; }
+.paper > p { margin-top: 1rem !important; font-size: 0.95rem; line-height: 1.65; max-width: 55ch; }
+.paper ul { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 0.65rem; }
+.paper li { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; }
+.paper li svg { width: 0.9rem; height: 0.9rem; }
+.pageNumber { display: block; margin-top: 1.5rem; color: var(--workspace-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.cover, .spine, .pageEdge, .ledge { display: none; }
+.staticVisual > div { display: grid; }
+.footer { display: grid; gap: 1rem; }
+.navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--workspace-border); }
+.navigation a { display: flex; min-height: 48px; gap: 0.7rem; align-items: center; padding: 0.6rem 0.4rem; color: var(--workspace-muted); }
+.navigation a[aria-current="step"] { color: var(--workspace-ink); box-shadow: inset 0 2px var(--workspace-ink); }
+.navigation a:hover { color: var(--workspace-ink); background: var(--workspace-surface); }
+.navigation span { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.navigation strong { font-size: 0.8rem; font-weight: 500; }
+.navigation a:focus-visible, .coverFront:focus-visible, .skip:focus-visible { outline: 3px solid var(--workspace-teal); outline-offset: 4px; }
+.footerNotes { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; color: var(--workspace-muted); font-size: 0.75rem; }
+.footerNotes .scrollHint { display: none; }
+.skip { margin-left: auto; text-decoration: underline !important; text-underline-offset: 4px; }
+
+/* All content is in normal flow until the animation has mounted successfully. */
+.tour[data-bookshelf="true"] { height: 620svh; scroll-margin-top: 0; }
+.tour[data-bookshelf="true"] .scene {
+  position: sticky;
+  top: 0;
+  z-index: 51;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(1.5rem, 4svh, 3rem) 1.5rem;
+  background: var(--workspace-surface-muted);
+  isolation: isolate;
+}
+.tour[data-bookshelf="true"] .stage { position: relative; flex: 1; display: block; min-height: 0; margin: 0; perspective: 1800px; }
+.tour[data-bookshelf="true"] .book {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(300px, 28vw, 390px);
+  height: clamp(400px, 58svh, 510px);
+  transform-style: preserve-3d;
+  border-radius: 2px 10px 10px 2px;
+  background: var(--workspace-surface);
+  box-shadow: 8px 22px 40px color-mix(in srgb, var(--workspace-ink) 16%, transparent);
+}
+.tour[data-bookshelf="true"] .paper { height: 100%; padding: clamp(1.5rem, 2.5vw, 2rem); border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--workspace-ink) 9%, var(--workspace-surface)), var(--workspace-surface) 9%); }
+.tour[data-bookshelf="true"] .pageNumber { position: absolute; bottom: 1.5rem; right: 1.5rem; }
+.tour[data-bookshelf="true"] .cover { display: block; position: absolute; inset: 0; transform-origin: left center; transform-style: preserve-3d; transform: translateZ(3px); }
+.tour[data-bookshelf="true"] .coverFront,
+.tour[data-bookshelf="true"] .coverInside { position: absolute; inset: 0; border-radius: 2px 8px 8px 2px; backface-visibility: hidden; }
+.tour[data-bookshelf="true"] .coverFront {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.5rem 2rem;
+  color: var(--workspace-ink);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--workspace-ink) 10%, transparent), transparent 4%, color-mix(in srgb, var(--workspace-ink) 4%, transparent) 5%, transparent 7%), var(--workspace-surface);
+  transform: translateZ(1px);
+  cursor: pointer;
+}
+.coverBrand { width: 5.3em; font-size: 1.5rem; }
+.coverFront > svg { width: 3.5rem; height: 3.5rem; stroke-width: 1; margin-top: auto; margin-bottom: 2rem; }
+.coverFront > strong { max-width: 8ch; font-family: var(--font-portfolio-display), sans-serif; font-weight: 500; font-size: 2.6rem; line-height: 1.05; letter-spacing: -0.03em; }
+.coverNumber { width: 100%; border-top: 1px solid currentColor; margin-top: 2rem; padding-top: 0.7rem; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.tour[data-bookshelf="true"] .coverInside { display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; padding: 1.5rem; background: var(--workspace-surface); transform: rotateY(180deg); box-shadow: inset -8px 0 20px color-mix(in srgb, var(--workspace-ink) 8%, transparent); }
+.coverInside > small { color: var(--workspace-muted); font-size: 0.7rem; text-align: center; }
+.coverInside > div { min-height: 270px; padding: 3.5rem 1rem 1rem; border: 1px solid var(--workspace-border); border-radius: 4px; }
+.coverInside dl { gap: 0.5rem; margin-top: 0; }
+.tour[data-bookshelf="true"] .spine { display: flex; position: absolute; width: 22px; height: 100%; left: 0; top: 0; align-items: center; justify-content: center; background: var(--workspace-surface-muted); color: var(--workspace-ink); transform-origin: left; transform: rotateY(-90deg); }
+.spine span { writing-mode: vertical-rl; font-size: 0.7rem; }
+.tour[data-bookshelf="true"] .pageEdge { display: block; position: absolute; width: 18px; height: calc(100% - 8px); right: 0; top: 4px; transform-origin: right; transform: rotateY(90deg); background: repeating-linear-gradient(90deg, var(--workspace-surface) 0 2px, var(--workspace-border) 2px 3px); }
+.tour[data-bookshelf="true"] .ledge { display: block; position: absolute; width: 96%; height: 12px; left: 2%; top: 84%; background: var(--workspace-border); box-shadow: 0 14px 16px color-mix(in srgb, var(--workspace-ink) 12%, transparent); transform: rotateX(45deg); }
+.tour[data-bookshelf="true"] .staticVisual { display: none; }
+.tour[data-bookshelf="true"] .footerNotes .scrollHint { display: block; }
+
+@media (max-width: 859px) {
+  .navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .intro { display: block; }
+  .intro p { margin-top: 1rem !important; }
+  .skip { margin-left: 0; }
+  .footerNotes { align-items: flex-start; flex-direction: column; }
+}
+
+@media (min-width: 860px) and (min-height: 700px) and (max-height: 790px) {
+  .tour[data-bookshelf="true"] .book { height: 410px; }
+  .tour[data-bookshelf="true"] .paper { padding: 1.5rem; }
+  .paper h3 { font-size: 1.9rem; margin-top: 1rem !important; }
+  .paper > p { font-size: 0.88rem; line-height: 1.5; }
+  .paper ul { margin-top: 1rem; }
+}
+
+.tour[data-bookshelf="true"] .scene { overflow: clip; }
+.tour[data-bookshelf="true"] .book { max-height: 100%; }
+.tour[data-bookshelf="true"] .paper { overflow-y: auto; }

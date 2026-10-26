@@ -6,6 +6,7 @@ import { LoadingOrb, LoadingStatus } from "@/components/loading/LoadingStatus";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { activateModalLifecycle } from "@/lib/ui/modal-lifecycle";
 import { KeyRound, ShieldCheck, Trash2, X } from "lucide-react";
 import type { AccountDeletionStatus } from "@/features/account/server/account.contract";
@@ -31,6 +32,7 @@ type Action = "profile" | "sessions" | "delete" | "cancel" | "reauth" | null;
 
 /** Presents browser-safe account controls while all privileged work remains in authenticated APIs. */
 export default function AccountClient({ userEmail, initialDeletion, initialProfile = emptyAccountProfile, profileManagedByPortfolio = false, signInMethods = [], reauthComplete = false }: Props) {
+  const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
   const [savedProfile, setSavedProfile] = useState(initialProfile);
   const [deletion, setDeletion] = useState(initialDeletion);
@@ -71,6 +73,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
     else {
       setProfile(result.data);
       setSavedProfile(result.data);
+      router.refresh();
       setMessage("Your account names have been saved. Your portfolio has not changed.");
     }
     setAction(null);

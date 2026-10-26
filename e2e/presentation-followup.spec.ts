@@ -32,6 +32,9 @@ for (const route of [...publicRoutes, ...authenticatedRoutes]) {
           const text = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join("").trim();
           if (!text) continue;
           const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          // Screen-reader labels clipped to one pixel do not paint text over the masked logo.
+          if (style.clipPath === "inset(50%)" && rect.width <= 1 && rect.height <= 1) continue;
           const expected = element.closest("h1,h2,h3,h4,h5,h6") ? "Plus Jakarta Sans" : "Inter";
           if (!style.fontFamily.includes(expected)) fontFailures.push(`${element.tagName} ${text.slice(0, 65)}: ${style.fontFamily}; expected ${expected}`);
           const ancestors: Element[] = [];

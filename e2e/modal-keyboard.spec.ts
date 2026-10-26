@@ -60,7 +60,7 @@ test("editor Escape preserves the dirty-draft decision in reduced motion", async
   await expect(dialog.locator(".dashboard-editor-review-action")).toBeFocused();
   await heading.focus();
   await page.keyboard.press("Tab");
-  await expect(dialog.getByRole("button", { name: /Switch to .* theme/ })).toBeFocused();
+  await expect(dialog.getByRole("switch", { name: "Dark mode" })).toBeFocused();
   await page.getByLabel("First name", { exact: true }).fill("Unsaved");
   page.once("dialog", dialog => dialog.dismiss());
   await page.keyboard.press("Escape");

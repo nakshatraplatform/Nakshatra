@@ -109,7 +109,8 @@ export async function loadDashboardView({
   const media = (mediaResult.data ?? []) as PortfolioMedia[];
   const mediaUrls = await createOwnerPortfolioMediaPreviewUrls({ supabase, media });
   const parsedInterests = dashboardInterestsSchema.safeParse(interestsResult.data ?? []);
-  const interests = parsedInterests.success ? parsedInterests.data : [];
+  if (interestsResult.error || !parsedInterests.success) throw new Error("We could not load your interests. Please retry.");
+  const interests = parsedInterests.data;
 
   return {
     portfolio,

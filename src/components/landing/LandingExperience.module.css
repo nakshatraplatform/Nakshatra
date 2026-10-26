@@ -370,46 +370,6 @@
 .stepsGrid h3 { margin-top: 2.5rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 2rem; font-weight: 500; }
 .stepsGrid p { max-width: 34ch; margin-top: 0.5rem; color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 
-.guidedTour { padding-block: clamp(3rem, 4vw, 4rem); background: var(--workspace-surface-muted); }
-.guidedTourInner { display: grid; width: min(1240px, calc(100% - 3rem)); grid-template-columns: minmax(300px, 0.7fr) minmax(560px, 1.3fr); gap: clamp(3rem, 7vw, 7rem); margin-inline: auto; }
-.guidedTourIntro { position: sticky; top: 106px; align-self: start; padding-top: 0.5rem; }
-.guidedTourIntro h2 { max-width: 13ch; margin-top: 1rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(2.8rem, 4.5vw, 4.4rem); font-weight: 500; letter-spacing: -0.04em; line-height: 0.98; text-wrap: balance; }
-.guidedTourIntro > p:not(.eyebrow) { max-width: 48ch; margin-top: 1rem; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
-.guidedTourIntro > .tourExampleNote { margin-top: 0.5rem; font-size: 0.75rem; }
-.tourNavigation { display: grid; margin-top: 2rem; border-block: 1px solid var(--workspace-border); }
-.tourNavigation a { display: grid; min-height: 54px; grid-template-columns: 2.25rem 1fr; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--workspace-border); color: var(--muted); }
-.tourNavigation a:last-child { border-bottom: 0; }
-.tourNavigation a > span { color: var(--gold); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; }
-.tourNavigation strong { font-size: 0.78rem; font-weight: 600; }
-.tourNavigation a::after { position: absolute; right: 0; width: 14px; height: 2px; background: var(--workspace-muted); content: ""; }
-.tourNavigation a { position: relative; }
-.tourNavigation a[aria-current="step"] { color: var(--ink); }
-.tourNavigation a[aria-current="step"]::after { width: 32px; background: var(--workspace-ink); }
-.tourStack { position: relative; align-self: start; padding-bottom: 2rem; }
-.tourCard {
-  position: sticky;
-  top: 98px;
-  scroll-margin-top: 6rem;
-  z-index: calc(var(--tour-index) + 1);
-  display: grid;
-  min-height: 0;
-  grid-template-rows: auto minmax(250px, 1fr);
-  overflow: hidden;
-  margin-bottom: 2rem;
-  border: 1px solid var(--workspace-border);
-  border-radius: 1rem;
-  background: var(--surface);
-  box-shadow: 0 24px 65px color-mix(in srgb, var(--ui-ink) 12%, transparent);
-}
-.tourCard:last-child { margin-bottom: 0; }
-.tourCardCopy { padding: clamp(1.5rem, 3vw, 2.5rem); }
-.tourCardLabel { display: flex; align-items: center; gap: 0.5rem; color: var(--workspace-ink); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
-.tourCardLabel svg { width: 1.05rem; height: 1.05rem; }
-.tourCard h3 { max-width: 16ch; margin-top: 1rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(2.25rem, 3.5vw, 3.4rem); font-weight: 500; letter-spacing: -0.035em; line-height: 1; text-wrap: balance; }
-.tourCardCopy > p { max-width: 58ch; margin-top: 1rem; color: var(--muted); font-size: 0.88rem; line-height: 1.65; }
-.tourCard ul { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-.tourCard li { display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid var(--line); border-radius: 99px; padding: 0.5rem 0.5rem; color: var(--workspace-muted); font-size: 0.75rem; font-weight: 600; }
-.tourCard li svg { width: 0.75rem; height: 0.75rem; color: var(--workspace-ink); }
 .tourVisual { position: relative; display: grid; align-content: center; min-height: 300px; gap: 1rem; border-top: 1px solid var(--line); padding: clamp(1.5rem, 4vw, 3rem); background: var(--workspace-surface-muted); }
 .tourWindowBar { position: absolute; top: 0; right: 0; left: 0; display: flex; height: 42px; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--workspace-border); padding: 0 1rem; }
 .tourWindowBar > span { width: 7px; height: 7px; border-radius: 50%; background: var(--workspace-muted); }
@@ -517,26 +477,12 @@
 .finalCta a:focus-visible { outline-color: var(--workspace-canvas); }
 
 @media (min-width: 861px) and (min-height: 700px) and (max-height: 1000px) {
-  .guidedTourInner { grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr); gap: clamp(2rem, 4vw, 4rem); }
-  .guidedTourIntro h2 { font-size: clamp(2.5rem, 3.6vw, 3.5rem); }
-  .tourCard { min-height: 0; height: calc(100vh - 122px); grid-template-rows: auto minmax(0, 1fr); }
-  .tourCardCopy { padding: clamp(1rem, 2vw, 1.5rem); }
-  .tourCard h3 { margin-top: 0.5rem; font-size: clamp(1.9rem, 2.7vw, 2.5rem); }
-  .tourCardCopy > p { margin-top: 0.5rem; line-height: 1.45; }
-  .tourCard ul { margin-top: 0.5rem; }
   .tourVisual { min-height: 0; padding: clamp(1rem, 2vw, 1.5rem); }
 }
 
-@media (min-width: 861px) and (max-height: 699px) {
-  .guidedTourInner { max-width: 740px; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
-  .guidedTourIntro { position: static; }
-  .tourStack { display: grid; gap: 1rem; padding-bottom: 0; }
-  .tourCard { position: relative; top: auto; min-height: auto; margin-bottom: 0; }
-}
 
 @media (max-width: 1080px) {
   .navigationLinks { display: none; }
-  .guidedTourInner { grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr); gap: 2rem; }
   .hero { grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr); gap: 2rem; }
   .hero h1 { font-size: clamp(3.15rem, 6vw, 4.4rem); }
   .heroAssurances span { grid-template-columns: 1fr; gap: 0.5rem; }
@@ -570,15 +516,6 @@
   .finalCta { align-items: flex-start; flex-direction: column; gap: 2rem; }
   .footer { grid-template-columns: 1fr auto; }
   .footer p { display: none; }
-  .guidedTourInner { width: min(100% - 2rem, 680px); grid-template-columns: 1fr; gap: 2rem; }
-  .guidedTourIntro { position: static; }
-  .guidedTourIntro h2 { max-width: 14ch; }
-  .tourNavigation { grid-template-columns: repeat(4, 1fr); overflow-x: auto; }
-  .tourNavigation a { min-width: 130px; grid-template-columns: auto 1fr; border-right: 1px solid var(--workspace-border); border-bottom: 0; padding: 0 1rem; }
-  .tourNavigation a:last-child { border-right: 0; }
-  .tourNavigation a::after { right: 0.65rem; bottom: 0; height: 2px; }
-  .tourStack { display: grid; gap: 1rem; padding: 0; }
-  .tourCard { position: relative; top: auto; min-height: auto; margin: 0; }
   .tourVisual { min-height: 280px; }
 }
 
@@ -635,30 +572,9 @@
   .finalAction { width: 100%; }
   .footer { grid-template-columns: 1fr; align-items: start; padding-block: 1.5rem; }
   .footer > div { justify-content: flex-start; }
-  .guidedTour { padding-block: 3rem; }
-  .guidedTourInner { width: calc(100% - 2rem); min-width: 0; gap: 1.5rem; }
-  .guidedTourIntro,
-  .tourStack,
-  .tourCard,
-  .tourCardCopy { min-width: 0; }
-  .guidedTourIntro h2 { font-size: clamp(2.35rem, 11vw, 3.3rem); }
-  .tourNavigation { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; margin-top: 1.5rem; border-bottom: 0; }
-  .tourNavigation a,
-  .tourNavigation a:last-child { min-width: 0; min-height: 58px; grid-template-columns: 1.6rem minmax(0, 1fr); border-right: 0; border-bottom: 1px solid var(--workspace-border); padding: 0.5rem 0.5rem 0.5rem 0; }
-  .tourNavigation a:nth-child(odd) { border-right: 1px solid var(--workspace-border); }
-  .tourNavigation a:nth-child(even) { padding-left: 1rem; }
-  .tourNavigation a::after { right: 0.65rem; }
-  .tourNavigation strong { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
-  .tourCard { display: block; border-radius: 0.8rem; box-shadow: 0 12px 30px color-mix(in srgb, var(--ui-ink) 8%, transparent); }
-  .tourCardCopy { padding: 1.5rem; }
-  .tourCard h3 { max-width: none; font-size: clamp(2rem, 10vw, 2.7rem); overflow-wrap: anywhere; }
-  .tourCardCopy > p { overflow-wrap: anywhere; }
-  .tourCard ul { display: grid; gap: 0.5rem; }
-  .tourCard li { border: 0; padding: 0; border-radius: 0; font-size: 0.75rem; }
   .tourVisual { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .primaryButton, .secondaryButton, .lightButton, .trustList details, .faqList details, .trustList .disclosureChevron, .faqList summary svg { transition: none; }
-  .tourCard { position: relative; top: auto; min-height: auto; margin-bottom: 1rem; }
 }

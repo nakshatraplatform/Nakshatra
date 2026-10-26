@@ -113,7 +113,7 @@ select public.register_candidate_liveness_provider_create(:'attempt_id',repeat('
 select public.attach_candidate_liveness_provider_session(:'attempt_id',repeat('d',64),'b5000000-4444-4444-8444-444444444444','b4000000-1111-4111-8111-111111111111',1);
 reset role;
 update app_private.identity_verification_attempts set resume_deadline=clock_timestamp()-interval '1 minute' where id=:'attempt_id';
-update app_private.identity_verification_worker_state set run_after=clock_timestamp()-interval '1 second' where attempt_id=:'attempt_id' and task_type='reconcile';
+update app_private.identity_verification_worker_state set run_after=now() where attempt_id=:'attempt_id' and task_type='reconcile';
 set local role service_role;
 select pg_temp.set_service_role_claims();
 select claim_token from public.claim_identity_verification_work(1) \gset
@@ -134,7 +134,7 @@ select public.register_candidate_liveness_provider_create(:'attempt_id',repeat('
 select public.attach_candidate_liveness_provider_session(:'attempt_id',repeat('e',64),'b5000000-5555-4555-8555-555555555555','b4000000-1111-4111-8111-111111111111',1);
 reset role;
 update app_private.identity_verification_attempts set resume_deadline=clock_timestamp()-interval '6 minutes' where id=:'attempt_id';
-update app_private.identity_verification_worker_state set run_after=clock_timestamp()-interval '1 second' where attempt_id=:'attempt_id' and task_type='reconcile';
+update app_private.identity_verification_worker_state set run_after=now() where attempt_id=:'attempt_id' and task_type='reconcile';
 set local role service_role;
 select pg_temp.set_service_role_claims();
 select claim_token from public.claim_identity_verification_work(1) \gset

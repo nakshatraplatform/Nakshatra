@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("the revised landing copy preserves the section structure and both themes", async ({ page }, testInfo) => {
   await page.goto("/");
   for (const theme of ["light", "dark"]) {
-    if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("button", { name: `Switch to ${theme === "dark" ? "Dark" : "Light"} theme` }).click();
+    if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your biodata, as one link you control.");
     expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "why", "privacy", "samples", "how", "viewer", "trust", "beta", "questions"]);
     await expect(page.locator("#how article")).toHaveCount(4);

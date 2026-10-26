@@ -6,7 +6,6 @@ vi.mock("@/lib/supabase/client", () => ({
 import {
   cancelAccountDeletionRequest,
   clearLocalAccountSession,
-  downloadAccountExportRequest,
   requestAccountDeletionRequest,
   revokeOtherSessionsRequest,
   saveAccountProfileRequest,
@@ -22,23 +21,29 @@ describe("account browser API", () => {
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
-  it("returns an export blob and uses explicit methods", async () => {
-    const fetch = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetch);
-    const result = await downloadAccountExportRequest();
-    expect(result.ok).toBe(true);
-    expect(fetch).toHaveBeenCalledWith("/api/account/export", { method: "GET" });
+  it("reports a returned sign-out failure so the caller can retry", async () => {
+    const error = new Error("provider unavailable");
+    signOut.mockResolvedValueOnce({ error });
+    await expect(clearLocalAccountSession()).rejects.toBe(error);
+    signOut.mockResolvedValueOnce({ error: null });
+    await expect(clearLocalAccountSession()).resolves.toBeUndefined();
+  });
+
+  it("preserves thrown sign-out failures", async () => {
+    const error = new Error("network unavailable");
+    signOut.mockRejectedValueOnce(error);
+    await expect(clearLocalAccountSession()).rejects.toBe(error);
   });
 
   it("maps server and network failures without exposing internals", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
-      JSON.stringify({ code: "ACCOUNT_EXPORT_FAILED", error: "Export unavailable" }),
+      JSON.stringify({ code: "ACCOUNT_REQUEST_FAILED", error: "Session update unavailable" }),
       { status: 503, headers: { "Content-Type": "application/json" } }
     )));
-    await expect(downloadAccountExportRequest()).resolves.toMatchObject({
+    await expect(revokeOtherSessionsRequest()).resolves.toMatchObject({
       ok: false,
-      code: "ACCOUNT_EXPORT_FAILED",
-      message: "Export unavailable",
+      code: "ACCOUNT_REQUEST_FAILED",
+      message: "Session update unavailable",
     });
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("private network detail")));
@@ -123,12 +128,6 @@ describe("account browser API", () => {
       ok: false,
       code: "ACCOUNT_REQUEST_FAILED",
       message: "We could not complete that account action.",
-      status: 503,
-    });
-    await expect(downloadAccountExportRequest()).resolves.toEqual({
-      ok: false,
-      code: "ACCOUNT_EXPORT_FAILED",
-      message: "We could not prepare your account export.",
       status: 503,
     });
   });

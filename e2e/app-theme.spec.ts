@@ -10,7 +10,7 @@ async function noOverflow(page: Page) {
 test("form text and placeholders meet normal-text contrast in both themes", async ({ page }) => {
   await page.goto("/login");
   for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.getByLabel("Email address")).toHaveCSS("background-color", theme === "light" ? "rgb(255, 253, 248)" : "rgb(27, 41, 50)");
     const ratios = await page.getByLabel("Email address").evaluate((input) => {
       function luminance(color: string) {
@@ -37,7 +37,7 @@ test("Light default ignores device Dark; keyboard switch persists and syncs tabs
   page.on("console", (message) => { if (/hydration|didn't match/i.test(message.text())) hydrationErrors.push(message.text()); });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
-  const toggle = page.getByRole("button", { name: "Switch to Dark theme" });
+  const toggle = page.getByRole("switch", { name: "Dark mode", checked: false });
   await expect(toggle).toBeVisible();
   const box = await toggle.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);
@@ -47,13 +47,13 @@ test("Light default ignores device Dark; keyboard switch persists and syncs tabs
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
   expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe("dark");
   await page.getByRole("link", { name: "Sign in", exact: true }).first().click();
-  await expect(page.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   const other = await context.newPage();
   await other.goto("/privacy");
-  await expect(other.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
-  await page.getByRole("button", { name: "Switch to Light theme" }).click();
+  await expect(other.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
+  await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
   await expect(other.locator("html")).toHaveAttribute("data-app-theme", "light");
   await page.evaluate((key) => localStorage.setItem(key, "dark"), key);
   await expect(other.locator("html")).toHaveAttribute("data-app-theme", "dark");
@@ -77,23 +77,23 @@ test("invalid and blocked storage are safe and do not prevent switching", async 
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
   await page.addInitScript(() => { Object.defineProperty(window, "localStorage", { get() { throw new DOMException("Blocked"); } }); });
   await page.reload();
-  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
-  await page.getByRole("button", { name: "Switch to Light theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
 });
 
 test("public screens support both themes without layout overflow", async ({ page }, testInfo) => {
   for (const route of ["/", "/login", "/signup", "/reset-password", "/waitlist", "/privacy", "/verification/result", "/verify/unavailable"]) {
     await page.goto(route);
-    await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
+    await expect(page.getByRole("switch", { name: "Dark mode", checked: false })).toBeVisible();
     await noOverflow(page);
     if (route === "/") await page.screenshot({ path: testInfo.outputPath("landing-light.png"), fullPage: true, animations: "disabled" });
-    await page.getByRole("button", { name: "Switch to Dark theme" }).click();
-    await expect(page.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+    await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
+    await expect(page.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
     await noOverflow(page);
     if (route === "/" || route === "/login" || route === "/waitlist") await page.screenshot({ path: testInfo.outputPath(`${route === "/" ? "landing" : route.slice(1)}-dark.png`), fullPage: true, animations: "disabled" });
-    await page.getByRole("button", { name: "Switch to Light theme" }).click();
+    await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
   }
 });
 
@@ -108,18 +108,18 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
       await expect(page.getByLabel("Introduction activity at a glance")).toHaveCount(0);
       await expect(page.getByRole("heading", { name: /0% complete/i })).toHaveCount(0);
     }
-    await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     await noOverflow(page);
     await page.screenshot({ path: testInfo.outputPath(`${route.replaceAll("/", "-")}-dark.png`), fullPage: true, animations: "disabled" });
-    await page.getByRole("button", { name: "Switch to Light theme" }).click();
+    await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
     await noOverflow(page);
   }
   await page.goto("/dashboard?edit=1");
   const editor = page.getByRole("dialog");
   await expect(editor).toBeVisible();
-  await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
-  await expect(editor.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+  await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
+  await expect(editor.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   await noOverflow(page);
   await page.screenshot({ path: testInfo.outputPath("editor-dark.png"), fullPage: true, animations: "disabled" });
   const sectionSelect = editor.getByRole("combobox", { name: "Go to introduction section" });
@@ -136,7 +136,7 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   // Establish the next navigation's theme explicitly. When the persisted theme
   // stays Dark, the streamed editor can be visible before its client controls
   // hydrate, leaving the server-rendered Light-state label briefly observable.
-  await editor.getByRole("button", { name: "Switch to Light theme" }).click();
+  await editor.getByRole("switch", { name: "Dark mode", checked: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
 
   // Optional-section styling needs a complete account, not a bypass of Basics.
@@ -144,8 +144,8 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard?edit=1");
   await expect(editor).toBeVisible();
-  await editor.getByRole("button", { name: "Switch to Dark theme" }).click();
-  await expect(editor.getByRole("button", { name: "Switch to Light theme" })).toBeVisible();
+  await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
+  await expect(editor.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   await goToAstrology();
   await expect(editor.getByRole("heading", { name: "Astrology and horoscope", exact: true })).toBeVisible();
   await expect(editor.getByRole("alert", { name: "Check these answers" })).toHaveCount(0);
@@ -165,7 +165,7 @@ test("deep BrokerDesk headers fit compact mobile widths", async ({ page, context
     await page.goto(brokerdeskTeamRoute);
     await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Customer dashboard" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
+    await expect(page.getByRole("switch", { name: "Dark mode", checked: false })).toBeVisible();
     await noOverflow(page);
   }
 });
@@ -181,7 +181,7 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       await expect(page).toHaveURL(new RegExp(`${route}$`));
       await expect(page.getByRole("link", { name: "VivIntro home" })).toBeVisible();
       await expect(page.locator(".dashboard-header")).toHaveCSS("position", "sticky");
-      await expect(page.getByRole("button", { name: "Switch to Dark theme" })).toBeVisible();
+      await expect(page.getByRole("switch", { name: "Dark mode", checked: false })).toBeVisible();
       await noOverflow(page);
       if (route === "/dashboard") {
         const cards = page.locator(".dashboard-stats-grid .dashboard-stat-card");
@@ -191,16 +191,24 @@ test("customer navigation fits phone, tablet and desktop widths across protected
       if ((width === 375 && (route === "/brokers" || route === "/dashboard")) || (width === 1024 && route === "/dashboard")) {
         await page.screenshot({ path: testInfo.outputPath(`customer-${width}-${label.replaceAll(" ", "-")}.png`), fullPage: true, animations: "disabled" });
       }
+      await expect(page.getByRole("banner").locator('a[href="/brokers"]')).toHaveCount(0);
+      if (route === "/brokers") continue; // Route remains supported; its navigation is intentionally deferred.
       if (width <= 700) {
-        const menu = page.locator("summary[aria-label='Menu']");
+        const menu = page.locator("summary[aria-label='Account menu']");
         await expect(menu).toBeVisible();
         const box = await menu.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);
         expect(box!.height).toBeGreaterThanOrEqual(44);
         await menu.click();
-        await expect(page.getByRole("navigation", { name: "Customer pages mobile" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+        const current = route === "/account" ? page.getByRole("link", { name: "Account settings" })
+          : page.getByRole("navigation", { name: "Customer pages mobile" }).getByRole("link", { name: label });
+        await expect(current).toHaveAttribute("aria-current", "page");
         await page.keyboard.press("Escape");
         await expect(page.locator("details")).not.toHaveAttribute("open", "");
+      } else if (route === "/account") {
+        await page.getByLabel("Account menu").click();
+        await expect(page.getByRole("link", { name: "Account settings" })).toHaveAttribute("aria-current", "page");
+        await page.keyboard.press("Escape");
       } else {
         await expect(page.getByRole("navigation", { name: "Customer pages" }).getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
       }
@@ -246,7 +254,7 @@ test("owner appearance and portaled interest forms ignore the app theme", async 
     await expect(portfolio).toHaveCount(1);
     await expect(portfolio).toHaveAttribute("data-appearance", appearance);
     await expect(portfolio).toHaveCSS("color-scheme", appearance);
-    await expect(page.getByRole("button", { name: /Switch to .* theme/ })).toHaveCount(0);
+    await expect(page.getByRole("switch", { name: "Dark mode" })).toHaveCount(0);
     await page.getByRole("button", { name: "Show interest" }).click();
     await expect(page.getByRole("dialog")).toHaveCSS("color-scheme", appearance);
     await page.getByRole("button", { name: "Continue as a new visitor" }).click();

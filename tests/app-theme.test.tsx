@@ -39,16 +39,16 @@ describe("application theme", () => {
     const user = userEvent.setup();
     const view = mount();
     await user.tab();
-    expect(screen.getAllByRole("button", { name: "Switch to Dark theme" })[0]).toHaveFocus();
+    expect(screen.getAllByRole("switch", { name: "Dark mode", checked: false })[0]).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(document.documentElement.dataset.appTheme).toBe("dark");
     expect(window.localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("dark");
-    expect(screen.getAllByRole("button", { name: "Switch to Light theme" })).toHaveLength(2);
+    expect(screen.getAllByRole("switch", { name: "Dark mode", checked: true })).toHaveLength(2);
     view.unmount();
     document.documentElement.dataset.appTheme = "light";
     mount();
-    expect(screen.getAllByRole("button", { name: "Switch to Light theme" })).toHaveLength(2);
-    await user.click(screen.getAllByRole("button", { name: "Switch to Light theme" })[1]);
+    expect(screen.getAllByRole("switch", { name: "Dark mode", checked: true })).toHaveLength(2);
+    await user.click(screen.getAllByRole("switch", { name: "Dark mode", checked: true })[1]);
     expect(window.localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("light");
   });
 
@@ -76,9 +76,9 @@ describe("application theme", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Blocked"); });
     mount();
     const user = userEvent.setup();
-    await user.click(screen.getAllByRole("button", { name: "Switch to Dark theme" })[0]);
+    await user.click(screen.getAllByRole("switch", { name: "Dark mode", checked: false })[0]);
     expect(document.documentElement.dataset.appTheme).toBe("dark");
-    await user.click(screen.getAllByRole("button", { name: "Switch to Light theme" })[0]);
+    await user.click(screen.getAllByRole("switch", { name: "Dark mode", checked: true })[0]);
     expect(document.documentElement.dataset.appTheme).toBe("light");
   });
 
@@ -87,7 +87,7 @@ describe("application theme", () => {
     vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Blocked"); });
     mount();
     act(() => window.dispatchEvent(new StorageEvent("storage", { key: APP_THEME_STORAGE_KEY, newValue: "dark", storageArea: storage })));
-    await userEvent.click(screen.getAllByRole("button", { name: "Switch to Dark theme" })[0]);
+    await userEvent.click(screen.getAllByRole("switch", { name: "Dark mode", checked: false })[0]);
     expect(document.documentElement.dataset.appTheme).toBe("dark");
   });
 
@@ -95,7 +95,8 @@ describe("application theme", () => {
     window.localStorage.setItem(APP_THEME_STORAGE_KEY, "dark");
     document.documentElement.dataset.appTheme = "dark";
     const html = renderToString(<AppThemeProvider><ThemeSwitch /></AppThemeProvider>);
-    expect(html).toContain('aria-label="Switch to Dark theme"');
+    expect(html).toContain('aria-label="Dark mode"');
+    expect(html).toContain('aria-checked="false"');
   });
 
   it("initializes before hydration using only allowlisted values", () => {

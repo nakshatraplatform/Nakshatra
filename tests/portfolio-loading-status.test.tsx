@@ -12,10 +12,9 @@ vi.mock("thinking-orbs", () => ({
 
 import { AppThemeProvider } from "@/components/theme/AppThemeProvider";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
-import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
 import { APP_THEME_STORAGE_KEY } from "@/lib/app-theme";
 
-describe("PortfolioLoadingStatus", () => {
+describe("LoadingStatus", () => {
   it("keeps a public dialog's appearance independent of the app theme", () => {
     render(<AppThemeProvider><LoadingStatus compact appearance="dark" title="Sending interest" /></AppThemeProvider>);
     const status = screen.getByRole("status");
@@ -40,7 +39,7 @@ describe("PortfolioLoadingStatus", () => {
   it("explains the wait while keeping the visual orb decorative", () => {
     render(
       <AppThemeProvider>
-        <PortfolioLoadingStatus
+        <LoadingStatus
           title="Publishing your portfolio"
           detail="Keep this page open until the result appears."
           state="weaving"
@@ -59,7 +58,7 @@ describe("PortfolioLoadingStatus", () => {
     window.localStorage.setItem(APP_THEME_STORAGE_KEY, "dark");
     render(
       <AppThemeProvider>
-        <PortfolioLoadingStatus title="Opening your dashboard" detail="Getting your portfolio ready." />
+        <LoadingStatus title="Opening your dashboard" detail="Getting your portfolio ready." />
       </AppThemeProvider>
     );
 

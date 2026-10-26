@@ -14,7 +14,7 @@ for (const [path, title] of [["/dashboard", "Getting your portfolio and requests
     await page.keyboard.press("Enter");
     await expect(page.getByRole("main")).toBeFocused();
     await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
-    await header.getByRole("button", { name: "Switch to Dark theme" }).click();
+    await header.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     if (path === "/dashboard" && testInfo.project.name !== "tablet-chromium") {
       await page.screenshot({ path: testInfo.outputPath("pending-data-dark.png"), animations: "disabled" });
@@ -27,10 +27,10 @@ for (const [path, title] of [["/dashboard", "Getting your portfolio and requests
     const documents: string[] = [];
     page.on("request", request => { if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documents.push(request.url()); });
     // On mobile use the same menu a person uses, not a hidden desktop link.
-    if (!(await header.getByRole("link", { name: "Dashboard", exact: true }).first().isVisible())) await header.getByText("Menu", { exact: true }).click();
-    const destination = path === "/dashboard" ? "Account" : "Dashboard";
+    const destination = path === "/dashboard" ? "Account settings" : "Dashboard";
+    if (destination === "Account settings" || !(await header.getByRole("link", { name: "Dashboard", exact: true }).first().isVisible())) await header.getByLabel("Account menu").click();
     await header.getByRole("link", { name: destination, exact: true }).filter({ visible: true }).click();
-    await expect(page).toHaveURL(destination === "Account" ? /\/account$/ : /\/dashboard$/);
+    await expect(page).toHaveURL(destination === "Account settings" ? /\/account$/ : /\/dashboard$/);
     expect(await page.evaluate(() => (window as Window & { componentLoadingMarker?: string }).componentLoadingMarker)).toBe(marker);
     expect(documents).toEqual([]);
   });

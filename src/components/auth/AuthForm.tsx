@@ -4,6 +4,7 @@ import { LoadingStatus } from "@/components/loading/LoadingStatus";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
+import { SocialLoginButton } from "./SocialLoginButton";
 
 
 import { useEffect, useState } from "react";
@@ -280,10 +281,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </form>
 
               <div className="account-divider" aria-hidden="true"><span /><small>or</small><span /></div>
-              <button type="button" onClick={handleGoogle} disabled={pendingAction !== null} className="auth-google-btn">
-                <GoogleIcon />
-                <span>{pendingAction === "google" ? "Connecting..." : "Continue with Google"}</span>
-              </button>
+              {mode === "signup" ? (
+                <SocialLoginButton onClick={handleGoogle} disabled={pendingAction !== null} pending={pendingAction === "google"} />
+              ) : (
+                <button type="button" onClick={handleGoogle} disabled={pendingAction !== null} className="auth-google-btn">
+                  <GoogleIcon />
+                  <span>{pendingAction === "google" ? "Connecting..." : "Continue with Google"}</span>
+                </button>
+              )}
 
               {(error || authErrorMessage) && <p className="account-error" role="alert">{error || authErrorMessage}</p>}
               <p className="account-alt">{copy.altPrompt} <Link href={alternateHref} className="account-link">{copy.altCta}</Link></p>

@@ -353,17 +353,13 @@ describe("portfolio media service", () => {
       })
     ).rejects.toMatchObject({ status: 500 });
 
-    repository.remove.mockResolvedValue({ error: new Error("storage") });
-    await expect(
-      deletePortfolioPhoto({ supabase: {} as never, mediaId: media.id })
-    ).rejects.toMatchObject({ status: 500 });
   });
 
-  it("deletes media metadata and stored files, including missing-media protection", async () => {
+  it("deletes metadata without a lossy inline storage deletion, including missing-media protection", async () => {
     await expect(
       deletePortfolioPhoto({ supabase: {} as never, mediaId: media.id })
     ).resolves.toBeUndefined();
-    expect(repository.remove).toHaveBeenCalledWith([media.storage_path, media.thumbnail_path]);
+    expect(repository.remove).not.toHaveBeenCalled();
 
     repository.deleteMedia.mockResolvedValue({ data: null, error: null });
     await expect(

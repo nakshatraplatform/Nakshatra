@@ -36,6 +36,7 @@ export const accessAuditEventSchema = z.object({
 export const portfolioAccessSummarySchema = z.object({
   grants: z.array(accessGrantSchema),
   events: z.array(accessAuditEventSchema),
+  counts: z.object({ awaiting: z.number().int().nonnegative(), "set-aside": z.number().int().nonnegative(), access: z.number().int().nonnegative() }).optional(),
 });
 
 export const grantActionSchema = z.object({

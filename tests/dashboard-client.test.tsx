@@ -1261,6 +1261,25 @@ describe("dashboard client", () => {
     await waitFor(() => expect(mocks.upload).toHaveBeenCalled());
   });
 
+  it.each(["rejects", "throws"])("keeps successful photos when a later batch upload %s", async (failure) => {
+    mocks.upload.mockResolvedValueOnce({ ok: true, data: { media: { ...media, id: "uploaded-first", alt_text: "First saved photo" }, previewUrl: "https://signed.test/first.webp" } });
+    if (failure === "throws") mocks.upload.mockRejectedValueOnce(new Error("Second upload failed"));
+    else mocks.upload.mockResolvedValueOnce({ ok: false, error: { code: "PHOTO_TYPE_INVALID", message: "Second upload failed" } });
+    const { container } = renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
+    fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [
+      new File(["one"], "first.png", { type: "image/png" }),
+      new File(["two"], "second.png", { type: "image/png" }),
+    ] } });
+    expect(await screen.findByText("Second upload failed")).toBeInTheDocument();
+    expect(screen.getByAltText("First saved photo")).toBeInTheDocument();
+    expect(screen.getByText("2/8")).toBeInTheDocument();
+    expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
+    expect(mocks.upload).toHaveBeenCalledTimes(2);
+  });
+
   it("redirects expired sessions and shows ordinary API failures", async () => {
     mocks.save.mockResolvedValueOnce({ ok: false, error: { code: "AUTH_SESSION_MISSING", message: "Sign in" } });
     mocks.publish.mockResolvedValueOnce({ ok: false, error: { code: "PUBLISH_FAILED", message: "Complete required fields" } });
@@ -1438,16 +1457,16 @@ describe("dashboard client", () => {
     expect(screen.getByText("Verified")).toBeInTheDocument();
   });
 
-  it("keeps only the latest three records on the dashboard and paginates the full queue", () => {
+  it("keeps only the latest three records on the dashboard and paginates the full server queue", async () => {
     const interests = Array.from({ length: 9 }, (_, index) => ({
-      id: `interest-${index + 1}`,
+      id: `63000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
       viewer_name: `Viewer ${index + 1}`,
       viewer_phone: null,
       viewer_email: `viewer${index + 1}@example.com`,
       viewer_family_context: null,
       message: `Message ${index + 1}`,
       status: "new",
-      requester_user_id: `viewer-${index + 1}`,
+      requester_user_id: null,
       metadata: { profile_for: "self" },
       created_at: `2026-08-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
       email_verified: true,
@@ -1455,6 +1474,13 @@ describe("dashboard client", () => {
       broker_name: index % 2 === 0 ? null : "Trusted Broker",
       broker_representative_name: null,
       requester_portfolio_token: null,
+    }));
+    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+      const url = new URL(input, "https://app.test");
+      const search = url.searchParams.get("search") || "";
+      const offset = Number(url.searchParams.get("offset"));
+      const matches = interests.toReversed().filter(item => item.viewer_name.includes(search));
+      return Response.json({ total: matches.length, records: matches.slice(offset, offset + 8).map(item => ({ kind: "interest", item })) });
     }));
     renderDashboard({ interests });
 
@@ -1465,35 +1491,37 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "View all (9)" }));
     const dialog = screen.getByRole("dialog", { name: "Awaiting review" });
-    expect(within(dialog).getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Page 1 of 2")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 1")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: /Next/i }));
-    expect(within(dialog).getByText("Viewer 1")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Viewer 1")).toBeInTheDocument();
     fireEvent.change(within(dialog).getByPlaceholderText("Search by name or email…"), { target: { value: "Viewer 4" } });
-    expect(within(dialog).getByText("Viewer 4")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Viewer 4")).toBeInTheDocument();
     expect(within(dialog).queryByText("Viewer 5")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close and return to dashboard" }));
     expect(screen.queryByRole("dialog", { name: "Awaiting review" })).not.toBeInTheDocument();
   });
 
-  it("moves ended access out of the active queue and into history", () => {
-    renderDashboard({
+  it("moves ended access out of the active queue and into history", async () => {
+    const props = {
       accessSummary: {
         grants: [
-          { id: "active-grant", interestRequestId: "interest-active", viewerName: "Active Viewer", status: "active", expiresAt: "2099-01-01T00:00:00.000Z" },
-          { id: "expired-grant", interestRequestId: "interest-expired", viewerName: "Expired Viewer", status: "expired", expiresAt: "2025-01-01T00:00:00.000Z" },
-          { id: "ended-grant", interestRequestId: "interest-ended", viewerName: "Ended Viewer", status: "revoked", expiresAt: "2099-01-01T00:00:00.000Z", revokedAt: "2026-01-01T00:00:00.000Z" },
+          { id: "64000000-0000-4000-8000-000000000001", interestRequestId: "65000000-0000-4000-8000-000000000001", viewerName: "Active Viewer", status: "active" as const, expiresAt: "2099-01-01T00:00:00.000Z" },
+          { id: "64000000-0000-4000-8000-000000000002", interestRequestId: "65000000-0000-4000-8000-000000000002", viewerName: "Expired Viewer", status: "expired" as const, expiresAt: "2025-01-01T00:00:00.000Z" },
+          { id: "64000000-0000-4000-8000-000000000003", interestRequestId: "65000000-0000-4000-8000-000000000003", viewerName: "Ended Viewer", status: "revoked" as const, expiresAt: "2099-01-01T00:00:00.000Z", revokedAt: "2026-01-01T00:00:00.000Z" },
         ],
         events: [],
       },
-    });
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ total: 2, records: props.accessSummary.grants.slice(1).map(item => ({ kind: "grant", item })) })));
+    renderDashboard(props);
 
     expect(screen.getByText("Active Viewer")).toBeInTheDocument();
     expect(screen.queryByText("Expired Viewer")).not.toBeInTheDocument();
     expect(screen.queryByText("Ended Viewer")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
     const history = screen.getByRole("dialog", { name: "Relationship history" });
-    expect(within(history).getByText("Expired Viewer")).toBeInTheDocument();
+    expect(await within(history).findByText("Expired Viewer")).toBeInTheDocument();
     expect(within(history).getByText("Ended Viewer")).toBeInTheDocument();
   });
 
@@ -1518,6 +1546,36 @@ describe("dashboard client", () => {
     expect(screen.getByRole("dialog", { name: "Priya Shah" })).toBeInTheDocument();
     expect(screen.getByText("Sangam Matchmakers")).toBeInTheDocument();
     expect(screen.getByText("The family would like to continue the conversation.")).toBeInTheDocument();
+  });
+
+  it("filters and independently bounds broker response history without repeating it on server pages", async () => {
+    const brokerIntroductionResponses = Array.from({ length: 9 }, (_, i) => ({
+      introductionRef: brokerIntroductionRouteRefSchema.parse(`bir_${String(i + 1).padStart(32, "0")}`),
+      brokerName: "Sangam Matchmakers", recipientLabel: `Broker recipient ${i + 1}`,
+      response: "accepted" as const, comment: null, respondedAt: "2026-08-12T12:00:00.000Z",
+    }));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ total: 16, records: [] })));
+    renderDashboard({ brokerIntroductionResponses });
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
+    const history = screen.getByRole("dialog", { name: "Relationship history" });
+    await within(history).findByText("Page 1 of 2");
+    const responses = within(history).getByRole("region", { name: "Broker introduction responses" });
+    expect(within(responses).getAllByRole("article")).toHaveLength(8);
+    expect(within(responses).queryByText("Broker recipient 9")).not.toBeInTheDocument();
+    fireEvent.click(within(responses).getByRole("button", { name: "Next broker responses" }));
+    expect(within(responses).getAllByRole("article")).toHaveLength(1);
+    expect(within(responses).getByText("Broker recipient 9")).toBeInTheDocument();
+    fireEvent.change(within(history).getByLabelText("Filter records"), { target: { value: "direct" } });
+    expect(within(history).queryByText("Broker recipient 9")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByLabelText("Filter records"), { target: { value: "broker" } });
+    fireEvent.change(within(history).getByPlaceholderText("Search by name or email…"), { target: { value: "Broker recipient 9" } });
+    expect(within(history).getByText("Broker recipient 9")).toBeInTheDocument();
+    expect(within(history).queryByText("Broker recipient 1")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByPlaceholderText("Search by name or email…"), { target: { value: "" } });
+    await within(history).findByText("Page 1 of 2");
+    fireEvent.click(within(history).getByRole("button", { name: /^Next$/ }));
+    await within(history).findByText("Page 2 of 2");
+    expect(within(history).queryByRole("region", { name: "Broker introduction responses" })).not.toBeInTheDocument();
   });
 
   it("removes the publishing journey after a ready portfolio is published", () => {
@@ -1857,7 +1915,9 @@ describe("dashboard client", () => {
       publicationReadiness: { ...readyPublicationReadiness, verificationStatus: "required", reviewFingerprint: "a".repeat(64) },
     };
     mocks.loadDashboardView.mockResolvedValue(dashboard);
-    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    const initial = await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(initial); });
     goToFoundation();
     fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
     expect(mocks.save).not.toHaveBeenCalled();
@@ -1865,7 +1925,8 @@ describe("dashboard client", () => {
       ...dashboard,
       publicationReadiness: { ...dashboard.publicationReadiness, verificationStatus: "verified" },
     });
-    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    const refreshed = await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }));
+    await act(async () => { view.rerender(refreshed); });
     expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
     expect(mocks.save).not.toHaveBeenCalled();
   });

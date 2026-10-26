@@ -80,6 +80,7 @@ const ownerPortfolio = {
 const legacyPublishedData = ownerPortfolio.published_data;
 ownerPortfolio.published_data = structuredClone(ownerPortfolio.draft_data);
 
+const publicReadCounts = new Map();
 const ownerInterests = [
   { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "34343434-3434-4434-8434-343434343434", viewer_name: "A long family name for layout testing that should wrap without hiding the decision", viewer_phone: null, viewer_email: "family@example.test", viewer_family_context: null, message: "Would it be possible to talk first?", status: "new", requester_user_id: "abababab-abab-4bab-8bab-abababababab", metadata: { profile_for: "family" }, created_at: "2026-10-02T12:00:00Z", email_verified: false, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
@@ -280,6 +281,39 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
+  if (url.pathname === "/__test/public-read-counts") return sendJson(response, 200, publicReadCounts.get(url.searchParams.get("token")) || {});
+  if (request.method === "POST" && ["resolve_public_portfolio", "resolve_public_portfolio_identity_verified", "resolve_public_portfolio_status", "record_public_portfolio_view"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
+    let observedBody = "";
+    request.on("data", chunk => { observedBody += chunk; });
+    request.on("end", () => {
+      const token = JSON.parse(observedBody || "{}").p_share_token;
+      if (typeof token !== "string" || !token.startsWith("e2e-cache-")) return;
+      const counts = publicReadCounts.get(token) || {};
+      const name = url.pathname.split("/").at(-1);
+      counts[name] = (counts[name] || 0) + 1;
+      publicReadCounts.set(token, counts);
+    });
+  }
+  // Loopback-only password recovery: exercise the real SDK's PKCE cookie bridge.
+  if (request.method === "POST" && url.pathname === "/auth/v1/recover") return sendJson(response, 200, {});
+  if (request.method === "POST" && url.pathname === "/auth/v1/token" && url.searchParams.get("grant_type") === "pkce") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    request.on("end", () => {
+      const payload = JSON.parse(body);
+      if (payload.auth_code !== "loopback-password-recovery" || !payload.code_verifier) {
+        return sendJson(response, 400, { code: "invalid_grant", message: "Invalid fixture exchange" });
+      }
+      return sendJson(response, 200, {
+        access_token: themeTestToken, refresh_token: "local-ui-fixture", expires_in: 3600,
+        token_type: "bearer", user: themeTestUser,
+      });
+    });
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/auth/v1/logout" && request.headers.authorization === `Bearer ${themeTestToken}`) {
+    return sendJson(response, 200, {});
+  }
   if (url.pathname === "/auth/v1/user") {
     if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) return sendJson(response, 200, themeTestUser);
     if (request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, approvedViewerUser);
@@ -297,6 +331,9 @@ const server = createServer((request, response) => {
   // Theme browser coverage uses the real page components with loopback-only,
   // read-only projections. Production authorization code is never replaced.
   if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
+    // Recovery fixtures have a portfolio but no relationships; null is not a valid access projection.
+    if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, []);
+    if (url.pathname === "/rest/v1/rpc/list_portfolio_access") return sendJson(response, 200, { grants: [], events: [] });
     // These older fixtures exercise additive-migration compatibility: editing
     // remains available, but separately loaded review evidence is not trusted.
     if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 404, { code: "PGRST202", message: "Fixture RPC unavailable" });
@@ -349,6 +386,27 @@ const server = createServer((request, response) => {
     if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMediaWithPreviews[0]]);
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
+    if (url.pathname === "/rest/v1/rpc/list_relationship_queue") {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => {
+        const query = JSON.parse(body || "{}");
+        const records = [
+          ...ownerInterests.map(item => ({ kind: "interest", item, stage: ["new", "pending_review"].includes(item.status) ? "awaiting" : item.status === "rejected" ? "set-aside" : "history" })),
+          ...ownerAccess.grants.map(item => ({ kind: "grant", item, stage: item.status === "active" ? "access" : "history" })),
+        ].filter(record => {
+          if (record.stage !== query.p_stage) return false;
+          const interest = record.kind === "interest";
+          const name = interest ? record.item.viewer_name : record.item.viewerName;
+          const email = interest ? record.item.viewer_email : record.item.viewerEmail;
+          if (!`${name || ""} ${email || ""}`.toLowerCase().includes((query.p_search || "").trim().toLowerCase())) return false;
+          const source = interest ? record.item.source_type : record.item.sourceType;
+          return ({ direct: source === "direct", broker: source === "broker", verified: interest && record.item.email_verified,
+            pending: record.stage === "awaiting", active: record.stage === "access", ended: !interest && record.stage === "history" })[query.p_filter] ?? true;
+        });
+        return sendJson(response, 200, { total: records.length, records: records.slice(query.p_offset || 0, (query.p_offset || 0) + 8).map(({ kind, item }) => ({ kind, item })) });
+      });
+    }
     if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
     if (url.pathname === "/rest/v1/rpc/get_interest_details") {
       let body = "";
@@ -383,7 +441,7 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token"].includes(token)) return sendJson(response, 200, null);
+      if (typeof token !== "string" || token.startsWith("e2e-cache-expired-") || (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token"].includes(token) && !token.startsWith("e2e-cache-"))) return sendJson(response, 200, null);
       const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
       if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
       if (token === "e2e-long-narrative-token") {
@@ -398,7 +456,10 @@ const server = createServer((request, response) => {
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_status") {
     let body = "";
     request.on("data", (chunk) => { body += chunk; });
-    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").p_share_token === "e2e-expired-token" ? "expired" : "unavailable"));
+    return request.on("end", () => {
+      const token = JSON.parse(body || "{}").p_share_token;
+      return sendJson(response, 200, typeof token === "string" && (token === "e2e-expired-token" || token.startsWith("e2e-cache-expired-")) ? "expired" : "unavailable");
+    });
   }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_complete_portfolio_access") {
     let body = "";
@@ -448,6 +509,13 @@ const server = createServer((request, response) => {
   if (request.method === "GET" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendPortfolioImage(response, url.pathname);
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/consume_api_rate_limit") {
     return sendJson(response, 200, { allowed: true, retryAfter: 0 });
+  }
+  if (request.method === "POST" && url.pathname === "/storage/v1/object/sign/photos") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").paths.map(path => ({
+      path, signedURL: `/object/sign/photos/${path}?token=e2e`, error: null,
+    }))));
   }
   if (request.method === "POST" && url.pathname.startsWith("/storage/v1/object/sign/photos/")) {
     return sendJson(response, 200, {

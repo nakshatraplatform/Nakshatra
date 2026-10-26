@@ -1,6 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
+import { signPhotoPaths } from "@/features/media/server/signed-photo-urls";
 import { classifyPhotoOrientation, type PortfolioPhoto } from "@/features/media/portfolio-photo";
 import {
   approvedHoroscopeSchema,
@@ -34,7 +36,7 @@ export function privateCapabilityTtl(expiresAt: string, now = Date.now()) {
 }
 
 /** Resolves one exact public token without exposing direct table reads to the caller. */
-export async function resolvePublicPortfolio(
+export const resolvePublicPortfolio = cache(async function resolvePublicPortfolio(
   supabase: SupabaseClient,
   token: string
 ): Promise<ResolvedPortfolio | null> {
@@ -48,7 +50,7 @@ export async function resolvePublicPortfolio(
   return parsed.success
     ? { ...parsed.data, identityVerified: !verification.error && verification.data === true }
     : null;
-}
+});
 
 /** Distinguishes an expired canonical link from malformed, unknown, rotated, or unpublished links. */
 export async function resolvePublicPortfolioAvailability(
@@ -90,7 +92,7 @@ export async function resolvePortfolioView(
     identityVerified,
     accessMode,
     photos: await createSafePhotoUrls(
-      accessMode === "approved" ? new PublicPortfolioRepository(createSigningClient()) : repository,
+      accessMode === "approved" ? createSigningClient() : supabase,
       resolved.media,
       accessMode === "approved" && resolved.accessExpiresAt
         ? privateCapabilityTtl(resolved.accessExpiresAt)
@@ -145,18 +147,19 @@ export async function resolveApprovedHoroscope(
 
 /** Converts only RPC-authorized media paths into temporary browser URLs. */
 async function createSafePhotoUrls(
-  repository: PublicPortfolioRepository,
+  supabase: SupabaseClient,
   media: PublicMediaDescriptor[],
   expiresInSeconds: number | null
 ): Promise<PortfolioPhoto[]> {
   if (!expiresInSeconds) return [];
-  const photos = await Promise.all(media.map(async (item): Promise<PortfolioPhoto | null> => {
-    if (!canonicalStoragePath(item.accessPath)) return null;
-    const signed = await repository.createPhotoUrl(item.accessPath, expiresInSeconds);
-    if (!signed.data?.signedUrl) return null;
-    return {
+  const authorized = media.filter(item => canonicalStoragePath(item.accessPath));
+  const urls = await signPhotoPaths(supabase, authorized.map(item => item.accessPath), expiresInSeconds);
+  return authorized.flatMap((item): PortfolioPhoto[] => {
+    const url = urls.get(item.accessPath);
+    if (!url) return [];
+    return [{
       id: item.key,
-      src: signed.data.signedUrl,
+      src: url,
       alt: item.altText || "Portfolio photo",
       mediaType: item.mediaType,
       width: item.width,
@@ -164,7 +167,6 @@ async function createSafePhotoUrls(
       aspectRatio: item.aspectRatio || (item.width && item.height ? item.width / item.height : undefined),
       orientation: item.orientation || classifyPhotoOrientation(item.width, item.height),
       presentation: item.presentation,
-    };
-  }));
-  return photos.filter((photo): photo is PortfolioPhoto => photo !== null);
+    }];
+  });
 }

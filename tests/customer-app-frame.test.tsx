@@ -20,7 +20,7 @@ it("keeps the same working header while pending data resolves", async () => {
   screen.getByRole("main").focus();
   expect(screen.getByRole("main")).toHaveFocus();
   expect(screen.getByRole("navigation", { name: "Customer pages" }).querySelector('a[href="/dashboard"]')).not.toBeNull();
-  screen.getByRole("button", { name: "Switch to Dark theme" }).click();
+  screen.getByRole("switch", { name: "Dark mode", checked: false }).click();
   expect(document.documentElement).toHaveAttribute("data-app-theme", "dark");
   await act(async () => release());
   expect(screen.getByRole("banner")).toBe(header);

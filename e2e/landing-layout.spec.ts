@@ -10,7 +10,7 @@ test("landing explains the family problem, disclosure boundary, and next step", 
   await expect(page.locator("#privacy")).toContainText("Your private notes and street address stay in your account");
   await page.locator("#privacy").screenshot({ path: testInfo.outputPath("disclosure-examples.png"), animations: "disabled" });
   await expect(page.locator("#how").getByRole("heading", { name: "How VivIntro works" })).toBeVisible();
-  await page.locator("#tour-step-01").screenshot({ path: testInfo.outputPath("fictional-draft-example.png"), animations: "disabled" });
+  await page.locator('[data-tour-step="01"]').screenshot({ path: testInfo.outputPath("fictional-draft-example.png"), animations: "disabled" });
   await expect(page.locator("#viewer").getByRole("link", { name: "Read the viewer guide" })).toHaveAttribute("href", "/received-a-link");
   await expect(page.locator("#samples").getByRole("link", { name: "See an example" })).toHaveAttribute("href", "/demo");
   expect(await page.locator("#samples").evaluate((element) => {
@@ -40,7 +40,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
   const faq = page.locator("#questions details").first();
   await faq.locator("summary").click();
   await expect(faq).toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+  await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
   await expect(trustSummary).toHaveCSS("outline-color", /rgb\(/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(376);
   await page.screenshot({ path: testInfo.outputPath("landing-disclosures-375-dark.png"), fullPage: true, animations: "disabled" });
@@ -58,7 +58,7 @@ test("trust and FAQ disclosures work with keyboard in both themes", async ({ pag
 test("landing copy fits supported widths in both themes", async ({ page }) => {
   await page.goto("/");
   for (const theme of ["light", "dark"] as const) {
-    if (theme === "dark") await page.getByRole("button", { name: "Switch to Dark theme" }).click();
+    if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     for (const width of [320, 375, 414, 768, 1024, 1081, 1200, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -75,58 +75,49 @@ test("tour anchors clear the sticky header on desktop and mobile", async ({ page
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
-    await page.locator('a[href="#tour-step-04"]').click();
+    await page.locator('nav[aria-label="Guided tour steps"] a[href="#tour-step-04"]').click();
 
-    const positions = await page.evaluate(() => ({
-      headerBottom: document.querySelector("body > div header")!.getBoundingClientRect().bottom,
-      headingTop: document.querySelector("#tour-step-04 h3")!.getBoundingClientRect().top,
-    }));
-    expect(positions.headingTop).toBeGreaterThan(positions.headerBottom + 8);
+    await expect(page.locator('[data-tour-step="04"] h3')).toBeInViewport();
+    // Lenis can pass through partial visibility before settling at the anchor.
+    await expect.poll(() => page.evaluate(() =>
+      document.querySelector('[data-tour-step="04"] h3')!.getBoundingClientRect().top
+      - document.querySelector("body > div header")!.getBoundingClientRect().bottom
+    )).toBeGreaterThan(8);
   }
 });
 
-test("short desktop viewports can reach every part of the guided tour", async ({ page }) => {
-  for (const width of [861, 1440]) {
-    for (const height of [600, 800, 850, 860]) {
-      await page.setViewportSize({ width, height });
-      await page.goto("/");
-
-      for (const [step, detail] of [["01", "Changes saved"], ["04", "Access can end early"]] as const) {
-        const card = page.locator(`#tour-step-${step}`);
-        await expect(card).toHaveCSS("position", height < 700 ? "relative" : "sticky");
-        await card.getByText(detail).scrollIntoViewIfNeeded();
-        await expect(card.getByText(detail)).toBeInViewport();
-      }
-    }
-  }
-});
-
-test("tall desktop viewports keep fully visible sticky tour cards", async ({ page }) => {
-  for (const width of [861, 1440]) {
-    for (const height of [861, 900]) {
-      await page.setViewportSize({ width, height });
-      await page.goto("/");
-      await page.locator('a[href="#tour-step-01"]').click();
-
-      const card = page.locator("#tour-step-01");
-      await expect(card).toHaveCSS("position", "sticky");
-      // Anchor navigation now eases into place; assert the settled geometry.
-      await expect.poll(() => card.evaluate((element) => element.getBoundingClientRect().bottom)).toBeLessThan(height);
-    }
-  }
-});
-
-test("laptop tour cards remain readable and scroll-pinned", async ({ page }, testInfo) => {
-  for (const [width, height] of [[861, 700], [1024, 720], [1280, 720], [1366, 768]] as const) {
+test("bookshelf fills the viewport and opens every step by keyboard", async ({ page }, testInfo) => {
+  for (const [width, height] of [[861, 700], [1280, 720], [1440, 900]] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    await page.locator('a[href="#tour-step-01"]').click();
+    await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
+    for (const step of ["01", "02", "03", "04"]) {
+      const link = page.locator(`nav[aria-label="Guided tour steps"] a[href="#tour-step-${step}"]`);
+      await link.focus();
+      await link.press("Enter");
+      const book = page.locator(`[data-tour-step="${step}"]`);
+      await expect(book).toHaveAttribute("data-active", "true");
+      await expect(book.locator("h3")).toBeInViewport();
+      await expect(book.locator("[data-shelf-paper] li").last()).toBeInViewport();
+      const scene = page.locator("[data-shelf-scene]");
+      await expect.poll(() => scene.evaluate(el => Math.abs(el.getBoundingClientRect().top))).toBeLessThan(2);
+      expect(await scene.evaluate(el => el.getBoundingClientRect().height)).toBeCloseTo(height, 0);
+    }
+    if (width === 1440) await page.screenshot({ path: testInfo.outputPath("bookshelf-open-desktop.png") });
+  }
+});
 
-    const card = page.locator("#tour-step-01");
-    if (width === 1366) await page.screenshot({ path: testInfo.outputPath("tour-laptop-1366.png"), animations: "disabled" });
-    await expect(card).toHaveCSS("position", "sticky");
-    await expect.poll(() => card.evaluate((element) => element.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height - 8);
-    await expect(card.getByText("Changes saved")).toBeInViewport();
+test("small and short screens retain the entire tour in normal flow", async ({ page }, testInfo) => {
+  for (const [width, height] of [[320, 812], [390, 844], [1440, 600]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+    for (const step of ["01", "02", "03", "04"]) {
+      await page.locator(`nav[aria-label="Guided tour steps"] a[href="#tour-step-${step}"]`).click();
+      await expect(page.locator(`[data-tour-step="${step}"] h3`)).toBeInViewport();
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    if (width === 390) await page.screenshot({ path: testInfo.outputPath("bookshelf-mobile-fallback.png") });
   }
 });
 
@@ -185,7 +176,7 @@ test("mobile sample explanation and sharing cards have breathing room", async ({
 test("frequent tour feedback is immediate and sample CTA opens the real demo", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  const step = page.locator('a[href="#tour-step-02"]');
+  const step = page.locator('nav[aria-label="Guided tour steps"] a[href="#tour-step-02"]');
   expect(await step.evaluate((element) => getComputedStyle(element, "::after").transitionDuration)).toBe("0s");
   await step.focus();
   await expect(step).toHaveCSS("outline-style", "solid");
@@ -200,7 +191,7 @@ test("reduced motion keeps tour cards readable without sticky stacking", async (
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator("#tour-step-04")).toHaveCSS("position", "relative");
-  const step = page.locator('a[href="#tour-step-02"]');
+  await expect(page.locator('[data-tour-step="04"]')).toHaveCSS("position", "relative");
+  const step = page.locator('nav[aria-label="Guided tour steps"] a[href="#tour-step-02"]');
   expect(await step.evaluate((element) => getComputedStyle(element, "::after").transitionDuration)).toBe("0s");
 });

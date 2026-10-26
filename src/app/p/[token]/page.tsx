@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import { after } from "next/server";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BiodataTemplate } from "@/components/templates";
@@ -21,9 +23,12 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+// Share only within this server render; approved projections still use the authenticated RPC.
+const getPublicPageClient = cache(createClient);
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
-  const supabase = await createClient();
+  const supabase = await getPublicPageClient();
 
   const portfolio = await resolvePublicPortfolio(supabase, token);
 
@@ -55,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicBiodataPage({ params }: Props) {
   const { token } = await params;
-  const supabase = await createClient();
+  const supabase = await getPublicPageClient();
 
   const { data: authData } = await supabase.auth.getUser();
   const verifiedEmail = authData.user?.email_confirmed_at
@@ -73,7 +78,7 @@ export default async function PublicBiodataPage({ params }: Props) {
     existingViewerProfile = await resolveExistingViewerProfile(supabase, authData.user.id);
   }
 
-  void recordPublicPortfolioView(supabase, token);
+  after(() => recordPublicPortfolioView(supabase, token));
   const horoscopeAttachment: PortfolioHoroscopeAttachment | undefined = portfolio.horoscope
     ? {
         href: `/p/${encodeURIComponent(token)}/horoscope`,

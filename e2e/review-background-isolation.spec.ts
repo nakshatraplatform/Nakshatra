@@ -29,7 +29,7 @@ test("final review isolates the moved header through editor transitions and dism
   await review.getByRole("button", { name: "Back to dashboard", exact: true }).click();
   await expect(review).not.toBeVisible();
   await expect(header).not.toHaveAttribute("inert", "");
-  if (!(await account.isVisible())) await header.getByText("Menu", { exact: true }).click();
-  await header.getByRole("link", { name: "Account", exact: true }).filter({ visible: true }).focus();
+  if (!(await account.isVisible())) await header.getByLabel("Account menu").click();
+  await header.getByRole("link", { name: "Account settings", exact: true }).filter({ visible: true }).focus();
   expect(await header.evaluate(element => element.contains(document.activeElement))).toBe(true);
 });

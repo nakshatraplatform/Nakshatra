@@ -115,6 +115,14 @@ describe("dashboard view service", () => {
     repositories.mediaUrls.mockResolvedValue({ "media-1": "https://signed.test/media-1" });
   });
 
+  it.each([
+    { data: [], error: { message: "database unavailable" } },
+    { data: [{ id: "malformed" }], error: null },
+  ])("surfaces unavailable interests instead of claiming there are none", async result => {
+    repositories.interest.listForPortfolio.mockResolvedValueOnce(result);
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" })).rejects.toThrow("We could not load your interests");
+  });
+
   it("returns an empty projection without issuing child reads for a new owner", async () => {
     repositories.dashboard.findDashboardPortfolioForUser.mockResolvedValue({ data: null, error: null });
     canCreatePortfolio.mockResolvedValue(false);
