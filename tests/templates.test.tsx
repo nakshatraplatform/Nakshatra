@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AdaptivePortfolioGallery,
   AdaptivePortfolioHero,
@@ -12,6 +12,12 @@ import type { PortfolioPhoto } from "../src/features/media/portfolio-photo";
 import { createPublicPortfolioSnapshot } from "../src/features/portfolio/server/public-snapshot.service";
 import { createApprovedPortfolioSnapshot } from "../src/features/portfolio/server/approved-snapshot.service";
 import type { PortfolioData } from "../src/types/portfolio";
+
+beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  // jsdom does not lay out visible controls; browser tests exercise actual visibility.
+  vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+});
 
 const complete: PortfolioData = {
   personal: {
@@ -687,7 +693,7 @@ describe("adaptive portfolio media", () => {
     expect(within(dialog).getByText("2 of 2")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "ArrowLeft" });
     expect(within(dialog).getByText("1 of 2")).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Gallery photo viewer" })).not.toBeInTheDocument();
   });
 

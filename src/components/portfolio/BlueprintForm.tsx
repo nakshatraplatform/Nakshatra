@@ -17,7 +17,7 @@ import { PortfolioAnswer, PortfolioFieldValidation, usePortfolioFieldError } fro
 import { portfolioFieldAnchor, type EditorFieldIssue } from "@/features/portfolio/editor-validation";
 import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
 import { CELESTIAL_UNION_TEMPLATE_NAME } from "@/features/portfolio/template";
-import { calculatePortfolioCompletion } from "@/features/portfolio/readiness";
+import { calculatePortfolioCompletion, type PortfolioCompletion } from "@/features/portfolio/readiness";
 import { formListValues, latestAdultBirthDate, NAME_PART_MAX_LENGTH, NAME_PART_PATTERN } from "@/features/portfolio/form-contract";
 import {
   composePortfolioName,
@@ -137,6 +137,7 @@ export function BlueprintForm({
   photoManager,
   horoscopeManager,
   hasShareablePrimaryPhoto = false,
+  completion: suppliedCompletion,
   activeSection: controlledSection,
   initialSection = "foundation",
   onSectionChange,
@@ -149,6 +150,7 @@ export function BlueprintForm({
   photoManager?: ReactNode;
   horoscopeManager?: ReactNode;
   hasShareablePrimaryPhoto?: boolean;
+  completion?: PortfolioCompletion;
   activeSection?: PortfolioEditorSection;
   initialSection?: PortfolioEditorSection;
   onSectionChange?: (section: PortfolioEditorSection) => void;
@@ -173,7 +175,7 @@ export function BlueprintForm({
     middle_name: data.personal.middle_name ?? resolvedNameParts.middle_name,
     last_name: data.personal.last_name ?? resolvedNameParts.last_name,
   };
-  const completion = calculatePortfolioCompletion(data, hasShareablePrimaryPhoto);
+  const completion = suppliedCompletion ?? calculatePortfolioCompletion(data, hasShareablePrimaryPhoto);
   const contacts = data.contact?.contacts?.length
     ? data.contact.contacts
     : data.contact?.contact_person || data.contact?.phone || data.contact?.email

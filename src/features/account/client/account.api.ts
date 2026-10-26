@@ -29,25 +29,6 @@ async function accountRequest<T>(url: string, init: RequestInit): Promise<Accoun
   }
 }
 
-/** Downloads the authenticated user's JSON export without interpreting its private contents. */
-export async function downloadAccountExportRequest(): Promise<AccountApiResult<Blob>> {
-  try {
-    const response = await fetch("/api/account/export", { method: "GET" });
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
-      return {
-        ok: false,
-        code: body?.code || "ACCOUNT_EXPORT_FAILED",
-        message: body?.error || "We could not prepare your account export.",
-        status: response.status,
-      };
-    }
-    return { ok: true, data: await response.blob() };
-  } catch {
-    return { ok: false, code: "NETWORK_UNAVAILABLE", message: "VivIntro is temporarily unreachable.", status: 0 };
-  }
-}
-
 /** Revokes every Supabase session except the browser making this request. */
 export function revokeOtherSessionsRequest() {
   return accountRequest<{ ok: true }>("/api/account/sessions", { method: "DELETE" });

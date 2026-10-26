@@ -31,6 +31,10 @@ const publicPayload = {
 
 function client(outcomes: Record<string, { data: unknown; error?: unknown }>) {
   const rpc = vi.fn((name: string) => Promise.resolve(outcomes[name] ?? { data: null, error: null }));
+  const createSignedUrls = vi.fn(async (paths: string[], ttl: number) => {
+    void ttl;
+    return { data: paths.map(path => ({ path, signedUrl: `https://signed.test/${path}`, error: null })) };
+  });
   const createSignedUrl = vi.fn((path: string, ttl?: number, options?: unknown) => {
     void ttl; void options;
     return Promise.resolve({
@@ -40,10 +44,11 @@ function client(outcomes: Record<string, { data: unknown; error?: unknown }>) {
   return {
     supabase: {
       rpc,
-      storage: { from: vi.fn(() => ({ createSignedUrl })) },
+      storage: { from: vi.fn(() => ({ createSignedUrl, createSignedUrls })) },
     } as unknown as SupabaseClient,
     rpc,
     createSignedUrl,
+    createSignedUrls,
   };
 }
 
@@ -53,9 +58,9 @@ describe("public portfolio service", () => {
     const trusted = client({});
     await resolvePortfolioView(requester.supabase, "allowed-token", true, { createSigningClient: () => trusted.supabase });
     expect(requester.rpc).toHaveBeenCalledWith("resolve_approved_portfolio", { p_share_token: "allowed-token" });
-    expect(requester.createSignedUrl).not.toHaveBeenCalled();
+    expect(requester.createSignedUrls).not.toHaveBeenCalled();
     expect(trusted.rpc).not.toHaveBeenCalled();
-    const ttl = trusted.createSignedUrl.mock.calls[0][1];
+    const ttl = trusted.createSignedUrls.mock.calls[0][1];
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(90);
     const factory = vi.fn(() => trusted.supabase);
@@ -83,6 +88,7 @@ describe("public portfolio service", () => {
     expect((await resolvePortfolioView(requester.supabase, "token", true, { createSigningClient: () => trusted.supabase }))?.photos).toEqual([]);
     expect(await resolveApprovedHoroscope(requester.supabase, "token", { createSigningClient: () => trusted.supabase })).toBeNull();
     expect(trusted.createSignedUrl).not.toHaveBeenCalled();
+    expect(trusted.createSignedUrls).not.toHaveBeenCalled();
   });
   it("maps the entire approved photo array without the public three-photo restriction", async () => {
     const media = Array.from({ length: 8 }, (_, index) => ({ ...publicPayload.media[0], key: `approved-${index}`, accessPath: `owner/portfolio/approved-${index}.webp`, mediaType: index ? "gallery" : "hero", sortOrder: index }));
@@ -90,10 +96,10 @@ describe("public portfolio service", () => {
     const view = await resolvePortfolioView(fixture.supabase, "valid-token", true, { createSigningClient: () => fixture.supabase });
     expect(view?.photos).toHaveLength(8);
     expect(view?.photos.map(photo=>photo.id)).toEqual(media.map(item=>item.key));
-    expect(fixture.createSignedUrl).toHaveBeenCalledTimes(8);
+    expect(fixture.createSignedUrls).toHaveBeenCalledExactlyOnceWith(media.map(item => item.accessPath), 300);
     const foreign = client({ resolve_public_portfolio: { data: publicPayload }, resolve_approved_portfolio: { data: null } });
     expect((await resolvePortfolioView(foreign.supabase,"valid-token",true))?.photos).toHaveLength(1);
-    expect(foreign.createSignedUrl).not.toHaveBeenCalledWith("owner/portfolio/approved-7.webp",expect.anything());
+    expect(foreign.createSignedUrls).toHaveBeenCalledExactlyOnceWith([publicPayload.media[0].accessPath], 3600);
   });
   it("returns only valid token-resolver payloads", async () => {
     const valid = client({

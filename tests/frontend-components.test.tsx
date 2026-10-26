@@ -15,10 +15,6 @@ vi.mock("next/image", () => ({
     return React.createElement("img", { alt: "", ...imageProps });
   },
 }));
-vi.mock("shaders/react", () => {
-  const Part = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
-  return { Shader: Part, ChromaFlow: Part, FilmGrain: Part, FlutedGlass: Part, Swirl: Part };
-});
 
 import Home from "../src/app/page";
 import { LandingExperience } from "../src/components/landing/LandingExperience";

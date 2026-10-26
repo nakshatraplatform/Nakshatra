@@ -263,6 +263,7 @@ function sendPortfolioImage(response, path) {
   );
 }
 
+const publicReadCounts = new Map();
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${host}:${port}`);
   if (request.headers.authorization === `Bearer ${loadingTestToken}`) {
@@ -280,6 +281,19 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
+  if (url.pathname === "/__test/public-read-counts") return sendJson(response, 200, publicReadCounts.get(url.searchParams.get("token")) || {});
+  if (request.method === "POST" && ["resolve_public_portfolio", "resolve_public_portfolio_identity_verified", "resolve_public_portfolio_status", "record_public_portfolio_view"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
+    let observedBody = "";
+    request.on("data", chunk => { observedBody += chunk; });
+    request.on("end", () => {
+      const token = JSON.parse(observedBody || "{}").p_share_token;
+      if (typeof token !== "string" || !token.startsWith("e2e-cache-")) return;
+      const counts = publicReadCounts.get(token) || {};
+      const name = url.pathname.split("/").at(-1);
+      counts[name] = (counts[name] || 0) + 1;
+      publicReadCounts.set(token, counts);
+    });
+  }
   // Loopback-only password recovery: exercise the real SDK's PKCE cookie bridge.
   if (request.method === "POST" && url.pathname === "/auth/v1/recover") return sendJson(response, 200, {});
   if (request.method === "POST" && url.pathname === "/auth/v1/token" && url.searchParams.get("grant_type") === "pkce") {
@@ -423,7 +437,8 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token", "aditi-rao", "aditi-rao-2", "li-xu"].includes(token)) return sendJson(response, 200, null);
+      const cacheProbe = typeof token === "string" && token.startsWith("e2e-cache-") && !token.startsWith("e2e-cache-expired-");
+      if (!cacheProbe && !["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token", "aditi-rao", "aditi-rao-2", "li-xu"].includes(token)) return sendJson(response, 200, null);
       const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
       if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
       if (token === "e2e-long-narrative-token") {
@@ -438,7 +453,10 @@ const server = createServer((request, response) => {
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_public_portfolio_status") {
     let body = "";
     request.on("data", (chunk) => { body += chunk; });
-    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").p_share_token === "e2e-expired-token" ? "expired" : "unavailable"));
+    return request.on("end", () => {
+      const token = JSON.parse(body || "{}").p_share_token;
+      return sendJson(response, 200, typeof token === "string" && (token === "e2e-expired-token" || token.startsWith("e2e-cache-expired-")) ? "expired" : "unavailable");
+    });
   }
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/resolve_complete_portfolio_access") {
     let body = "";
@@ -488,6 +506,13 @@ const server = createServer((request, response) => {
   if (request.method === "GET" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendPortfolioImage(response, url.pathname);
   if (request.method === "POST" && url.pathname === "/rest/v1/rpc/consume_api_rate_limit") {
     return sendJson(response, 200, { allowed: true, retryAfter: 0 });
+  }
+  if (request.method === "POST" && url.pathname === "/storage/v1/object/sign/photos") {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => sendJson(response, 200, JSON.parse(body || "{}").paths.map(path => ({
+      path, signedURL: `/object/sign/photos/${path}?token=e2e`, error: null,
+    }))));
   }
   if (request.method === "POST" && url.pathname.startsWith("/storage/v1/object/sign/photos/")) {
     return sendJson(response, 200, {

@@ -1149,6 +1149,11 @@ isOneToOne: false
               "claim_token": string,"delivery_id": string,"recipient_email": string
             }[]
                            },
+"claim_photo_cleanup":
+{ Args: { "p_limit"?: number }; Returns: {
+              "claim_token": string,"storage_path": string
+            }[]
+                           },
 "claim_relationship_notification_outbox":
 { Args: { "p_limit"?: number }; Returns: {
               "attempt_count": number,"broker_introduction_id": string,"grant_id": string,"interest_request_id": string,"notification_ref": string,"notification_type": string,"payload": Json,"recipient_user_id": string
@@ -1276,6 +1281,9 @@ isOneToOne: false
 { Args: { "p_claim_token": string,"p_error_code"?: string,"p_id": string }; Returns: boolean
                            },
 "finish_horoscope_cleanup":
+{ Args: { "p_claim_token": string,"p_error_code"?: string,"p_storage_path": string }; Returns: boolean
+                           },
+"finish_photo_cleanup":
 { Args: { "p_claim_token": string,"p_error_code"?: string,"p_storage_path": string }; Returns: boolean
                            },
 "finish_production_maintenance":

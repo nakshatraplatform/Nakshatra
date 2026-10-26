@@ -46,7 +46,8 @@ export function isProfileFullyComplete(publishedData: unknown, hasShareablePrima
 /** One canonical checklist drives progress UI, resume guidance, and server publication validation. */
 export function calculatePortfolioCompletion(
   data: PortfolioDraftData,
-  hasShareablePrimaryPhoto: boolean
+  hasShareablePrimaryPhoto: boolean,
+  validation = portfolioEditorPublishSchema.safeParse(data)
 ): PortfolioCompletion {
   const name = resolvePortfolioNameParts(data.personal);
   const countryCode = data.personal.country_code === "IN" || data.personal.country_code === "US"
@@ -83,7 +84,6 @@ export function calculatePortfolioCompletion(
     { key: "primary_photo", label: "Shareable primary photo", editorSection: "foundation", group: "details", complete: hasShareablePrimaryPhoto },
   ];
   const missing = requirements.filter((requirement) => !requirement.complete);
-  const validation = portfolioEditorPublishSchema.safeParse(data);
   const requiredPaths = new Set([
     "personal.name", "personal.first_name", "personal.last_name", "personal.dob", "personal.gender",
     "personal.country", "personal.country_code", "personal.region", "personal.region_code", "personal.city", "personal.postal_code", "personal.location_source", "personal.marital_status", "personal.short_bio", "vitals.height", "career.title",

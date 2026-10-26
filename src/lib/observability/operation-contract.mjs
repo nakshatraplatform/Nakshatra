@@ -10,7 +10,7 @@ const operations = new Set([
   "brokerdesk.team.invitation_exchange_failed", "brokerdesk.team.read_failed", "brokerdesk.team.suspend_failed",
   "customer.broker_consent_change_failed", "customer.broker_invitation_claim_failed", "customer.broker_invitation_exchange_failed",
   "customer.broker_relationships_read_failed", "identity_verification.email_dispatch_failed", "maintenance.accountDeletion",
-  "maintenance.emailRetention", "maintenance.expiryReminders", "maintenance.horoscopeCleanup",
+  "maintenance.photoCleanup", "maintenance.emailRetention", "maintenance.expiryReminders", "maintenance.horoscopeCleanup",
   "maintenance.identity", "maintenance.livenessEmail", "maintenance.providerCleanup",
   "maintenance.relationshipEmail", "maintenance.retention", "portfolio.dashboard.load",
   "portfolio.draft.save", "portfolio.publish", "production_maintenance.failed",
@@ -23,7 +23,7 @@ const operations = new Set([
 const codes = new Set([
   "DIDIT_WEBHOOK_UNAVAILABLE",
   "LIVENESS_EMAIL_DISPATCH_FAILED", "MAINTENANCE_CLAIM_FAILED", "MAINTENANCE_COMPLETION_FAILED",
-  "EXPIRY_REMINDER_ENQUEUE_FAILED",
+  "EXPIRY_REMINDER_ENQUEUE_FAILED", "PHOTO_CLEANUP_CLAIM_FAILED", "PHOTO_CLEANUP_COMPLETION_FAILED",
   "ACCOUNT_DELETION_WORK_DEFERRED", "DASHBOARD_DATABASE_UPDATE_REQUIRED", "DASHBOARD_SAVE_FAILED",
   "DELETED_PROVIDER_WORK_DEFERRED", "DIDIT_CREDENTIALS_INVALID", "DIDIT_CREDITS_UNAVAILABLE",
   "DIDIT_DECISION_FETCH_FAILED", "DIDIT_DECISION_INVALID", "DIDIT_DECISION_MISMATCH",

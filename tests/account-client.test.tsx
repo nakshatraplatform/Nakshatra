@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: mocks.refresh }) }));
 
 const mocks = vi.hoisted(() => ({
-  export: vi.fn(),
   sessions: vi.fn(),
   deletion: vi.fn(),
   cancel: vi.fn(),
@@ -17,7 +16,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/features/account/client/account.api", () => ({
-  downloadAccountExportRequest: mocks.export,
   revokeOtherSessionsRequest: mocks.sessions,
   requestAccountDeletionRequest: mocks.deletion,
   cancelAccountDeletionRequest: mocks.cancel,
@@ -30,7 +28,6 @@ import AccountClient from "../src/app/account/account-client";
 beforeEach(() => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   vi.clearAllMocks();
-  mocks.export.mockResolvedValue({ ok: true, data: new Blob(["{}"], { type: "application/json" }) });
   mocks.sessions.mockResolvedValue({ ok: true, data: { ok: true } });
   mocks.deletion.mockResolvedValue({
     ok: true,
@@ -137,7 +134,6 @@ describe("account privacy screen", () => {
 
     expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Download your data" })).not.toBeInTheDocument();
-    expect(mocks.export).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out others" }));
     await waitFor(() => expect(mocks.sessions).toHaveBeenCalled());

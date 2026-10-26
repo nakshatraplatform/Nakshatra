@@ -191,6 +191,15 @@ jobs:
           FAMILY_VIEWER_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: npm run test:db:family-viewer-concurrency:local
 
+      - name: Verify concurrent photo upload cap
+        run: npm run test:db:concurrency
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 54322
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: postgres
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

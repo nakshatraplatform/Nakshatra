@@ -28,6 +28,15 @@ it("retains only approved operational tags and cannot forward arbitrary referenc
   expect(filtered.tags).toBeUndefined(); expect(filtered.fingerprint).toBeUndefined();
 });
 
+it("retains sanitized diagnostics for the photo cleanup task", async () => {
+  const sent = setup();
+  reportOperationFailure("maintenance.photoCleanup", new Error(secret), { code: "PHOTO_CLEANUP_CLAIM_FAILED" });
+  await flush(2000);
+  expect(JSON.stringify(sent)).toContain('"vivintro.operation":"maintenance.photoCleanup"');
+  expect(JSON.stringify(sent)).toContain('"vivintro.code":"PHOTO_CLEANUP_CLAIM_FAILED"');
+  expect(JSON.stringify(sent)).not.toContain(secret);
+});
+
 it("labels real Didit and Resend transport spans without mixing concurrent operation scopes", async () => {
   const sent = setup();
   vi.stubEnv("RESEND_API_KEY", secret); vi.stubEnv("RESEND_FROM_EMAIL", "notify@example.test");

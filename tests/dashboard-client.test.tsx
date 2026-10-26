@@ -1314,6 +1314,25 @@ describe("dashboard client", () => {
     expect(screen.getByText("Public sharing is off")).toBeInTheDocument();
   });
 
+  it.each(["rejects", "throws"])("keeps successful photos when a later batch upload %s", async (failure) => {
+    mocks.upload.mockResolvedValueOnce({ ok: true, data: { media: { ...media, id: "uploaded-first", alt_text: "First saved photo" }, previewUrl: "https://signed.test/first.webp" } });
+    if (failure === "throws") mocks.upload.mockRejectedValueOnce(new Error("Second upload failed"));
+    else mocks.upload.mockResolvedValueOnce({ ok: false, error: { code: "PHOTO_TYPE_INVALID", message: "Second upload failed" } });
+    const { container } = renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
+    goToFoundation();
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Unsaved" } });
+    fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [
+      new File(["one"], "first.png", { type: "image/png" }),
+      new File(["two"], "second.png", { type: "image/png" }),
+    ] } });
+    expect(await screen.findByText("Second upload failed")).toBeInTheDocument();
+    expect(screen.getByAltText("First saved photo")).toBeInTheDocument();
+    expect(screen.getByText("2/8")).toBeInTheDocument();
+    expect(screen.getByLabelText("First name")).toHaveValue("Unsaved");
+    expect(mocks.upload).toHaveBeenCalledTimes(2);
+  });
+
   it("updates, deletes, and uploads owner photos", async () => {
     const { container } = renderDashboard();
     fireEvent.click(screen.getByRole("button", { name: /edit details/i }));
@@ -1574,6 +1593,36 @@ describe("dashboard client", () => {
     const history = screen.getByRole("dialog", { name: "Relationship history" });
     expect(await within(history).findByText("Expired Viewer")).toBeInTheDocument();
     expect(within(history).getByText("Ended Viewer")).toBeInTheDocument();
+  });
+
+  it("filters and independently bounds broker response history without repeating it on server pages", async () => {
+    const brokerIntroductionResponses = Array.from({ length: 9 }, (_, i) => ({
+      introductionRef: brokerIntroductionRouteRefSchema.parse(`bir_${String(i + 1).padStart(32, "0")}`),
+      brokerName: "Sangam Matchmakers", recipientLabel: `Broker recipient ${i + 1}`,
+      response: "accepted" as const, comment: null, respondedAt: "2026-08-12T12:00:00.000Z",
+    }));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ...relationshipFixture, total: 16, records: [] })));
+    renderDashboard({ brokerIntroductionResponses });
+    fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));
+    const history = screen.getByRole("dialog", { name: "Relationship history" });
+    await within(history).findByText("Page 1 of 2");
+    const responses = within(history).getByRole("region", { name: "Broker introduction responses" });
+    expect(within(responses).getAllByRole("article")).toHaveLength(8);
+    expect(within(responses).queryByText("Broker recipient 9")).not.toBeInTheDocument();
+    fireEvent.click(within(responses).getByRole("button", { name: "Next broker responses" }));
+    expect(within(responses).getAllByRole("article")).toHaveLength(1);
+    expect(within(responses).getByText("Broker recipient 9")).toBeInTheDocument();
+    fireEvent.change(within(history).getByLabelText("Filter records"), { target: { value: "direct" } });
+    expect(within(history).queryByText("Broker recipient 9")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByLabelText("Filter records"), { target: { value: "broker" } });
+    fireEvent.change(within(history).getByPlaceholderText("Search by name or email…"), { target: { value: "Broker recipient 9" } });
+    expect(within(history).getByText("Broker recipient 9")).toBeInTheDocument();
+    expect(within(history).queryByText("Broker recipient 1")).not.toBeInTheDocument();
+    fireEvent.change(within(history).getByPlaceholderText("Search by name or email…"), { target: { value: "" } });
+    await within(history).findByText("Page 1 of 2");
+    fireEvent.click(within(history).getByRole("button", { name: /^Next$/ }));
+    await within(history).findByText("Page 2 of 2");
+    expect(within(history).queryByRole("region", { name: "Broker introduction responses" })).not.toBeInTheDocument();
   });
 
   it("keeps broker introduction responses in relationship history instead of expanding the dashboard", () => {

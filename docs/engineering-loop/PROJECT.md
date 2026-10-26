@@ -1,5 +1,11 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-84 implementation audit remediation](features/implementation-audit-remediation.md):
+  integrates current main's consent and owner queue, adds durable photo retirement,
+  concurrent cap/retirement fencing, partial-upload recovery and shared frontend
+  responsibilities. Local checks and two independent review rounds are recorded;
+  final Supabase replay/hosted CI remain pending after a local Docker outage.
+
 - [NAK-66 transactional email completion](features/transactional-email-completion.md):
   atomic first-publication and requester receipts through the existing queue;
   watchdog surfaces disabled configuration. Operational activation and inbox

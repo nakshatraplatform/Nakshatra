@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/server", async original => ({ ...await original<typeof import("next/server")>(), after: mocks.after }));
 import type { PortfolioData } from "../src/types/portfolio";
 import { resolveServerTree } from "./resolve-server-tree";
 import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
@@ -19,6 +20,8 @@ const mocks = vi.hoisted(() => ({
     orientation: "portrait" as const,
   }]),
   rpc: vi.fn(),
+  after: vi.fn(),
+  signedUrls: vi.fn(async (paths: string[]) => ({ data: paths.map(path => ({ path, signedUrl: "https://signed.test/hero", error: null })) })),
   signedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/hero" } })),
   imageResponse: vi.fn(),
   authUser: null as { id: string; email?: string; email_confirmed_at?: string } | null,
@@ -45,7 +48,7 @@ function databaseClient() {
     }),
     rpc: mocks.rpc,
     auth: { getUser: vi.fn(async () => ({ data: { user: mocks.authUser }, error: null })) },
-    storage: { from: () => ({ createSignedUrl: mocks.signedUrl }) },
+    storage: { from: () => ({ createSignedUrls: mocks.signedUrls, createSignedUrl: mocks.signedUrl }) },
   };
 }
 
@@ -304,7 +307,9 @@ describe("public portfolio pages", () => {
     mocks.outcomes.record_public_portfolio_view = { data: true };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
-    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" }));
+    expect(mocks.rpc).not.toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" });
+    await mocks.after.mock.calls.at(-1)![0]();
+    expect(mocks.rpc).toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" });
   });
 
   it("uses the approved projection only when row-level access returns an approved snapshot", async () => {

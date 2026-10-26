@@ -1,11 +1,11 @@
-import { PortfolioLoadingStatus } from "@/components/loading/PortfolioLoadingStatus";
+import { LoadingStatus } from "@/components/loading/LoadingStatus";
 
 export default function PreviewLoading() {
   return (
     <main id="main-content" className="flex flex-1 flex-col">
       <div className="flex-1 px-4 py-8">
         <div className="mx-auto max-w-2xl flex flex-col items-center gap-4">
-          <PortfolioLoadingStatus
+          <LoadingStatus
             title="Preparing your Introduction preview"
             detail="Your saved portfolio will appear here shortly."
             state="weaving"

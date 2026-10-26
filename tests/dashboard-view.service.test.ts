@@ -118,6 +118,12 @@ describe("dashboard view service", () => {
     repositories.mediaUrls.mockResolvedValue({ "media-1": "https://signed.test/media-1" });
   });
 
+  it("surfaces unavailable relationships without blocking the rest of the dashboard", async () => {
+    repositories.relationships.mockRejectedValueOnce(new Error("We could not load requests and sharing access. Try again."));
+    await expect(loadDashboardView({ supabase: {} as never, userId: "owner-1" }))
+      .resolves.toMatchObject({ portfolio: { id: row.id }, relationshipsError: true, relationshipOverview: null, interests: [] });
+  });
+
   it("returns an empty projection without issuing child reads for a new owner", async () => {
     repositories.dashboard.findDashboardPortfolioForUser.mockResolvedValue({ data: null, error: null });
     canCreatePortfolio.mockResolvedValue(false);

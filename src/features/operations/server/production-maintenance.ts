@@ -2,6 +2,7 @@ import "server-only";
 import { approvedCode } from "@/lib/observability/operation-contract.mjs";
 import { observeOperation, reportOperationFailure } from "@/lib/observability/operations.mjs";
 import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-cleanup.service";
+import { processPhotoCleanup } from "@/features/media/server/photo-cleanup.service";
 import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -63,6 +64,7 @@ export async function runProductionMaintenance(dispatchId?: string) {
       return !result.error && result.data === true;
     },
     horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
+    photoCleanup: async () => (await processPhotoCleanup(client)).deferred === 0,
     identity: async () => (await identityRun).deferred === 0,
     providerCleanup: async () => (await processDeletedProviderCleanup(client, { fetchImpl: transport, limit: 2 })).deferred === 0,
     livenessEmail: async () => {

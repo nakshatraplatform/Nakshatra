@@ -39,10 +39,6 @@ export class PublicPortfolioRepository {
     return this.supabase.rpc("record_public_portfolio_view", { p_share_token: token });
   }
 
-  createPhotoUrl(path: string, expiresInSeconds: number) {
-    return this.supabase.storage.from("photos").createSignedUrl(path, expiresInSeconds);
-  }
-
   createHoroscopeUrl(
     path: string,
     expiresInSeconds: number,

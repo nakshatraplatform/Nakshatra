@@ -48,9 +48,11 @@ export function editorFieldTarget(path: string) {
 }
 
 /** UI guidance uses the same publication schema/checklist as the server; never authorizes publication. */
-export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boolean, stored?: unknown): EditorFieldIssue[] {
+export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boolean, stored?: unknown,
+  evaluation?: { completion: ReturnType<typeof calculatePortfolioCompletion>; parsed: ReturnType<typeof portfolioEditorPublishSchema.safeParse> }
+): EditorFieldIssue[] {
+  const parsed = evaluation?.parsed ?? portfolioEditorPublishSchema.safeParse(data);
   const issues = new Map<string, EditorFieldIssue>();
-  const parsed = portfolioEditorPublishSchema.safeParse(data);
   if (!parsed.success) for (const issue of parsed.error.issues) {
     const path = issue.path.join(".");
     if (path === "personal.name") continue; // The editable name parts have their own errors.
@@ -64,7 +66,7 @@ export function editorFieldIssues(data: PortfolioDraftData, hasPrimaryPhoto: boo
     issues.set(path, { path, label: editorFieldLabel(path), section: editorSectionForPath(path), message: messages[0] });
   }
   // Checklist order is the natural reading order, and also covers photo/geography rules beyond Zod.
-  const required = calculatePortfolioCompletion(data, hasPrimaryPhoto).missing.map(requirement => {
+  const required = (evaluation?.completion ?? calculatePortfolioCompletion(data, hasPrimaryPhoto, parsed)).missing.map(requirement => {
     const path = requirementPaths[requirement.key];
     const existing = issues.get(path);
     issues.delete(path);

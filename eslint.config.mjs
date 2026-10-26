@@ -50,6 +50,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    // Local generated marketing output and scratch files are not application source.
+    "brag-output/**",
+    "tmp/**",
     // Generated Playwright reports contain third-party viewer bundles, not source.
     "playwright-report/**",
     "test-results/**",
