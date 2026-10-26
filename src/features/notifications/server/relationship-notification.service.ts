@@ -8,6 +8,7 @@ import { portfolioDraftSchema } from "@/types/portfolio";
 import { sendResendEmail } from "./resend.provider";
 
 const relationshipType = z.enum([
+  "vivara_published", "interest_received",
   "new_introduction", "full_view_approved", "introduction_declined",
   "full_view_renewed", "full_view_revoked", "full_view_expiring",
   "full_view_access_expiring",
@@ -142,6 +143,12 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
     return { to, subject: "Complete Portfolio access has ended", text: `The 30-day Complete Portfolio access period has ended. Protected Contact is no longer available through this Introduction.\n\nReview your Introduction history: ${origin}/dashboard` };
   }
 
+  if (job.notification_type === "vivara_published") {
+    return { to, subject: "Your Vivara has been published", text: `You published your Vivara. You can manage its current link and sharing settings in your VivIntro dashboard:\n\n${origin}/dashboard\n\nPrivate details remain subject to your sharing permissions.` };
+  }
+  if (job.notification_type === "interest_received") {
+    return { to, subject: "Your request has been received", text: `Your request to view private details was received. Submitting a request does not grant access; the owner decides whether to share. We will email you when a decision is made.\n\nUse the same verified email when returning to VivIntro: ${origin}/dashboard` };
+  }
   if (job.notification_type === "new_introduction") {
     return { to, subject: "Someone has shown interest", text: `Someone has confirmed their email and introduced themselves.\n\nReview their interest in your VivIntro dashboard: ${origin}/dashboard\n\nRead their details before deciding whether to share private details. Email confirmation is not proof of identity.` };
   }
@@ -209,7 +216,7 @@ export async function processRelationshipNotifications(supabase: Client, limit =
         if (preparation !== "ready") throw new NotificationRenderError("REMINDER_PREPARE_FAILED", true);
       }
       const input = { deliveryId: deliveryId(job.notification_ref), ...message };
-      const result = transport ? await sendResendEmail(input, transport) : await sendResendEmail(input);
+      const result = await sendResendEmail(input, transport, supabase);
       succeeded = result.status === "accepted";
       errorCode = result.status === "failed" ? result.code : null;
       retryable = result.status === "failed" && result.retryable;

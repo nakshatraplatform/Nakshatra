@@ -1,33 +1,13 @@
 import type { Metadata } from "next";
-import { LandingExperience, landingFaqs } from "@/components/landing/LandingExperience";
-
-const description = "Share your marriage biodata as one link you can update anytime. Your phone number and horoscope file stay hidden until you choose to share them.";
-
+import { LandingExperience } from "@/components/landing/LandingExperience";
+import { landingDescription, landingTitle, landingConcepts, landingFaqs } from "@/content/landing";
+import { StructuredData, marketingSchema } from "@/components/marketing/StructuredData";
 export const metadata: Metadata = {
-  title: { absolute: "Marriage biodata link you control | VivIntro" },
-  description,
+  title: { absolute: landingTitle }, description: landingDescription,
   alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: "/",
-    title: "Your biodata, as one link you control.",
-    description,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Your biodata, as one link you control.",
-    description,
-  },
+  openGraph: { type: "website", url: "/", title: landingConcepts.clarity.headline, description: landingDescription },
+  twitter: { card: "summary_large_image", title: landingConcepts.clarity.headline, description: landingDescription },
 };
-
 export default function Home() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      { "@type": "Organization", name: "VivIntro", url: "https://www.vivintro.com", email: "hello@vivintro.com" },
-      { "@type": "WebSite", name: "VivIntro", url: "https://www.vivintro.com" },
-      { "@type": "FAQPage", mainEntity: landingFaqs.map(({ question, answer }) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) },
-    ],
-  };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} /><LandingExperience variant="clarity" /></>;
+  return <><StructuredData value={marketingSchema(landingFaqs)} /><LandingExperience variant="clarity" /></>;
 }

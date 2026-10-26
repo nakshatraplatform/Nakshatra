@@ -14,7 +14,8 @@ test("published horoscope status and remove action retain contrast in both theme
   const sectionSelect = editor.getByRole("combobox", { name: "Go to introduction section" });
   if (await sectionSelect.isVisible()) await sectionSelect.selectOption("astrology");
   else await editor.getByRole("button", { name: /Astrology & horoscope/ }).click();
-  await editor.locator('input[type="file"]').setInputFiles({ name: "mock.png", mimeType: "image/png", buffer: Buffer.from("fixture") });
+  await expect(editor.getByRole("heading", { name: "Horoscope attachment", exact: true })).toBeVisible();
+  await editor.getByLabel("Choose horoscope image", { exact: true }).setInputFiles({ name: "mock.png", mimeType: "image/png", buffer: Buffer.from("fixture") });
   const status = editor.getByText("Published for people you’ve shared with", { exact: true });
   const remove = editor.getByRole("button", { name: "Remove", exact: true });
   for (const theme of ["light", "dark"]) {

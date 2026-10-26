@@ -24,6 +24,46 @@ vi.mock("@/features/identity-verification/client/identity-verification.api", () 
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
 
 describe("identity-verification dashboard controls", () => {
+  it("does not hide explicit refresh feedback when a background read overlaps", async () => {
+    const active = { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+    await screen.findByText(/An unfinished check is available/);
+    let resolveManual!: (value: unknown) => void;
+    let resolveBackground!: (value: unknown) => void;
+    current.mockImplementationOnce(() => new Promise(done => { resolveManual = done; }))
+      .mockImplementationOnce(() => new Promise(done => { resolveBackground = done; }));
+    await userEvent.click(screen.getByRole("button", { name: "Refresh check status" }));
+    const pendingStatus = screen.getByRole("status");
+    expect(pendingStatus).toHaveTextContent("Refreshing your liveness status");
+    fireEvent(document, new Event("visibilitychange"));
+    await waitFor(() => expect(current).toHaveBeenCalledTimes(3));
+    expect(pendingStatus).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh check status" })).toBeDisabled();
+    await act(async () => resolveBackground({ ok: true, data: active }));
+    await act(async () => resolveManual({ ok: true, data: { ...active, state: "expired" } }));
+    expect(screen.getByRole("status")).toHaveTextContent("An unfinished check is available");
+  });
+  it("keeps unchanged background status mounted but announces an explicit refresh", async () => {
+    const active = { state: "active", attemptId: "attempt", deadline: null, cleanupPending: false, canStart: false, canResume: true, canCancel: true };
+    current.mockResolvedValue({ ok: true, data: active });
+    render(<IdentityVerificationDashboard candidateId="candidate-id" />);
+    await screen.findByText(/An unfinished check is available/);
+    const status = screen.getByRole("status");
+    let resolve!: (value: unknown) => void;
+    current.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    fireEvent(document, new Event("visibilitychange"));
+    await waitFor(() => expect(current).toHaveBeenCalledTimes(2));
+    expect(status).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBe(status);
+    expect(document.querySelector("[data-loading-status]")).toBeNull();
+    await act(async () => resolve({ ok: true, data: active }));
+    current.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    await userEvent.click(screen.getByRole("button", { name: "Refresh check status" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Refreshing your liveness status");
+    await act(async () => resolve({ ok: true, data: { ...active, state: "awaiting_result", canResume: false } }));
+    expect(screen.getByRole("status")).toHaveTextContent("We are checking the final result");
+  });
   it("does not let initially verified presentation suppress a status outage", async () => {
     current.mockResolvedValue({ ok: false, code: "NETWORK_UNAVAILABLE", message: "Status unavailable", status: 0 });
     render(<IdentityVerificationDashboard candidateId="candidate-id" hideWhenVerified initiallyVerified />);

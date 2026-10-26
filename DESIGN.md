@@ -13,6 +13,26 @@ Last reviewed: 2026-09-04
 > [`docs/vivintrodesk-mvp-contract.md`](docs/vivintrodesk-mvp-contract.md) for
 > implementation decisions.
 
+> **Current landing implementation note (20 October 2026):** The Vivara landing
+> extends the existing template rather than replacing its visual system.
+> Runtime typography is Inter for body/UI and Plus Jakarta Sans for display,
+> loaded by `src/lib/fonts.ts`; the proposed Playfair/Manrope/Tenor pairing below
+> is historical guidance, not the installed font contract. Current semantic
+> colors remain owned by `src/app/globals.css` and `src/app/app-theme.css`.
+> Akaya Kanadaka Regular is a licensed, local display exception limited to the
+> Vivara naming word and Kannada text. The landing pairs three captures of
+> Ananya's fictional public Vivara with explanations; desktop progressively
+> changes a sticky phone, while smaller/short viewports, reduced motion and
+> no JavaScript retain readable in-flow captures. The naming reveal runs once;
+> the existing desktop bookshelf and sequential phone cards remain. The silent
+> sample walkthrough plays only on request. This note records the scoped
+> implementation and existing documentation drift; it does not refresh the
+> broader research baseline. See
+> [`vivara-landing-content.md`](docs/engineering-loop/features/vivara-landing-content.md)
+> for the current contract and review evidence, and
+> [`ananya-demo-provenance.md`](docs/assets/ananya-demo-provenance.md)
+> for synthetic imagery, captures and font provenance.
+
 ## 1. Product stance
 
 Nakshatra is a trust platform for personal representation, introductions, and controlled disclosure. It is not a dating product and should not borrow swipe mechanics, desirability scoring, infinite discovery feeds, or gamified matching.
@@ -567,4 +587,3 @@ Product shells:
 ## 13. Architecture guardrail
 
 The attached final baseline is an approved architectural direction, but its own open-decision section still leaves relationship counting, grace-period behavior, terminal response/reopen rules, introduction uniqueness, index-repair strategy, and the verified-disclosure trigger unresolved. Broker UI labels and actions that depend on those decisions should remain prototypes until the domain contracts are settled. The repository's existing organization/broker-client schema must be reconciled with the newer relationship/introduction model before implementation.
-

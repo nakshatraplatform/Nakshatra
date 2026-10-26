@@ -1,3 +1,5 @@
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
+import { getRequestId } from "@/lib/security/logging";
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
@@ -6,7 +8,7 @@ import {
   PortfolioPublishError,
   publishPortfolio,
 } from "@/features/portfolio/server/publish.service";
-import { saveDashboardDraft } from "@/features/portfolio/server/dashboard.service";
+import { DashboardSaveError, saveDashboardDraft } from "@/features/portfolio/server/dashboard.service";
 import { readJsonBody, requestSecurityErrorResponse, requireSameOrigin } from "@/lib/api/request-security";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
 
@@ -37,11 +39,13 @@ export async function POST(request: Request) {
     const result = await publishPortfolio({ supabase: auth.supabase, userId: auth.user.id, sessionId: auth.user.sessionId, data: parsed.data });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    const portfolioError = error instanceof PortfolioPublishError ? error : null;
+    const portfolioError = error instanceof PortfolioPublishError || error instanceof DashboardSaveError ? error : null;
+    if (!portfolioError || portfolioError.status >= 500) reportOperationFailure("portfolio.publish", error, { code: portfolioError?.code, reference: getRequestId(request) });
     return NextResponse.json(
       {
         code: portfolioError?.code || "PORTFOLIO_PUBLISH_FAILED",
         error: portfolioError?.message || "We could not publish your portfolio. Please try again.",
+        ...(error instanceof DashboardSaveError && error.fieldErrors && { fieldErrors: error.fieldErrors }),
       },
       { status: portfolioError?.status || 500 }
     );

@@ -1,5 +1,81 @@
 # Implementation audit remediation
 
+## Current increment: resolve PR 138 against main
+
+The user authorized merging current `main` after GitHub reported conflicts. This
+supersedes the earlier topic-only integration boundary below. Starting topic:
+`55c4e21cf826c4d24cc1d7c887114e0c08e58ae9`; incoming main:
+`1cadea4080690c4782f0af4706ee21ef6a4ac197`. Critical integration review applies
+because cleanup, owner authorization, consent and database contracts overlap.
+
+Preserve main's published-snapshot disclosure revision, task-first dashboard,
+authoring-choice validation, hydration safeguards, password recovery, email,
+observability and family-viewer behavior. Its October 19 landing decision also
+supersedes the earlier viewport fallback: animate across viewport sizes unless
+reduced motion is requested.
+
+Reuse main's `/api/dashboard/relationships` and `get_owner_relationship_page` as
+the canonical owner/live-session queue. Remove this branch's duplicate endpoint,
+hook, contract and unreleased queue DDL; retain the 60-record pagination and
+authorization regressions against the canonical RPC. No deployed migration is
+rewritten. The additive audit migration retains photo retirement/cleanup and the
+transactional eight-photo cap. Keep extracted media/relationship components,
+partial-upload recovery, shared modal lifecycle, request-scoped public reads,
+batched signing, deferred view writes and validation reuse.
+
+Acceptance: conflict-free ancestry containing both revisions; lint, typecheck,
+unit/feature coverage, build, security audit, clean migrations/pgTAP, generated
+types, concurrency and affected browser checks pass; fresh independent review
+has no unresolved material findings. Push to the existing compliant PR branch.
+No production deployment, remote database writes, provider calls or PR merge.
+Verification and review results for this increment will be recorded below.
+
+### Main-merge review correction
+
+Fresh-context review round 1 (`/root/main_merge_independent_review`, model not
+reported by the host) found `MAINMERGE-REVIEW-001`, P2: overlapping deletion of
+duplicate legacy photo paths can skip both retirement jobs when the draft has no
+publication-progress row. The committed concurrency harness reproduced zero
+queued obligations before the fix. Its expanded cases now cover the duplicate
+deletions and attachment racing retirement as well as the eight-photo cap.
+
+The undeployed migration now acquires parent locks before ordered path locks for
+attachment/update/deletion. A new BEFORE DELETE trigger shares that enforcement
+function and returns OLD before attachment-only checks, preserving cascade
+  deletion. After-retirement checks run under those locks.
+
+### Main-merge verification and limits
+
+- Passed: lint without warnings, Next route generation/typecheck, fixture checks,
+  dependency audit with zero affected packages, production build, 1,829 unit tests
+  across 217 files, and coverage floors for 64 feature files/21 protected boundaries.
+- Before the final retirement-lock correction: clean Supabase PostgreSQL 17
+  migration replay, 1,959 pgTAP assertions/67 suites, public generated-type drift
+  check, real authenticated photo-cap concurrency, readable-link allocation,
+  family-viewer limits, both approval/retry overlap orders and four email HTTP
+  integration cases passed. Four inherited SQL unused-parameter warnings remain.
+- After the correction: a fresh reviewer independently passed six exact-function
+  PostgreSQL 14 concurrency/cascade/derivative cases and 77 unit tests. This is
+  focused SQL semantic evidence, not a full Supabase/PG17 replacement. Review
+  round 2 resolved `MAINMERGE-REVIEW-001` with no new material findings on snapshot
+  `52970bc935372b580c37c0cf7c5f567d5456aa4ecb2a6137d3ff3ea200637218`.
+- Fresh browser run: 155 passed, one intentional skip, across desktop/tablet/mobile
+  Chromium, covering merged navigation, landing, keyboard dialogs, old-grant
+  pagination, published-consent failure/retry and per-request cache/deferred writes.
+  A missing synthetic-token fixture was corrected without changing application
+  authorization or weakening assertions. The broader 786-case attempt was
+  interrupted by local disk exhaustion; it is not recorded as a complete pass.
+- Final clean Supabase replay, expanded authenticated retirement harness and
+  committed-range secret scan remain for hosted CI: Docker stopped responding
+  after local storage exhaustion. Only task-generated Next caches were removed;
+  other project containers were not restarted. No production services were called.
+
+The public RPC shape is unchanged by the final private trigger/locking correction.
+Two fresh-context independent rounds were used for this integration; reports and
+immutable before/after evidence are retained under `/tmp/nak-main-merge-review*`.
+Push/CI and deployment are distinct gates. Do not infer release readiness from
+conflict resolution or the focused local checks.
+
 ## Execution context
 
 2026-10-25, working copy on `test/nak-84-coverage-hardening`, starting HEAD

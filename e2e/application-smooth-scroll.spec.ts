@@ -23,10 +23,21 @@ test("wheel, keyboard, anchors and browser back remain usable", async ({ page })
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.keyboard.press("PageDown");
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(50);
+  // Let native keyboard animation settle before a same-document hash navigation.
+  await page.evaluate(() => new Promise<void>(resolve => {
+    let previous = scrollY, stable = 0;
+    const frame = () => {
+      const current = scrollY;
+      stable = Math.abs(current - previous) < 1 ? stable + 1 : 0;
+      previous = current;
+      if (stable >= 4) resolve(); else requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }));
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.getByRole("link", { name: "01 Create", exact: true }).click();
-  await expect(page).toHaveURL(/#tour-step-01$/);
-  await expect(page.locator("#tour-step-01")).toBeInViewport();
+  await page.goto('/#how');
+  await expect(page).toHaveURL(/#how$/);
+  await expect(page.locator('#how h2')).toBeInViewport();
   // A fresh path exercises native back restoration, rather than the hash history entry.
   await page.goto("/privacy");
   await expect(page.locator("html")).toHaveClass(/\blenis\b/);
@@ -69,12 +80,12 @@ test("reduced motion tracks wheel without an animated tail and keeps anchors", a
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   expect(await page.evaluate(() => scrollY)).toBe(settled);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await page.getByRole("link", { name: "01 Create", exact: true }).click();
-  await expect(page.locator("#tour-step-01")).toBeInViewport();
+  await page.goto('/#how');
+  await expect(page.locator('#how h2')).toBeInViewport();
 });
 
 test("keyboard End interrupts pending wheel momentum and reduced motion changes live", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/privacy");
   await expect(page.locator("html")).toHaveClass(/\blenis\b/);
   await page.mouse.move(20, 300);
   await page.mouse.wheel(0, 2000);

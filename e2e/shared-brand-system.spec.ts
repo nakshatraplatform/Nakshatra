@@ -64,21 +64,20 @@ test("standalone and unavailable actions retain contrast on focus and hover", as
 });
 
 test("inverse demo and landing examples retain readable text in both themes", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   for (const theme of ["light", "dark"]) {
     await page.goto("/");
     if (theme === "dark") await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
-    const enhanced = await page.evaluate(() => matchMedia("(min-width: 860px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)").matches);
-    if (enhanced) {
-      await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
-      await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^04/ }).click();
-      await expect(page.locator('[data-tour-step="04"]')).toHaveAttribute("data-active", "true");
-    }
-    const approval = page.locator(enhanced ? '[data-shelf-cover] [data-visual="approve"]' : '[class*="staticVisual"] [data-visual="approve"]').getByText("Share details", { exact: true });
-    // Check the visible book illustration or the normal-flow fallback, not its hidden duplicate.
-    await expect(approval).toBeVisible();
-    expect(await contrast(approval)).toBeGreaterThanOrEqual(4.5);
+    await expect(page.locator("#how")).not.toHaveAttribute("data-bookshelf", "true");
+    await page.evaluate(() => document.fonts.ready);
+    const step = page.locator("#tour-step-04");
+    await step.scrollIntoViewIfNeeded();
+    await expect(step.locator("h3")).toBeInViewport();
+    expect(await contrast(step.locator("h3"))).toBeGreaterThanOrEqual(4.5);
+    expect(await contrast(step.locator("p"))).toBeGreaterThanOrEqual(4.5);
+    await expect(step).toContainText(/share private details for up to 15 days/i);
     await page.goto("/demo");
-    expect(await contrast(page.getByText("Fictional sample introduction", { exact: true }))).toBeGreaterThanOrEqual(4.5);
+    expect(await contrast(page.getByText("Fictional sample Vivara", { exact: true }))).toBeGreaterThanOrEqual(4.5);
     if (theme === "dark") await page.evaluate(() => localStorage.clear());
   }
 });

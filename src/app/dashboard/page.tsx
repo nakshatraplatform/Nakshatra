@@ -1,3 +1,4 @@
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
 import { loadAccountHeaderProfile } from "@/features/account/server/account-header-profile";
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -35,7 +36,10 @@ async function DashboardContent({ session: { supabase, user }, initialEditorOpen
   session: Awaited<ReturnType<typeof getAuthenticatedUser>>;
   initialEditorOpen: boolean;
 }) {
-  const dashboard = await loadDashboardView({ supabase, userId: user.id }).catch(() => null);
+  const dashboard = await loadDashboardView({ supabase, userId: user.id }).catch(error => {
+    reportOperationFailure("portfolio.dashboard.load", error);
+    return null;
+  });
   if (!dashboard) return <main id="main-content" tabIndex={-1}><DataLoadError title="We could not load your dashboard." /></main>;
   const { portfolio } = dashboard;
   // One request clock keeps expiry labels identical during server rendering and hydration.
@@ -93,6 +97,8 @@ async function DashboardContent({ session: { supabase, user }, initialEditorOpen
       initialEditorOpen={initialEditorOpen}
       interests={dashboard.interests}
       accessSummary={dashboard.accessSummary}
+      relationshipOverview={dashboard.relationshipOverview}
+      relationshipsError={dashboard.relationshipsError}
       publicationReadiness={dashboard.publicationReadiness}
       brokerIntroductionResponses={dashboard.brokerIntroductionResponses}
       receivedBrokerIntroductions={dashboard.receivedBrokerIntroductions ?? []}

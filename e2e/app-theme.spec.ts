@@ -69,6 +69,8 @@ test("saved Dark is styled before hydration even with application scripts blocke
   await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
   await expect(page.locator('[data-landing-variant]')).toHaveCSS("background-color", "rgb(17, 27, 34)");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+  await expect(page.locator(".app-theme-thumb")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 20, 0)");
+  await expect(page.locator(".app-theme-moon")).toBeVisible();
 });
 
 test("invalid and blocked storage are safe and do not prevent switching", async ({ page }) => {
@@ -98,6 +100,8 @@ test("public screens support both themes without layout overflow", async ({ page
 });
 
 test("authenticated dashboard, account and BrokerDesk retain usable themed controls", async ({ page, context }, testInfo) => {
+  const hydrationErrors: string[] = [];
+  page.on("console", message => { if (/hydrat|didn't match/i.test(message.text())) hydrationErrors.push(message.text()); });
   await context.addCookies([themeTestCookie]);
   for (const route of ["/dashboard", "/account", "/brokerdesk/onboarding", brokerdeskTeamRoute]) {
     await page.goto(route);
@@ -111,7 +115,8 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
     await page.getByRole("switch", { name: "Dark mode", checked: false }).click();
     await expect(page.locator("html")).toHaveAttribute("data-app-theme", "dark");
     await noOverflow(page);
-    await page.screenshot({ path: testInfo.outputPath(`${route.replaceAll("/", "-")}-dark.png`), fullPage: true, animations: "disabled" });
+    // Avoid screenshot caret styling mutating streamed form inputs before hydration.
+    await page.screenshot({ path: testInfo.outputPath(`${route.replaceAll("/", "-")}-dark.png`), fullPage: true, animations: "disabled", caret: "initial" });
     await page.getByRole("switch", { name: "Dark mode", checked: true }).click();
     await noOverflow(page);
   }
@@ -133,18 +138,11 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await expect(editor.getByLabel("First name", { exact: true })).toBeFocused();
   await expect(editor.getByRole("button", { name: "Attach horoscope", exact: true })).toHaveCount(0);
 
-  // Establish the next navigation's theme explicitly. When the persisted theme
-  // stays Dark, the streamed editor can be visible before its client controls
-  // hydrate, leaving the server-rendered Light-state label briefly observable.
-  await editor.getByRole("switch", { name: "Dark mode", checked: true }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-app-theme", "light");
-
   // Optional-section styling needs a complete account, not a bypass of Basics.
   // Retain the empty-account checks above and reuse the existing local fixture.
   await context.addCookies([publishedOwnerCookie]);
   await page.goto("/dashboard?edit=1");
-  await expect(editor).toBeVisible();
-  await editor.getByRole("switch", { name: "Dark mode", checked: false }).click();
+  // Keep Dark across navigation: the switch now handles delayed hydration itself.
   await expect(editor.getByRole("switch", { name: "Dark mode", checked: true })).toBeVisible();
   await goToAstrology();
   await expect(editor.getByRole("heading", { name: "Astrology and horoscope", exact: true })).toBeVisible();
@@ -154,6 +152,7 @@ test("authenticated dashboard, account and BrokerDesk retain usable themed contr
   await expect(attachment).toHaveCSS("background-color", "rgb(38, 54, 64)");
   await attachment.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("editor-attachment-dark.png"), fullPage: true, animations: "disabled" });
+  expect(hydrationErrors).toEqual([]);
 });
 
 test("deep BrokerDesk headers fit compact mobile widths", async ({ page, context }, testInfo) => {

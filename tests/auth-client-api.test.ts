@@ -8,9 +8,36 @@ import {
   verifyAuthenticationCode,
 } from "../src/features/auth/client/auth.api";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("auth client API", () => {
+  it("returns a safe cancellation result when its caller leaves, without a retry", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const request = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", request);
+    const result = startAuthentication({ method: "google", redirect: "/dashboard" }, controller.signal);
+    controller.abort();
+    expect(await result).toMatchObject({ ok: false, body: { code: "AUTH_REQUEST_CANCELLED" } });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it.each(["headers", "body"])("bounds a stalled %s response without retrying or accepting a late success", async (phase) => {
+    vi.useFakeTimers();
+    let finish!: (value: unknown) => void;
+    const stalled = new Promise(resolve => { finish = resolve; });
+    const request = vi.fn().mockReturnValue(phase === "headers" ? stalled : Promise.resolve({ ok: true, json: () => stalled }));
+    vi.stubGlobal("fetch", request);
+    const result = startAuthentication({ method: "google", redirect: "/dashboard" });
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(await result).toMatchObject({ ok: false, body: { code: "AUTH_REQUEST_TIMEOUT" } });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][1].signal.aborted).toBe(true);
+    finish(phase === "headers" ? Response.json({ url: "https://accounts.google.test/late" }) : { url: "https://accounts.google.test/late" });
+    expect(await result).not.toMatchObject({ ok: true });
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it("posts authentication requests only to the same-origin gateway", async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ authenticated: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetch);

@@ -7,7 +7,7 @@ test("old active grants remain manageable through a server page, with error reco
   const grantId = "d2840000-1111-4111-8111-000000000060";
   let unavailable = true;
   const offsets: number[] = [];
-  await page.route("**/api/relationships?**", route => {
+  await page.route("**/api/dashboard/relationships?**", route => {
     const offset = Number(new URL(route.request().url()).searchParams.get("offset"));
     offsets.push(offset);
     if (unavailable) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
@@ -16,7 +16,7 @@ test("old active grants remain manageable through a server page, with error reco
         interestRequestId: "d1840000-1111-4111-8111-000000000060", viewerName: `Older viewer ${offset + i + 1}`,
         viewerEmail: "older@example.test", status: "active", expiresAt: "2099-01-01T00:00:00Z" },
     }));
-    return route.fulfill({ json: { total: 60, records } });
+    return route.fulfill({ json: { total: 60, records, counts: { interests: 60, awaiting: 60, setAside: 0, active: 60 }, disclosure: null } });
   });
   await page.route(`**/api/access-grants/${grantId}`, async route => {
     expect(route.request().postDataJSON()).toEqual({ action: "revoke" });

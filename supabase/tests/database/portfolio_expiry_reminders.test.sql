@@ -52,7 +52,7 @@ select is(public.enqueue_due_full_view_expiry_reminders(),0,'repeated schedule i
 reset role;
 select is((select count(*)::integer from app_private.notification_outbox where grant_id='f1660000-1111-4111-8111-000000000001'),2,'exactly two distinct recipients');
 select ok(not exists(select 1 from app_private.notification_outbox where payload::text like '%@expiry.test%'),'queue contains no raw recipient address');
-select is((select count(*)::integer from public.claim_relationship_notification_outbox(5)),2,'both reminders claimed');
+select is((select count(*)::integer from public.claim_relationship_notification_outbox(5) where notification_type in ('full_view_expiring','full_view_access_expiring')),2,'both reminders claimed alongside regular publication mail');
 select is(pg_temp.prepare_core('full_view_expiring'), 'ready','viewer dispatch bound to current recipient and lease');
 select is(pg_temp.prepare_core('full_view_expiring'), 'ready','identical retry content retains binding');
 select is(pg_temp.prepare_core('full_view_access_expiring',repeat('b',64),null,2),'unavailable','wrong claim attempt cannot prepare');

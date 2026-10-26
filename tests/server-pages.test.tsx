@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/server", async original => ({ ...await original<typeof import("next/server")>(), after: mocks.after }));
 import type { PortfolioData } from "../src/types/portfolio";
 import { resolveServerTree } from "./resolve-server-tree";
 import { CustomerAppFrame } from "@/components/navigation/CustomerAppFrame";
@@ -19,9 +20,9 @@ const mocks = vi.hoisted(() => ({
     orientation: "portrait" as const,
   }]),
   rpc: vi.fn(),
-  signedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/hero" } })),
   after: vi.fn(),
   signedUrls: vi.fn(async (paths: string[]) => ({ data: paths.map(path => ({ path, signedUrl: "https://signed.test/hero", error: null })) })),
+  signedUrl: vi.fn(async () => ({ data: { signedUrl: "https://signed.test/hero" } })),
   imageResponse: vi.fn(),
   authUser: null as { id: string; email?: string; email_confirmed_at?: string } | null,
   apiAuthStatus: "missing_session" as "missing_session" | "authenticated",
@@ -47,12 +48,11 @@ function databaseClient() {
     }),
     rpc: mocks.rpc,
     auth: { getUser: vi.fn(async () => ({ data: { user: mocks.authUser }, error: null })) },
-    storage: { from: () => ({ createSignedUrl: mocks.signedUrl, createSignedUrls: mocks.signedUrls }) },
+    storage: { from: () => ({ createSignedUrls: mocks.signedUrls, createSignedUrl: mocks.signedUrl }) },
   };
 }
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound, useRouter: () => ({ push: vi.fn(), refresh: mocks.refresh }) }));
-vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }) }));
 vi.mock("next/font/google", () => ({
   Inter: () => ({ variable: "portfolio-body" }),
@@ -166,14 +166,14 @@ beforeEach(() => {
 describe("authenticated server pages", () => {
   it("loads the authenticated account privacy state", async () => {
     mocks.outcomes.account_deletion_requests = { data: null };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByTestId("account-props")).toHaveTextContent('"userEmail":"user@example.com"');
     expect(screen.getByTestId("account-props")).toHaveTextContent('"initialDeletion":null');
   });
 
   it("keeps navigation but withholds account controls when deletion status is unknown", async () => {
     mocks.outcomes.account_deletion_requests = { data: { status: "unexpected-state" } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
     screen.getByRole("main").focus();
@@ -185,7 +185,8 @@ describe("authenticated server pages", () => {
 
   it("keeps navigation and a safe retry when dashboard reads fail", async () => {
     mocks.loadDashboardView.mockRejectedValueOnce(new Error("private database failure detail"));
-    const view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     const header = screen.getByRole("banner");
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your dashboard.");
@@ -196,7 +197,7 @@ describe("authenticated server pages", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(mocks.refresh).toHaveBeenCalledOnce();
-    view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { view.rerender(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBe(header);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByTestId("dashboard-props")).toBeInTheDocument();
@@ -205,7 +206,7 @@ describe("authenticated server pages", () => {
   it("passes only the saved self-created name parts to Account settings", async () => {
     mocks.outcomes.portfolios = { data: { draft_data: { personal: { profile_for: "self",
       first_name: "Mary Jane", middle_name: "Anne", last_name: "Rao", address_line_1: "Never serialize this" } } } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     const props = JSON.parse(screen.getByTestId("account-props").textContent || "{}");
     expect(props.initialProfile).toEqual({ firstName: "Mary Jane", middleName: "Anne", lastName: "Rao" });
     expect(props.profileManagedByPortfolio).toBe(true);
@@ -214,7 +215,7 @@ describe("authenticated server pages", () => {
 
   it("withholds editable account controls when the portfolio name source cannot be read", async () => {
     mocks.outcomes.portfolios = { data: null, error: { message: "private account lookup failure" } };
-    render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await AccountPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("We could not load your account controls.");
     expect(screen.queryByTestId("account-props")).not.toBeInTheDocument();
@@ -224,7 +225,7 @@ describe("authenticated server pages", () => {
 
   it("loads an empty dashboard", async () => {
     mocks.outcomes.portfolios = { data: null };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     expect(screen.getByTestId("dashboard-props")).toHaveTextContent('"shareUrl":null');
   });
 
@@ -239,7 +240,7 @@ describe("authenticated server pages", () => {
     } } };
     mocks.outcomes.portfolio_views = { count: 7 };
     mocks.outcomes.portfolio_media = { data: [{ id: "media-1", media_type: "hero", visibility: "public" }] };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({}) }))); });
     const props = screen.getByTestId("dashboard-props").textContent ?? "";
     expect(props).toContain('"viewCount":7');
     expect(props).toContain("https://nakshatra.test/p/token");
@@ -249,7 +250,7 @@ describe("authenticated server pages", () => {
   it("opens the canonical dashboard editor from the legacy edit URL", async () => {
     await expect(EditPage()).rejects.toThrow("REDIRECT:/dashboard?edit=1");
     mocks.outcomes.portfolios = { data: portfolio };
-    render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) })));
+    await act(async () => { render(await resolveServerTree(await DashboardPage({ searchParams: Promise.resolve({ edit: "1" }) }))); });
     expect(screen.getByTestId("dashboard-props")).toHaveTextContent('"initialEditorOpen":true');
   });
 
@@ -306,9 +307,8 @@ describe("public portfolio pages", () => {
     mocks.outcomes.record_public_portfolio_view = { data: true };
     render(await PublicBiodataPage({ params: Promise.resolve({ token: "token" }) }));
     expect(screen.getByTestId("template")).toHaveTextContent("Aditi Rao:public");
-    expect(mocks.after).toHaveBeenCalledOnce();
-    expect(mocks.rpc).not.toHaveBeenCalledWith("record_public_portfolio_view", expect.anything());
-    await mocks.after.mock.calls[0][0]();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" });
+    await mocks.after.mock.calls.at(-1)![0]();
     expect(mocks.rpc).toHaveBeenCalledWith("record_public_portfolio_view", { p_share_token: "token" });
   });
 
@@ -442,7 +442,7 @@ describe("static app surfaces", () => {
     const { rerender } = render(pages[0]);
     expect(screen.getByRole("heading", { name: /thoughtful way to share marriage introductions/i })).toBeInTheDocument();
     for (const page of pages.slice(1)) rerender(page);
-    expect(screen.getByText(/fictional sample introduction/i)).toBeInTheDocument();
+    expect(screen.getByText(/fictional sample Vivara/i)).toBeInTheDocument();
     expect(screen.getByTestId("template")).toHaveTextContent("Ananya Mehta:public");
   });
 

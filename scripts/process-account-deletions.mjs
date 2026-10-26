@@ -1,19 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 import { createAccountDeletionWorker } from "./account-deletion-worker.mjs";
+import { runObservedWorker } from "./observed-worker.mjs";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+await runObservedWorker("worker.account-deletion", async () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY before processing deletions.");
-}
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY before processing deletions.");
+  }
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const limit = Math.min(Math.max(Number.parseInt(process.env.DELETION_BATCH_SIZE || "10", 10) || 10, 1), 50);
+  const result = await createAccountDeletionWorker(supabase).run(limit);
+  console.log(`Account deletion run complete: ${result.completed} completed, ${result.deferred} deferred.`);
+
+  if (result.deferred > 0) throw new Error("ACCOUNT_DELETION_WORK_DEFERRED");
 });
-
-const limit = Math.min(Math.max(Number.parseInt(process.env.DELETION_BATCH_SIZE || "10", 10) || 10, 1), 50);
-const result = await createAccountDeletionWorker(supabase).run(limit);
-console.log(`Account deletion run complete: ${result.completed} completed, ${result.deferred} deferred.`);
-
-if (result.deferred > 0) throw new Error("ACCOUNT_DELETION_WORK_DEFERRED");

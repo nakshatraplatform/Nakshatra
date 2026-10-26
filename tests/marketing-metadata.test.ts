@@ -11,17 +11,19 @@ import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-ima
 
 describe("marketing metadata", () => {
   it("uses the controlled-introduction category and consent promise", () => {
-    expect(metadata.title).toEqual({ absolute: "Marriage biodata link you control | VivIntro" });
+    expect(metadata.title).toEqual({ absolute: "Marriage biodata as a link | VivIntro" });
+    expect(metadata.description).toMatch(/marriage.*VivIntro.*Vivara link/i);
     expect(metadata.description).toMatch(/marriage biodata/i);
-    expect(metadata.description).toMatch(/until you choose to share them/i);
+    expect(metadata.description).toMatch(/choose who sees your private details/i);
+    expect(metadata.description).not.toMatch(/private link|approve access/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
-      title: "Your biodata, as one link you control.",
+      title: "Your marriage biodata, shared through one link.",
       description: metadata.description,
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary_large_image",
-      title: "Your biodata, as one link you control.",
+      title: "Your marriage biodata, shared through one link.",
       description: metadata.description,
     });
     expect(metadata.alternates?.canonical).toBe("/");
@@ -31,6 +33,7 @@ describe("marketing metadata", () => {
     expect(size).toEqual({ width: 1200, height: 630 });
     expect(contentType).toBe("image/png");
     expect(alt).toMatch(/VivIntro/i);
+    expect(alt).toMatch(/Vivara.*marriage/i);
     expect(OpenGraphImage()).toMatchObject({ options: size });
   });
 });

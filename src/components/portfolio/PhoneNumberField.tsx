@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { combinePhoneNumber, splitPhoneNumber } from "@/features/portfolio/phone-number";
+import { combinePhoneNumber, splitPhoneNumber, isValidPhoneNumber } from "@/features/portfolio/phone-number";
 
 export function PhoneNumberField({
   value,
@@ -11,7 +11,7 @@ export function PhoneNumberField({
   defaultCallingCode = "",
   hint,
   label = "Phone number",
-  error,
+  error: externalError,
   showPartLabels = true,
 }: {
   value: string;
@@ -25,13 +25,16 @@ export function PhoneNumberField({
   showPartLabels?: boolean;
 }) {
   const errorId = useId();
+  const [touched, setTouched] = useState(false);
+  const error = externalError || (touched && value.trim() && !isValidPhoneNumber(value)
+    ? "Enter a valid phone number with 7–20 digits, or leave it blank." : undefined);
   const [emptyNumberCode, setEmptyNumberCode] = useState(defaultCallingCode.replace(/\D/g, "").slice(0, 3));
   const parts = splitPhoneNumber(value, emptyNumberCode);
   const callingCode = parts.callingCode;
   const nationalNumber = parts.nationalNumber;
 
   return (
-    <fieldset className="split-phone-field">
+    <fieldset className="split-phone-field" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setTouched(true); }}>
       <legend>{label}{required ? " *" : ""}</legend>
       <div className="split-phone-inputs">
         <label>
@@ -91,7 +94,7 @@ export function PhoneNumberField({
         </label>
       </div>
       {hint && <small>{hint}</small>}
-      {error && <small id={errorId} className="interest-form-error">{error}</small>}
+      {error && <small id={errorId} role={externalError ? undefined : "alert"} className="interest-form-error">{error}</small>}
       {nationalNumber.startsWith("+") && <small role="alert">Enter the country calling code separately and remove it from the phone number to avoid a wrong number.</small>}
       {name && <input type="hidden" name={name} value={value} />}
     </fieldset>

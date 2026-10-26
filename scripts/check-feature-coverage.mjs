@@ -8,6 +8,9 @@ const FEATURE_FILE_PATTERN = /\.(?:mapper|service|contract)\.[cm]?[jt]sx?$/;
 /** Regression floors for small security/data boundaries where aggregate coverage can hide a drop. */
 /** @type {Record<string, Record<string, number>>} */
 export const PROTECTED_COVERAGE_THRESHOLDS = {
+  "src/features/notifications/server/delivery.runtime.mjs": { statements: 90, branches: 90, functions: 90, lines: 90 },
+  "src/features/notifications/server/resend-webhook.ts": { statements: 90, branches: 80, functions: 90, lines: 90 },
+  "src/app/api/webhooks/resend/route.ts": { statements: 80, branches: 80, functions: 90, lines: 80 },
   "scripts/account-deletion-worker.mjs": { statements: 90, branches: 60, functions: 90, lines: 95 },
   "scripts/candidate-liveness-email-worker.mjs": { statements: 100, branches: 95, functions: 100, lines: 100 },
   "scripts/deleted-provider-cleanup.mjs": { statements: 75, branches: 65, functions: 100, lines: 80 },

@@ -5,52 +5,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const animation = vi.hoisted(() => ({
-  play: vi.fn(),
-  pause: vi.fn(),
-  kill: vi.fn(),
-}));
-const gsap = vi.hoisted(() => ({
-  registerPlugin: vi.fn(),
-  set: vi.fn(),
-  to: vi.fn((_target: unknown, options?: { onComplete?: () => void }) => {
-    options?.onComplete?.();
-    return animation;
-  }),
-  from: vi.fn(() => animation),
-  killTweensOf: vi.fn(),
-  timeline: vi.fn(() => ({ set: vi.fn().mockReturnThis(), to: vi.fn().mockReturnThis(), from: vi.fn().mockReturnThis(), time: () => 0, duration: () => 15, kill: vi.fn() })),
-  matchMedia: vi.fn(() => ({
-    add: vi.fn((_query: unknown, callback: () => void) => callback()),
-    revert: vi.fn(),
-  })),
-  utils: { toArray: vi.fn(() => [document.createElement("div")]) },
-}));
-const trigger = vi.hoisted(() => ({ kill: vi.fn() }));
-const scrollTrigger = vi.hoisted(() => ({
-  batch: vi.fn((_items: unknown[], options: { onEnter?: (items: unknown[]) => void; onLeaveBack?: (items: unknown[]) => void }) => {
-    options.onEnter?.([]);
-    options.onLeaveBack?.([]);
-  }),
-  create: vi.fn((options: { onEnter?: () => void; onLeaveBack?: () => void }) => {
-    options.onEnter?.();
-    options.onLeaveBack?.();
-    return trigger;
-  }),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  refresh: vi.fn(),
-}));
-
-vi.mock("gsap", () => ({ default: gsap }));
-vi.mock("gsap/ScrollTrigger", () => ({ ScrollTrigger: scrollTrigger }));
-vi.mock("@gsap/react", async () => {
-  const ReactModule = await import("react");
-  return {
-    useGSAP: (callback: () => void | (() => void), config?: { dependencies?: unknown[] }) =>
-      ReactModule.useEffect(callback, config?.dependencies ?? []),
-  };
-});
+// Use the shared matchMedia fixture for the static fallback; real animation
+// lifecycle and scroll behavior are exercised in the browser suites.
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean; fill?: boolean }) => {
     const imageProps = { ...props };
@@ -74,11 +30,11 @@ describe("landing and shared frontend components", () => {
     render(<Home />);
     expect(screen.getAllByText(/VivIntro/i).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: /create your introduction/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeInTheDocument();
-    expect(screen.getByText(/For marriage introductions/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Shared introduction/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /Your marriage biodata, shared through one link/i })).toBeInTheDocument();
+    expect(screen.getByText(/A simple way to introduce yourself/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Vivara.*link/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/private details/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: /Your introduction. Your choice/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Why Rahul started VivIntro/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Private until you publish/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/What does “Liveness checked” mean/i).closest("summary")).toBeInTheDocument();
     expect(screen.getByText(/every detail in the sample are fictional/i)).toBeInTheDocument();
@@ -86,12 +42,12 @@ describe("landing and shared frontend components", () => {
 
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
-    expect(screen.getByRole("heading", { name: /keep personal details personal/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Shared by choice/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /Share your biodata. Choose when to share more/i })).toBeInTheDocument();
+    expect(document.querySelector("#privacy")).toHaveTextContent(/viewer signs in and confirms their email/i);
 
     rerender(<LandingExperience variant="story" />);
-    expect(screen.getByRole("heading", { name: /more human way to make a marriage introduction/i })).toBeInTheDocument();
-    expect(screen.getByText(/Present the person, not another attachment/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Introduce yourself the way you want to be known/i);
+    expect(screen.getByText(/Bring your story, family and photos together with VivIntro/i)).toBeInTheDocument();
   });
 
   it("handles empty, selected, disabled, and selectable rashi palettes", async () => {

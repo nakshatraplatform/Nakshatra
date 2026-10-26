@@ -1,12 +1,13 @@
 "use client";
 
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 
 
-import { useState } from "react";
+import { useId, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
@@ -20,30 +21,57 @@ import {
 } from "@/features/auth/password-policy";
 
 export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
+  const hydrated = useHydrated();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState<"password" | "confirmation" | null>(null);
+  const [recoveryRequired, setRecoveryRequired] = useState(false);
+  const errorId = useId();
+  const helpId = useId();
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmationRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const destination = sanitizeInternalRedirect(returnTo);
   const loginHref = `/login?redirect=${encodeURIComponent(destination)}`;
 
+  function fieldError(field: "password" | "confirmation", message: string) {
+    setError(message);
+    setErrorField(field);
+    (field === "password" ? passwordRef : confirmationRef).current?.focus();
+  }
+
+  function clearFieldError() {
+    if (!errorField) return;
+    setError("");
+    setErrorField(null);
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setErrorField(null);
+    setRecoveryRequired(false);
     if (password !== confirmation) {
-      setError("The passwords do not match.");
+      fieldError("confirmation", "The passwords do not match.");
       return;
     }
     if (!isAcceptablePassword(password)) {
-      setError(PASSWORD_HELP);
+      fieldError("password", PASSWORD_HELP);
       return;
     }
     setPending(true);
     const { ok, body } = await updateRecoveredPassword(password);
     if (!ok || !body?.updated) {
-      setError(body?.error || "This recovery link has expired. Request a new one.");
+      if (body?.code === "PASSWORD_INVALID") fieldError("password", body.error || PASSWORD_HELP);
+      else {
+        setRecoveryRequired(["AUTH_SESSION_MISSING", "AUTH_SESSION_INVALID", "AUTH_SESSION_REVOKED"].includes(body?.code ?? ""));
+        setError(body?.code === "PASSWORD_UPDATE_FAILED"
+          ? "We could not update your password. Please try again."
+          : body?.error || "We could not update your password. Please try again.");
+      }
       setPending(false);
       return;
     }
@@ -59,33 +87,43 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
       </header>
       <main id="main-content" tabIndex={-1} className="account-main">
         <section className="account-panel">
+          <fieldset className="account-interactive" disabled={!hydrated} aria-busy={!hydrated}>
+          {!hydrated && <p role="status" className="account-copy">Preparing secure form…</p>}
+          <noscript>Enable JavaScript to update your password.</noscript>
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={142} priority /></div>
           <p className="account-eyebrow">Account security</p>
           <h1 className="account-title">Choose a new password.</h1>
-          <p className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account. After saving, you’ll return to where you left off.</p>
+          <p id={helpId} className="account-copy">{PASSWORD_HELP} Do not reuse a password from another account. After saving, you’ll return to where you left off.</p>
           {pending && <LoadingStatus compact title="Saving your new password" className="my-4" />}
           <form className="account-form" onSubmit={submit}>
             <PasswordField
               id="new-password"
+              inputRef={passwordRef}
+              helpId={helpId}
+              errorId={errorField === "password" ? errorId : undefined}
               label="New password"
               value={password}
               show={showPassword}
-              onChange={setPassword}
+              onChange={value => { setPassword(value); clearFieldError(); }}
               onToggle={() => setShowPassword((shown) => !shown)}
             />
             <PasswordField
               id="confirm-password"
+              inputRef={confirmationRef}
+              helpId={helpId}
+              errorId={errorField === "confirmation" ? errorId : undefined}
               label="Confirm new password"
               value={confirmation}
               show={showPassword}
-              onChange={setConfirmation}
+              onChange={value => { setConfirmation(value); clearFieldError(); }}
               onToggle={() => setShowPassword((shown) => !shown)}
             />
-            {error && <p className="account-error" role="alert">{error} <Link href={loginHref}>Return to sign in to request a new recovery email.</Link></p>}
+            {error && <p id={errorId} className="account-error" role="alert">{error}{recoveryRequired && <> <Link href={loginHref}>Return to sign in to request a new recovery email.</Link></>}</p>}
             <button className="auth-primary-btn" type="submit" disabled={pending}>
               {pending ? "Saving..." : "Save new password"}
             </button>
           </form>
+          </fieldset>
         </section>
       </main>
     </div>
@@ -94,6 +132,9 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string } = {}) {
 
 function PasswordField({
   id,
+  inputRef,
+  helpId,
+  errorId,
   label,
   value,
   show,
@@ -101,6 +142,9 @@ function PasswordField({
   onToggle,
 }: {
   id: string;
+  inputRef: RefObject<HTMLInputElement | null>;
+  helpId: string;
+  errorId?: string;
   label: string;
   value: string;
   show: boolean;
@@ -114,6 +158,10 @@ function PasswordField({
         <KeyRound aria-hidden="true" />
         <input
           id={id}
+          ref={inputRef}
+          name={id}
+          aria-invalid={Boolean(errorId) || undefined}
+          aria-describedby={[helpId, errorId].filter(Boolean).join(" ")}
           className="auth-input"
           type={show ? "text" : "password"}
           autoComplete="new-password"

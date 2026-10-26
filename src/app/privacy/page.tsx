@@ -18,6 +18,7 @@ export default function PrivacyPage() {
         <p>Depending on what you choose to complete, VivIntro may store identity and contact details, education and work information, family background, lifestyle and partner preferences, astrology details, photos, and an optional horoscope document.</p>
         <p>We use this information to save your private draft, create your public Introduction and owner-approved Complete Portfolio, operate your personal sharing controls, and maintain your account. The sharing descriptions below cover the portfolio you create and share through your own VivIntro link.</p>
         <p>After completing your portfolio details, you may optionally rate the onboarding experience, choose the step you found hardest, and leave a short comment. This feedback is kept separate from your portfolio, is never shown to viewers, and is available only to the VivIntro platform administrator to improve onboarding.</p>
+        <p>Our public feedback form lets creators, viewers and families describe their experience. We keep these submissions separately from introductions. You may choose to provide an email so we can ask about using part of your feedback as a testimonial. This choice does not publish your words. We request your separate approval before displaying a quote. Public feedback submissions are removed from the live database after 180 days by the retention job, subject to the job running successfully and backup retention described below.</p>
       </PolicySection>
 
       <PolicySection title="Creating and publishing your portfolio">
@@ -39,6 +40,7 @@ export default function PrivacyPage() {
       </PolicySection>
 
       <PolicySection id="providers" title="Storage and service providers">
+        <p>When configured, VivIntro uses Sentry for application error and performance diagnostics. Our configuration filters private URL values and excludes profile content, request bodies, cookies and user identity from diagnostic payloads. Error messages are redacted while source locations and timing information help us investigate failures. Session recording is not enabled. Sentry also processes technical network metadata when receiving these requests.</p>
         <p>VivIntro uses Supabase for account authentication, portfolio records, and file storage; Vercel for hosting and marketing-page analytics; Google when you choose Google sign-in; and Resend for transactional emails when delivery is enabled. Email delivery involves sharing the recipient address and message content with the email provider.</p>
         <p>Our page-view analytics filter allows public marketing pages and removes URL query strings and fragments. It excludes Introduction links and account routes from those page-view events. This filter is not a claim that no scripts or technical requests load elsewhere in the application. See <a href="#browser-storage" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">cookies and browser storage</a> for the distinction between analytics and sign-in cookies.</p>
         <p>Personal Introduction pages are marked not to be indexed by search engines; public marketing pages can appear in search results. This indexing instruction cannot prevent a person who has an Introduction link from saving or forwarding what they can view.</p>
@@ -58,6 +60,7 @@ export default function PrivacyPage() {
 
       <PolicySection id="browser-storage" title="Cookies and browser storage">
         <p>The personal portfolio flow uses cookies to support sign-in and sensitive account actions, and local storage to remember your appearance preference. Cookie-free analytics does not mean the whole application is cookie-free.</p>
+        <p>To prevent an old Introduction link from later pointing to a different person, we retain a one-way fingerprint of each issued link indefinitely, including after account deletion. This reservation has no account reference or portfolio content. Name-based link fingerprints can still be guessed from names; they are not anonymous records.</p>
         <dl className="space-y-4">
           <div>
             <dt className="font-semibold text-[color:var(--workspace-ink)]">Sign-in cookies — Supabase</dt>
@@ -129,7 +132,7 @@ export default function PrivacyPage() {
         <p>VivIntro is intended for adults aged 18 and over. Do not upload another person&apos;s private information or documents unless you have their permission and are authorized to manage the introduction.</p>
       </PolicySection>
 
-      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 15, 2026. Pilot wording is subject to legal review.</p>
+      <p className="text-sm text-[color:var(--workspace-ink-muted)]">Last updated: October 21, 2026. Pilot wording is subject to legal review.</p>
     </PolicyLayout>
   );
 }

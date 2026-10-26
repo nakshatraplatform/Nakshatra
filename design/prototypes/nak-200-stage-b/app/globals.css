@@ -1,0 +1,71 @@
+@import "tailwindcss" source("../");
+
+/* Tailwind v4's CSS-first configuration. No default color utilities are used. */
+@theme {
+  --color-*: initial;
+  --color-navy: #192a56;
+  --color-app: #fcfbfb;
+  --color-sand: #f7d794;
+  --color-rose: #eda6a3;
+  --color-sage: #9dbebb;
+  --color-structure: #e8e6e6;
+  /* Derived from navy; Warm Gray is a border color, not readable body text. */
+  --color-muted: #596780;
+  --font-body: var(--font-inter), Arial, sans-serif;
+  --font-display: var(--font-jakarta), Arial, sans-serif;
+  --shadow-paper: 0 16px 48px rgb(25 42 86 / 0.05);
+  --shadow-float: 0 8px 32px rgb(25 42 86 / 0.1);
+  --animate-enter: enter 180ms cubic-bezier(0.23, 1, 0.32, 1);
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@theme inline {
+  --font-body: var(--font-inter), Arial, sans-serif;
+  --font-display: var(--font-jakarta), Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-padding-top: 96px;
+  }
+  body {
+    background: var(--color-app);
+    color: var(--color-navy);
+  }
+  button,
+  a,
+  input,
+  select,
+  summary {
+    touch-action: manipulation;
+  }
+  button,
+  a,
+  input,
+  select,
+  summary,
+  [tabindex] {
+    outline-offset: 4px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-navy);
+  }
+  summary::marker {
+    color: var(--color-muted);
+  }
+  button:not(:disabled),
+  summary,
+  select {
+    cursor: pointer;
+  }
+}

@@ -1,13 +1,14 @@
 "use client";
 
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { SocialLoginButton } from "./SocialLoginButton";
 
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
@@ -41,7 +42,7 @@ const COPY = {
   signup: {
     eyebrow: "Begin privately",
     title: "Create your account",
-    body: "Start your introduction privately. When you’re ready, confirm consent and publish. Previews are optional.",
+    body: "Create privately. Share when you’re ready.",
     primaryAction: "Create account",
     altPrompt: "Already have an account?",
     altCta: "Sign in",
@@ -50,6 +51,7 @@ const COPY = {
 } as const;
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const hydrated = useHydrated();
   const [screen, setScreen] = useState<Screen>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,6 +60,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState<"password" | "otp" | null>(null);
+  const errorId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const previousScreen = useRef(screen);
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRedirect = sanitizeInternalRedirect(searchParams.get("redirect"));
@@ -94,6 +102,24 @@ export function AuthForm({ mode }: { mode: Mode }) {
         ? "We could not complete the sign-in. Please try again."
         : "";
 
+  // Same-route steps bypass Next's route announcer. Preserve initial page focus;
+  // the OTP input keeps its existing autofocus/paste/autofill behavior.
+  useEffect(() => {
+    if (previousScreen.current !== screen && screen !== "verify") headingRef.current?.focus();
+    previousScreen.current = screen;
+  }, [screen]);
+
+  function clearError() {
+    setError("");
+    setErrorField(null);
+  }
+
+  function fieldError(field: "password" | "otp", message: string) {
+    setError(message);
+    setErrorField(field);
+    (field === "password" ? passwordRef : codeRef).current?.focus();
+  }
+
   useEffect(() => {
     if (resendSeconds <= 0) return;
     const timer = window.setInterval(() => {
@@ -109,7 +135,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   async function handleGoogle() {
     setPendingAction("google");
-    setError("");
+    clearError();
     const { ok, body } = await startAuthentication({ method: "google", redirect: redirectPath });
     if (!ok || !body?.url) {
       setError(body?.error || "We could not connect to Google. Please try again.");
@@ -121,10 +147,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   async function handleCredentials(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
+    clearError();
 
     if (mode === "signup" && !isAcceptablePassword(password)) {
-      setError(PASSWORD_HELP);
+      fieldError("password", PASSWORD_HELP);
       return;
     }
 
@@ -155,7 +181,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPendingAction("verify");
-    setError("");
+    clearError();
     const { ok, body } = await verifyAuthenticationCode({
       purpose: "owner_signup",
       email,
@@ -163,7 +189,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
       redirect: redirectPath,
     });
     if (!ok || !body?.verified) {
-      setError(body?.error || "We could not verify the code.");
+      const message = body?.error || "We could not verify the code.";
+      if (body?.code === "OTP_REJECTED" || body?.code === "OTP_INVALID") fieldError("otp", message);
+      else setError(message);
       setPendingAction(null);
       return;
     }
@@ -173,7 +201,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function resendSignupCode() {
     if (resendSeconds > 0) return;
     setPendingAction("resend");
-    setError("");
+    clearError();
     const { ok, body } = await startAuthentication({ method: "resend_signup", email, redirect: redirectPath });
     if (!ok || !body?.sent) {
       setError(body?.error || "We could not send another code.");
@@ -186,7 +214,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function handleRecovery(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPendingAction("recovery");
-    setError("");
+    clearError();
     const { ok, body } = await startAuthentication({ method: "password_recovery", email, redirect: redirectPath });
     if (!ok || !body?.sent) {
       setError(body?.error || "We could not send the recovery email.");
@@ -197,7 +225,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   function returnToCredentials() {
-    setError("");
+    clearError();
     setOtp("");
     setScreen("credentials");
   }
@@ -226,19 +254,22 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </aside>
         )}
         <section className="account-panel" aria-labelledby="account-title">
+          <fieldset className="account-interactive" disabled={!hydrated} aria-busy={!hydrated}>
+          {!hydrated && <p role="status" className="account-copy">Preparing secure form…</p>}
+          <noscript>Enable JavaScript to sign in or create an account.</noscript>
           <div className="account-brand-lockup"><VivIntroBrand variant="stacked" decorative displayWidth={mode === "login" ? 112 : 142} priority /></div>
           {pendingAction && <LoadingStatus compact className="mb-4" state="connecting" title={pendingAction === "credentials" ? mode === "signup" ? "Creating your account" : "Signing you in" : pendingAction === "google" ? "Connecting to Google" : pendingAction === "verify" ? "Confirming your email" : pendingAction === "resend" ? "Sending a new code" : "Sending your recovery email"} />}
           {screen === "credentials" && (
             <>
               <p className="account-eyebrow">{copy.eyebrow}</p>
-              <h1 id="account-title" className="account-title">{copy.title}</h1>
+              <h1 ref={headingRef} tabIndex={-1} id="account-title" className="account-title">{copy.title}</h1>
               <p className="account-copy">{copy.body}</p>
               {mode === "signup" && !brokerdeskContinuation && (
                 <div className="account-pilot-note">
                   <ShieldCheck aria-hidden="true" />
                   <div>
                     <strong>Your introduction begins as a private draft.</strong>
-                    <p>Confirm your email to start creating. Publishing requires your own introduction, required details, your final review, and liveness checks. A Liveness checked badge appears only after those checks succeed; it does not verify legal identity or photo ownership. If someone shared an introduction with you, use that link to view it and show interest—you do not need to create your own introduction.</p>
+                    <p>Confirm your email to begin. A liveness check is required before publishing.</p>
                     <Link href="/#samples">See the introduction format</Link>
                   </div>
                 </div>
@@ -252,15 +283,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
                     <KeyRound aria-hidden="true" />
                     <input
                       id={`${mode}-password`}
+                      ref={passwordRef}
+                      name="password"
                       className="auth-input"
                       type={showPassword ? "text" : "password"}
                       autoComplete={mode === "signup" ? "new-password" : "current-password"}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => { setPassword(event.target.value); if (errorField === "password") clearError(); }}
                       minLength={mode === "signup" ? PASSWORD_MIN_LENGTH : undefined}
                       maxLength={PASSWORD_MAX_LENGTH}
                       required
-                      aria-describedby={mode === "signup" ? "signup-password-help" : undefined}
+                      aria-invalid={errorField === "password" || undefined}
+                      aria-describedby={[mode === "signup" ? "signup-password-help" : "", errorField === "password" ? errorId : ""].filter(Boolean).join(" ") || undefined}
                       placeholder={mode === "signup" ? "Create a password" : "Enter your password"}
                     />
                     <button type="button" className="account-password-toggle" onClick={() => setShowPassword((shown) => !shown)} aria-label={showPassword ? "Hide password" : "Show password"}>
@@ -270,7 +304,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </div>
                 {mode === "signup" && <p id="signup-password-help" className="account-field-help">{PASSWORD_HELP}</p>}
                 {mode === "login" && (
-                  <button type="button" className="account-forgot" onClick={() => { setError(""); setScreen("recovery"); }}>
+                  <button type="button" className="account-forgot" onClick={() => { clearError(); setScreen("recovery"); }}>
                     Forgot password?
                   </button>
                 )}
@@ -290,7 +324,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </button>
               )}
 
-              {(error || authErrorMessage) && <p className="account-error" role="alert">{error || authErrorMessage}</p>}
+              {(error || authErrorMessage) && <p id={errorId} className="account-error" role="alert">{error || authErrorMessage}</p>}
               <p className="account-alt">{copy.altPrompt} <Link href={alternateHref} className="account-link">{copy.altCta}</Link></p>
               {mode === "signup" && (
                 <p className="account-legal">
@@ -304,14 +338,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <form onSubmit={handleVerify} className="account-sent" aria-labelledby="account-title">
               <div className="account-mail-icon"><ShieldCheck aria-hidden="true" /></div>
               <p className="account-eyebrow">Verify your email</p>
-              <h1 id="account-title">Enter the six-digit code</h1>
+              <h1 ref={headingRef} tabIndex={-1} id="account-title">Enter the six-digit code</h1>
               <p>We sent it to <strong>{email}</strong>. Keep this page open while you check your email.</p>
               <label className="account-otp-field" htmlFor="signup-code">
                 <span>Verification code</span>
-                <input id="signup-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} required autoFocus />
+                <input ref={codeRef} id="signup-code" name="verification-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "").slice(0, 6)); if (errorField === "otp") clearError(); }} aria-invalid={errorField === "otp" || undefined} aria-describedby={errorField === "otp" ? errorId : undefined} required autoFocus />
               </label>
               <p className="account-verification-note">No code? The email may already be registered. You can sign in or reset its password instead.</p>
-              {error && <p className="account-error" role="alert">{error}</p>}
+              {error && <p id={errorId} className="account-error" role="alert">{error}</p>}
               <div className="account-sent-actions">
                 <button type="submit" className="auth-primary-btn" disabled={pendingAction !== null || otp.length !== 6}>{pendingAction === "verify" ? "Verifying..." : "Verify and continue"}</button>
                 <button type="button" className="account-change-email" onClick={() => void resendSignupCode()} disabled={pendingAction !== null || resendSeconds > 0}>
@@ -326,10 +360,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <form onSubmit={handleRecovery} className="account-sent" aria-labelledby="account-title">
               <div className="account-mail-icon"><Mail aria-hidden="true" /></div>
               <p className="account-eyebrow">Password help</p>
-              <h1 id="account-title">Reset your password</h1>
+              <h1 ref={headingRef} tabIndex={-1} id="account-title">Reset your password</h1>
               <p>Enter your account email. We will send a secure recovery link if an account exists.</p>
               <AuthField id="recovery-email" label="Email address" type="email" autoComplete="email" value={email} onChange={setEmail} placeholder="you@example.com" />
-              {error && <p className="account-error" role="alert">{error}</p>}
+              {error && <p id={errorId} className="account-error" role="alert">{error}</p>}
               <div className="account-sent-actions">
                 <button type="submit" className="auth-primary-btn" disabled={pendingAction !== null}>{pendingAction === "recovery" ? "Sending..." : "Send recovery email"}</button>
                 <button type="button" className="account-change-email" onClick={returnToCredentials}>Back to sign in</button>
@@ -338,13 +372,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
           )}
 
           {screen === "recovery_sent" && (
-            <div className="account-sent" role="status">
+            <div className="account-sent">
               <div className="account-mail-icon"><Mail aria-hidden="true" /></div>
-              <h1 id="account-title">Check your email</h1>
+              <h1 ref={headingRef} tabIndex={-1} id="account-title">Check your email</h1>
               <p>If an account exists for <strong>{email}</strong>, a password recovery link is on its way.</p>
               <button type="button" className="account-change-email" onClick={returnToCredentials}>Back to sign in</button>
             </div>
           )}
+          </fieldset>
         </section>
       </main>
     </div>
@@ -357,7 +392,7 @@ function AuthField({ id, label, type, autoComplete, value, onChange, placeholder
       <span>{label}</span>
       <div className="auth-input-wrap">
         <Mail aria-hidden="true" />
-        <input id={id} className="auth-input" type={type} autoComplete={autoComplete} autoCapitalize="none" spellCheck={false} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={180} required />
+        <input id={id} name="email" className="auth-input" type={type} autoComplete={autoComplete} autoCapitalize="none" spellCheck={false} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={180} required />
       </div>
     </label>
   );

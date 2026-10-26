@@ -65,18 +65,20 @@ values (
 
 insert into app_private.broker_client_mandates (
   id, organization_id, broker_client_id, purpose, permitted_capabilities,
-  evidence_reference, customer_approved_by, starts_at, ends_at
+  evidence_reference, consent_version, customer_approved_by, starts_at, ends_at
 ) values
   (
     '99000000-0000-4000-8000-000000000001', '93000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000001', 'Customer authorized Introduction support',
     array['introductions.send']::app_private.brokerdesk_capability[], 'consent:test:customer-a',
+    'broker-representation-v2',
     '91000000-0000-4000-8000-000000000006', now() - interval '1 day', now() + interval '30 days'
   ),
   (
     '99000000-0000-4000-8000-000000000002', '93000000-0000-4000-8000-000000000001',
     '96000000-0000-4000-8000-000000000002', 'Expired test mandate',
     array['introductions.send']::app_private.brokerdesk_capability[], 'consent:test:expired',
+    'broker-representation-v2',
     '91000000-0000-4000-8000-000000000007', now() - interval '31 days', now() - interval '1 day'
   );
 
@@ -98,7 +100,43 @@ select pg_temp.set_authenticated_claims('91000000-0000-4000-8000-000000000001', 
 
 select is(public.resolve_brokerdesk_access((select workspace_a from brokerdesk_refs)) ->> 'enabled', 'true', 'an entitled active owner resolves BrokerDesk access');
 select is(public.resolve_brokerdesk_access((select workspace_a from brokerdesk_refs)) ->> 'rolePreset', 'owner', 'the resolver returns the safe role preset');
-select is(pg_catalog.jsonb_array_length(public.resolve_brokerdesk_access((select workspace_a from brokerdesk_refs)) -> 'capabilities'), 15, 'the owner receives the explicit capability inventory');
+select results_eq(
+  $$
+    select capability ->> 'key' as capability_key,
+           capability ->> 'scope' as capability_scope
+    from pg_catalog.jsonb_array_elements(
+      public.resolve_brokerdesk_access(
+        (select workspace_a from brokerdesk_refs)
+      ) -> 'capabilities'
+    ) capability
+    order by capability_key
+  $$,
+  $$
+    select *
+    from (values
+      ('customers.edit_relationship', 'organization'),
+      ('customers.invite', 'organization'),
+      ('customers.read', 'organization'),
+      ('family_viewers.propose', 'organization'),
+      ('introductions.close', 'organization'),
+      ('introductions.create', 'organization'),
+      ('introductions.manage_sharing', 'organization'),
+      ('introductions.record_family_update', 'organization'),
+      ('introductions.record_response', 'organization'),
+      ('introductions.send', 'organization'),
+      ('portfolio.edit_as_delegate', 'organization'),
+      ('portfolio.review', 'organization'),
+      ('renewals.manage', 'organization'),
+      ('settings.manage', 'organization'),
+      ('tasks.manage', 'organization'),
+      ('team.assign', 'organization'),
+      ('team.invite', 'organization'),
+      ('verification.manage', 'organization')
+    ) expected(capability_key, capability_scope)
+    order by capability_key
+  $$,
+  'the owner receives the exact explicit capability inventory'
+);
 select is(public.resolve_brokerdesk_access((select workspace_b from brokerdesk_refs)), '{"enabled": false}'::jsonb, 'another agency workspace has the same disabled response');
 select is(public.resolve_brokerdesk_access('wrk_00000000000000000000000000000000'), '{"enabled": false}'::jsonb, 'a missing opaque workspace has the same disabled response');
 select ok(public.has_brokerdesk_capability((select workspace_a from brokerdesk_refs), 'customers.read', (select relationship_a1 from brokerdesk_refs)), 'organization-scoped owners can read their relationships');

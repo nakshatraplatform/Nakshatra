@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { clearCustomerInvitationExchangeCookie, customerInvitationCookieName, readCustomerInvitationExchangeCookie } from "@/features/broker-relationships/server/customer-invitation.cookie";
 import { CustomerInvitationError, claimCustomerInvitation } from "@/features/broker-relationships/server/customer-invitation.service";
+import { brokerRepresentationConsentVersionSchema } from "@/features/broker-relationships/server/customer-invitation.contract";
 import { hashCustomerInvitationToken } from "@/features/broker-relationships/server/customer-invitation.token";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
 import { readRequestCookie } from "@/features/account/server/reauth-cookie";
@@ -12,7 +13,7 @@ import { getRequestId, logServerError } from "@/lib/security/logging";
 
 const consentSchema = z.object({
   consent: z.literal(true),
-  consentVersion: z.literal("broker-representation-v2"),
+  consentVersion: brokerRepresentationConsentVersionSchema,
 }).strict();
 const noStore = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
 

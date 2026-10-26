@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, LockKeyhole, ExternalLink, Upload, Trash2, Images, Crown, ImagePlus } from "lucide-react";
-import type { PortfolioHoroscope, PortfolioMedia, PortfolioMediaVisibility } from "@/types/portfolio";
-import { MAX_PORTFOLIO_PHOTOS } from "@/features/media/portfolio-photo";
+import { useState, type RefObject } from "react";
 import { portfolioFieldAnchor } from "@/features/portfolio/editor-validation";
-import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
+import { ImagePlus, Images, Trash2, Crown, Upload, FileText, ExternalLink, LockKeyhole } from "lucide-react";
 import { PortfolioImage } from "@/components/loading/PortfolioImage";
+import { usePortfolioFieldError } from "@/components/portfolio/PortfolioFieldValidation";
+import { MAX_PORTFOLIO_PHOTOS } from "@/features/media/portfolio-photo";
+import type { PortfolioHoroscope, PortfolioMedia, PortfolioMediaVisibility } from "@/types/portfolio";
 
 export function HoroscopeManager({
   horoscope,
@@ -18,7 +18,7 @@ export function HoroscopeManager({
 }: {
   horoscope: PortfolioHoroscope | null;
   uploading: boolean;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
   onUpload: (file: File | null, language: string) => void;
   onReview: () => void;
   onDelete: () => void;
@@ -46,6 +46,7 @@ export function HoroscopeManager({
         ref={inputRef}
         type="file"
         accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+        aria-label="Choose horoscope image"
         className="sr-only"
         onChange={(event) => onUpload(event.target.files?.[0] || null, language)}
       />
@@ -124,7 +125,7 @@ export function PhotoManager({
   media: PortfolioMedia[];
   urls: Record<string, string>;
   uploading: boolean;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
   onUpload: (files: FileList | null) => void;
   onUpdate: (
     id: string,
@@ -158,6 +159,7 @@ export function PhotoManager({
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        aria-label="Choose profile photos"
         multiple
         className="sr-only"
         onChange={(event) => onUpload(event.target.files)}

@@ -132,3 +132,112 @@ only `.env.example`. No package, Auth, migration, CI or Git-hook changes.
 Remaining NAK-65 foundation: queue reconciliation, durable/fenced worker,
 transient-payload encryption/erasure, retry scheduling, migration coverage and
 public types where needed. NAK-66/67 own business events; NAK-68 owns webhooks.
+
+## Current delivery operations (NAK-68)
+
+The historical milestone above is superseded for dispatch by
+[delivery operations](engineering-loop/features/resend-delivery-operations.md).
+`resend.provider.ts` now wraps the low-level HTTP runtime in the shared private
+registry/suppression guard; isolated workers use `delivery.runtime.mjs` with
+their existing authorized database client. Do not import the low-level sender
+from new application callers. Existing business queues remain authoritative.
+
+Required additional server/worker configuration:
+
+- `EMAIL_RECIPIENT_HMAC_KEY`: independently generated 32–512 character key;
+  identical stable value in Vercel and any isolated email worker secret store.
+  Do not reuse Resend, invitation, session or other security keys. Rotating this
+  value changes suppression hashes; plan a migration before rotation.
+- `RESEND_WEBHOOK_SECRET`: endpoint signing secret from Resend, only on the app.
+- `RESEND_DAILY_EMAIL_LIMIT` / `RESEND_MONTHLY_EMAIL_LIMIT`: positive integer
+  alert budgets. Defaults 100/3000 match the documented free plan on October 18,
+  2026; confirm the actual account plan. Alerts fire at 80%. These counts cover
+  locally registered application messages, not account-wide usage or Auth SMTP.
+
+`POST /api/webhooks/resend` verifies raw bytes with Svix 2.8.0 and acknowledges
+only durable normalized writes (or authenticated irrelevant events). Subscribe
+to `email.sent`, `email.delivered`, `email.bounced`, `email.complained`,
+`email.suppressed`, `email.failed`, `email.delivery_delayed`. Disable click/open
+tracking for sensitive transactional messages. Do not forward real payloads to
+public capture services for testing. A delivered event means mail-server
+acceptance, not a read receipt or proof of inbox placement.
+
+### Local development verification
+
+Use only a disposable local Supabase stack after replaying migrations:
+
+```sh
+npm run test:email:local
+# If that disposable stack is configured elsewhere:
+npm run test:email:local -- --workdir /absolute/path/to/disposable-stack
+```
+
+The runner discovers only local Docker credentials, refuses non-loopback API
+URLs and runs four HTTP/database integration scenarios. Only the external email
+send is simulated; signatures, route, PostgREST calls, SQL state transitions,
+concurrent transactions and suppression are real. It creates synthetic metadata
+in the disposable database. CI runs the same suite after pgTAP. Reset/remove
+only that disposable stack afterward. This does not establish hosted delivery.
+
+### Coordinated installation / operator procedure
+
+1. Pause every existing dispatcher (primary maintenance, fallback identity
+   workflow, manual relationship endpoint and owner-triggered after-response
+   sends). Use a controlled maintenance window; never race an old worker against
+   the migration. Schema installation does not enable a schedule.
+2. Apply the forward NAK-68 migration before the matching app/worker. Previously
+   attempted unsent relationship/liveness jobs become
+   `EMAIL_TRACKING_UPGRADE_REVIEW_REQUIRED`: adding tags changes the provider
+   body, so automatic replay under the old key is unsafe. Pilot queue policy is
+   unchanged. Review old accepted sends in the provider dashboard; do not mint
+   new IDs or remove suppression merely to retry. Historical untracked sends
+   cannot be retrospectively mapped by this migration.
+3. Set secrets privately, deploy guarded app and workers, configure the HTTPS
+   webhook on the intended Resend application and verify event subscriptions.
+   Supabase Auth uses its independent SMTP key and is outside local suppression.
+4. Run authorized staging inbox tests for liveness completion, interest/access
+   updates and expiry reminders. Inspect Resend delivery events, forwarding,
+   signature rejection, duplicate replay and a provider-supported synthetic
+   bounce/complaint. Verify a subsequent application send is blocked. Never
+   generate complaints against an uninvolved real recipient.
+5. Verify protected `/api/internal/production-health` and the existing GitHub
+   Production Maintenance Health alert job. Resume dispatch only after checks;
+   confirm repeated scheduler execution. Check provider dashboard account usage
+   as well as local budgets (Auth and other senders share account quotas).
+
+The health result adds `emailDelivery`: overdue queue count (>10 minutes),
+unresolved pending/sent messages (>1 hour), repeated deferrals (>=3),
+24-hour bounces/complaints and unresolved provider failures (`failedDelivery`),
+budgets and retention freshness. Counts use receipt time, so a late failure is
+visible even for an older send. A stronger delivered outcome removes a stale
+failure signal. Any unresolved provider failure, any complaint or a
+bounce ratio >=5% makes this local operational check unhealthy. These are
+application alert thresholds, not provider-policy or deliverability guarantees.
+Inspect missing webhooks, provider outages/quota, held legacy work and signature
+configuration before retrying. No address, content or provider free text appears
+in health or the GitHub alert. Use trusted operator database/provider access for
+individual investigation; no new arbitrary-send/admin UI is introduced.
+
+Primary maintenance runs `emailRetention` independently of other retention;
+manual `run_data_retention` also includes it while preserving its counter keys.
+Receipts expire after 30 days, registry/completed queue rows after 90 days and
+terminal queue payload/address material after 30 days. Each class processes at
+most 500 rows per maintenance run; health stays unhealthy while overdue work
+remains. Suppression HMACs do not automatically expire. Restoring delivery needs
+an explicit support investigation and coordinated provider/local suppression
+review; no webhook can automatically unsuppress an address. Already in-flight
+messages cannot be recalled by a later suppression event.
+
+Rollback: pause dispatch first; retain schema/receipts/suppression and a guarded
+compatible sender. An older app sender bypasses local suppression. Do not roll
+back by deleting queues, HMACs or signed receipts. Production installation,
+secret configuration, provider testing and activation are still release work.
+
+Primary references checked October 18, 2026:
+[Resend raw verification](https://resend.com/docs/webhooks/verify-webhooks-requests),
+[event types](https://resend.com/docs/webhooks/event-types),
+[tags/idempotency](https://resend.com/docs/api-reference/emails/send-email),
+[pricing](https://resend.com/pricing),
+[Svix verification](https://docs.svix.com/receiving/verifying-payloads/how).
+The installed Svix 2.8.0 verifier returns no parsed object: authenticate first,
+then parse the same original string. Signed fixture tests cover that boundary.

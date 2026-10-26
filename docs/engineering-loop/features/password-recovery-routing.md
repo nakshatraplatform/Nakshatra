@@ -1,5 +1,36 @@
 # Password recovery routing and sign-out failures
 
+## PR delivery on current main
+
+The user requested a new remote branch and PR. Extracted only this fix into an
+isolated worktree from `origin/main` `5099079`, on
+`fix/nak-55-password-recovery`. NAK-55 is the verified existing Nakshatra
+authentication-model issue; this follow-up does not change its closed status.
+All unrelated primary-checkout edits remain untouched. Main already includes
+Next.js 16.4.1 and newer UI/test fixes; the earlier checkout's failures below
+are historical evidence, not assumed failures on this delivery branch.
+
+Current-main validation on October 22, 2026:
+
+- Lint, typecheck, production build and security audit pass. Audit reports three
+  moderate affected packages, no high/critical findings and no exceptions.
+- Full unit/coverage run: 207 files and 1,730 tests pass; feature coverage passes
+  for 63 feature files and 21 protected boundaries.
+- Recovery/save/logout regression passes in desktop, tablet and mobile Chromium
+  using the real SDK against a loopback mock provider (ports 3229/54349).
+- Fresh-context integration review by `/root/recovery_pr_integration_review`
+  reports no material findings. Whole-source snapshot
+  `26c954878dbbc42db5a18e0df41ec9d83339d60c2e6ec4df026d33b9263ace23`
+  remained unchanged at review start and finish, based on
+  `509907938f1fbc620193c1c868cefc8175000791`. This is the second review round;
+  exact reviewer model is unknown. The reviewer independently exercised SDK
+  recovery classification and logout failure/retry with mocked fetch.
+
+Application changes are identical to the reviewed fixes; the mock provider
+patch preserves newer main fixtures. This final documentation update does not
+change implementation. Hosted CI and a real staging recovery-email journey
+remain to be verified; local mocked tests do not prove provider configuration.
+
 ## Contract and scope
 
 User-authorized fix, October 22, 2026. Critical authentication risk; full record
@@ -14,13 +45,13 @@ visible and retryable. Preserve session checks, password policy, ordinary
 sign-in and reserved reauthentication flows. No schema, dependency, provider
 configuration, production-session or email-template change is planned.
 
-## Execution context and design
+## Original implementation context and design
 
 Base inspected: `ef0eb7da8238a442e4cac74dfe81abb2671295a6` on
 `test/nak-84-coverage-hardening`, with pre-existing UI/test/document edits.
 The callback and account API are initially clean and match local main. Edits
-stay in these shared owners; unrelated work is preserved. No issue identifier
-is assigned to this fix and no new branch or Linear issue is created.
+stay in these shared owners; unrelated work is preserved. No branch or Linear
+issue was created during that initial implementation; PR delivery is recorded above.
 
 - `src/app/api/auth/start/route.ts`: already supplies a nested reset-password
   continuation to `resetPasswordForEmail`; retain it.
@@ -59,7 +90,7 @@ is assigned to this fix and no new branch or Linear issue is created.
    review establish local evidence. Real provider email/cookie/logout behavior
    remains a separate staging release check.
 
-## Validation and review
+## Historical validation before rebasing onto current main
 
 Behavioral red/green approach. Before source edits, the new callback/account
 tests ran: 8 intended failures, 12 passes. Failures reproduce direct-dashboard
@@ -118,8 +149,9 @@ credentials on a returned logout error, removal on successful retry. Browser
 and suite results above were coordinator evidence. This final record-only
 update does not change tested implementation or acceptance requirements.
 
-Next: resolve the separate baseline test/dependency gates and perform the real
-hosted recovery journey before release. No general merge-readiness claim.
+The separate baseline test/dependency failures were resolved on current main,
+as confirmed by the delivery checks above. The real hosted recovery journey
+remains a release check.
 
 ## Rollout and remaining evidence
 
@@ -133,6 +165,5 @@ Never capture full email URLs, auth codes, passwords or tokens in reports.
 Lesson: passing reset initiation tests does not prove callback continuation;
 resolved SDK error objects need explicit handling by shared callers.
 
-Status: implemented and verified locally within scope; repository-wide release
-gates remain blocked as recorded above. No commit, push, deployment or production
-mutation performed.
+Status: implemented, locally validated on current main and independently reviewed;
+prepared for PR delivery. No deployment or production mutation performed.

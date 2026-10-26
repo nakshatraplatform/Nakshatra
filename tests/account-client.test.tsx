@@ -4,7 +4,7 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: mocks.refresh }) }));
 
 const mocks = vi.hoisted(() => ({
   sessions: vi.fn(),
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
   reauth: vi.fn(),
   profile: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock("@/features/account/client/account.api", () => ({
@@ -121,6 +122,7 @@ describe("account privacy screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save names" }));
     await waitFor(() => expect(mocks.profile).toHaveBeenCalledWith(profile));
     expect(await screen.findByText("Your account names have been saved. Your portfolio has not changed.")).toBeInTheDocument();
+    expect(mocks.refresh).toHaveBeenCalledOnce();
     expect(screen.getByText("Google")).toBeInTheDocument();
     expect(screen.queryByText("Payment method")).not.toBeInTheDocument();
   });

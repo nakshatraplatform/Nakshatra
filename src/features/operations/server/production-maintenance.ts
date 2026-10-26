@@ -1,10 +1,15 @@
 import "server-only";
+import { approvedCode } from "@/lib/observability/operation-contract.mjs";
+import { observeOperation, reportOperationFailure } from "@/lib/observability/operations.mjs";
 import { processHoroscopeCleanup } from "@/features/horoscope/server/horoscope-cleanup.service";
 import { processPhotoCleanup } from "@/features/media/server/photo-cleanup.service";
 import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { processRelationshipNotifications } from "@/features/notifications/server/relationship-notification.service";
+import { resendConfigurationReady } from "@/features/notifications/server/resend.runtime.mjs";
+import { recipientHmacConfigured } from "@/features/notifications/server/delivery.runtime.mjs";
+import { resendWebhookConfigured } from "@/features/notifications/server/resend-webhook";
 import { sendResendEmail } from "@/features/notifications/server/resend.provider";
 import { createIdentityVerificationWorker } from "../../../../scripts/identity-verification-worker.mjs";
 import { processDeletedProviderCleanup } from "../../../../scripts/deleted-provider-cleanup.mjs";
@@ -54,6 +59,10 @@ export async function runProductionMaintenance(dispatchId?: string) {
   });
   const tasks = {
     retention: () => processRetention(client),
+    emailRetention: async () => {
+      const result = await client.rpc("run_email_delivery_retention", { p_limit: 500 });
+      return !result.error && result.data === true;
+    },
     horoscopeCleanup: async () => (await processHoroscopeCleanup(client)).deferred === 0,
     photoCleanup: async () => (await processPhotoCleanup(client)).deferred === 0,
     identity: async () => (await identityRun).deferred === 0,
@@ -63,7 +72,7 @@ export async function runProductionMaintenance(dispatchId?: string) {
       // A provider failure must still leave older email jobs eligible to send.
       await identityRun.catch(() => undefined);
       return (await processCandidateLivenessEmails(client, {
-        limit: 2, send: (input: unknown) => sendResendEmail(input, transport),
+        limit: 2, send: (input: unknown) => sendResendEmail(input, transport, client),
       })).failed === 0;
     },
     expiryReminders: () => expiryRun,
@@ -73,7 +82,16 @@ export async function runProductionMaintenance(dispatchId?: string) {
     },
     accountDeletion: async () => (await createAccountDeletionWorker(client).run(1)).deferred === 0,
   };
-  const outcomes = await Promise.allSettled(Object.values(tasks).map(task => task()));
+  const entries = Object.entries(tasks);
+  const outcomes = await Promise.allSettled(entries.map(([name, task]) => observeOperation(`maintenance.${name}`, task)));
+  for (const [i, outcome] of outcomes.entries()) {
+    if (outcome.status === "rejected" || outcome.value !== true) {
+      const reason: unknown = outcome.status === "rejected" ? outcome.reason : undefined;
+      const code = approvedCode(reason instanceof Error ? reason.message : undefined);
+      reportOperationFailure(`maintenance.${entries[i][0]}`, reason,
+        { code: code !== "OPERATION_FAILED" ? code : outcome.status === "rejected" ? "TASK_FAILED" : "TASK_DEFERRED", reference: dispatchId });
+    }
+  }
   const failed = outcomes.some(outcome => outcome.status !== "fulfilled" || outcome.value !== true);
   const completion = await control.rpc("finish_production_maintenance", { p_claim_token: token, p_succeeded: !failed });
   if (completion.error || completion.data !== true) throw new Error("MAINTENANCE_COMPLETION_FAILED");
@@ -84,10 +102,23 @@ export async function runProductionMaintenance(dispatchId?: string) {
 
 export async function productionHealth() {
   const client = createServiceRoleClient(boundedFetch());
-  const [{ data, error }, { data: expiry, error: expiryError }] = await Promise.all([
+  const [{ data, error }, { data: expiry, error: expiryError }, { data: email, error: emailError }] = await Promise.all([
     client.rpc("production_worker_health"), client.rpc("portfolio_expiry_reminder_health"),
+    client.rpc("email_delivery_health", {
+      p_daily_limit: emailLimit(process.env.RESEND_DAILY_EMAIL_LIMIT, 100),
+      p_monthly_limit: emailLimit(process.env.RESEND_MONTHLY_EMAIL_LIMIT, 3000),
+    }),
   ]);
-  if (error || expiryError || !data || typeof data !== "object" || Array.isArray(data)
-    || !expiry || typeof expiry !== "object" || Array.isArray(expiry)) throw new Error("HEALTH_UNAVAILABLE");
-  return { ...data, healthy: data.healthy === true && expiry.healthy === true, expiryReminders: expiry };
+  if (error || expiryError || emailError || !data || typeof data !== "object" || Array.isArray(data)
+    || !expiry || typeof expiry !== "object" || Array.isArray(expiry)
+    || !email || typeof email !== "object" || Array.isArray(email)) throw new Error("HEALTH_UNAVAILABLE");
+  const configured = recipientHmacConfigured() && resendWebhookConfigured() && resendConfigurationReady();
+  return { ...data, healthy: data.healthy === true && expiry.healthy === true && email.healthy === true && configured,
+    expiryReminders: expiry, emailDelivery: { ...email, configured } };
+}
+
+function emailLimit(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+  if (!/^[1-9][0-9]{0,8}$/.test(value)) throw new Error("HEALTH_UNAVAILABLE");
+  return Number(value);
 }

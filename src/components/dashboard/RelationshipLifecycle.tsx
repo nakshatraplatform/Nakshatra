@@ -1,17 +1,17 @@
 "use client";
 
-import { useId, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Inbox, History, ChevronDown, ChevronLeft, ChevronRight, Search, X, ShieldCheck } from "lucide-react";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { useModalFocus } from "@/components/useModalFocus";
 import { InterestDetailsPanel } from "@/components/portfolio/InterestDetailsPanel";
 import { InterestHistoryPanel } from "@/components/portfolio/InterestHistoryPanel";
-import { useRelationshipQueue } from "@/features/access/client/useRelationshipQueue";
-import type { AccessAuditEvent, AccessGrant, PortfolioAccessSummary } from "@/features/access/server/access.contract";
+import type { AccessAuditEvent, AccessGrant } from "@/features/access/server/access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { interestStatusLabel } from "@/features/interest/presentation";
+import { relationshipPageSchema, type RelationshipPage, type SharingDisclosure } from "@/features/access/relationship-dashboard.contract";
 
 export type RelationshipStage = "awaiting" | "set-aside" | "access";
 
@@ -60,26 +60,28 @@ export function RelationshipLifecycle({
   onToggleStage,
   interests,
   grants,
-  counts,
   viewerAccessAvailable,
   events,
   brokerResponses,
-  disclosedCategories,
   onDecision,
   onGrantChange,
+  overview,
+  loadFailed,
+  onRetry,
 }: {
   expandedStages: Record<RelationshipStage, boolean>;
   renderedAt: number;
   onToggleStage: (stage: RelationshipStage) => void;
   interests: DashboardInterest[];
   grants: AccessGrant[];
-  counts?: PortfolioAccessSummary["counts"];
   viewerAccessAvailable: boolean;
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
-  disclosedCategories: string[];
-  onDecision: (id: string, status: "approved" | "rejected" | "pending_review") => void;
-  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt?: string) => void;
+  onDecision: (id: string, status: "approved" | "rejected" | "pending_review", previous: DashboardInterest["status"]) => void;
+  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
+  overview: RelationshipPage | null;
+  loadFailed: boolean;
+  onRetry: () => void;
 }) {
   type ListModal = RelationshipStage | "history" | null;
   type RecordDetail =
@@ -94,21 +96,54 @@ export function RelationshipLifecycle({
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [approvalCandidate, setApprovalCandidate] = useState<DashboardInterest | null>(null);
+  const [approvalReview, setApprovalReview] = useState<{ data?: SharingDisclosure; error?: string } | null>(null);
+  const [reviewAttempt, setReviewAttempt] = useState(0);
+  useEffect(() => {
+    if (!approvalCandidate) return;
+    const controller = new AbortController();
+    void fetch("/api/dashboard/relationships?queue=overview", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) })
+      .then(async response => {
+        const parsed = relationshipPageSchema.safeParse(await response.json());
+        if (!response.ok || !parsed.success || !parsed.data.disclosure) throw new Error("Review unavailable");
+        if (!controller.signal.aborted) setApprovalReview({ data: parsed.data.disclosure });
+      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published private details. Try again before sharing." }); });
+    return () => controller.abort();
+  }, [approvalCandidate, reviewAttempt]);
   const [listModal, setListModal] = useState<ListModal>(null);
   const [recordDetail, setRecordDetail] = useState<RecordDetail>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [recordFilter, setRecordFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [brokerPage, setBrokerPage] = useState(1);
-  const [queueRevision, setQueueRevision] = useState(0);
-  const queue = useRelationshipQueue(listModal, page, searchQuery, recordFilter, queueRevision);
+  const [listAttempt, setListAttempt] = useState(0);
+  const [remotePage, setRemotePage] = useState<{ key: string; data?: RelationshipPage; error?: string } | null>(null);
+  const listQuery = new URLSearchParams({ queue: listModal || "overview", offset: String((page - 1) * 8), query: searchQuery.trim(), filter: recordFilter }).toString();
+  const listKey = `${listAttempt}:${listQuery}`;
+  useEffect(() => {
+    if (!listModal) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void fetch(`/api/dashboard/relationships?${listQuery}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) })
+        .then(async response => {
+          const parsed = relationshipPageSchema.safeParse(await response.json());
+          if (!response.ok || !parsed.success) throw new Error("Queue unavailable");
+          if (!controller.signal.aborted) {
+            const lastPage = Math.max(1, Math.ceil(parsed.data.total / 8));
+            if (page > lastPage) setPage(lastPage);
+            else setRemotePage({ key: listKey, data: parsed.data });
+          }
+        }).catch(() => { if (!controller.signal.aborted) setRemotePage({ key: listKey, error: "We could not load this queue. Your sharing choices have not changed." }); });
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [listModal, listQuery, listKey, page]);
   const isMobileDashboard = useMobileDashboard();
   const approvalTitleId = useId();
-  const approvalDialogRef = useRef<HTMLElement>(null);
   const listTitleId = useId();
   const detailTitleId = useId();
+  const closeListRef = useRef<HTMLButtonElement>(null);
+  const closeDetailRef = useRef<HTMLButtonElement>(null);
 
-
+  const approvalDialogRef = useRef<HTMLElement>(null);
   useModalFocus(Boolean(approvalCandidate), approvalDialogRef, () => {
     if (workingId === null) setApprovalCandidate(null);
   });
@@ -119,16 +154,17 @@ export function RelationshipLifecycle({
     try {
       const response = await fetch(`/api/interest/${interest.id}`, {
         method: "PATCH",
+        signal: AbortSignal.timeout(20000),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision, ...(decision === "approved" ? { revision: approvalReview?.data?.revision } : {}) }),
       });
       const result = (await response.json()) as { error?: string };
       if (!response.ok) {
         setActionError(result.error || "This interest could not be updated.");
         return false;
       }
-      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision);
-      setQueueRevision(value => value + 1);
+      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision, interest.status);
+      setListAttempt(value => value + 1);
       setRecordDetail(null);
       return true;
     } catch {
@@ -153,8 +189,8 @@ export function RelationshipLifecycle({
         setActionError(result.error);
         return;
       }
-      onGrantChange(grant.id, action, result.expiresAt);
-      setQueueRevision(value => value + 1);
+      onGrantChange(grant.id, action, result.expiresAt, grant.status);
+      setListAttempt(value => value + 1);
       setRecordDetail(null);
     } finally {
       setWorkingId(null);
@@ -167,11 +203,15 @@ export function RelationshipLifecycle({
     setPage(1);
     setBrokerPage(1);
     setListModal(mode);
+    setListAttempt(value => value + 1);
   }
 
-  const pageCount = Math.max(1, Math.ceil((queue.data?.total ?? 0) / 8));
-  const currentPage = page;
-  const visibleRecords = queue.data?.records ?? [];
+  const pageSize = 8;
+  const loadedPage = remotePage?.key === listKey ? remotePage : null;
+  const listLoading = !loadedPage;
+  const pageCount = Math.max(1, Math.ceil((loadedPage?.data?.total ?? 0) / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRecords = loadedPage?.data?.records ?? [];
   const matchingBrokerResponses = brokerResponses.filter(item =>
     (recordFilter === "all" || recordFilter === "broker")
     && item.recipientLabel.toLowerCase().includes(searchQuery.trim().toLowerCase()));
@@ -192,18 +232,19 @@ export function RelationshipLifecycle({
       <div className="dashboard-section-heading">
         <div>
           <h2 id="relationship-lifecycle-heading">Introductions and access</h2>
-          <p>Your latest actionable relationships. Open a queue for complete details and history.</p>
+          <p>Review interests and choose who can see your private details.</p>
         </div>
-        <span>{counts?.awaiting ?? waitingInterests.length} waiting</span>
+        {!loadFailed && <span>{overview?.counts.awaiting ?? waitingInterests.length} waiting</span>}
       </div>
       {workingId && !recordDetail && !approvalCandidate && <LoadingStatus compact className="my-4" title="Updating this interest" />}
-      {actionError && <p className="dashboard-action-error" role="alert">{actionError}</p>}
+      {actionError && !recordDetail && !approvalCandidate && <p className="dashboard-action-error" role="alert">{actionError}</p>}
+      {loadFailed && <p className="dashboard-action-error" role="alert">Requests and sharing access could not be loaded. Existing access has not changed. <button type="button" className="dashboard-secondary-action" onClick={onRetry}>Retry sharing status</button></p>}
 
-      <CompactRelationshipStage
+      {!loadFailed && <><CompactRelationshipStage
         stage="awaiting"
         title="Awaiting review"
         description="New interests ready for your decision. Check each person's verification status before sharing more."
-        count={counts?.awaiting ?? waitingInterests.length}
+        count={overview?.counts.awaiting ?? waitingInterests.length}
         expanded={!isMobileDashboard || expandedStages.awaiting}
         onToggle={() => onToggleStage("awaiting")}
         onViewAll={() => openList("awaiting")}
@@ -218,7 +259,7 @@ export function RelationshipLifecycle({
         stage="set-aside"
         title="Interests set aside"
         description="Interests you can revisit when you are ready."
-        count={counts?.["set-aside"] ?? setAsideInterests.length}
+        count={overview?.counts.setAside ?? setAsideInterests.length}
         expanded={!isMobileDashboard || expandedStages["set-aside"]}
         onToggle={() => onToggleStage("set-aside")}
         onViewAll={() => openList("set-aside")}
@@ -233,7 +274,7 @@ export function RelationshipLifecycle({
         stage="access"
         title="People you’re sharing with"
         description={viewerAccessAvailable ? "People you’ve shared with can open private details until their sharing period ends." : "Sharing choices remain on record, but private details cannot be opened while your introduction is unavailable."}
-        count={counts?.access ?? activeGrants.length}
+        count={overview?.counts.active ?? activeGrants.length}
         expanded={!isMobileDashboard || expandedStages.access}
         onToggle={() => onToggleStage("access")}
         onViewAll={() => openList("access")}
@@ -248,15 +289,15 @@ export function RelationshipLifecycle({
         <History className="h-4 w-4" aria-hidden="true" />
         Sharing history
       </button>
-      <InterestHistoryPanel />
+      <InterestHistoryPanel /></>}
 
       {listModal && !recordDetail && (
-        <DashboardModal busy={workingId !== null} titleId={listTitleId} title={listTitle} closeLabel="Close and return to dashboard" onClose={() => setListModal(null)}>
+        <DashboardModal titleId={listTitleId} title={listTitle} closeLabel="Close and return to dashboard" closeRef={closeListRef} onClose={() => setListModal(null)}>
           <div className="dashboard-modal-tools">
             <label>
               <span className="sr-only">Search {listTitle.toLowerCase()}</span>
               <Search aria-hidden="true" />
-              <input name="relationship-search" autoComplete="off" spellCheck={false} maxLength={100} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); setBrokerPage(1); }} placeholder="Search by name or email…" />
+              <input name="relationship-search" maxLength={80} autoComplete="off" spellCheck={false} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); setBrokerPage(1); }} placeholder="Search by name or email…" />
             </label>
             <label>
               <span className="sr-only">Filter records</span>
@@ -272,15 +313,13 @@ export function RelationshipLifecycle({
             </label>
           </div>
           <div className="dashboard-modal-list">
-            {queue.loading ? <LoadingStatus compact title="Loading relationships" /> : queue.error ? <p role="alert">{queue.error} <button type="button" onClick={queue.retry}>Retry queue</button></p> : visibleRecords.length === 0 ? (visibleBrokerResponses.length ? null : <p className="dashboard-empty-state">No records match this search and filter.</p>) : visibleRecords.map((record) => record.kind === "interest" ? (
+            {listLoading ? <LoadingStatus compact title="Loading this queue" /> : loadedPage?.error ? <p role="alert">{loadedPage.error} <button type="button" className="dashboard-secondary-action" onClick={() => setListAttempt(value => value + 1)}>Retry queue</button></p> : visibleRecords.length === 0 ? <p className="dashboard-empty-state">No records match this search and filter.</p> : visibleRecords.map((record) => record.kind === "interest" ? (
               <InterestSummaryCard key={`interest-${record.item.id}`} interest={record.item} statusLabel={interestStatusLabel(record.item.status)} primaryLabel="Open details" onPrimary={() => setRecordDetail(record)} />
             ) : (
               <GrantSummaryCard key={`grant-${record.item.id}`} grant={record.item} renderedAt={renderedAt} viewerAccessAvailable={viewerAccessAvailable} onPrimary={() => setRecordDetail(record)} />
             ))}
           </div>
-          {visibleBrokerResponses.length > 0 && <section aria-label="Broker introduction responses" className="dashboard-history-timeline">
-            <h3>Broker introduction responses</h3>
-            {visibleBrokerResponses.map(item => <BrokerResponseSummaryCard key={item.introductionRef} response={item} onPrimary={() => setRecordDetail({ kind: "broker-response", item })} />)}
+          {listModal === "history" && visibleBrokerResponses.length > 0 && <section aria-label="Broker introduction responses"><h3>Broker introduction responses</h3>{visibleBrokerResponses.map(response => <BrokerResponseSummaryCard key={response.introductionRef} response={response} onPrimary={() => setRecordDetail({ kind: "broker-response", item: response })} />)}
             {brokerPageCount > 1 && <nav aria-label="Broker response pages" className="dashboard-modal-pagination">
               <button type="button" className="dashboard-secondary-action" disabled={currentBrokerPage === 1} onClick={() => setBrokerPage(value => value - 1)}>Previous broker responses</button>
               <span>Broker responses · Page {currentBrokerPage} of {brokerPageCount}</span>
@@ -293,18 +332,19 @@ export function RelationshipLifecycle({
               <ol>{events.slice(0, 20).map((event) => <li key={event.id}><span>{accessEventLabel(event.eventType, event.viewerName)}</span><time dateTime={event.createdAt}>{formatAccessDate(event.createdAt)}</time></li>)}</ol>
             </div>
           )}
-          {(pageCount > 1 || currentPage > 1 || queue.loading) && (
+          {!listLoading && !loadedPage?.error && pageCount > 1 && (
             <nav className="dashboard-modal-pagination" aria-label={`${listTitle} pages`}>
-              <button type="button" className="dashboard-secondary-action" disabled={currentPage === 1 || queue.loading} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft aria-hidden="true" /> Previous</button>
-              <span>{queue.loading ? `Loading page ${currentPage}…` : currentPage > pageCount ? `Page ${currentPage} · No more records` : `Page ${currentPage} of ${pageCount}`}</span>
-              <button type="button" className="dashboard-secondary-action" disabled={queue.loading || Boolean(queue.error) || currentPage >= pageCount || currentPage * 8 > 100000} onClick={() => setPage(value => value + 1)}>Next <ChevronRight aria-hidden="true" /></button>
+              <button type="button" className="dashboard-secondary-action" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft aria-hidden="true" /> Previous</button>
+              <span>Page {currentPage} of {pageCount}</span>
+              <button type="button" className="dashboard-secondary-action" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next <ChevronRight aria-hidden="true" /></button>
             </nav>
           )}
         </DashboardModal>
       )}
 
       {recordDetail && (
-        <DashboardModal busy={workingId !== null} titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Sharing details" : recordDetail.item.recipientLabel} closeLabel="Close details" onClose={() => setRecordDetail(null)} detail inactive={Boolean(approvalCandidate)}>
+        <DashboardModal titleId={detailTitleId} title={recordDetail.kind === "interest" ? recordDetail.item.viewer_name || "Introduction details" : recordDetail.kind === "grant" ? recordDetail.item.viewerName || "Sharing details" : recordDetail.item.recipientLabel} closeLabel="Close details" closeRef={closeDetailRef} onClose={() => { if (!workingId) setRecordDetail(null); }} detail inactive={Boolean(approvalCandidate)}>
+          {actionError && <p className="dashboard-action-error" role="alert">{actionError} No change was confirmed. Please try again.</p>}
           {recordDetail.kind === "interest" ? (
             <InterestDetail interest={recordDetail.item} />
           ) : recordDetail.kind === "grant" ? (
@@ -321,7 +361,7 @@ export function RelationshipLifecycle({
                 working={workingId === recordDetail.item.id}
                 onSetAside={() => void decide(recordDetail.item, "rejected")}
                 onReopen={() => void decide(recordDetail.item, "reopened")}
-                onGrant={() => setApprovalCandidate(recordDetail.item)}
+                onGrant={() => { setActionError(null); setApprovalReview(null); setApprovalCandidate(recordDetail.item); }}
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
@@ -336,10 +376,10 @@ export function RelationshipLifecycle({
       {approvalCandidate && (
         <div className="fixed inset-0 z-[70] grid place-items-center bg-[color:var(--ui-scrim)]/65 p-4" role="presentation">
           <section
-            ref={approvalDialogRef}
-            tabIndex={-1}
             role="dialog"
             aria-modal="true"
+            ref={approvalDialogRef}
+            tabIndex={-1}
             aria-labelledby={approvalTitleId}
             className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--workspace-ink)] dashboard-dialog-elevation"
           >
@@ -349,14 +389,15 @@ export function RelationshipLifecycle({
               <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
                 Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Details are shared for 15 days.
               </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--workspace-muted)]">This shares your published private details. Unpublished draft changes are not included.</p>
               <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
                 <p className="text-sm font-semibold">You will share:</p>
-                {disclosedCategories.length > 0 ? (
+                {!approvalReview ? <LoadingStatus compact title="Checking published private details" /> : approvalReview.error ? <p role="alert">{approvalReview.error} <button type="button" className="dashboard-secondary-action" onClick={() => { setApprovalReview(null); setReviewAttempt(value => value + 1); }}>Retry disclosure review</button></p> : approvalReview.data ? (
                   <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[var(--workspace-ink)]">
-                    {disclosedCategories.map((category) => <li key={category}>{category}</li>)}
+                    {fullViewDisclosureCategories(approvalReview.data).map((category) => <li key={category}>{category}</li>)}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-[var(--workspace-muted)]">No additional private information has been added yet.</p>
+                  <p role="alert">Published private details are unavailable. Nothing has been shared.</p>
                 )}
               </div>
               <p className="mt-4 text-sm leading-6 text-[var(--workspace-muted)]">
@@ -366,11 +407,12 @@ export function RelationshipLifecycle({
               {workingId && <LoadingStatus compact className="mt-4" title="Sharing private details" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
-              <button type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
+              <button  type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
               <button
+                
                 type="button"
                 className="dashboard-primary-action"
-                disabled={workingId !== null}
+                disabled={workingId !== null || !approvalReview?.data || loadFailed}
                 onClick={() => void decide(approvalCandidate, "approved").then((approved) => {
                   if (approved) setApprovalCandidate(null);
                 })}
@@ -468,13 +510,13 @@ function BrokerResponseSummaryCard({ response, onPrimary }: { response: OwnerBro
   );
 }
 
-function DashboardModal({ titleId, title, closeLabel, onClose, detail = false, inactive = false, busy = false, children }: { titleId: string; title: string; closeLabel: string; onClose: () => void; detail?: boolean; inactive?: boolean; busy?: boolean; children: React.ReactNode }) {
+function DashboardModal({ titleId, title, closeLabel, closeRef, onClose, detail = false, inactive = false, children }: { titleId: string; title: string; closeLabel: string; closeRef: React.RefObject<HTMLButtonElement | null>; onClose: () => void; detail?: boolean; inactive?: boolean; children: React.ReactNode }) {
   const dialogRef = useRef<HTMLElement>(null);
-  useModalFocus(true, dialogRef, () => { if (!busy) onClose(); });
+  useModalFocus(!inactive, dialogRef, onClose);
   return (
     <div className="dashboard-modal-backdrop" role="presentation" inert={inactive} aria-hidden={inactive || undefined}>
       <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`dashboard-records-modal${detail ? " is-detail" : ""}`}>
-        <header><div><p className="portfolio-eyebrow">Introductions and access</p><h2 id={titleId}>{title}</h2></div><button disabled={busy} type="button" className="dashboard-modal-close" aria-label={closeLabel} onClick={onClose}><X aria-hidden="true" /></button></header>
+        <header><div><p className="portfolio-eyebrow">Introductions and access</p><h2 id={titleId}>{title}</h2></div><button ref={closeRef} type="button" className="dashboard-modal-close" aria-label={closeLabel} onClick={onClose}><X aria-hidden="true" /></button></header>
         <div className="dashboard-modal-body">{children}</div>
       </section>
     </div>
@@ -604,4 +646,70 @@ function formatProfileFor(value: string) {
     relative: "a relative",
   };
   return labels[value] || "themselves";
+}
+
+function fullViewDisclosureCategories(
+  disclosure: SharingDisclosure | null
+) {
+  if (!disclosure) return [];
+  const data = disclosure.data;
+  const categories: string[] = [];
+  if (containsDisclosure({
+    name: data.personal.name,
+    gender: data.personal.gender,
+    location: data.personal.current_location,
+    maritalStatus: data.personal.marital_status,
+    citizenship: data.personal.citizenship,
+    story: data.personal.profile_summary || data.personal.short_bio,
+    height: data.vitals?.height,
+  })) {
+    categories.push("Personal profile, location, and story details provided");
+  }
+  if (data.personal.dob?.trim()) categories.push("Exact date of birth");
+  const birthDetails = [
+    data.astrology?.time_of_birth?.trim() ? "time" : "",
+    data.personal.place_of_birth?.trim() ? "place" : "",
+  ].filter(Boolean);
+  if (birthDetails.length) categories.push(`Exact ${birthDetails.join(" and ")} of birth`);
+  if (containsDisclosure(data.education) || containsDisclosure(data.career)) {
+    categories.push("Education, employer, career, and income details provided");
+  }
+  if (containsDisclosure(data.family)) {
+    categories.push("Family members, origins, and family background provided");
+  }
+  if (containsDisclosure(data.lifestyle)) {
+    categories.push("Lifestyle, languages, interests, and values provided");
+  }
+  if (containsDisclosure(data.astrology) || Boolean(data.vitals?.gotra)) {
+    categories.push("Astrology and gotra details provided");
+  }
+  if (containsDisclosure(data.preferences)) {
+    categories.push("Partner preferences and future plans provided");
+  }
+  const contacts = data.contact?.contacts?.filter(
+    (contact) => contact.name?.trim() && (contact.phone?.trim() || contact.email?.trim())
+  ) || [];
+  if (
+    contacts.length > 0
+    || Boolean(data.contact?.contact_person?.trim() && (data.contact.phone?.trim() || data.contact.email?.trim()))
+  ) {
+    categories.push("Private contact details");
+  }
+  if (disclosure.photoCount > 0) {
+    const protectedPhotoCount = disclosure.privatePhotoCount;
+    const protectedCopy = protectedPhotoCount > 0
+      ? `, including ${protectedPhotoCount} private ${protectedPhotoCount === 1 ? "photo" : "photos"}`
+      : "";
+    categories.push(`${disclosure.photoCount} introduction ${disclosure.photoCount === 1 ? "photo" : "photos"}${protectedCopy}`);
+  }
+  if (disclosure.hasHoroscope) categories.push("Original horoscope attachment");
+  return categories;
+}
+
+function containsDisclosure(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.some(containsDisclosure);
+  if (value && typeof value === "object") return Object.values(value).some(containsDisclosure);
+  return false;
 }

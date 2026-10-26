@@ -77,13 +77,14 @@ jobs:
         run: npm run build
 
   browser:
-    name: Browser end-to-end tests (${{ matrix.project }})
+    name: Browser end-to-end tests (${{ matrix.project }}, shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         project: [chromium, tablet-chromium, mobile-chromium]
+        shard: [1, 2, 3]
     # Playwright starts local mock services; no production credentials are needed.
     steps:
       - name: Checkout
@@ -114,15 +115,15 @@ jobs:
         run: npx playwright install chromium
 
       - name: End-to-end tests
-        # Keep every project and its existing timeout; isolate their mock servers
-        # on separate runners instead of increasing workers on one shared server.
-        run: npm run test:e2e -- --global-timeout=900000 --project=${{ matrix.project }}
+        # Partition every project without reducing coverage or extending budgets.
+        # Each shard keeps one worker and its own mock servers on a separate runner.
+        run: npm run test:e2e -- --global-timeout=900000 --project=${{ matrix.project }} --shard=${{ matrix.shard }}/3
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-${{ github.run_id }}-${{ matrix.project }}
+          name: playwright-${{ github.run_id }}-${{ matrix.project }}-shard-${{ matrix.shard }}
           path: |
             playwright-report
             test-results
@@ -172,14 +173,32 @@ jobs:
       - name: Run database tests
         run: npm run test:db
 
-      - name: Verify simultaneous photo uploads respect the cap
+      - name: Verify concurrent readable share-link allocation
+        env:
+          READABLE_LINK_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:share-links:local
+
+      - name: Verify signed email webhooks and suppression over local HTTP
+        run: npm run test:email:local
+
+      - name: Verify reviewed approval against concurrent submission retry
+        env:
+          APPROVAL_RETRY_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:approval-retry:local
+
+      - name: Verify concurrent Family Viewer limits and primary selection
+        env:
+          FAMILY_VIEWER_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:family-viewer-concurrency:local
+
+      - name: Verify concurrent photo upload cap
+        run: npm run test:db:concurrency
         env:
           PGHOST: 127.0.0.1
           PGPORT: 54322
           PGUSER: postgres
-          PGDATABASE: postgres
           PGPASSWORD: postgres
-        run: npm run test:db:concurrency
+          PGDATABASE: postgres
 
       - name: Generate public database types from the clean local database
         id: database_types

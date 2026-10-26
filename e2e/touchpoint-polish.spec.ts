@@ -4,7 +4,7 @@ import { publishedOwnerCookie, themeTestCookie } from "./support/theme-session.m
 test("consumer tab titles use one brand suffix", async ({ page, context }) => {
   test.setTimeout(90_000);
   for (const [path, title] of [
-    ["/", "Marriage biodata link you control | VivIntro"],
+    ["/", "Marriage biodata as a link | VivIntro"],
     ["/login", "Sign in | VivIntro"],
     ["/signup", "Create your introduction | VivIntro"],
     ["/demo", "Example introduction | VivIntro"],
@@ -55,7 +55,7 @@ test("WhatsApp uses full public identity without maintenance or draft claims", a
   await context.addCookies([publishedOwnerCookie]);
   await context.route("https://wa.me/**", route => route.fulfill({ contentType: "text/html", body: "<title>Local share capture</title>" }));
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Manage link", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Introduction link", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /download.*(?:pdf|json)/i })).toHaveCount(0);
   const opened = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Share on WhatsApp", exact: true }).click();

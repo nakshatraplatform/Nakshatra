@@ -1,8 +1,9 @@
 # VivIntroDesk MVP product, business, and engineering contract
 
-Status: **authoritative current contract**, reconciled through merged NAK-79 on
-22 September 2026. When an older BrokerDesk plan, prototype, feature record, or
-chat summary conflicts with this file, this file wins. See
+Status: **authoritative current contract**, reconciled through merged NAK-79
+and the approved family-assisted V1 decisions on 22 October 2026. When an older
+BrokerDesk plan, prototype, feature record, or chat summary conflicts with this
+file, this file wins. See
 [the document map](./vivintrodesk-document-map.md) before using historical plans.
 
 ## Product and business position
@@ -87,6 +88,43 @@ Introduction.
   second acceptance. There is no second contact-approval step; each customer
   confirms this disclosure consequence when choosing Interested.
 
+### Family-assisted broker workflow
+
+V1 supports candidate-authorized Family Viewers for broker-linked candidates.
+This reflects the normal broker workflow in which parents or close family help
+review profiles, while preserving the candidate's final authority.
+
+- A candidate has one family roster across all active broker relationships,
+  with at most three active Family Viewers excluding the candidate.
+- A broker may collect family details during in-office registration and may
+  propose a viewer, but the proposal grants no access.
+- The candidate must approve the proposal and re-enter the family member's full
+  email. VivIntro hashes it and requires an exact match with the broker's
+  proposal before sending an invitation; the raw address is request-scoped and
+  is not stored in the roster or invitation. The family member must then sign
+  in with that exact invited Google email before access becomes active.
+- An active Family Viewer may view the same opposite Broker Standard Profile as
+  the candidate while the Introduction is active.
+- Only the authenticated candidate can submit the authoritative Interested or
+  Decline response. A broker may record a bounded family conversation update,
+  but that update cannot mutate or stand in for the candidate's response.
+- When both candidates choose Interested, the then-eligible Family Viewers are
+  frozen for that Introduction. Those viewers may see the opposite pinned
+  Complete Portfolio for the same 30-day window as the candidate.
+- Adding a Family Viewer later does not grant access to an already-mutual
+  Introduction. Removal, mandate termination, revocation and expiry fail
+  closed.
+- Before mutual interest, each candidate may see the count of active Family
+  Viewers authorized by the opposite candidate, but never their names, email
+  addresses or phone numbers.
+- Broker users remain limited to Broker Standard. Family access never reveals
+  Protected Contact or Complete Portfolio data to the broker workspace.
+
+Personal VivIntro users may still store Protected Contacts for later Complete
+Portfolio disclosure. Family Viewer accounts outside an active broker-linked
+relationship are not part of V1; a future paid personal capability requires a
+separate product decision.
+
 ## URL and authorization contract
 
 An opaque broker URL identifies a possible Introduction but grants no
@@ -103,7 +141,8 @@ its existing B2C progressive-disclosure rules.
 ## Explicitly deferred
 
 - cross-broker discovery, notification or coordination;
-- linked-family accounts and email membership;
+- WhatsApp/phone-only Family Viewer authentication and WhatsApp OTP;
+- paid personal Family Viewer access outside broker-linked relationships;
 - custom agency questionnaires and sensitive package fields;
 - split-representation resolution across different brokers;
 - VivIntro Plus entitlements, payments and usage metering;
@@ -127,12 +166,15 @@ Merged on `main`:
 - fail-closed revocation, cross-agency isolation, audit foundations, and
   customer-dashboard visibility; and
 - 30-day reciprocal pinned Complete Portfolio access, including Protected
-  Contact, after both customers explicitly confirm Interested.
+  Contact, after both customers explicitly confirm Interested; and
+- transactionally queued Broker Introduction, response, mutual-interest,
+  revocation and expiry notifications through the provider-neutral outbox.
 
-In progress on NAK-80: transactionally queued Broker Introduction, response,
-mutual-interest, revocation and expiry notifications through the existing
-provider-neutral outbox. Email delivery remains informational and never grants
-access.
+In progress on NAK-201: the private candidate-owned Family Viewer roster,
+broker proposal/candidate approval lifecycle, exact Google-email activation,
+three-viewer limit, sole-primary rule, revocation and bounded owner projection.
+This slice grants no Introduction or portfolio access; those remain later
+authorization phases.
 
 ## Verification provider decision
 
@@ -150,14 +192,21 @@ its active credentials are revoked/scrubbed by NAK-78.
 
 ## Recommended next implementation sequence
 
-1. **Complete NAK-80 notifications and recovery.** Validate the migration in
-   hosted pgTAP, configure Resend privately, rehearse one real inbox, then
-   enable the existing authenticated worker schedule.
-2. **Reconcile Didit liveness-only verification.** Remove document-oriented
+1. **Complete NAK-201 identity foundation.** Replay the complete three-migration
+   chain and the complete pgTAP suite against the real Postgres runtime before
+   merge.
+2. **Build NAK-202 assisted onboarding.** Add the candidate and broker proposal
+   screens, candidate email re-entry and exact-hash approval, server-owned
+   invitation-token creation, email delivery status and manual WhatsApp handoff
+   without granting portfolio access or persisting the raw family email.
+3. **Build NAK-203 read-only family dashboard.** Resolve only the activated
+   viewer's bounded cross-broker Introduction list; keep candidate responses
+   authoritative.
+4. **Reconcile Didit liveness-only verification.** Remove document-oriented
    provider inputs and copy, validate the exact provider decision contract, and
    complete biometric retention/deletion and consent evidence before activation.
-3. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+5. **Pilot operations.** Add only the minimum operator activation, expiry worker,
    monitoring, and two-broker staging evidence needed for a bounded pilot.
-4. **Broker UX refinement.** Validate dashboard, customer selection, response
+6. **Broker UX refinement.** Validate dashboard, customer selection, response
    follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
    analytics, recommendations, questionnaires, or payments.

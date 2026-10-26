@@ -74,7 +74,7 @@ test("publishing needs fresh consent, not preview visits, and preserves a server
   });
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+  await page.getByRole("button", { name: "Save & review", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Review and publish", exact: true });
   // Fresh consent, not a preview visit, unlocks the primary action. Focus must
   // still enter the dialog, including reverse-Tab from its noninteractive title.
@@ -91,7 +91,7 @@ test("publishing needs fresh consent, not preview visits, and preserves a server
   await expect(publish).toBeEnabled();
   await dialog.getByRole("button", { name: "Back to dashboard", exact: true }).click();
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
-  await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+  await page.getByRole("button", { name: "Save & review", exact: true }).click();
   await expect(consent).not.toBeChecked();
   await expect(publish).toBeDisabled();
   await consent.check();

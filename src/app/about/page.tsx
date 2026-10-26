@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PolicyLayout, PolicySection } from "@/components/legal/PolicyLayout";
+import { MarketingBreadcrumb } from "@/components/marketing/StructuredData";
 
 export const metadata: Metadata = { title: "About", description: "Why VivIntro separates a current marriage Introduction from privately shared personal details, and how to contact the team.", alternates: { canonical: "/about" } };
 
@@ -12,8 +13,9 @@ export default function AboutPage() {
       title="A more thoughtful way to share marriage introductions."
       summary="VivIntro helps people create a marriage introduction, share it through their existing family network, and decide when to release private details."
     >
+      <MarketingBreadcrumb name="About" path="/about" />
       <PolicySection title="The product idea">
-        <p>A relative asks for updated biodata. Another asks for contact details or a horoscope. VivIntro keeps the first introduction at one current link and lets you handle requests for more from your dashboard. It does not list profiles or recommend matches.</p>
+        <p>VivIntro is the product. Your Vivara is the link you share to your marriage introduction. Publish updates at the same link and handle requests for private details from your dashboard. VivIntro does not list profiles or recommend matches.</p>
       </PolicySection>
       <PolicySection title="The design promise">
         <p>VivIntro uses readable typography, plain language, and explicit privacy cues. The person stays at the centre; sharing and “set aside” choices stay private and dignified.</p>

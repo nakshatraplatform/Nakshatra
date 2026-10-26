@@ -80,7 +80,6 @@ const ownerPortfolio = {
 const legacyPublishedData = ownerPortfolio.published_data;
 ownerPortfolio.published_data = structuredClone(ownerPortfolio.draft_data);
 
-const publicReadCounts = new Map();
 const ownerInterests = [
   { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "34343434-3434-4434-8434-343434343434", viewer_name: "A long family name for layout testing that should wrap without hiding the decision", viewer_phone: null, viewer_email: "family@example.test", viewer_family_context: null, message: "Would it be possible to talk first?", status: "new", requester_user_id: "abababab-abab-4bab-8bab-abababababab", metadata: { profile_for: "family" }, created_at: "2026-10-02T12:00:00Z", email_verified: false, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
@@ -264,6 +263,7 @@ function sendPortfolioImage(response, path) {
   );
 }
 
+const publicReadCounts = new Map();
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${host}:${port}`);
   if (request.headers.authorization === `Bearer ${loadingTestToken}`) {
@@ -273,7 +273,7 @@ const server = createServer((request, response) => {
 
   if (request.method === "OPTIONS") {
     response.writeHead(204, {
-      "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+      "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info, x-supabase-api-version",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Origin": "*",
     });
@@ -331,9 +331,6 @@ const server = createServer((request, response) => {
   // Theme browser coverage uses the real page components with loopback-only,
   // read-only projections. Production authorization code is never replaced.
   if ([themeTestToken, recoveryTestToken].some(token => request.headers.authorization === `Bearer ${token}`)) {
-    // Recovery fixtures have a portfolio but no relationships; null is not a valid access projection.
-    if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, []);
-    if (url.pathname === "/rest/v1/rpc/list_portfolio_access") return sendJson(response, 200, { grants: [], events: [] });
     // These older fixtures exercise additive-migration compatibility: editing
     // remains available, but separately loaded review evidence is not trusted.
     if (url.pathname === "/rest/v1/rpc/get_owner_dashboard_review_snapshot") return sendJson(response, 404, { code: "PGRST202", message: "Fixture RPC unavailable" });
@@ -386,25 +383,24 @@ const server = createServer((request, response) => {
     if (url.pathname === "/rest/v1/portfolio_media") return sendJson(response, 200, [publicMediaWithPreviews[0]]);
     if (url.pathname === "/rest/v1/portfolio_horoscopes") return sendJson(response, 200, null);
     if (url.pathname === "/rest/v1/rpc/list_dashboard_interests") return sendJson(response, 200, ownerInterests);
-    if (url.pathname === "/rest/v1/rpc/list_relationship_queue") {
+    if (url.pathname === "/rest/v1/rpc/get_owner_relationship_page") {
       let body = "";
       request.on("data", chunk => { body += chunk; });
       return request.on("end", () => {
-        const query = JSON.parse(body || "{}");
-        const records = [
-          ...ownerInterests.map(item => ({ kind: "interest", item, stage: ["new", "pending_review"].includes(item.status) ? "awaiting" : item.status === "rejected" ? "set-aside" : "history" })),
-          ...ownerAccess.grants.map(item => ({ kind: "grant", item, stage: item.status === "active" ? "access" : "history" })),
-        ].filter(record => {
-          if (record.stage !== query.p_stage) return false;
-          const interest = record.kind === "interest";
-          const name = interest ? record.item.viewer_name : record.item.viewerName;
-          const email = interest ? record.item.viewer_email : record.item.viewerEmail;
-          if (!`${name || ""} ${email || ""}`.toLowerCase().includes((query.p_search || "").trim().toLowerCase())) return false;
-          const source = interest ? record.item.source_type : record.item.sourceType;
-          return ({ direct: source === "direct", broker: source === "broker", verified: interest && record.item.email_verified,
-            pending: record.stage === "awaiting", active: record.stage === "access", ended: !interest && record.stage === "history" })[query.p_filter] ?? true;
+        const { p_queue = "overview", p_offset = 0, p_query = "", p_filter = "all" } = JSON.parse(body || "{}");
+        const records = [...ownerInterests.map(item => ({ kind: "interest", item })), ...ownerAccess.grants.map(item => ({ kind: "grant", item }))].filter(record => {
+          const status = record.item.status;
+          const matchesQueue = p_queue === "overview" || p_queue === "awaiting" && record.kind === "interest" && ["new", "pending_review"].includes(status)
+            || p_queue === "set-aside" && record.kind === "interest" && status === "rejected" || p_queue === "access" && record.kind === "grant" && status === "active"
+            || p_queue === "history" && (record.kind === "grant" && status !== "active" || record.kind === "interest" && !["new", "pending_review", "rejected"].includes(status));
+          const name = record.item.viewer_name ?? record.item.viewerName ?? "";
+          const email = record.item.viewer_email ?? record.item.viewerEmail ?? "";
+          const source = record.item.source_type ?? record.item.sourceType;
+          return matchesQueue && `${name} ${email}`.toLowerCase().includes(p_query.toLowerCase()) && (p_filter === "all" || p_filter === source || p_filter === "verified" && record.item.email_verified || p_filter === "pending" && ["new", "pending_review"].includes(status) || p_filter === "active" && status === "active" || p_filter === "ended" && ["revoked", "expired"].includes(status));
         });
-        return sendJson(response, 200, { total: records.length, records: records.slice(query.p_offset || 0, (query.p_offset || 0) + 8).map(({ kind, item }) => ({ kind, item })) });
+        return sendJson(response, 200, { records: records.slice(p_offset, p_offset + (p_queue === "overview" ? 50 : 8)), total: records.length,
+          counts: { interests: ownerInterests.length, awaiting: ownerInterests.filter(item => ["new", "pending_review"].includes(item.status)).length, setAside: ownerInterests.filter(item => item.status === "rejected").length, active: ownerAccess.grants.filter(item => item.status === "active").length },
+          disclosure: draftOwner ? null : { revision: "a".repeat(32), data: dashboardPortfolio.published_data, photoCount: 1, privatePhotoCount: 0, hasHoroscope: false } });
       });
     }
     if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
@@ -441,7 +437,8 @@ const server = createServer((request, response) => {
     request.on("data", (chunk) => { body += chunk; });
     return request.on("end", () => {
       const token = JSON.parse(body || "{}").p_share_token;
-      if (typeof token !== "string" || token.startsWith("e2e-cache-expired-") || (!["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token"].includes(token) && !token.startsWith("e2e-cache-"))) return sendJson(response, 200, null);
+      const cacheProbe = typeof token === "string" && token.startsWith("e2e-cache-") && !token.startsWith("e2e-cache-expired-");
+      if (!cacheProbe && !["e2e-portfolio-token", "e2e-private-token", "e2e-dark-portfolio-token", "e2e-long-narrative-token", "aditi-rao", "aditi-rao-2", "li-xu"].includes(token)) return sendJson(response, 200, null);
       const portfolio = structuredClone(resolvedPortfolio(token === "e2e-private-token"));
       if (token === "e2e-dark-portfolio-token") portfolio.data.style.appearance = "dark";
       if (token === "e2e-long-narrative-token") {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { sendResendEmail } from "@/features/notifications/server/resend.provider";
+import { sendResendEmail } from "@/features/notifications/server/resend.runtime.mjs";
 import { emailMessageSchema } from "@/features/notifications/server/email.contract";
 
 const input = {
@@ -35,7 +35,7 @@ describe("server-only Resend API connection", () => {
     expect(options?.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.parse(String(options?.body))).toEqual({
       from: "notifications@example.test", reply_to: "support@example.test", to: [input.to],
-      subject: input.subject, text: input.text,
+      subject: input.subject, text: input.text, tags: [{ name: "vivintro_delivery", value: input.deliveryId }],
     });
     expect(transport).toHaveBeenCalledTimes(1);
   });
@@ -45,7 +45,7 @@ describe("server-only Resend API connection", () => {
     const transport = vi.fn<typeof fetch>().mockResolvedValue(success());
     await sendResendEmail({ ...input, html: "<p>Open your dashboard.</p>" }, transport);
     expect(JSON.parse(String(transport.mock.calls[0][1]?.body))).toEqual({
-      from: "notifications@example.test", to: [input.to], subject: input.subject, text: input.text,
+      from: "notifications@example.test", to: [input.to], subject: input.subject, text: input.text, tags: [{ name: "vivintro_delivery", value: input.deliveryId }],
       html: "<p>Open your dashboard.</p>",
     });
   });
@@ -73,7 +73,7 @@ describe("server-only Resend API connection", () => {
   it("uses the runtime fetch by default without module-time configuration", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     vi.resetModules();
-    const provider = await import("@/features/notifications/server/resend.provider");
+    const provider = await import("@/features/notifications/server/resend.runtime.mjs");
     vi.stubEnv("RESEND_API_KEY", "synthetic-test-credential");
     const transport = vi.fn<typeof fetch>().mockResolvedValue(success());
     vi.stubGlobal("fetch", transport);

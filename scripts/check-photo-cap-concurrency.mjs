@@ -27,6 +27,19 @@ async function checked(sql) {
   if (result.code !== 0) throw new Error(`Local photo-cap fixture failed: ${result.error}`);
   return result.output.trim();
 }
+async function held(transaction, marker) {
+  await new Promise((resolve, reject) => {
+    transaction.child.stdout.on("data", chunk => { if (String(chunk).includes(marker)) resolve(); });
+    transaction.child.on("close", () => reject(new Error(`Transaction did not reach ${marker}`)));
+  });
+}
+async function isBlocked(name) {
+  for (let tries = 0; tries < 10; tries++) {
+    if (await checked(`select count(*) from pg_stat_activity where application_name='${name}' and wait_event_type='Lock';`) === "1") return true;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return false;
+}
 const insert = suffix => `insert into public.portfolio_media(portfolio_id,media_type,storage_path,visibility) values('${portfolio}','gallery','${owner}/${portfolio}/${suffix}.webp','public');`;
 const authenticate = String.raw`\ir ${fixture}
 begin; set local role authenticated;
@@ -53,6 +66,37 @@ ${Array.from({ length: 7 }, (_, i) => insert(`seed-${i}`)).join("\n")}`);
   }
   if (await checked(`select count(*) from public.portfolio_media where portfolio_id='${portfolio}';`) !== "8") throw new Error("Photo cap was exceeded");
   console.log("Concurrent photo cap passed: one write committed, the competing write was rejected, eight photos remain.");
+
+  // A new draft has no publication-progress row to incidentally serialize deletes.
+  await checked(`delete from public.portfolio_media where portfolio_id='${portfolio}';
+    delete from app_private.photo_object_cleanup where portfolio_id='${portfolio}';
+    insert into public.portfolio_media(id,portfolio_id,media_type,storage_path,visibility) values
+      ('e7840000-1111-4111-8111-111111111111','${portfolio}','gallery','${owner}/shared.webp','public'),
+      ('e7840000-1111-4111-8111-222222222222','${portfolio}','gallery','${owner}/shared.webp','public');`);
+  const deletion = query(`${authenticate} delete from public.portfolio_media where id='e7840000-1111-4111-8111-111111111111';
+    select 'retirement-held'; select pg_sleep(3); commit;`, "photo-retirement-first");
+  await held(deletion, "retirement-held");
+  const duplicate = query(`${authenticate} delete from public.portfolio_media where id='e7840000-1111-4111-8111-222222222222'; commit;`, "photo-retirement-second");
+  const deletionBlocked = await isBlocked("photo-retirement-second");
+  const deleted = await Promise.all([deletion.result, duplicate.result]);
+  const retired = await checked(`select count(*) from app_private.photo_object_cleanup where storage_path='${owner}/shared.webp';`);
+  if (!deletionBlocked || deleted.some(result => result.code !== 0) || retired !== "1") {
+    throw new Error(`Overlapping duplicate deletions lost their cleanup obligation (queued: ${retired})`);
+  }
+  console.log("Concurrent duplicate retirement passed: both deletions committed and exactly one cleanup obligation remains.");
+
+  await checked(insert("reattach"));
+  const retirement = query(`${authenticate} delete from public.portfolio_media where storage_path='${owner}/${portfolio}/reattach.webp';
+    select 'reattach-held'; select pg_sleep(3); commit;`, "photo-reattach-retire");
+  await held(retirement, "reattach-held");
+  const attachment = query(`${authenticate} ${insert("reattach")} commit;`, "photo-reattach-write");
+  const attachmentBlocked = await isBlocked("photo-reattach-write");
+  const [retirementResult, attachmentResult] = await Promise.all([retirement.result, attachment.result]);
+  if (!attachmentBlocked || retirementResult.code !== 0 || attachmentResult.code === 0
+    || !attachmentResult.error.includes("23514") || !attachmentResult.error.includes("retired photo cannot be reattached")) {
+    throw new Error("Overlapping retirement allowed a retired object to be reattached");
+  }
+  console.log("Concurrent reattachment fencing passed: retirement committed and the competing attachment was rejected.");
 } finally {
   await checked(`delete from public.portfolios where id='${portfolio}'; delete from auth.users where id='${owner}'; delete from app_private.photo_object_cleanup where portfolio_id='${portfolio}';`);
 }

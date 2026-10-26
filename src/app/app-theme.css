@@ -1,6 +1,9 @@
 /* App-only semantic palette. Light values remain at their existing component
    declarations; light-dark() also respects an owner's portfolio color-scheme. */
 :root {
+  /* Fixed hardware/capture surfaces, independent of the surrounding app theme. */
+  --ui-demo-device-shell: #26333a;
+  --ui-demo-device-screen: #faf7f0;
   color-scheme: light;
   --app-dark-canvas: #111b22;
   --app-dark-surface: #1b2932;

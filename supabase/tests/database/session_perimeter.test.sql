@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(40);
+select plan(41);
 
 select has_function('public', 'is_current_session_active', array[]::text[], 'live Auth session predicate exists');
 select has_function('app_private', 'require_current_session', array[]::text[], 'internal live-session guard exists');
@@ -106,6 +106,9 @@ select ok(
         'public.consume_api_rate_limit(text,text)'::regprocedure,
         'public.is_public_portfolio_media_path(text,text)'::regprocedure,
         'public.is_current_identity_reference_storage_object(text,text)'::regprocedure,
+        -- Public, high-entropy invitation-token exchange metadata. It returns
+        -- only the pinned consent contract and deliberately supports pre-login.
+        'public.resolve_brokerdesk_customer_invitation_consent_version(text)'::regprocedure,
         'public.claim_broker_introduction_pass(text,text,text)'::regprocedure,
         'public.resolve_broker_introduction(text,text)'::regprocedure,
         'public.respond_to_broker_introduction(text,text,text,text,boolean)'::regprocedure
@@ -127,6 +130,13 @@ select ok(
 select ok(
   pg_catalog.obj_description('public.is_current_identity_reference_storage_object(text,text)'::regprocedure, 'pg_proc') is not null,
   'the owner-scoped verification-reference helper is explicitly documented as a safe allowlist entry'
+);
+select ok(
+  pg_catalog.obj_description(
+    'public.resolve_brokerdesk_customer_invitation_consent_version(text)'::regprocedure,
+    'pg_proc'
+  ) is not null,
+  'the pre-login invitation consent resolver is explicitly documented as a safe allowlist entry'
 );
 
 select pg_temp.create_auth_actor('51000000-0000-4000-8000-000000000001', '52000000-0000-4000-8000-000000000001', 'owner@session.test');

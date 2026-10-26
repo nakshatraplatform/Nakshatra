@@ -2,15 +2,15 @@ import { expect, test } from "@playwright/test";
 
 test("landing page presents the product and reaches open account creation", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Marriage biodata link you control | VivIntro");
-  await expect(page.getByRole("heading", { name: /your biodata, as one link you control/i })).toBeVisible();
+  await expect(page).toHaveTitle("Marriage biodata as a link | VivIntro");
+  await expect(page.getByRole("heading", { name: /Your marriage biodata, shared through one link/i })).toBeVisible();
   const primaryCta = page.getByRole("main").getByRole("link", { name: /create your introduction/i }).first();
   await expect(primaryCta).toHaveAttribute("href", "/signup");
   await page.goto("/waitlist");
   await expect(page).toHaveURL(/\/signup$/);
   await expect(page.getByRole("heading", { name: /create your account/i })).toBeVisible();
   await expect(page.getByLabel("Email address")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign up with Google", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Sign up with Google" })).toBeEnabled();
 });
 
 test("sign-in form preserves a safe post-auth destination", async ({ page }) => {
@@ -56,13 +56,13 @@ test("landing page remains usable with reduced motion", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   await expect(main.getByRole("link", { name: /create your introduction/i }).first()).toBeVisible();
-  await expect(page.locator("#top").getByRole("link", { name: /see an example/i })).toBeVisible();
+  await expect(page.locator("#top").getByRole("link", { name: /see a sample introduction/i })).toBeVisible();
 });
 
 test("landing concepts keep the same clear path to signup", async ({ page }) => {
   const concepts = [
-    ["/landing/control", /keep personal details personal/i],
-    ["/landing/story", /more human way to make a marriage introduction/i],
+    ["/landing/control", /share your biodata\. choose when to share more/i],
+    ["/landing/story", /introduce yourself the way you want to be known/i],
   ] as const;
 
   for (const [path, heading] of concepts) {

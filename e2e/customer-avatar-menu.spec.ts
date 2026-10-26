@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { themeTestCookie } from "./support/theme-session.mjs";
+import { publishedOwnerCookie, themeTestCookie } from "./support/theme-session.mjs";
 
 test("avatar exposes account actions with keyboard, outside dismissal and responsive themes", async ({ page, context }, testInfo) => {
   await context.addCookies([themeTestCookie]);
@@ -77,4 +77,19 @@ test("theme slider sits between Dashboard and avatar and retains its saved state
   await toggle.click();
   await expect(toggle).not.toBeChecked();
   await expect(toggle.locator(".app-theme-thumb")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+});
+
+
+test("account identity uses the owner's first and last name on every customer page", async ({ page, context }) => {
+  await context.addCookies([publishedOwnerCookie]);
+  for (const route of ["/dashboard", "/account", "/brokers"]) {
+    await page.goto(route);
+    const header = page.getByRole("banner");
+    await header.getByLabel("Account menu").click();
+    await expect(header.locator("details strong")).toHaveText("Aditi Rao");
+    await expect(header.getByRole("link", { name: "Account settings" })).toBeVisible();
+    await expect(header.getByRole("button", { name: "Sign out" })).toBeEnabled();
+    await expect(header.getByText("Your account", { exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  }
 });

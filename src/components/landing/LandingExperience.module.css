@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Akaya Kanadaka";
+  src: url("/fonts/AkayaKanadaka-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 .page {
   --paper: var(--workspace-canvas);
   --surface: var(--workspace-surface);
@@ -36,12 +44,14 @@
 
 .header,
 .hero,
+.meaningSection,
 .problemSection,
 .stepsSection > *,
 .controlSection,
 .familySection,
 .samplesSection,
 .betaSection,
+.testimonialSection,
 .faqSection,
 .finalCta,
 .footer {
@@ -163,19 +173,52 @@
 }
 
 .primaryButton { background: var(--ui-action); color: var(--ui-on-action) !important; }
-.primaryButton:hover { background: var(--ui-action-hover); transform: translateY(-1px); }
 .primaryButton svg, .lightButton svg { width: 1rem; height: 1rem; }
 .secondaryButton { border-color: var(--workspace-border); background: transparent; }
-.secondaryButton:hover { border-color: var(--ui-action); background: var(--surface); }
+@media (hover: hover) and (pointer: fine) {
+  .primaryButton:hover { background: var(--ui-action-hover); transform: translateY(-1px); }
+  .secondaryButton:hover { border-color: var(--ui-action); background: var(--surface); }
+}
+.primaryButton:active, .secondaryButton:active, .lightButton:active {
+  transform: scale(.98);
+  filter: brightness(.96);
+  transition-duration: 80ms;
+}
+
+@supports not (backdrop-filter: blur(14px)) {
+  .header { background: var(--paper); }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .header { background: var(--paper); backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .header { border-bottom-color: var(--ink); }
+}
 
 .hero {
   display: grid;
   min-height: 620px;
-  grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr);
   align-items: center;
   gap: clamp(3rem, 7vw, 6.5rem);
   padding-block: clamp(3rem, 5vw, 5rem);
 }
+
+.heroDemo { text-align: center; }
+.heroDemo > figure { max-width: min(320px, calc((100svh - 210px) / 2)); }
+.demoLink { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; margin-top: 1rem; font-size: .85rem; font-weight: 600; text-decoration: underline !important; text-underline-offset: 4px; }
+.demoLink svg { width: 1rem; }
+.vivaraWord { display: block; margin-top: .4rem; font-family: "Akaya Kanadaka", serif; font-size: clamp(4rem, 8vw, 6rem); font-weight: 400; line-height: 1.25; letter-spacing: 0; }
+.vivaraWord [data-vivara-letter] { display: inline-block; }
+.meaningRule { height: 2px; width: min(100%, 16rem); background: var(--workspace-ink); margin-top: 1.5rem; }
+.sharingCards { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2.5rem; }
+.sharingCards > article { padding: clamp(1.5rem, 3vw, 2.5rem); border: 1px solid var(--workspace-border); border-radius: 16px; scroll-margin-top: 6rem; }
+.sharingCards > article > svg { width: 1.75rem; height: 1.75rem; margin-bottom: 1.5rem; }
+.sharingCards h3 { font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+.sharingCards > article > p { margin-top: 1.25rem; color: var(--workspace-muted); line-height: 1.7; }
+.sharingCards > article > a { margin-top: 1.5rem; }
+.sharingCards .trustList { display: block; margin-top: 1rem; }
+.sharingCards .trustList details { border-radius: 0; background: transparent; border: 0; border-bottom: 1px solid var(--workspace-border); }
 
 .heroCopy { max-width: 620px; }
 
@@ -216,29 +259,6 @@
 .heroNote { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem !important; color: var(--workspace-muted); font-size: 0.8rem; }
 .heroNote svg { width: 1rem; height: 1rem; color: var(--workspace-ink); }
 
-.heroAssurances {
-  display: grid;
-  gap: 0;
-  margin: 1.5rem 0 0;
-  border-block: 1px solid var(--line);
-  padding: 0;
-  list-style: none;
-}
-
-.heroAssurances li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.heroAssurances li:last-child { border-bottom: 0; }
-.heroAssurances svg { width: 1rem; height: 1rem; margin-top: 0; color: var(--workspace-ink); }
-.heroAssurances span { display: grid; grid-template-columns: minmax(170px, 0.65fr) 1fr; gap: 1rem; }
-.heroAssurances strong { color: var(--ink); font-size: 0.76rem; }
-.heroAssurances small { color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
 
 .visual { position: relative; min-width: 0; padding: 5rem 0.5rem 0; }
 .mobilePreviewLabel { display: none; }
@@ -334,7 +354,9 @@
 .previewLifecycle [data-approved] strong { color: var(--workspace-ink); }
 
 .problemSection,
+.meaningSection,
 .betaSection,
+.testimonialSection,
 .faqSection { padding-block: clamp(4.5rem, 7vw, 6rem); }
 
 .sectionHeading { max-width: 760px; }
@@ -354,6 +376,15 @@
 .finalCta h2:first-child { margin-top: 0; }
 
 .sectionHeading > p:last-child { max-width: 65ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
+.meaningSection { display: grid; grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); border-block: 1px solid var(--line); }
+.meaningSection .kannadaWord { margin-top: 1.5rem; color: var(--ink); font-family: "Akaya Kanadaka", serif; font-size: 2rem; }
+.meaningCopy { min-width: 0; }
+.meaningCopy > p { max-width: 65ch; color: var(--muted); line-height: 1.75; }
+.meaningCopy > p + p { margin-top: 1rem; }
+.meaningTerms { display: grid; gap: 1.5rem; margin: 2rem 0 1.5rem; }
+.meaningTerms dt { color: var(--ink); font-size: 1.05rem; font-weight: 600; }
+.meaningTerms dd { max-width: 65ch; margin: 0.5rem 0 0; color: var(--muted); line-height: 1.65; }
+.page .meaningSource { display: inline-flex; min-height: 44px; align-items: center; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; font-size: 0.85rem; overflow-wrap: anywhere; }
 .problemGrid { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 2.5rem; border-block: 1px solid var(--line); }
 .problemGrid article { min-height: 145px; border-right: 1px solid var(--line); padding: 1.5rem; }
 .problemGrid article:first-child { padding-left: 0; }
@@ -396,7 +427,7 @@
 .tourDecision strong { background: var(--teal); color: var(--workspace-canvas); }
 
 .controlSection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(470px, 0.9fr); gap: clamp(3rem, 7vw, 6rem); padding-block: clamp(4.5rem, 7vw, 6.5rem); }
-.controlIntro > p:nth-of-type(2) { max-width: 58ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
+.controlIntro > p:first-of-type { max-width: 58ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
 .accessFlow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1.5rem; color: var(--workspace-muted); font-size: 0.76rem; font-weight: 700; }
 .accessFlow span, .accessFlow strong { border: 1px solid var(--workspace-border); border-radius: 99px; padding: 0.5rem 0.5rem; }
 .accessFlow strong { border-color: var(--workspace-border); background: var(--teal-soft); color: var(--workspace-ink); }
@@ -427,7 +458,7 @@
 .betaSection { border-top: 1px solid var(--line); }
 .betaCopy { max-width: 790px; }
 .betaCopy h2 { margin-top: 1rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(2.5rem, 4.4vw, 4.25rem); font-weight: 500; line-height: 1.05; letter-spacing: -0.035em; }
-.betaCopy > p:last-child { max-width: 68ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
+.betaCopy > p { max-width: 68ch; margin-top: 1rem; color: var(--muted); line-height: 1.65; }
 .betaDetails { display: grid; grid-template-columns: repeat(2, 1fr); margin-top: 2.5rem; border-block: 1px solid var(--line); }
 .betaDetails span { display: grid; min-height: 190px; align-content: start; gap: 0.5rem; border-right: 1px solid var(--line); padding: 1.5rem; color: var(--muted); font-size: 0.84rem; line-height: 1.6; }
 .betaDetails span:first-child { padding-left: 0; }
@@ -451,7 +482,17 @@
 .trustList p, .faqList p { max-width: 62ch; margin: 0; padding: 0 1rem 1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.65; overflow-wrap: anywhere; }
 
 .faqSection { display: grid; grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1fr); gap: clamp(3rem, 8vw, 7rem); }
+.guideLink { color: var(--workspace-teal); font-weight: 700; text-decoration: underline; text-underline-offset: .2em; }
+.guideLink:focus-visible { outline: 3px solid var(--workspace-ink); outline-offset: 3px; }
 .faqList summary { justify-content: space-between; }
+.testimonialSection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .72fr); gap: clamp(2rem, 7vw, 6rem); align-items: center; border-top: 1px solid var(--line); }
+.testimonialSection h2 { font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(2.5rem, 4.4vw, 4.25rem); font-weight: 500; line-height: 1.05; letter-spacing: -.035em; }
+.testimonialSection > div:first-child p { max-width: 54ch; margin-top: 1rem; color: var(--muted); line-height: 1.7; }
+.testimonialInvitation { border-left: 1px solid var(--line); padding: 1.5rem 0 1.5rem 2.5rem; }
+.testimonialInvitation > svg { width: 1.6rem; height: 1.6rem; }
+.testimonialInvitation h3 { margin-top: 1rem; font-size: 1.25rem; }
+.testimonialInvitation p { margin-top: .6rem; color: var(--muted); line-height: 1.6; }
+.testimonialInvitation a { margin-top: 1.5rem; }
 
 .finalCta { display: flex; align-items: center; justify-content: space-between; gap: 3rem; border-radius: 1.2rem; padding: clamp(2rem, 5vw, 4rem); background: var(--teal); color: var(--workspace-canvas); }
 .finalCta .eyebrow { color: inherit; }
@@ -485,7 +526,6 @@
   .navigationLinks { display: none; }
   .hero { grid-template-columns: minmax(0, 0.82fr) minmax(460px, 1.18fr); gap: 2rem; }
   .hero h1 { font-size: clamp(3.15rem, 6vw, 4.4rem); }
-  .heroAssurances span { grid-template-columns: 1fr; gap: 0.5rem; }
 }
 
 @media (max-width: 1280px) {
@@ -493,21 +533,24 @@
 }
 
 @media (max-width: 860px) {
-  .header, .hero, .problemSection, .stepsSection > *, .controlSection, .familySection, .samplesSection, .betaSection, .faqSection, .finalCta, .footer { width: min(100% - 2rem, 680px); }
+  .header, .hero, .meaningSection, .problemSection, .stepsSection > *, .controlSection, .familySection, .samplesSection, .betaSection, .testimonialSection, .faqSection, .finalCta, .footer { width: min(100% - 2rem, 680px); }
   .header { width: 100%; padding-inline: max(1rem, calc((100% - 680px) / 2)); }
   .hero { min-height: auto; grid-template-columns: 1fr; padding-block: 3.5rem; }
+  .heroDemo > figure { max-width: 300px; }
+  .sharingCards { grid-template-columns: 1fr; }
   .heroCopy { max-width: 640px; }
   .hero h1 { max-width: 13ch; }
   .visual { margin-top: 1rem; }
-  .heroAssurances span { grid-template-columns: minmax(170px, 0.65fr) 1fr; gap: 1rem; }
   .stepsGrid { grid-template-columns: repeat(2, 1fr); }
   .stepsGrid article { border-bottom: 1px solid var(--workspace-border); }
   .stepsGrid article:nth-child(2n) { border-right: 0; }
   .stepsGrid article:nth-last-child(-n + 2) { border-bottom: 0; }
-  .problemGrid, .controlSection, .faqSection { grid-template-columns: 1fr; }
+  .problemGrid, .meaningSection, .controlSection, .faqSection { grid-template-columns: 1fr; }
   .problemGrid { gap: 1.5rem; }
   .controlSection { gap: 2.5rem; }
   .faqSection { gap: 2rem; }
+  .testimonialSection { grid-template-columns: 1fr; }
+  .testimonialInvitation { border-left: 0; border-top: 1px solid var(--line); padding: 1.5rem 0 0; }
   .familyGrid { grid-template-columns: 1fr; }
   .trustList { grid-template-columns: 1fr; }
   .familyGrid article { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -534,8 +577,6 @@
   .mobilePreviewLabel { position: absolute; top: 0; left: 0; display: block; max-width: 24ch; color: var(--muted); font-size: 0.84rem; font-weight: 600; line-height: 1.45; }
   .floatingMessage { top: 3rem; right: 0; }
   .floatingNote { right: 0.5rem; bottom: 0; }
-  .heroAssurances { margin-top: 1.5rem; }
-  .heroAssurances span { grid-template-columns: 1fr; gap: 0.5rem; }
   .controlSection { width: calc(100% - 2.5rem); }
   .portfolioBody { min-height: 420px; grid-template-columns: 1fr; grid-template-rows: 180px 1fr; }
   .portrait::before { width: 160px; height: 160px; }
@@ -549,7 +590,7 @@
   .previewLifecycle > span { grid-template-columns: 112px 1fr; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
   .previewLifecycle > svg { display: none; }
   .previewLifecycle [data-approved] { border-top: 1px solid var(--line); border-left: 0; padding-left: 0; }
-  .problemSection, .betaSection, .faqSection, .stepsSection, .controlSection, .familySection, .samplesSection { padding-block: 3rem; }
+  .problemSection, .meaningSection, .betaSection, .testimonialSection, .faqSection, .stepsSection, .controlSection, .familySection, .samplesSection { padding-block: 3rem; }
   .sectionHeading h2, .controlIntro h2, .finalCta h2 { font-size: clamp(2.35rem, 11vw, 3.3rem); }
   .problemGrid, .stepsGrid, .familyGrid { margin-top: 2rem; }
   .problemGrid, .stepsGrid, .familyGrid, .betaDetails { grid-template-columns: 1fr; }
@@ -576,5 +617,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .primaryButton:active, .secondaryButton:active, .lightButton:active { transform: none; }
   .primaryButton, .secondaryButton, .lightButton, .trustList details, .faqList details, .trustList .disclosureChevron, .faqList summary svg { transition: none; }
 }

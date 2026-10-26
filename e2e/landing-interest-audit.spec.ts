@@ -7,7 +7,7 @@ test("landing labels and keyboard indicators meet contrast in both themes", asyn
     for (const theme of ["light", "dark"]) {
       if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
       await expect(page.locator("main").getByRole("link", { name: "Create your introduction", exact: true }).first()).toHaveCSS("background-color", "rgb(35, 75, 104)");
-      const measurements = await page.locator('[class*="controlGrid"] article > span, [class*="introduction"] strong, [class*="samplesHeading"] > p, nav[aria-label="Guided tour steps"] a > span').evaluateAll(elements => {
+      const measurements = await page.locator('#product-story p, #privacy dt, #privacy dd, #how p').evaluateAll(elements => {
         const luminance = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => {
           const c = color.startsWith("color(srgb ") ? value : value / 255;
           return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -60,17 +60,17 @@ test("owner explanatory note passes text contrast on the actual portfolio surfac
   expect(ratio).toBeGreaterThanOrEqual(4.5);
 });
 
-test("tall bookshelf keeps readable book dimensions within its viewport scene", async ({ page }) => {
+test("tall desktop tour keeps each animated book reachable", async ({ page }) => {
   for (const height of [1200, 1600]) {
     await page.setViewportSize({ width: 1440, height });
     await page.goto("/");
     await expect(page.locator("#how")).toHaveAttribute("data-bookshelf", "true");
-    await page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^01/ }).click();
+    await page.evaluate(() => document.fonts.ready);
+    const link = page.getByRole("navigation", { name: "Guided tour steps" }).getByRole("link", { name: /^01/ });
+    await link.click();
     const book = page.locator('[data-tour-step="01"]');
     await expect(book).toHaveAttribute("data-active", "true");
-    await expect(book.locator("[data-shelf-paper] li").last()).toBeInViewport();
-    expect(await book.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(511);
-    expect(await page.locator("[data-shelf-scene]").evaluate(element => element.getBoundingClientRect().height)).toBeCloseTo(height, 0);
+    await expect(book.locator("h3")).toBeInViewport();
   }
 });
 

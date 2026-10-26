@@ -6,8 +6,10 @@ import type { z } from "zod/v4";
 import { interestHistorySchema } from "@/features/interest/server/interest-dashboard.contract";
 import { InterestDetailsPanel } from "./InterestDetailsPanel";
 import { interestStatusLabel } from "@/features/interest/presentation";
+import { useHydrated } from "@/lib/ui/use-hydrated";
 
 export function InterestHistoryPanel() {
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
   const [offset, setOffset] = useState(0);
   const [attempt, setAttempt] = useState(0);
@@ -24,7 +26,7 @@ export function InterestHistoryPanel() {
     return () => controller.abort();
   }, [open, offset, attempt]);
   const loading = !result || result.offset !== offset;
-  return <section className="dashboard-interest-history"><button type="button" className="dashboard-secondary-action" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? "Hide interest history" : "View all interest submissions"}</button>{open && <div>
+  return <section className="dashboard-interest-history"><button type="button" className="dashboard-secondary-action" disabled={!hydrated} aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? "Hide interest history" : "View all interest submissions"}</button>{open && <div>
     <h3>Interest history</h3><p>Ending a 15-day sharing period or stopping sharing does not delete the submitted interest. You can reopen details kept in your history; deleted or anonymized details are no longer available. <Link href="/privacy#retention" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">How long interest details are kept</Link>.</p>
     {loading ? <p role="status">Loading interest history…</p> : result.error ? <p role="alert">{result.error} <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry</button></p> : <>
       {!result.items?.length && <p>No more submissions.</p>}

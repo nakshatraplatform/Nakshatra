@@ -26,7 +26,7 @@ export async function getPortfolioAccessSummary(
   const repository = new AccessRepository(supabase);
   const { data, error } = await repository.listPortfolioAccess();
   const parsed = portfolioAccessSummarySchema.safeParse(data);
-  if (error || !parsed.success) throw new AccessLifecycleError("We could not load your sharing records. Please retry.", "ACCESS_SUMMARY_UNAVAILABLE", 503);
+  if (error || !parsed.success) throw new AccessLifecycleError("Sharing status could not be loaded. Existing access has not changed.", "ACCESS_SUMMARY_UNAVAILABLE", 503);
   return parsed.data;
 }
 

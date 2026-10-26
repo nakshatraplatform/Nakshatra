@@ -11,7 +11,7 @@ values('c7840000-1111-4111-8111-111111111111','c4840000-1111-4111-8111-111111111
  'c1840000-1111-4111-8111-111111111111/c4840000-1111-4111-8111-111111111111/photo.webp',
  'c1840000-1111-4111-8111-111111111111/c4840000-1111-4111-8111-111111111111/thumb.webp',
  '{"blurPath":"c1840000-1111-4111-8111-111111111111/c4840000-1111-4111-8111-111111111111/blur.webp"}','public');
-select ok(not has_function_privilege('anon','public.list_relationship_queue(text,integer,text,text)','execute'),'anonymous queue access is revoked');
+select ok(not has_function_privilege('anon','public.get_owner_relationship_page(text,integer,text,text)','execute'),'anonymous queue access is revoked');
 select ok(not has_function_privilege('authenticated','public.claim_photo_cleanup(integer)','execute'),'photo cleanup is service-only');
 select ok(not has_table_privilege('authenticated','app_private.photo_object_cleanup','select'),'cleanup paths are private');
 set local role authenticated;
@@ -54,22 +54,22 @@ select ('d2840000-1111-4111-8111-'||lpad(n::text,12,'0'))::uuid,'c4840000-1111-4
  'c1840000-1111-4111-8111-111111111111','full',array['full'],now()+interval '1 day',now()-n*interval '1 minute' from generate_series(1,60) n;
 set local role authenticated;
 select pg_temp.set_authenticated_claims('c1840000-1111-4111-8111-111111111111','c2840000-1111-4111-8111-111111111111');
-select is(public.list_relationship_queue('awaiting')->>'total','60','queue total includes all pending requests');
-select is(jsonb_array_length(public.list_relationship_queue('awaiting')->'records'),8,'queue payload is bounded');
-select is(public.list_relationship_queue('awaiting',56)#>>'{records,3,item,viewer_name}','Viewer 60','old pending request is reachable beyond newest fifty');
-select is(public.list_relationship_queue('access',56)#>>'{records,3,item,id}','d2840000-1111-4111-8111-000000000060','old active grant retains its management ID');
-select is(public.list_portfolio_access()#>>'{counts,awaiting}','60','initial summary counts the entire queue');
-select is(public.list_portfolio_access()#>>'{counts,access}','60','active count is independent of recent grant window');
-select is(public.list_relationship_queue('awaiting',0,'Viewer 60')->>'total','1','search reaches old records');
-select is(public.list_relationship_queue('awaiting',0,'%')->>'total','0','search treats wildcard characters literally');
-select throws_ok($$select public.list_relationship_queue('access',100001)$$,'22023','invalid relationship page','database bounds untrusted offsets');
+select is(public.get_owner_relationship_page('awaiting')->>'total','60','queue total includes all pending requests');
+select is(jsonb_array_length(public.get_owner_relationship_page('awaiting')->'records'),8,'queue payload is bounded');
+select is(public.get_owner_relationship_page('awaiting',56)#>>'{records,3,item,viewer_name}','Viewer 60','old pending request is reachable beyond newest fifty');
+select is(public.get_owner_relationship_page('access',56)#>>'{records,3,item,id}','d2840000-1111-4111-8111-000000000060','old active grant retains its management ID');
+select is(public.get_owner_relationship_page()#>>'{counts,awaiting}','60','initial summary counts the entire queue');
+select is(public.get_owner_relationship_page()#>>'{counts,active}','60','active count is independent of recent grant window');
+select is(public.get_owner_relationship_page('awaiting',0,'Viewer 60')->>'total','1','search reaches old records');
+select is(public.get_owner_relationship_page('awaiting',0,'%')->>'total','0','search treats wildcard characters literally');
+select throws_ok($$select public.get_owner_relationship_page('access',100001)$$,'22023','invalid relationship page','database bounds untrusted offsets');
 select pg_temp.set_authenticated_claims('c5840000-1111-4111-8111-111111111111','c6840000-1111-4111-8111-111111111111');
-select is(public.list_relationship_queue('awaiting')->>'total','0','another user cannot enumerate owner interests');
-select is(public.list_relationship_queue('access')->>'total','0','another user cannot enumerate owner grants');
+select is(public.get_owner_relationship_page('awaiting')->>'total','0','another user cannot enumerate owner interests');
+select is(public.get_owner_relationship_page('access')->>'total','0','another user cannot enumerate owner grants');
 reset role;
 select pg_temp.set_invalid_session_claims('c1840000-1111-4111-8111-111111111111','c9840000-1111-4111-8111-111111111111');
 set local role authenticated;
-select throws_ok($$select public.list_relationship_queue('awaiting')$$,'42501',null,'revoked sessions cannot read owner queues');
+select throws_ok($$select public.get_owner_relationship_page('awaiting')$$,'42501',null,'revoked sessions cannot read owner queues');
 reset role;
 insert into public.portfolio_media(portfolio_id,media_type,storage_path,visibility)
 select 'c4840000-1111-4111-8111-111111111111','gallery','c1840000-1111-4111-8111-111111111111/c4840000-1111-4111-8111-111111111111/gallery-'||n||'.webp','public' from generate_series(1,8) n;

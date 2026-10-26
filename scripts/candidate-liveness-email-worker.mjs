@@ -1,14 +1,14 @@
 import { z } from "zod/v4";
-import { sendResendEmail } from "../src/features/notifications/server/resend.runtime.mjs";
+import { sendTrackedEmail } from "../src/features/notifications/server/delivery.runtime.mjs";
 
 const claimSchema = z.object({ delivery_id: z.uuid(), claim_token: z.uuid(), recipient_email: z.email().max(254) });
 
 /**
  * Only private, database-authorized jobs enter this isolated worker. Never logs addresses.
  * @param {object} supabase
- * @param {{ send?: typeof sendResendEmail, limit?: number, owner?: { candidateId: string, attemptId: string, userId: string, sessionId: string } }} options
+ * @param {{ send?: (input: unknown) => Promise<import("../src/features/notifications/server/email.contract").EmailDispatchResult>, limit?: number, owner?: { candidateId: string, attemptId: string, userId: string, sessionId: string } }} options
  */
-export async function processCandidateLivenessEmails(supabase, { send = sendResendEmail, limit = 5, owner = undefined } = {}) {
+export async function processCandidateLivenessEmails(supabase, { send = input => sendTrackedEmail(input, supabase), limit = 5, owner = undefined } = {}) {
   const batchLimit = owner ? 1 : Math.min(Math.max(Number.isInteger(limit) ? limit : 5, 1), 10);
   const { data, error } = owner
     ? await supabase.rpc("claim_owner_candidate_liveness_email", {

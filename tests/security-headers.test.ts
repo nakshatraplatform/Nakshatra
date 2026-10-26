@@ -21,6 +21,7 @@ describe("Next.js security headers", () => {
   it("applies browser defenses globally and no-store policy to sensitive routes", async () => {
     expect(nextConfig.poweredByHeader).toBe(false);
     const rules = await nextConfig.headers?.();
+    expect(rules?.find(rule => rule.source === "/p/:path*")?.headers).toContainEqual({ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" });
     expect(rules).toBeDefined();
     const global = rules?.find((rule) => rule.source === "/:path*")?.headers ?? [];
     const header = (name: string) => global.find((entry) => entry.key === name)?.value;

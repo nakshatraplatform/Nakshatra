@@ -1,3 +1,5 @@
+import { boundedJsonRequest, JsonRequestInterrupted } from "@/lib/api/bounded-json-request";
+
 export type AuthStartPayload =
   | { method: "google"; redirect: string; email?: string }
   | { method: "password_signup"; email: string; password: string; redirect: string }
@@ -20,16 +22,23 @@ type AuthResponse = {
   code?: string;
 };
 
-async function postAuth(path: string, payload: unknown) {
+async function postAuth(path: string, payload: unknown, signal?: AbortSignal) {
   try {
-    const response = await fetch(path, {
+    const { response, body } = await boundedJsonRequest<AuthResponse>(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal,
     });
-    const body = (await response.json().catch(() => null)) as AuthResponse | null;
     return { ok: response.ok, body };
-  } catch {
+  } catch (error) {
+    if (error instanceof JsonRequestInterrupted) return {
+      ok: false,
+      body: {
+        code: error.reason === "timeout" ? "AUTH_REQUEST_TIMEOUT" : "AUTH_REQUEST_CANCELLED",
+        error: "We could not confirm the response. The request may have completed. Check your email or sign-in status before trying again.",
+      },
+    };
     return {
       ok: false,
       body: {
@@ -41,8 +50,8 @@ async function postAuth(path: string, payload: unknown) {
 }
 
 /** Calls the same-origin auth gateway so every provider receives application rate limiting. */
-export function startAuthentication(payload: AuthStartPayload) {
-  return postAuth("/api/auth/start", payload);
+export function startAuthentication(payload: AuthStartPayload, signal?: AbortSignal) {
+  return postAuth("/api/auth/start", payload, signal);
 }
 
 /** Exchanges a six-digit email code for an authenticated session. */
@@ -51,8 +60,8 @@ export function verifyAuthenticationCode(payload: {
   email: string;
   token: string;
   redirect: string;
-}) {
-  return postAuth("/api/auth/verify", payload);
+}, signal?: AbortSignal) {
+  return postAuth("/api/auth/verify", payload, signal);
 }
 
 /** Finishes a password-recovery session with a replacement password. */

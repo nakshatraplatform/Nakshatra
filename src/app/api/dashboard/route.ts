@@ -1,3 +1,5 @@
+import { reportOperationFailure } from "@/lib/observability/operations.mjs";
+import { getRequestId } from "@/lib/security/logging";
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
@@ -47,9 +49,12 @@ export async function PUT(request: Request) {
     });
     return NextResponse.json(result);
   } catch (error) {
+    if (!(error instanceof DashboardSaveError) || error.status >= 500) {
+      reportOperationFailure("portfolio.draft.save", error, { code: error instanceof DashboardSaveError ? error.code : undefined, reference: getRequestId(request) });
+    }
     if (error instanceof DashboardSaveError) {
       return NextResponse.json(
-        { code: error.code, error: error.message },
+        { code: error.code, error: error.message, ...(error.fieldErrors && { fieldErrors: error.fieldErrors }) },
         { status: error.status }
       );
     }

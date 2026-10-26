@@ -1,20 +1,81 @@
 # VivIntro / Nakshatra project map
 
-- [Implementation audit remediation](features/implementation-audit-remediation.md):
-  adds durable retired-photo cleanup, complete owner
-  relationship queues, partial-upload recovery and serialized photo-cap checks.
-  Failures surface as unavailable reads; retained tests await streamed layout.
-  The follow-up batches authorized signing, reuses request reads and modal lifecycle,
-  extracts dashboard responsibilities, removes dead code/dependencies and repairs
-  account/landing integration gates. Evidence, independent review and rollout
-  limitations are recorded in the feature; existing local features are preserved.
+- [NAK-84 implementation audit remediation](features/implementation-audit-remediation.md):
+  integrates current main's consent and owner queue, adds durable photo retirement,
+  concurrent cap/retirement fencing, partial-upload recovery and shared frontend
+  responsibilities. Local checks and two independent review rounds are recorded;
+  final Supabase replay/hosted CI remain pending after a local Docker outage.
+
+- [NAK-66 transactional email completion](features/transactional-email-completion.md):
+  atomic first-publication and requester receipts through the existing queue;
+  watchdog surfaces disabled configuration. Operational activation and inbox
+  verification are separate from implementation.
+
+- [Landing P0/P1 clarity](features/landing-p0-p1.md): October23 local content/SEO
+  continuation keeps the approved book, phone and name-reveal animations. The
+  familiar category is stated once in the hero; VivIntro is the product and
+  Vivara its shared link. Six homepage/ten full FAQs, search metadata,
+  breadcrumbs and two optional fixed public CTA counters remain. A follow-up
+  marriage-biodata-format guide provides a practical privacy-aware first format,
+  linked unobtrusively from the questions section. The temporary
+  static tour, comparison, family-share action and native-scroll substitution
+  were withdrawn after the owner's preview. No portfolio/auth/database change;
+  production, physical-device and measurement gates remain separate.
 
 - [Password recovery routing](features/password-recovery-routing.md): recovery
-  exchanges reach new-password entry before their safe continuation; returned
-  sign-out errors reach the existing retry UI. Local browser coverage exercises
-  the SDK cookie handoff, save and logout across desktop/tablet/mobile Chromium.
-  Current checks and separate hosted-provider evidence are recorded in the feature.
+  exchanges reach password entry before their safe continuation; returned logout
+  errors reach the existing retry UI. Includes browser regression coverage of the
+  SDK cookie handoff, password save and logout failure/retry.
 
+- [Personal dashboard and sharing consent](features/sharing-dashboard-clarity.md):
+  published-snapshot consent, stale-review protection, bounded owner relationship
+  queues/search with complete counts, visible failures/retry and task-first
+  dashboard hierarchy. Independent review corrections and current verification
+  are recorded separately from release; database runtime gates remain pending.
+
+- [NAK-89 Sentry monitoring](features/nak-89-sentry-monitoring.md): browser/Node/Edge errors and sampled traces with a shared runtime-neutral privacy boundary. October 24 remediation adds approved handled-error reporting, native worker initialization/bounded flush, operation labels, distinct artifact aliases and locally controlled sampling. GitHub workers need the public DSN variable separately from Vercel; hosted original-source mapping and rollout remain release gates. See [setup and limits](../observability/sentry.md).
+
+- [NAK-88 frontend recovery](features/nak-88-frontend-recovery.md): enlarged-text
+  reflow, bounded JSON exchanges, dismissible retained interest requests and
+  hydration-safe account forms; native select sizing and independent material
+  preferences. Follow-up fixes the round-3 interest-verification label clipping
+  and patches locked Vite to 8.1.6. Combined with landing/orb work and main
+  `66cfc64`: 1,683 tests / all coverage floors, audit, build and 70 Chromium cases
+  pass. Earlier WebKit/Firefox evidence is pre-integration. Fresh correction
+  review (three-round budget exhausted), deployed preview/CI and manual
+  accessibility gates remain; not released. See the feature record for evidence.
+
+- [VivIntro/Vivara naming and landing clarity](features/landing-terminology.md):
+  October 22 owner clarification supersedes historical page naming: VivIntro is
+  the product; Vivara is the shared link to the introduction. Local content/SEO
+  increment defines that relationship and restores marriage-biodata category
+  words, without changing privacy rules. Its temporary family-share action was
+  withdrawn in the subsequent content-only P0/P1 correction.
+- [Vivara landing content](features/vivara-landing-content.md): historical
+  shared-page naming, Kannada naming explanation and Rahul's
+  rationale within the existing landing design. October 20 product-demo follow-up
+  uses a disclosed fictional AI portrait in the real demo renderer, actual public
+  screen captures, a desktop phone/explanation scroll story and a scoped OFL
+  calligraphic naming moment. Mobile tour remains stacked below 860px width or
+  600px height; new story motion requires 1000×600. Viewer/trust merge into two
+  cards. Resize cancels stale root scroll inertia without setting position.
+  Apple Design follow-up separates the phone screen from its shell, refreshes
+  guarded real-renderer captures with hashed imports, and adds restrained press
+  feedback, larger auth secondary targets and solid header preference fallbacks.
+  No domain/access changes. Current evidence is in the feature record.
+
+- [NAK-87 readable share links](features/nak-87-readable-share-links.md): database-owned first/last-name URLs with numbered duplicates, stable legacy links, permanent issued-path digests and existing Complete-access authorization. Rollout and verification are recorded in the feature file.
+
+- [NAK-68 email delivery operations](features/resend-delivery-operations.md):
+  shared suppression/tracking around existing sends, signed minimal Resend
+  receipts, monotonic outcomes, bounded retention and protected delivery health.
+  Development and release evidence are separated in the feature record.
+
+- [Accessible account entry](features/auth-accessibility-feedback.md): concise
+  signup guidance, same-route recovery focus, field-associated password/code
+  errors, truthful recovery advice and quiet background liveness reads. Isolated
+  follow-up to NAK-74; current validation and manual screen-reader limits are in
+  the feature record. No authentication/domain/API or database-policy changes.
 - [NAK-84 test coverage hardening](features/nak-84-test-coverage-hardening.md):
   continues the completed NAK-17 baseline in risk order. The authenticated
   theme E2E hydration race is stabilized and passes repeated no-retry plus all
@@ -54,7 +115,7 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Observed stack and boundaries
 
-- Next.js 16.4.3 App Router observed locally (package range ^16.3.4), React 19, TypeScript 6, Vitest and Playwright; npm lockfile controls dependencies. Consult `node_modules/next/dist/docs/` before modifying framework behavior.
+- Next.js 16.3.8 App Router observed locally (package range ^16.3.4), React 19, TypeScript 6, Vitest and Playwright; npm lockfile controls dependencies. Consult `node_modules/next/dist/docs/` before modifying framework behavior.
 - Supabase Postgres, Auth and private Storage store portfolio and normalized verification state. Forward-only SQL migrations are in `supabase/migrations`; pgTAP tests are in `supabase/tests/database`. Protected CD applies production migrations.
 - Didit hosted sessions use server-only API credentials. `src/features/identity-verification/server/` owns candidate/representative session creation, signed webhooks and repositories. `scripts/identity-verification-worker.mjs` fetches decisions and deletes provider sessions; database RPCs own authoritative state transitions.
 - `src/features/media/server/` stores private portfolio photos. A `portfolio_media` hero row is the primary photo and can change after verification.
@@ -62,9 +123,23 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 
 ## Relevant feature status
 
-- [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
+- [NAK-201 Family Viewer identity foundation](features/nak-201-family-viewer-identity-foundation.md):
+  adds the candidate-owned, cross-broker roster authority beneath the approved
+  V3 contract. Brokers may propose but cannot activate viewers; the candidate
+  approves, and only the exact confirmed Google identity may activate. The
+  private schema, bounded RPCs, concurrency rules, indexes and pgTAP contract
+  are isolated from B2C and from later Introduction disclosure work.
 
-- [Landing bookshelf and signup button](features/landing-bookshelf.md): four full-viewport, scroll-driven 3D books with direct/keyboard chapter access and static small-screen/reduced-motion/no-JavaScript fallbacks; compact outlined Google signup button. Local implementation and evidence are recorded in the feature; no provider or deployment change.
+- [NAK-208 VivIntroDesk UI wireframes](features/nak-208-vivintrodesk-ui-wireframes.md):
+  preserves the isolated Stage A and Stage B prototypes while reconciling them
+  with the approved family-assisted broker contract and a single owned
+  VivIntroDesk component system. The working branch is
+  `feat/nak-208-vivintrodesk-ui-wireframes`; no production route, database rule,
+  authorization boundary, customer data, or delivery provider is connected.
+
+- [Landing bookshelf and signup button](features/landing-bookshelf.md): four scroll-driven 3D books with direct/keyboard chapter access; the [October 20 Vivara follow-up](features/vivara-landing-content.md) supersedes all-screen animation with static phone/short-viewport cards. Reduced-motion/no-JavaScript fallbacks and the compact outlined Google signup button remain. Local implementation and evidence are recorded in the features; no provider or deployment change.
+
+- [NAK-66 personal expiry reminders](features/portfolio-expiry-reminders.md): bounded due-grant producer, current-state/digest-fenced pre-send checks, honest skipped disposition and balanced existing outbox claims. Scheduled generation precedes relationship mail without starving independent queues. Local implementation, clean migration replay, full unit/database verification and independent review are complete; production activation and real inbox UAT remain pending. BrokerDesk stays outside this increment.
 
 - [Application-wide Lenis scrolling and frontend evidence](features/application-smooth-scroll.md): root progressive enhancement with native touch/nested/reduced-motion fallback, dialog locks and keyboard/navigation interruption. Locally validated with production build, coverage and Chromium fixtures; broader physical-device/a11y/performance/asset-rights evidence remains separate. The dependency-audit blocker was resolved by hybrid lint tooling. No deployment performed.
 - [Onboarding foundations](features/onboarding-foundations.md): local increments
@@ -79,6 +154,23 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
   [Options and save efficiency](features/onboarding-options-and-save-efficiency.md)
   adds familiar stable-value dropdowns, bounded Other recovery, currency/count
   confirmations, debounced/coalesced saves and serialized resume-position writes.
+  [Mobile clarity follow-up](features/onboarding-mobile-clarity.md) reduces repeated
+  copy, groups related answers and section-7 settings, and makes manual location
+  entry prominent without changing data/publication/validation contracts.
+  October 22 continuation integrates main `0587acc`, adds persistent validated
+  Back/Continue and final Review, separates secondary draft tools and labels the
+  mobile Dashboard exit. Field-integrity follow-up retains pending typed selections,
+  aligns UI/API dropdown and range checks with owner-stored legacy compatibility,
+  fixes field focus/error baselines, and adds no normal-choice database lookup.
+  Family/Astrology remain optional; no extra required answers or SQL. Delivered
+  through #129, merged as `cc817c9`; historical verification is in that record.
+  [Editor actions and touch sign-out](features/editor-actions-signout.md) follows
+  merged #129: adjacent header Preview/theme/Dashboard, quiet saved status,
+  footer Back/Save & review/Continue, native-date sizing and touch-menu handling.
+  It supersedes the secondary draft-tools placement, not section navigation or
+  publication/validation rules; implementation and release evidence are separate.
+  This follow-up remains local, with hosted CI and real-phone preview approval
+  required before release. No database deployment is needed.
 
 - [NAK-107 consumer touchpoint polish](features/nak-107-touchpoint-polish.md):
   extracted from the paused PDF branch onto main `d99e14c`. Includes separate-tab
@@ -105,6 +197,14 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - [NAK-105 interest and viewer experience](features/interest-viewer-experience.md): draft PR97 integrates main/PR96 (`ebed0a0`) while retaining compact icon navigation, non-obstructing floating Top, discoverable link actions, exact-ID retained owner submission details/history, required canonical visitor/candidate fields and guarded owned-profile reuse. Photo Storage authorization excludes hidden/owner-only media. The authorized fifth fresh review found one integrated browser-test mismatch; coordinator supplied the newly required registered email without weakening validation, and the corrected case passed across all three projects. Combined-source checks: 1,253 unit tests, 57 coverage gates, production build/lint/typecheck/audit, and 189 browser cases (6 intentional skips). [Evidence ledger](features/interest-viewer-review.md) preserves immutable review provenance and distinguishes these checks from blocked actual migration replay, pgTAP, Storage RLS and generated-type verification. No merge/release/deployment claim; the weaker old RPC is retired, requiring coordinated database/app rollout.
 
 - [NAK-71 application-wide loading feedback](features/nak-71-loading-orbs.md): `src/components/loading/LoadingStatus.tsx` owns themed, accessible page/compact feedback; `PageLoading` supplies streamed fallbacks and `PortfolioImage` owns photo load/error state. Actual async owners control visibility across auth, portfolio, liveness, account and BrokerDesk; idle human steps retain actionable instructions. Integrated with main `f46ccf1`, three-round fresh review completed, remote follow-up branch `fix/nak-71-loading-feedback`; release is separate.
+  October 20 local follow-up aligns orb canvas ink with enclosing text (including
+  inverted actions), removes the detached disk and names two upload controls.
+  918 responsive layout/state samples across 320–3840px/both themes and 179 broad
+  Chromium interactions pass; 1,659 unit tests, coverage gates, build and static
+  checks pass. Fresh scoped review has no material orb findings. Overall frontend
+  finish remains incomplete: mobile WebKit native-select sizing and auth-test
+  failures are open; production WebKit needs a trusted HTTPS preview. See the
+  feature record for exact coverage and limitations. No release performed.
 
 - [NAK-105 published portfolio experience and customer validation](features/published-portfolio-experience.md): grouped link actions, quiet completed liveness presentation, responsive viewer navigation/footer, lighter initial resources and canonical customer-form corrections. Integrated with main `888e935`; 1,228 unit tests and 57 feature-coverage gates pass, with full responsive checks plus corrected-case reruns recorded in the feature. Final fresh review has no material findings; prepared for a draft feedback PR, with hosted CI pending. Simulated mobile LCP remains around 3.1s against a 2.5s target; no deployment or legal certification. Primary intended audiences: India/USA; operating jurisdiction remains unknown.
 
@@ -167,4 +267,4 @@ maintenance/health scheduling require coordinated migration/application rollout.
 Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
 
-- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, keyboard dismissal and existing session handling. The shared theme control now uses a sun/moon slider before the avatar; My brokers navigation is deferred.
+- [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The avatar displays the account holder’s explicit first and last name through a streamed identity region. The shared theme control uses a sun/moon slider before the avatar; My brokers navigation is deferred.

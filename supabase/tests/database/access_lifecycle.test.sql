@@ -277,8 +277,9 @@ select is(public.resolve_public_portfolio('phase2_secure_token_1'), null, 'rotat
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 0, 'rotation revokes every outstanding grant');
 select is((select status::text from public.interest_requests limit 1), 'closed', 'rotation closes approved access requests');
 
+select set_config('test.readable_replacement_path', (select share_token from public.portfolios where id='a3000000-0000-4000-8000-000000000001'), true);
 select is(public.unpublish_portfolio_transaction() ->> 'status', 'unpublished', 'unpublish completes as one owner transaction');
-select is(public.resolve_public_portfolio('rotated_secure_tok_01'), null, 'unpublish removes public access without deleting the draft');
+select is(public.resolve_public_portfolio((select share_token from public.portfolios where id='a3000000-0000-4000-8000-000000000001')), null, 'unpublish removes public access without deleting the draft');
 select ok(not public.is_published_portfolio('a3000000-0000-4000-8000-000000000001'), 'Storage publication checks fail closed after unpublish');
 select is((select count(*)::integer from public.access_audit_events where event_type in ('portfolio_rotated', 'portfolio_unpublished')), 2, 'rotation and unpublish are both present in owner history');
 
@@ -350,7 +351,7 @@ insert into public.reveal_grants (
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000002"}';
-select is(public.resolve_approved_portfolio('rotated_secure_tok_01'), null, 'an expired grant cannot resolve Complete Portfolio data');
+select is(public.resolve_approved_portfolio(current_setting('test.readable_replacement_path')), null, 'an expired grant cannot resolve Complete Portfolio data');
 select is((select count(*)::integer from public.reveal_grants), 0, 'RLS hides expired grants from the viewer');
 reset role;
 select is((select count(*)::integer from public.access_audit_events where grant_id = 'a6000000-0000-4000-8000-000000000002' and event_type = 'grant_expired'), 1, 'the first expired access attempt records one expiry event');

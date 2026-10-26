@@ -96,7 +96,7 @@ test(`mobile publishing review preserves checklist space and pinned actions: ${t
     await page.evaluate(value => localStorage.setItem("nakshatra-app-theme", value), theme);
     await page.reload();
     await page.getByRole("button", { name: "Edit details", exact: true }).click();
-    await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+    await page.getByRole("button", { name: "Save & review", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Review and publish", exact: true });
     await expect(dialog).toBeVisible();
     for (const width of [320, 375, 402, 768, 1440]) {

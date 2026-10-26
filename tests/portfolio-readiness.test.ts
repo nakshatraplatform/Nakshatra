@@ -45,7 +45,7 @@ describe("portfolio completion", () => {
       const parsed = portfolioEditorPublishSchema.safeParse(draft);
       const completion = calculatePortfolioCompletion(draft, hasPhoto, parsed);
       expect(completion).toEqual(calculatePortfolioCompletion(draft, hasPhoto));
-      expect(editorFieldIssues(draft, hasPhoto, completion, parsed)).toEqual(editorFieldIssues(draft, hasPhoto));
+      expect(editorFieldIssues(draft, hasPhoto, undefined, { completion, parsed })).toEqual(editorFieldIssues(draft, hasPhoto));
       expect(completion.missing.some(item => item.key === "primary_photo")).toBe(!hasPhoto);
     }
   });

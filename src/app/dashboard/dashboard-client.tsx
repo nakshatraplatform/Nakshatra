@@ -3,19 +3,32 @@
 import { RelationshipLifecycle, ReceivedBrokerIntroductions, type RelationshipStage } from "@/components/dashboard/RelationshipLifecycle";
 import { PhotoManager, HoroscopeManager } from "@/components/dashboard/MediaManagers";
 import { usePortfolioMediaState, usePortfolioMediaActions } from "@/features/media/client/usePortfolioMedia";
+import { portfolioEditorPublishSchema } from "@/features/portfolio/form-contract";
 import { CreatorOnboardingFeedback } from "@/components/feedback/CreatorOnboardingFeedback";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 import { ThemeSwitch } from "@/components/theme/ThemeSwitch";
 import { useModalFocus } from "@/components/useModalFocus";
+import { useHydrated } from "@/lib/ui/use-hydrated";
+import { authoringChoiceErrors } from "@/features/portfolio/authoring-choices";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { type Portfolio, type PortfolioData, type PortfolioHoroscope, type PortfolioMedia, normalizePortfolioPrivacyMode } from "@/types/portfolio";
+import {
+  type Portfolio,
+  type PortfolioData,
+  type PortfolioHoroscope,
+  type PortfolioMedia,
+  normalizePortfolioPrivacyMode,
+} from "@/types/portfolio";
 import type { CandidateRecovery } from "@/features/identity-verification/candidate-recovery.types";
 import type { PortfolioApiFailure } from "@/features/portfolio/client/portfolio-dashboard.api";
-import type { PortfolioAccessSummary } from "@/features/access/server/access.contract";
-import { isShareablePrimaryPhoto } from "@/features/media/portfolio-photo";
+import type {
+  PortfolioAccessSummary,
+} from "@/features/access/server/access.contract";
+import {
+  isShareablePrimaryPhoto,
+} from "@/features/media/portfolio-photo";
 import {
   BlueprintForm,
   PortfolioMobileSectionNav,
@@ -24,13 +37,32 @@ import {
   type PortfolioEditorSection,
 } from "@/components/portfolio/BlueprintForm";
 import { IdentityVerificationDashboard } from "@/features/identity-verification/client/identity-verification-dashboard";
-import { Eye, Clock, Edit3, Share2, RefreshCw, RotateCcw, Save, Send, LockKeyhole, PanelRightOpen, ExternalLink, ShieldCheck, Inbox, CheckCircle2, Circle, ArrowLeft } from "lucide-react";
+import {
+  Eye,
+  ArrowRight,
+  Clock,
+  Edit3,
+  Share2,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Send,
+  LockKeyhole,
+  PanelRightOpen,
+  ExternalLink,
+  ShieldCheck,
+  Inbox,
+  CheckCircle2,
+  Circle,
+  ArrowLeft,
+} from "lucide-react";
 import { normalizePortfolioName } from "@/features/portfolio/name";
-import { portfolioEditorDraftSchema, portfolioEditorPublishSchema } from "@/features/portfolio/form-contract";
+import { portfolioEditorDraftSchema } from "@/features/portfolio/form-contract";
 import { editorFieldIssues, editorFieldLabel, editorFieldTarget, portfolioFieldAnchor, type EditorFieldIssue } from "@/features/portfolio/editor-validation";
 import { buildWhatsAppShareMessage } from "@/features/portfolio/whatsapp-share";
 import type { PilotAccessState } from "@/features/pilot-access/server/pilot-access.contract";
 import type { DashboardInterest } from "@/features/interest/server/interest-dashboard.contract";
+import { type RelationshipPage } from "@/features/access/relationship-dashboard.contract";
 import type { OwnerBrokerIntroductionResponse, ReceivedBrokerIntroduction } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { calculatePortfolioCompletion, editorSectionForPath, isProfileFullyComplete } from "@/features/portfolio/readiness";
 import {
@@ -62,6 +94,8 @@ interface Props {
   publicationReadiness?: PublicationReadiness;
   brokerIntroductionResponses?: OwnerBrokerIntroductionResponse[];
   receivedBrokerIntroductions?: ReceivedBrokerIntroduction[];
+  relationshipOverview?: RelationshipPage | null;
+  relationshipsError?: boolean;
 }
 
 const EMPTY_ACCESS_SUMMARY: PortfolioAccessSummary = { grants: [], events: [] };
@@ -84,14 +118,20 @@ export default function DashboardClient({
   publicationReadiness = EMPTY_PUBLICATION_READINESS,
   brokerIntroductionResponses = [],
   receivedBrokerIntroductions = [],
+  relationshipOverview = null,
+  relationshipsError = false,
 }: Props) {
+  const hydrated = useHydrated();
   const [copied, setCopied] = useState(false);
   const [renewing, setRenewing] = useState(false);
   const [formOpen, setFormOpen] = useState(initialEditorOpen && canCreatePortfolio);
   const [draftData, setDraftData] = useState<PortfolioData>(() =>
     normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode)
   );
-  const savedDraftRef = useRef<PortfolioData>(draftData);
+  const [savedAuthoringBaseline, setSavedAuthoringBaseline] = useState<PortfolioData>(() => normalizePortfolioData(portfolio?.draft_data, portfolio?.privacy_mode));
+  const savedDraftRef = useRef(savedAuthoringBaseline);
+  const mediaState = usePortfolioMediaState({ initialMedia: media, initialMediaUrls, initialHoroscope: horoscope });
+  const { portfolioMedia, mediaUrls, portfolioHoroscope, mediaMutations, removingHoroscope, uploadingMedia, uploadingHoroscope, photoInputRef, horoscopeInputRef } = mediaState;
   const [preparingPreview, setPreparingPreview] = useState(false);
   const [refreshing, startRefresh] = useTransition();
   const [savingDraft, setSavingDraft] = useState(false);
@@ -113,10 +153,9 @@ export default function DashboardClient({
   const [draftError, setDraftError] = useState<string | null>(null);
   const [activePortfolioId, setActivePortfolioId] = useState(portfolio?.id ?? null);
   const [savedCandidateId, setSavedCandidateId] = useState<string | null>(null);
-  const mediaState = usePortfolioMediaState({ initialMedia: media, initialMediaUrls, initialHoroscope: horoscope });
-  const { portfolioMedia, mediaUrls, portfolioHoroscope, mediaMutations, removingHoroscope, uploadingMedia, uploadingHoroscope, photoInputRef, horoscopeInputRef } = mediaState;
   const [interestItems, setInterestItems] = useState(interests);
   const [accessGrants, setAccessGrants] = useState(accessSummary.grants);
+  const [relationshipCounts, setRelationshipCounts] = useState(relationshipOverview?.counts);
   const [expandedRelationshipStages, setExpandedRelationshipStages] = useState<Record<RelationshipStage, boolean>>({
     awaiting: false,
     "set-aside": false,
@@ -138,7 +177,8 @@ export default function DashboardClient({
   const focusedFieldRequestRef = useRef(pendingFieldFocus);
   const [serverFieldIssues, setServerFieldIssues] = useState<EditorFieldIssue[]>([]);
   const validationIssues = useMemo(() => validationRequested
-    ? editorFieldIssues(draftData, hasShareablePrimaryPhoto, completion, publishValidation) : [], [validationRequested, draftData, hasShareablePrimaryPhoto, completion, publishValidation]);
+    ? editorFieldIssues(draftData, hasShareablePrimaryPhoto, savedAuthoringBaseline, { completion, parsed: publishValidation }) : [],
+    [validationRequested, draftData, hasShareablePrimaryPhoto, savedAuthoringBaseline, completion, publishValidation]);
 
   useEffect(() => {
     if (!pendingFieldFocus || !formOpen || focusedFieldRequestRef.current === pendingFieldFocus) return;
@@ -172,6 +212,7 @@ export default function DashboardClient({
   const pendingEditorSectionRef = useRef<PortfolioEditorSection | null>(null);
   const persistedEditorSectionRef = useRef(publicationReadiness.lastEditorSection);
   const currentEditorSectionRef = useRef(editorSection);
+  const sectionFocusRequestedRef = useRef(false);
   const editorMountedRef = useRef(true);
   const previewRequestQueue = useRef(Promise.resolve());
   const router = useRouter();
@@ -198,17 +239,21 @@ export default function DashboardClient({
   }, [formOpen, reviewOpen, router]);
 
   useEffect(() => { currentEditorSectionRef.current = editorSection; }, [editorSection]);
+  useEffect(() => {
+    if (!sectionFocusRequestedRef.current || !formOpen) return;
+    sectionFocusRequestedRef.current = false;
+    editorDialogRef.current?.querySelector<HTMLElement>(".biodata-section-heading h3")?.focus({ preventScroll: true });
+  }, [editorSection, formOpen]);
 
   const onVerificationStatusChange = useCallback((state: CandidateRecovery["state"]) => {
     // Transient status refreshes can race the external Didit navigation in Safari.
     // Reload server-owned publication readiness only when its proof state differs.
     if ((state === "verified") !== (readinessState.verificationStatus === "verified")) refreshDashboard();
   }, [readinessState.verificationStatus, refreshDashboard]);
-  const disclosedCategories = fullViewDisclosureCategories(
-    draftData,
-    portfolioMedia,
-    portfolioHoroscope
-  );
+
+  const editorSectionIndex = PORTFOLIO_EDITOR_SECTIONS.findIndex(section => section.id === editorSection);
+  const previousEditorSection = PORTFOLIO_EDITOR_SECTIONS[editorSectionIndex - 1];
+  const nextEditorSection = PORTFOLIO_EDITOR_SECTIONS[editorSectionIndex + 1];
   const nextRequiredSection = navigableSection(completion.nextEditorSection as PortfolioEditorSection);
   const nextRequiredSectionLabel = PORTFOLIO_EDITOR_SECTIONS.find((section) => section.id === nextRequiredSection)?.label || "introduction details";
   const verificationComplete = canPublishWithVerificationStatus(readinessState.verificationStatus);
@@ -226,13 +271,40 @@ export default function DashboardClient({
     && publishedProfileComplete
     && canPublishWithVerificationStatus(readinessState.verificationStatus);
   const viewerAccessAvailable = Boolean(portfolio?.is_published && shareUrl && publicShareReady && !isExpired);
-  const pendingInterestCount = accessSummary.counts?.awaiting ?? interestItems.filter(
+  const pendingInterestCount = relationshipCounts?.awaiting ?? interestItems.filter(
     (item) => item.status === "new" || item.status === "pending_review"
   ).length;
-  const activeAccessCount = accessSummary.counts?.access ?? accessGrants.filter((grant) => grant.status === "active").length;
+  const activeAccessCount = relationshipCounts?.active ?? accessGrants.filter((grant) => grant.status === "active").length;
   const showRelationshipDashboard = Boolean(
-    portfolio?.published_at || interestItems.length || accessGrants.length || accessEvents.length || brokerIntroductionResponses.length
+    relationshipsError || portfolio?.published_at || interestItems.length || accessGrants.length || accessEvents.length || brokerIntroductionResponses.length
   );
+
+  useEffect(() => {
+    if (draftSaveState === "saved") return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [draftSaveState]);
+
+  useEffect(() => {
+    if (draftSaveState !== "unsaved" || !canCreatePortfolio || savingDraft) return;
+    // Intermediate dates/phones/names may be malformed while typing. Manual save
+    // still returns actionable errors; autosave need not send a known rejection.
+    if (!portfolioEditorDraftSchema.safeParse(draftData).success) return;
+    if (Object.keys(authoringChoiceErrors(draftData, savedDraftRef.current)).length) return;
+    const revision = draftRevisionRef.current;
+    if (lastAutosaveAttemptRevisionRef.current === revision) return;
+    const timer = window.setTimeout(() => {
+      lastAutosaveAttemptRevisionRef.current = revision;
+      void persistDashboardDraft({ refresh: false, silent: true });
+    }, 2000);
+    return () => window.clearTimeout(timer);
+    // The save operation intentionally uses the latest render's draft snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftData, draftSaveState, canCreatePortfolio, savingDraft]);
 
   useEffect(() => {
     editorMountedRef.current = true;
@@ -493,6 +565,7 @@ export default function DashboardClient({
         return false;
       }
       savedDraftRef.current = result.data.draftData ?? draftData;
+      setSavedAuthoringBaseline(savedDraftRef.current);
       if (result.data.readiness) {
         savedReadinessRef.current = draftRevisionRef.current === savingRevision
           ? result.data.readiness
@@ -535,14 +608,16 @@ export default function DashboardClient({
     return persistDashboardDraft();
   }
 
-  async function reviewPortfolio() {
+  async function saveAndReviewPortfolio() {
+    const needsSave = draftSaveState !== "saved" || !activePortfolioId;
+    // The editor's explicit Save action preserves incomplete private work too.
+    // Its refresh remains deferred until the owner leaves both editor and review.
+    if (needsSave && !await persistDashboardDraft()) return;
     if (!validateEditor()) return;
     if (draftData.privacy_mode === "private") {
       setDraftError("Update the saved sharing setup in Appearance & contact, then review the public introduction before publishing.");
       return;
     }
-    const needsSave = draftSaveState !== "saved" || !activePortfolioId;
-    if (needsSave && !await persistDashboardDraft({ refresh: false })) return;
     await openFinalReview(needsSave);
   }
 
@@ -683,6 +758,7 @@ export default function DashboardClient({
     const destination = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === navigableSection(section));
     const current = PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === editorSection);
     if (destination > current && !validateEditor(destination)) return;
+    sectionFocusRequestedRef.current = true;
     setEditorSection(navigableSection(section));
     currentEditorSectionRef.current = section;
     const editorScroll = document.querySelector<HTMLElement>(".dashboard-editor-scroll");
@@ -738,7 +814,7 @@ export default function DashboardClient({
   }
 
   function validateEditor(beforeSection = PORTFOLIO_EDITOR_SECTIONS.length) {
-    const issues = (validationRequested ? validationIssues : editorFieldIssues(draftData, hasShareablePrimaryPhoto, completion, publishValidation)).filter(issue =>
+    const issues = editorFieldIssues(draftData, portfolioMedia.some(isShareablePrimaryPhoto), savedDraftRef.current).filter(issue =>
       PORTFOLIO_EDITOR_SECTIONS.findIndex(item => item.id === issue.section) < beforeSection);
     setValidationRequested(true);
     if (!issues.length) return true;
@@ -746,38 +822,10 @@ export default function DashboardClient({
     return false;
   }
 
-
   const { uploadPhotos, updatePhoto, deletePhoto, uploadHoroscopeFile, reviewHoroscope, removeHoroscope } = usePortfolioMediaActions({
     state: mediaState, activePortfolioId, setDraftError, handlePortfolioApiFailure,
     onPersistedChange: () => invalidatePreviewReview(true), onRefresh: refreshDashboard,
   });
-
-  useEffect(() => {
-    if (draftSaveState === "saved") return;
-    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warnBeforeLeaving);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
-  }, [draftSaveState]);
-
-  useEffect(() => {
-    if (draftSaveState !== "unsaved" || !canCreatePortfolio || savingDraft) return;
-    // Intermediate dates/phones/names may be malformed while typing. Manual save
-    // still returns actionable errors; autosave need not send a known rejection.
-    if (!portfolioEditorDraftSchema.safeParse(draftData).success) return;
-    const revision = draftRevisionRef.current;
-    if (lastAutosaveAttemptRevisionRef.current === revision) return;
-    const timer = window.setTimeout(() => {
-      lastAutosaveAttemptRevisionRef.current = revision;
-      void persistDashboardDraft({ refresh: false, silent: true });
-    }, 2000);
-    return () => window.clearTimeout(timer);
-    // The save operation intentionally uses the latest render's draft snapshot.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftData, draftSaveState, canCreatePortfolio, savingDraft]);
-
 
   return (
     <div className="contents">
@@ -834,6 +882,7 @@ export default function DashboardClient({
                 <button
                   type="button"
                   onClick={() => setFormOpen(true)}
+                  disabled={!hydrated}
                   className="dashboard-secondary-action"
                 >
                   <PanelRightOpen className="h-4 w-4" />
@@ -860,7 +909,7 @@ export default function DashboardClient({
                 </div>
                 {!viewerAccessAvailable && <div className="dashboard-welcome-actions">
                   {canCreatePortfolio && (
-                    <button type="button" onClick={() => setFormOpen(true)} className="dashboard-edit-action dashboard-secondary-action">
+                    <button type="button" onClick={() => setFormOpen(true)} disabled={!hydrated} className="dashboard-edit-action dashboard-secondary-action">
                       <Edit3 className="h-4 w-4" aria-hidden="true" /> <span>Edit details</span>
                     </button>
                   )}
@@ -871,8 +920,9 @@ export default function DashboardClient({
                         {renewing ? "Reactivating link..." : "Reactivate public link"}
                       </button>
                     )
-                    : <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>}
+                    : <button type="button" onClick={shareWhatsApp} disabled={!hydrated} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" /> Share on WhatsApp</button>}
                 </div>}
+                {viewerAccessAvailable && <div className="dashboard-welcome-actions"><a href="#introduction-link" className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share introduction</a></div>}
               </section>
           )}
 
@@ -886,11 +936,49 @@ export default function DashboardClient({
           {canCreatePortfolio && activeCandidateId ? <div id="liveness-check" className="dashboard-liveness-slot scroll-mt-28" tabIndex={-1}>
             <IdentityVerificationDashboard candidateId={activeCandidateId} onStatusChange={onVerificationStatusChange} hideWhenVerified initiallyVerified={readinessState.verificationStatus === "verified"} />
           </div> : null}
+          {showRelationshipDashboard && <RelationshipLifecycle
+            renderedAt={renderedAt}
+            expandedStages={expandedRelationshipStages}
+            onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
+            interests={interestItems}
+            grants={accessGrants}
+            viewerAccessAvailable={viewerAccessAvailable}
+            events={accessEvents}
+            brokerResponses={brokerIntroductionResponses}
+            overview={relationshipOverview && relationshipCounts ? { ...relationshipOverview, counts: relationshipCounts } : relationshipOverview}
+            loadFailed={relationshipsError}
+            onRetry={refreshDashboard}
+            onDecision={(id, status, previous) => {
+              setRelationshipCounts(current => current ? { ...current,
+                awaiting: Math.max(0, current.awaiting + (status === "pending_review" ? 1 : 0) - (previous && ["new", "pending_review"].includes(previous) ? 1 : 0)),
+                setAside: Math.max(0, current.setAside + (status === "rejected" ? 1 : 0) - (previous === "rejected" ? 1 : 0)),
+                active: current.active + (status === "approved" ? 1 : 0),
+              } : current);
+              setInterestItems((current) =>
+                current.map((interest) =>
+                  interest.id === id ? { ...interest, status } : interest
+                )
+              );
+              refreshDashboard();
+            }}
+            onGrantChange={(grantId, action, expiresAt, previous) => {
+              const wasActive = previous === "active";
+              setRelationshipCounts(current => current ? { ...current, active: Math.max(0, current.active + (action === "revoke" ? -1 : wasActive ? 0 : 1)) } : current);
+              setAccessGrants((current) => current.map((grant) =>
+                grant.id === grantId
+                  ? action === "revoke"
+                    ? { ...grant, status: "revoked", revokedAt: new Date().toISOString() }
+                    : { ...grant, status: "active", expiresAt: expiresAt || grant.expiresAt }
+                  : grant
+              ));
+              refreshDashboard();
+            }}
+          />}
           {portfolio && <section className="dashboard-overview" aria-label="Introduction overview">
             {viewerAccessAvailable ? (
-              <section className="dashboard-glass dashboard-sharing-card" aria-label="Introduction link">
+              <section id="introduction-link" className="dashboard-glass dashboard-sharing-card scroll-mt-24" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Share this link for your public introduction. You choose who sees your private details.</p>
+                <p className="dashboard-sharing-description">Anyone with this name-based link can see your public introduction. Private details need your approval.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -904,12 +992,12 @@ export default function DashboardClient({
                   <span role="status" className="sr-only">{copied ? "Introduction link copied." : ""}</span>
                 </div>
                 <div className="dashboard-sharing-actions">
-                  {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
-                  <button type="button" onClick={shareWhatsApp} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
+                  {canCreatePortfolio && <button type="button" onClick={() => setFormOpen(true)} disabled={!hydrated} className="dashboard-secondary-action"><Edit3 className="h-4 w-4" aria-hidden="true" />Edit details</button>}
+                  <button type="button" onClick={shareWhatsApp} disabled={!hydrated} className="dashboard-primary-action"><Share2 className="h-4 w-4" aria-hidden="true" />Share on WhatsApp</button>
                 </div>
-                <section className="dashboard-link-settings" aria-label="Manage link">
-                  <h3 className="text-sm font-semibold">Manage link</h3>
-                  <p>Rotating replaces the URL. Unpublishing turns off viewer access.</p>
+                <details className="dashboard-link-settings" aria-label="Manage link">
+                  <summary className="dashboard-manage-link-summary">Manage link</summary>
+                  <p>Rotating creates a new name-based URL and permanently retires the old link. Duplicate names receive a number. Unpublishing turns off viewer access.</p>
                   <div className="dashboard-link-controls" role="group" aria-label="Manage introduction link">
                   {canCreatePortfolio && (
                     <button
@@ -930,7 +1018,7 @@ export default function DashboardClient({
                     {unpublishing ? "Unpublishing..." : "Unpublish"}
                   </button>
                   </div>
-                </section>
+                </details>
               </section>
             ) : portfolio ? (
               <div className="dashboard-glass p-4">
@@ -942,7 +1030,7 @@ export default function DashboardClient({
                     ? "Review and publish your self-created introduction to activate its link. Test publishing access does not confirm identity."
                     : "Your saved introduction, interests, sharing history, and view totals remain available here. Public sharing requires your own introduction and current verification."}
                 </p>
-                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" className="dashboard-primary-action mt-4" onClick={() => {
+                {publishedProfileNeedsUpdate && canCreatePortfolio && <button type="button" disabled={!hydrated} className="dashboard-primary-action mt-4" onClick={() => {
                   if (completion.readyToPublish) void openFinalReview();
                   else openEditorAtRequiredStep();
                 }}>Update Profile to Resume Sharing</button>}
@@ -978,21 +1066,21 @@ export default function DashboardClient({
             </div>}
             {portfolio?.published_at && <div className="dashboard-stats-grid" aria-label="Introduction activity at a glance">
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
-                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Latest interests</span></div>
-                <p className="dashboard-stat-value">{interestItems.length === 50 ? "50+" : interestItems.length}</p>
-                <span className="dashboard-stat-caption">{interestItems.length === 50 ? "Showing the latest 50 interests" : "Interests received"}</span>
+                <div className="dashboard-stat-label"><Inbox aria-hidden="true" /><span>Interests received</span></div>
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : relationshipCounts?.interests ?? interestItems.length}</p>
+                <span className="dashboard-stat-caption">{relationshipsError ? "Unavailable · retry sharing status" : "All submitted interests"}</span>
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state={pendingInterestCount > 0 ? "action" : "neutral"}>
                 <div className="dashboard-stat-label"><Clock aria-hidden="true" /><span>Needs review</span></div>
-                <p className="dashboard-stat-value">{pendingInterestCount}</p>
-                {pendingInterestCount > 0
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : pendingInterestCount}</p>
+                {relationshipsError ? <span className="dashboard-stat-caption">Unavailable</span> : pendingInterestCount > 0
                   ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, awaiting: true }))}>Review interests</a>
-                  : <span className="dashboard-stat-caption">{interestItems.length === 50 ? "None in latest 50" : "All caught up"}</span>}
+                  : <span className="dashboard-stat-caption">All caught up</span>}
               </div>
               <div className="dashboard-glass dashboard-stat-card" data-stat-state="neutral">
                 <div className="dashboard-stat-label"><ShieldCheck aria-hidden="true" /><span>Currently sharing with</span></div>
-                <p className="dashboard-stat-value">{activeAccessCount}</p>
-                {activeAccessCount > 0
+                <p className="dashboard-stat-value">{relationshipsError ? "—" : activeAccessCount}</p>
+                {relationshipsError ? <span className="dashboard-stat-caption">Unavailable</span> : activeAccessCount > 0
                   ? viewerAccessAvailable
                     ? <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Manage access</a>
                     : <a className="dashboard-stat-detail" href="#introductions-and-access" onClick={() => setExpandedRelationshipStages((current) => ({ ...current, access: true }))}>Viewing unavailable · Manage</a>
@@ -1007,36 +1095,6 @@ export default function DashboardClient({
           </section>}
 
           <ReceivedBrokerIntroductions introductions={receivedBrokerIntroductions} />
-          {showRelationshipDashboard && <RelationshipLifecycle
-            renderedAt={renderedAt}
-            expandedStages={expandedRelationshipStages}
-            onToggleStage={(stage) => setExpandedRelationshipStages((current) => ({ ...current, [stage]: !current[stage] }))}
-            interests={interestItems}
-            grants={accessGrants}
-            counts={accessSummary.counts}
-            viewerAccessAvailable={viewerAccessAvailable}
-            events={accessEvents}
-            brokerResponses={brokerIntroductionResponses}
-            disclosedCategories={disclosedCategories}
-            onDecision={(id, status) => {
-              setInterestItems((current) =>
-                current.map((interest) =>
-                  interest.id === id ? { ...interest, status } : interest
-                )
-              );
-              refreshDashboard();
-            }}
-            onGrantChange={(grantId, action, expiresAt) => {
-              setAccessGrants((current) => current.map((grant) =>
-                grant.id === grantId
-                  ? action === "revoke"
-                    ? { ...grant, status: "revoked", revokedAt: new Date().toISOString() }
-                    : { ...grant, status: "active", expiresAt: expiresAt || grant.expiresAt }
-                  : grant
-              ));
-              refreshDashboard();
-            }}
-          />}
           </>}
           </div>
           {portfolio && completion.readyToPublish && draftSaveState === "saved" && <CreatorOnboardingFeedback />}
@@ -1168,32 +1226,28 @@ export default function DashboardClient({
       {canCreatePortfolio && formOpen && (
         <div className="dashboard-editor fixed inset-0 z-50 bg-[color:var(--ui-scrim)]/45 backdrop-blur-sm">
           <div ref={editorDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="portfolio-editor-heading" className="dashboard-editor-surface absolute inset-0 flex h-full w-full flex-col overflow-hidden dashboard-dialog-elevation">
+            <fieldset disabled={!hydrated} className="contents">
             <div className="dashboard-editor-header flex-none border-b border-[var(--workspace-border)] px-4 py-4 sm:px-6 lg:px-8">
               <div className="dashboard-editor-header-layout mx-auto flex w-full max-w-[90rem] items-center justify-between gap-4">
-                <div>
-                  <div className="flex flex-wrap items-center gap-4">
+                <div className="dashboard-editor-heading">
                     <h2 id="portfolio-editor-heading" tabIndex={-1} className="text-lg font-semibold">Introduction details</h2>
                     <span className={`dashboard-save-state is-${draftSaveState}`} aria-live="polite">
                       {draftSaveState === "saving"
                         ? "Saving..."
                         : draftSaveState === "saved"
-                          ? portfolio?.is_published ? "Draft saved" : "Saved"
+                          ? "Draft saved"
                           : "Changes not saved"}
                     </span>
-                  </div>
-                  <p className="text-sm text-[var(--workspace-muted)]">
-                    Complete what you know. Save your work and continue later.
-                  </p>
                 </div>
-                <div className="app-header-actions"><ThemeSwitch /><button
+                <div className="dashboard-editor-header-actions"><button type="button" aria-label="Preview" title="Preview introduction" onClick={openEarlyPreview} disabled={savingDraft || preparingPreview || !completion.basicsComplete} className="dashboard-secondary-action dashboard-editor-icon-action"><Eye className="h-4 w-4" aria-hidden="true" /></button><ThemeSwitch /><button
                   type="button"
                   aria-label="Back to dashboard"
+                  title="Back to dashboard"
                   onClick={closePortfolioEditor}
-                  className="dashboard-secondary-action flex-none"
+                  className="dashboard-secondary-action dashboard-editor-icon-action"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Back to dashboard</span>
-                  <span className="sm:hidden">Dashboard</span>
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  <span className="dashboard-editor-dashboard-label">Dashboard</span>
                 </button></div>
               </div>
             </div>
@@ -1204,11 +1258,12 @@ export default function DashboardClient({
             <div className="dashboard-editor-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
               <div className="mx-auto w-full max-w-[90rem]">
                 <BlueprintForm
-                  data={draftData}
                   completion={completion}
+                  data={draftData}
                   onUpdate={updateSection}
                   activeSection={editorSection}
                   onSectionChange={rememberEditorSection}
+                  showSectionNavigation={false}
                   validationIssues={[...validationIssues, ...serverFieldIssues.filter(issue => !validationIssues.some(local => local.path === issue.path))]}
                   onErrorSelect={showFieldIssue}
                   hasShareablePrimaryPhoto={portfolioMedia.some(isShareablePrimaryPhoto)}
@@ -1240,7 +1295,8 @@ export default function DashboardClient({
                     </>
                   }
                 />
-                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                <p className="mt-4 text-xs leading-5 text-[var(--workspace-muted)]">Drafts stay private. Only publishing updates what people see.</p>
+                <p className="dashboard-editor-mobile-legal mt-6 text-xs leading-5 text-[var(--workspace-muted)]">Share accurate details you have permission to use. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
               </div>
             </div>
 
@@ -1261,54 +1317,31 @@ export default function DashboardClient({
                 )}
                 <div className="dashboard-editor-footer-layout">
                   <div className="dashboard-editor-footer-notes"><p className="dashboard-editor-footer-copy text-sm leading-6 text-[var(--workspace-muted)]">
-                    {editorSection === "privacy"
-                      ? "Save your answers, then confirm consent in Review and publish. Previews are optional."
-                      : portfolio?.is_published
-                      ? "Changes autosave as a draft. Review and publish to update what people see."
-                      : "Changes autosave as a draft. Publishing creates the introduction people can view."}
+                    Changes save privately. Review before publishing.
                   </p>
-                  <p className="text-xs leading-5 text-[var(--workspace-muted)]">You are responsible for the accuracy and permission to share what you enter. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
+                  <p className="text-xs leading-5 text-[var(--workspace-muted)]">Share accurate details you have permission to use. <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms &amp; Conditions</a> · <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy and corrections</a></p>
                   </div><div className="dashboard-editor-actions">
-                    <button
-                      type="button"
-                      onClick={openEarlyPreview}
-                      disabled={savingDraft || preparingPreview || !completion.basicsComplete}
-                      className="dashboard-secondary-action flex-1 sm:flex-none"
-                    >
-                      <Eye className="h-4 w-4" />
-                      Preview
+                    <button type="button" aria-label="Back" title="Previous section" disabled={!previousEditorSection || savingDraft || openingReview} onClick={() => previousEditorSection && rememberEditorSection(previousEditorSection.id)} className="dashboard-secondary-action dashboard-editor-step-action">
+                      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
-                      onClick={saveDashboardDraft}
-                      disabled={savingDraft}
-                      className="dashboard-editor-save-action dashboard-secondary-action flex-1 sm:flex-none"
-                    >
-                      <Save className="h-4 w-4" />
-                      {savingDraft ? "Saving..." : "Save draft"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={reviewPortfolio}
+                      onClick={saveAndReviewPortfolio}
                       disabled={publishing || savingDraft || openingReview}
-                      aria-label={savingDraft
-                        ? "Saving..."
-                        : portfolio?.is_published
-                          ? "Review saved changes"
-                          : "Review and publish"}
-                      className="dashboard-editor-review-action dashboard-primary-action flex-1 sm:flex-none"
+                      aria-label="Save & review"
+                      className={`dashboard-editor-review-action ${nextEditorSection ? "dashboard-secondary-action" : "dashboard-primary-action"}`}
                     >
-                      <Send className={`h-4 w-4 ${publishing ? "animate-pulse" : ""}`} />
-                      <span>{savingDraft
-                          ? "Saving..."
-                          : portfolio?.is_published
-                            ? "Review saved changes"
-                            : "Review and publish"}</span>
+                      <Save className="h-4 w-4" aria-hidden="true" />
+                      <span>{savingDraft ? "Saving…" : openingReview ? "Opening review…" : "Save & review"}</span>
                     </button>
+                    {nextEditorSection && <button type="button" aria-label={`Continue: ${nextEditorSection.label}`} title={`Continue: ${nextEditorSection.label}`} onClick={() => rememberEditorSection(nextEditorSection.id)} disabled={savingDraft || openingReview} className="dashboard-primary-action dashboard-editor-step-action">
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </button>}
                   </div>
                 </div>
               </div>
             </div>
+            </fieldset>
           </div>
         </div>
       )}
@@ -1356,6 +1389,7 @@ function CreatorReadinessTracker({
   onVerification: () => void;
   openingReview: boolean;
 }) {
+  const hydrated = useHydrated();
   const steps = [
     { label: "Basics", complete: completion.basicsComplete },
     { label: "Required details", complete: completion.readyToPublish },
@@ -1393,7 +1427,7 @@ function CreatorReadinessTracker({
           {!completion.readyToPublish && <p className="mt-2 text-sm text-[var(--workspace-muted)]">Resume your saved draft at {completion.missing[0]?.label || completion.invalidAnswers[0]?.label || "the next required answer"}.</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {nextAction && <button type="button" onClick={nextAction.onClick} disabled={openingReview} className="dashboard-primary-action">{openingReview ? "Loading saved review…" : nextAction.label}</button>}
+          {nextAction && <button type="button" onClick={nextAction.onClick} disabled={!hydrated || openingReview} className="dashboard-primary-action">{openingReview ? "Loading saved review…" : nextAction.label}</button>}
         </div>
       </div>
 
@@ -1427,72 +1461,6 @@ function CreatorReadinessTracker({
       ) : null}
     </section>
   );
-}
-
-function fullViewDisclosureCategories(
-  data: PortfolioData,
-  media: PortfolioMedia[],
-  horoscope: PortfolioHoroscope | null
-) {
-  const categories: string[] = [];
-  if (containsDisclosure({
-    name: data.personal.name,
-    gender: data.personal.gender,
-    location: data.personal.current_location,
-    maritalStatus: data.personal.marital_status,
-    citizenship: data.personal.citizenship,
-    story: data.personal.profile_summary || data.personal.short_bio,
-    height: data.vitals?.height,
-  })) {
-    categories.push("Personal profile, location, and story details provided");
-  }
-  if (data.personal.dob?.trim()) categories.push("Exact date of birth");
-  const birthDetails = [
-    data.astrology?.time_of_birth?.trim() ? "time" : "",
-    data.personal.place_of_birth?.trim() ? "place" : "",
-  ].filter(Boolean);
-  if (birthDetails.length) categories.push(`Exact ${birthDetails.join(" and ")} of birth`);
-  if (containsDisclosure(data.education) || containsDisclosure(data.career)) {
-    categories.push("Education, employer, career, and income details provided");
-  }
-  if (containsDisclosure(data.family)) {
-    categories.push("Family members, origins, and family background provided");
-  }
-  if (containsDisclosure(data.lifestyle)) {
-    categories.push("Lifestyle, languages, interests, and values provided");
-  }
-  if (containsDisclosure(data.astrology) || Boolean(data.vitals?.gotra)) {
-    categories.push("Astrology and gotra details provided");
-  }
-  if (containsDisclosure(data.preferences)) {
-    categories.push("Partner preferences and future plans provided");
-  }
-  const contacts = data.contact?.contacts?.filter(
-    (contact) => contact.name?.trim() && (contact.phone?.trim() || contact.email?.trim())
-  ) || [];
-  if (
-    contacts.length > 0
-    || Boolean(data.contact?.contact_person?.trim() && (data.contact.phone?.trim() || data.contact.email?.trim()))
-  ) {
-    categories.push("Private contact details");
-  }
-  if (media.length > 0) {
-    const protectedPhotoCount = media.filter((item) => item.visibility !== "public").length;
-    const protectedCopy = protectedPhotoCount > 0
-      ? `, including ${protectedPhotoCount} private ${protectedPhotoCount === 1 ? "photo" : "photos"}`
-      : "";
-    categories.push(`${media.length} introduction ${media.length === 1 ? "photo" : "photos"}${protectedCopy}`);
-  }
-  if (horoscope) categories.push("Original horoscope attachment");
-  return categories;
-}
-
-function containsDisclosure(value: unknown): boolean {
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "number" || typeof value === "boolean") return true;
-  if (Array.isArray(value)) return value.some(containsDisclosure);
-  if (value && typeof value === "object") return Object.values(value).some(containsDisclosure);
-  return false;
 }
 
 const EMPTY_DATA: PortfolioData = {

@@ -5,7 +5,7 @@ import { join } from "node:path";
 const logoData = await readFile(join(process.cwd(), "public/brand/vivintro/vivintro-lockup-stacked-primary-og.png"), "base64");
 const logoSrc = `data:image/png;base64,${logoData}`;
 
-export const alt = "VivIntro: Your biodata, as one link you control.";
+export const alt = "VivIntro: Your Vivara link for sharing marriage biodata.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,21 +42,21 @@ export default function OpenGraphImage() {
               <img src={logoSrc} alt="" width={120} height={102} />
             </div>
             <div style={{ display: "flex", border: "1px solid #8db7b1", borderRadius: "999px", padding: "10px 18px", background: "#e5efeb", color: "#174b55", fontFamily: "Arial, sans-serif", fontSize: 18, fontWeight: 700 }}>
-              MARRIAGE INTRODUCTIONS
+              YOUR VIVARA
             </div>
           </div>
 
           <div style={{ display: "flex", maxWidth: "930px", flexDirection: "column" }}>
             <div style={{ display: "flex", fontSize: 76, lineHeight: 1.02, letterSpacing: "-0.04em" }}>
-              Your biodata, as one link you control.
+              Your Vivara. Shared on your terms.
             </div>
             <div style={{ display: "flex", maxWidth: "870px", marginTop: "28px", color: "#52666d", fontFamily: "Arial, sans-serif", fontSize: 27, lineHeight: 1.45 }}>
-              Update one link, not another PDF. Your phone number and horoscope file stay hidden until you approve.
+              Marriage biodata, shared through your Vivara link. You choose who sees private details.
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", color: "#246d75", fontFamily: "Arial, sans-serif", fontSize: 20, fontWeight: 700 }}>
-            <span>Create</span><span>→</span><span>Share</span><span>→</span><span>Approve</span>
+            <span>Create</span><span>→</span><span>Share</span><span>→</span><span>Share details</span>
           </div>
         </div>
       </div>

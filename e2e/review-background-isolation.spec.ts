@@ -14,7 +14,7 @@ test("final review isolates the moved header through editor transitions and dism
   const account = header.locator('a[href="/account"]').first();
   await page.getByRole("button", { name: "Edit details", exact: true }).click();
   await expect(header).toHaveAttribute("inert", "");
-  await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+  await page.getByRole("button", { name: "Save & review", exact: true }).click();
   const review = page.getByRole("dialog", { name: "Review and publish", exact: true });
   await expect(review).toBeVisible();
   await expect(header).toHaveAttribute("inert", "");
@@ -23,7 +23,7 @@ test("final review isolates the moved header through editor transitions and dism
   await review.getByRole("button", { name: "Back to editing", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Introduction details", exact: true })).toBeVisible();
   await expect(header).toHaveAttribute("inert", "");
-  await page.getByRole("button", { name: "Review saved changes", exact: true }).click();
+  await page.getByRole("button", { name: "Save & review", exact: true }).click();
   await expect(review).toBeVisible();
   await expect(header).toHaveAttribute("inert", "");
   await review.getByRole("button", { name: "Back to dashboard", exact: true }).click();
