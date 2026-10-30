@@ -43,6 +43,7 @@ export function portfolioFieldAnchor(path: string) {
 /** Both local and API errors must target a control that exists in the active UI mode. */
 export function editorFieldTarget(path: string) {
   if (path === "family.ancestral_origin") return "family.paternal_origin";
+  if (path === "contact.contact_person") return "contact.contacts.0.name";
   return /^personal\.(country|country_code|region|region_code|city|postal_code|location_source|city_geoname_id)$/.test(path)
     ? "personal.current_location" : path;
 }

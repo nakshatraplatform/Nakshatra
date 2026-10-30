@@ -37,6 +37,17 @@ const completeDraft: PortfolioDraftData = {
 };
 
 describe("portfolio completion", () => {
+  it("does not count numeric-only required text as publication-ready", () => {
+    for (const override of [
+      { career: { title: "12345" } },
+      { personal: { ...completeDraft.personal, short_bio: "12345" } },
+      { personal: { ...completeDraft.personal, city: "12345", current_location: "12345, Massachusetts, United States" } },
+    ]) {
+      const draft = { ...completeDraft, ...override };
+      expect(calculatePortfolioCompletion(draft, true).readyToPublish).toBe(false);
+      expect(editorFieldIssues(draft, true)).not.toHaveLength(0);
+    }
+  });
   it.each([true, false])("keeps reused validation consistent after answers and photo eligibility change (%s)", (hasPhoto) => {
     for (const draft of [completeDraft,
       { ...completeDraft, personal: { ...completeDraft.personal, first_name: "", postal_code: "invalid" } },

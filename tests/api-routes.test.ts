@@ -148,6 +148,23 @@ describe("dashboard and portfolio lifecycle routes", () => {
     expect(await response.json()).toEqual({ portfolioId: "portfolio" });
   });
 
+  it.each([
+    ["career.title", { ...data, career: { title: "12345" } }],
+    ["personal.short_bio", { ...data, personal: { ...data.personal, short_bio: "१२३" } }],
+    ["personal.city", { ...data, personal: { ...data.personal, city: "12345", current_location: "12345, United States" } }],
+    ["family.father.name", { ...data, family: { father: { name: "Parent123" } } }],
+    ["family.siblings.0.name", { ...data, family: { siblings: [{ name: "12345" }] } }],
+    ["contact.contacts.0.name", { ...data, contact: { contacts: [{ name: "12345" }] } }],
+  ])("rejects invalid %s at both write boundaries without persistence", async (path, invalidData) => {
+    for (const [handler, pathName, method] of [[dashboardPut, "/api/dashboard", "PUT"], [publishPost, "/api/portfolio/publish", "POST"]] as const) {
+      const response = await handler(jsonRequest(`http://local${pathName}`, method, { data: invalidData }));
+      expect(response.status).toBe(400);
+      expect((await response.json()).fieldErrors[path]).toBeDefined();
+    }
+    expect(saveDashboardDraft).not.toHaveBeenCalled();
+    expect(publishPortfolio).not.toHaveBeenCalled();
+  });
+
   it("maps dashboard failures without leaking unknown errors", async () => {
     saveDashboardDraft.mockRejectedValueOnce(new DashboardSaveError(
       "Database update required",

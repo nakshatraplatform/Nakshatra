@@ -27,6 +27,44 @@ const validPortfolio = {
 };
 
 describe("portfolio editor contract", () => {
+  it.each(["ಅನನ್ಯ", "अनन्या", "தமிழ்", "José", "Jose\u0301", "O’Neil"])("accepts Unicode person names: %s", (first_name) => {
+    for (const schema of [portfolioEditorDraftSchema, portfolioEditorPublishSchema]) {
+      expect(schema.safeParse({ ...validPortfolio, personal: { ...validPortfolio.personal, first_name } }).success).toBe(true);
+    }
+  });
+
+  it.each(["12345", "१२३", "---", "💐"])("rejects non-descriptive required answers: %s", (value) => {
+    for (const override of [
+      { career: { title: value } },
+      { personal: { ...validPortfolio.personal, short_bio: value } },
+      { personal: { ...validPortfolio.personal, city: value, current_location: `${value}, United States` } },
+    ]) for (const schema of [portfolioEditorDraftSchema, portfolioEditorPublishSchema]) {
+      expect(schema.safeParse({ ...validPortfolio, ...override }).success).toBe(false);
+    }
+  });
+
+  it.each(["12345", "Parent2", "नाम३", "---", "<script>"])("validates every family and contact name: %s", (name) => {
+    for (const override of [
+      { family: { father: { name } } }, { family: { mother: { name } } },
+      { family: { siblings: [{ name }] } }, { contact: { contact_person: name } },
+      { contact: { contacts: [{ name }] } },
+    ]) for (const schema of [portfolioEditorDraftSchema, portfolioEditorPublishSchema]) {
+      expect(schema.safeParse({ ...validPortfolio, ...override }).success).toBe(false);
+    }
+  });
+
+  it("preserves valid mixed text and optional unanswered names", () => {
+    expect(portfolioEditorPublishSchema.safeParse({ ...validPortfolio,
+      personal: { ...validPortfolio.personal, city: "Sector 7", current_location: "Sector 7, United States", short_bio: "I enjoy 5K runs." },
+      career: { title: "3D artist", company: "3M" }, education: { degree: "B.Tech 2020" },
+      family: { father: { name: "" }, mother: { name: "ಅನನ್ಯ" } }, contact: { contacts: [{ name: "" }] },
+    }).success).toBe(true);
+  });
+
+  it("targets an invalid legacy contact name at the visible first contact field", () => {
+    expect(editorFieldIssues({ ...validPortfolio, contact: { contact_person: "12345" } }, true))
+      .toContainEqual(expect.objectContaining({ path: "contact.contacts.0.name", label: "Contact 1: name" }));
+  });
   it.each([-1, 21, 1.5])("gives a numeric sibling-count correction for %s, not a text-length message", (sibling_count) => {
     expect(editorFieldIssues({ ...validPortfolio, family: { sibling_count } }, true))
       .toContainEqual(expect.objectContaining({ path: "family.sibling_count", message: "Enter a whole number from 0 to 20, or leave it blank." }));

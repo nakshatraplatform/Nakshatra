@@ -268,3 +268,11 @@ Do not infer production closure from local tests. Repository controls need an
 administrator; the connected account has push but not admin access.
 
 - [Customer avatar menu](features/customer-avatar-menu.md): signed-in account dropdown groups settings and sign-out, with mobile navigation, native disclosure semantics, keyboard dismissal and existing session handling. The avatar displays the account holder’s explicit first and last name through a streamed identity region. The shared theme control uses a sun/moon slider before the avatar; My brokers navigation is deferred.
+
+- [Portfolio field validation](features/b2c-form-contract.md): October 29 correction
+  shares Unicode-aware person-name and descriptive-text rules across the form,
+  API and readiness checklist. Forward SQL migration aligns publication and
+  allocates compatible ASCII paths for new non-ASCII names; existing paths stay
+  stable. Legacy contact edits clear replaced aliases and target visible fields.
+  Local unit/coverage/static/build/browser checks pass; full Supabase replay and
+  protected schema-first rollout remain separate gates.

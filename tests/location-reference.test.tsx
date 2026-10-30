@@ -9,6 +9,22 @@ import { getLocationReferences, resolveLocationSuggestion, searchLocationSuggest
 afterEach(() => vi.unstubAllGlobals());
 
 describe("location reference client", () => {
+  it("explains numeric-only owner cities after blur without stripping the answer", () => {
+    function Harness() {
+      const [value, setValue] = useState<LocationValue>({});
+      return <LocationFields value={value} onChange={changes => setValue(current => ({ ...current, ...changes }))} requireCompleteHierarchy />;
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Enter location manually" }));
+    const city = screen.getByLabelText("City");
+    fireEvent.change(city, { target: { value: "12345" } });
+    fireEvent.blur(city);
+    expect(city).toHaveValue("12345");
+    expect(city).toHaveAttribute("aria-invalid", "true");
+    expect(city).toHaveAccessibleDescription(/Include at least one letter/);
+    fireEvent.change(city, { target: { value: "Sector 7" } });
+    expect(city).toHaveAttribute("aria-invalid", "false");
+  });
   it("offers prominent manual entry before lookup, with no external request", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

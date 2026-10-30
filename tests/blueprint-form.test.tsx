@@ -6,6 +6,7 @@ import { useState } from "react";
 import { BlueprintForm } from "../src/components/portfolio/BlueprintForm";
 import type { PortfolioData } from "../src/types/portfolio";
 import { incomeRangeOptions, SIBLING_POSITION_OPTIONS } from "../src/features/portfolio/blueprint-options";
+import { portfolioEditorDraftSchema } from "../src/features/portfolio/form-contract";
 
 const completeBlueprint: PortfolioData = {
   privacy_mode: "balanced",
@@ -61,6 +62,47 @@ const completeBlueprint: PortfolioData = {
 };
 
 describe("blueprint form", () => {
+  it("replaces legacy contact aliases when the visible contact is corrected or removed", () => {
+    const updates = vi.fn();
+    function Harness() {
+      const [data, setData] = useState<PortfolioData>({ ...completeBlueprint,
+        contact: { contact_person: "12345", phone: "+91 9876543210", email: "family@example.com", secure_note: "Call in the evening." } });
+      return <BlueprintForm data={data} activeSection="privacy" onUpdate={(key, value) => {
+        const next = { ...data, [key]: value };
+        updates(next);
+        setData(next);
+      }} />;
+    }
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText("Name of contact"), { target: { value: "ಅನನ್ಯ" } });
+    const corrected = updates.mock.calls.at(-1)![0];
+    expect(portfolioEditorDraftSchema.safeParse(corrected).success).toBe(true);
+    expect(corrected.contact.contact_person).toBeUndefined();
+    expect(corrected.contact.contacts[0]).toMatchObject({ name: "ಅನನ್ಯ", phone: "+91 9876543210", email: "family@example.com" });
+    expect(corrected.contact.secure_note).toBe("Call in the evening.");
+    fireEvent.click(screen.getByRole("button", { name: /^Remove$/ }));
+    expect(screen.queryByLabelText("Name of contact")).not.toBeInTheDocument();
+    expect(updates.mock.calls.at(-1)![0].contact.contacts).toEqual([]);
+  });
+  it("retains invalid pasted text and associates corrections after blur", () => {
+    const onUpdate = vi.fn();
+    const { rerender } = render(<BlueprintForm data={{ ...completeBlueprint, career: { title: "12345" }, personal: { ...completeBlueprint.personal, short_bio: "12345" } }} onUpdate={onUpdate} />);
+    for (const label of ["Current profession title", "Short description"]) {
+      const input = screen.getByLabelText(label);
+      fireEvent.blur(input);
+      expect(input).toHaveValue("12345");
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAccessibleDescription(/Include at least one letter/);
+    }
+    rerender(<BlueprintForm data={{ ...completeBlueprint, personal: { ...completeBlueprint.personal, first_name: "ಅನನ್ಯ" } }} onUpdate={onUpdate} />);
+    fireEvent.blur(screen.getByLabelText("First name"));
+    expect(screen.getByLabelText("First name")).toHaveAttribute("aria-invalid", "false");
+    rerender(<BlueprintForm data={{ ...completeBlueprint, family: { father: { name: "12345" } } }} onUpdate={onUpdate} activeSection="family" />);
+    const parent = screen.getByLabelText("Father or guardian name");
+    fireEvent.blur(parent);
+    expect(parent).toHaveAccessibleDescription(/Use letters/);
+    expect(parent).toHaveAttribute("aria-invalid", "true");
+  });
   it.each(["Mysuru", ""])("replaces the legacy origin alias only when its visible answer is explicitly edited to %s", (value) => {
     const onUpdate = vi.fn();
     const legacy = { ...completeBlueprint, family: { ancestral_origin: "x".repeat(201), maternal_origin: "Bengaluru" } };
