@@ -4,6 +4,7 @@ import { HEIGHT_OPTIONS } from "@/features/portfolio/blueprint-options";
 import { NAME_PART_MAX_LENGTH, NAME_PART_PATTERN, portfolioEditorPublishSchema, validAdultBirthDate } from "@/features/portfolio/form-contract";
 import { findSubdivision } from "@/features/location/subdivisions";
 import { isValidPostalCode } from "@/features/location/location.contract";
+import { portfolioTextError } from "./field-validation";
 
 export type PortfolioRequirementGroup = "basics" | "details";
 
@@ -70,16 +71,17 @@ export function calculatePortfolioCompletion(
         && Boolean(subdivision)
         && data.personal.region?.trim().toLowerCase() === subdivision?.name.toLowerCase()
         && hasValue(data.personal.city)
+        && !portfolioTextError("personal.city", data.personal.city || "")
         && isValidPostalCode(countryCode, data.personal.postal_code)
         && hasValue(data.personal.location_source),
     },
-    { key: "career_title", label: "Current profession title", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) },
+    { key: "career_title", label: "Current profession title", editorSection: "foundation", group: "basics", complete: hasValue(data.career?.title) && !portfolioTextError("career.title", data.career?.title || "") },
     {
       key: "introduction",
       label: "Short description",
       editorSection: "foundation",
       group: "basics",
-      complete: hasValue(data.personal.short_bio),
+      complete: hasValue(data.personal.short_bio) && !portfolioTextError("personal.short_bio", data.personal.short_bio || ""),
     },
     { key: "primary_photo", label: "Shareable primary photo", editorSection: "foundation", group: "details", complete: hasShareablePrimaryPhoto },
   ];

@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { LocationSuggestion, StructuredLocation } from "@/features/location/location.contract";
 import { isValidPostalCode, locationDisplayValue, normalizePostalCode } from "@/features/location/location.contract";
+import { portfolioTextError } from "@/features/portfolio/field-validation";
 import { subdivisionsForCountry } from "@/features/location/subdivisions";
 import { resolveLocationSuggestion, searchLocationSuggestions } from "@/features/portfolio/client/location-reference.api";
 
@@ -30,6 +31,7 @@ export function hasCompleteLocationHierarchy(value: LocationValue) {
       && subdivision
       && value.region?.trim().toLowerCase() === subdivision.name.toLowerCase()
       && value.city?.trim()
+      && !portfolioTextError("personal.city", value.city)
       && validPostalCode
       && value.locationSource
   );
@@ -42,6 +44,9 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
   errorDescriptionId?: string;
 }) {
   const validationProps = { "aria-invalid": Boolean(errorDescriptionId), "aria-describedby": errorDescriptionId };
+  const [cityTouched, setCityTouched] = useState(false);
+  const cityErrorId = useId();
+  const cityError = requireCompleteHierarchy && cityTouched ? portfolioTextError("personal.city", value.city || "") : undefined;
   const locationRequired = requireCountryAndCity || requireCompleteHierarchy;
   const initialCountry = value.countryCode === "US" ? "US" : "IN";
   const [countryCode, setCountryCode] = useState<SupportedCountryCode>(initialCountry);
@@ -159,7 +164,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
       {message ? <p className="text-sm text-[color:var(--workspace-muted)] sm:col-span-2" role="status">{message}</p> : null}
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.country}{locationRequired ? " *" : ""}</span><select {...validationProps} aria-label={labels.country} autoComplete="country" required={locationRequired} value={value.countryCode || countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.region}{requireCompleteHierarchy ? " *" : ""}</span><select {...validationProps} aria-label={labels.region} autoComplete="address-level1" required={requireCompleteHierarchy} value={value.regionCode || ""} onChange={(event) => { const subdivision = subdivisions.find((item) => item.subdivisionCode === event.target.value); onChange({ region: subdivision?.name || "", regionCode: subdivision?.subdivisionCode, city: "", cityGeonameId: undefined, postalCode: "", locationSource: "manual" }); }} className="biodata-field min-h-12"><option value="">Select state</option>{subdivisions.map((item) => <option key={item.subdivisionCode} value={item.subdivisionCode}>{item.name}</option>)}</select></label>
-      <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.city}{locationRequired ? " *" : ""}</span><input {...validationProps} aria-label={labels.city} autoComplete="address-level2" required={locationRequired} maxLength={120} value={value.city || ""} onChange={(event) => onChange({ city: event.target.value, cityGeonameId: undefined, locationSource: "manual" })} className="biodata-field min-h-12" /></label>
+      <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.city}{locationRequired ? " *" : ""}</span><input {...validationProps} aria-invalid={Boolean(errorDescriptionId || cityError)} aria-describedby={[errorDescriptionId, cityError && cityErrorId].filter(Boolean).join(" ") || undefined} onBlur={() => setCityTouched(true)} aria-label={labels.city} autoComplete="address-level2" required={locationRequired} maxLength={120} value={value.city || ""} onChange={(event) => onChange({ city: event.target.value, cityGeonameId: undefined, locationSource: "manual" })} className="biodata-field min-h-12" />{cityError && <span id={cityErrorId} role="alert" className="text-sm font-normal text-[var(--ui-danger)]">{cityError}</span>}</label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.postalCode ?? "ZIP or PIN code"}{requireCompleteHierarchy ? " *" : ""}</span><input {...validationProps} aria-label={labels.postalCode ?? "ZIP or PIN code"} autoComplete="postal-code" inputMode="numeric" required={requireCompleteHierarchy} pattern={countryCode === "IN" ? "[1-9][0-9]{5}" : "[0-9]{5}"} title={countryCode === "IN" ? "Enter a six-digit Indian PIN code." : "Enter a five-digit US ZIP code. ZIP+4 input is stored as its first five digits."} maxLength={countryCode === "IN" ? 6 : 10} value={value.postalCode || ""} onChange={(event) => onChange({ postalCode: normalizePostalCode(event.target.value), locationSource: "manual" })} className="biodata-field min-h-12" /></label>
       <div className="flex gap-4 sm:col-span-2"><button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-teal)]" onClick={beginSearch}>Use search instead</button>{(requireCompleteHierarchy ? hasCompleteLocationHierarchy(value) : value.country && value.city) ? <button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-ink)]" onClick={() => setMode("confirmed")}>Done</button> : null}</div>
     </div>

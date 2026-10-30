@@ -19,6 +19,7 @@ import { CELESTIAL_THEME_COLORS } from "@/features/portfolio/celestial-theme";
 import { CELESTIAL_UNION_TEMPLATE_NAME } from "@/features/portfolio/template";
 import { calculatePortfolioCompletion, type PortfolioCompletion } from "@/features/portfolio/readiness";
 import { formListValues, latestAdultBirthDate, NAME_PART_MAX_LENGTH, NAME_PART_PATTERN } from "@/features/portfolio/form-contract";
+import { portfolioTextError } from "@/features/portfolio/field-validation";
 import {
   composePortfolioName,
   resolvePortfolioNameParts,
@@ -255,7 +256,9 @@ export function BlueprintForm({
   }
 
   function updateContacts(nextContacts: typeof contacts) {
-    onUpdate("contact", { ...(data.contact || {}), contacts: nextContacts });
+    // Edited rows replace legacy aliases; removing the last row must not revive them.
+    onUpdate("contact", { ...(data.contact || {}), contacts: nextContacts,
+      contact_person: undefined, phone: undefined, email: undefined });
   }
 
   function setAppearance(appearance: "light" | "dark") {
@@ -612,8 +615,9 @@ function TextInput({ fieldPath, label, value, onChange, type = "text", placehold
   const invalidPattern = Boolean(value.trim() && pattern && !pattern.test(value.trim()));
   const invalidNumber = type === "number" && value !== "" && (!Number.isInteger(Number(value)) || min !== undefined && Number(value) < Number(min) || max !== undefined && Number(value) > Number(max));
   const invalidEmail = type === "email" && !contactSchema.shape.email.safeParse(value).success;
-  const invalid = Boolean(externalError || touched && ((required && !value.trim()) || exceedsDateMaximum || precedesDateMinimum || invalidPattern || invalidNumber || invalidEmail || (maxLength && value.length > maxLength)));
-  const errorMessage = externalError || (invalidNumber ? `Enter a whole number from ${min} to ${max}.` : invalidEmail ? "Enter an email address such as name@example.com, or leave it blank." : exceedsDateMaximum ? "You must be 18 or older." : precedesDateMinimum ? "Enter a date from 1920 onward." : invalidPattern ? "Use letters, spaces, apostrophes or hyphens only." : maxLength && value.length > maxLength ? `Use at most ${maxLength} characters.` : "This field is required.");
+  const textError = portfolioTextError(fieldPath, value);
+  const invalid = Boolean(externalError || touched && ((required && !value.trim()) || exceedsDateMaximum || precedesDateMinimum || invalidPattern || invalidNumber || invalidEmail || textError || (maxLength && value.length > maxLength)));
+  const errorMessage = externalError || textError || (invalidNumber ? `Enter a whole number from ${min} to ${max}.` : invalidEmail ? "Enter an email address such as name@example.com, or leave it blank." : exceedsDateMaximum ? "You must be 18 or older." : precedesDateMinimum ? "Enter a date from 1920 onward." : invalidPattern ? "Use letters, spaces, apostrophes or hyphens only." : maxLength && value.length > maxLength ? `Use at most ${maxLength} characters.` : "This field is required.");
   const resolvedName = name || label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
   return <label htmlFor={id} className="min-w-0 flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /><input id={id} name={resolvedName} aria-label={label} aria-invalid={invalid} aria-describedby={fieldDescriptionIds(id, hint, audience, invalid ? errorId : undefined)} type={type} value={value} placeholder={placeholder} required={required} min={min} max={max} maxLength={maxLength} pattern={pattern?.source.replaceAll("-", "\\-")} list={list} autoComplete={autoComplete || (type === "email" ? "email" : type === "tel" ? "tel" : "off")} spellCheck={type === "email" ? false : undefined} onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} className="biodata-field min-h-12" /><FieldHelp id={id} hint={hint} audience={audience} />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[var(--ui-danger)]">{errorMessage}</span>}</label>;
 }
@@ -624,8 +628,9 @@ function TextArea({ fieldPath, label, value, onChange, hint, required, maxLength
   const id = fieldPath ? portfolioFieldAnchor(fieldPath) : fallbackId;
   const externalError = usePortfolioFieldError(fieldPath);
   const errorId = useId();
-  const invalid = Boolean(externalError || touched && required && !value.trim());
-  return <div className="min-w-0 flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><label htmlFor={id}><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /></label><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={fieldDescriptionIds(id, hint, audience, invalid ? errorId : undefined)} value={value} placeholder={placeholder} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-4 leading-7" /><FieldHelp id={id} hint={hint} audience={audience} />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[var(--ui-danger)]">{externalError || "This field is required."}</span>}{maxLength && <span className={`self-end text-xs font-normal text-[color:var(--workspace-ink-muted)]`}>{value.trim().length} · maximum {maxLength} characters</span>}{example && <details className="rounded-lg border border-[color:var(--workspace-border)] px-4 py-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]"><summary className="workspace-focus cursor-pointer font-semibold text-[color:var(--workspace-teal)]">See a good example</summary><p className="mt-2 leading-6">{example}</p></details>}</div>;
+  const textError = portfolioTextError(fieldPath, value);
+  const invalid = Boolean(externalError || touched && (required && !value.trim() || textError));
+  return <div className="min-w-0 flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><label htmlFor={id}><FieldLabel label={label} hint={hint} required={required} requirement={requirement} audience={audience} /></label><textarea id={id} name={label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")} aria-label={label} aria-invalid={invalid} aria-describedby={fieldDescriptionIds(id, hint, audience, invalid ? errorId : undefined)} value={value} placeholder={placeholder} required={required} maxLength={maxLength} autoComplete="off" onBlur={() => setTouched(true)} onChange={(event) => onChange(event.target.value)} rows={4} className="biodata-field min-h-32 resize-y py-4 leading-7" /><FieldHelp id={id} hint={hint} audience={audience} />{invalid && <span id={errorId} role="alert" className="text-sm font-normal text-[var(--ui-danger)]">{externalError || textError || "This field is required."}</span>}{maxLength && <span className={`self-end text-xs font-normal text-[color:var(--workspace-ink-muted)]`}>{value.trim().length} · maximum {maxLength} characters</span>}{example && <details className="rounded-lg border border-[color:var(--workspace-border)] px-4 py-2 text-sm font-normal text-[color:var(--workspace-ink-muted)]"><summary className="workspace-focus cursor-pointer font-semibold text-[color:var(--workspace-teal)]">See a good example</summary><p className="mt-2 leading-6">{example}</p></details>}</div>;
 }
 
 function SelectInput({ fieldPath, label, value, options, onChange, required, requirement, audience, hint }: { fieldPath?: string; label: string; value: string; options: BlueprintOption[]; onChange: (value: string) => void; required?: boolean; requirement?: string; audience?: string; hint?: string }) {

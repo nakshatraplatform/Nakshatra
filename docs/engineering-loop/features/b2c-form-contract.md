@@ -34,3 +34,116 @@ Production rollout is a separate release gate. The current CD workflow applies m
 ## Acceptance before release
 
 Draft autosave preserves unfinished narratives, including answers shorter than 80 characters; publishing rejects those answers with field-level errors. This is intentional so moving between sections cannot discard a sentence in progress. Publish also rejects missing required facts and a headline location that disagrees with structured city, region, and country. Six interests is the maximum at UI, API and database layers. The public Introduction preview and approved Complete Portfolio remain consistent with the final field matrix. Navigation between sections preserves unsaved answers. Keyboard and screen-reader checks pass for chips and examples. Database tests must confirm direct-publication and public-projection rejections. No PR should be described as pilot-ready until those checks pass.
+
+## October 29, 2026 — field validation correction (current work)
+
+The owner approved the implementation after the code-level evaluation. This
+supersedes the historical ASCII-only name decision above. Risk: critical because
+the publication checklist and path allocator must agree with the app. Full
+record retained here; no new route, dependency, quota, or authorization change.
+
+### Contract and design
+
+- A shared pure portfolio field validator supplies UI and draft/publish rules.
+  Person names require a Unicode letter and allow letters, combining marks,
+  spaces, apostrophes (straight/curly) and hyphens; existing length limits remain.
+- Apply person-name rules to the owner, parents, siblings, and private contacts.
+  Profession, short description and manually entered city require at least one
+  letter, while legitimate mixed text such as `3D artist` and `Sector 7` remains.
+- Preserve unfinished/blank optional answers, existing stored read schemas,
+  phone formatting and whole-number sibling limits. Do not strip invalid input
+  or silently rewrite stored data. Explain corrections on blur and at submission.
+- Update SQL with a new forward-only migration. Existing published links remain
+  stable. New ASCII names retain readable name paths; non-ASCII names use a
+  bounded ASCII `vivara-` identifier through the existing reservation allocator,
+  so all current route/authorization contracts remain valid without transliteration.
+- Local Docker is stopped. An isolated temporary PostgreSQL instance can check
+  migration function behavior; that does not establish clean Supabase replay or
+  real Auth/RLS behavior. No remote migration or production requests are authorized.
+
+### Acceptance and verification plan
+
+| Criterion | Verification |
+| --- | --- |
+| Reject numeric-only required text and every invalid person-name location | Shared schema and authenticated route tests; no writes on rejected payload |
+| Accept Kannada, Hindi, Tamil, accented and decomposed names | Schema and rendered form tests, SQL name and allocation checks |
+| Preserve valid mixed text and optional blanks | Regression cases for employer/degree/profession/city/description |
+| Accessible correction after typing/paste | Field-associated errors after blur; retain entered value |
+| Checklist cannot count invalid required text complete | Readiness and editor issue regression |
+| Publication and share paths support the same valid names | SQL assertions; existing readable path tests unchanged |
+| Numeric field protections remain | Existing phone/count/date/height/postal suites |
+
+Execution context: initial schema/readiness regressions added before code edits;
+implementation and validation in progress. Relevant sources: `form-contract.ts`,
+`readiness.ts`, `BlueprintForm.tsx`, `LocationFields.tsx`, the canonical SQL
+publication checklist and share-path allocator. Existing `.graphifyignore` and
+`brag-output/` work are unrelated and will be preserved.
+
+### Implementation evidence (local, before independent review)
+
+- Added `field-validation.ts`; reused by editor schemas, inline text feedback,
+  manual owner-city feedback, and publication readiness. Broad read schemas
+  remain unchanged. Added schema, route, accessibility and browser regressions.
+- Added `20261030020722_portfolio_field_validation.sql` and
+  `portfolio_field_validation.test.sql`. Private ICU-based letter classification
+  plus explicit Unicode combining-mark ranges agree with the JS letter/mark
+  policy for tested scripts. The allocator preserves ASCII readable paths and
+  uses reserved UUID-based ASCII paths for new non-ASCII names. No public RPC
+  signature changes, so public generated database types are unchanged.
+- Red phase: 16 intended failures reproduced before implementation. First green
+  full suite: 1,854 tests; coverage passed for 64 feature files and 21 protected
+  boundaries. Lint, typecheck and production build passed.
+- Isolated PostgreSQL 14: migration compiled against minimal dependencies;
+  executable assertions passed for Kannada/Hindi/Tamil/accented/decomposed names,
+  invalid names, required-text checklist, path allocation, and private helper
+  permissions. This is not a clean Supabase migration/pgTAP replay.
+- Full Supabase replay/pgTAP is blocked because Docker is not running; no project
+  database was started or reset. Matching protected migration must precede the
+  app rollout. Physical-device and production smoke checks remain separate.
+- Browser regression and fresh review are in progress. Final execution/review
+  receipts are stored outside source in `/tmp/nak-field-validation-*` and reported
+  in the handoff. No commit, push, remote migration, or deployment was requested.
+
+### Independent review correction FV-001
+
+Fresh-context review confirmed a medium-severity compatibility regression: the
+visible legacy contact row retained an invalid hidden `contact_person` after its
+name was corrected. Two added tests reproduced the failure before the fix.
+Explicit contact edits now replace the old `contact_person`/`phone`/`email`
+aliases with the existing editable rows, retaining row content and `secure_note`.
+Removing the last row cannot revive an old contact. Legacy name errors target
+the actual first contact control. This is an explicit editing conversion, not a
+data backfill. Focused correction/schema/API checks: 106 passed.
+
+The initial 3-viewport browser regression passed. Full coverage, static checks,
+build and browser checks are being repeated for the corrected source; required
+return review uses a new snapshot. Initial review report:
+`/tmp/nak-field-validation-review-report.md`. Supabase clean replay remains
+pending independently of these local checks.
+
+### Final local validation and delivery boundary
+
+Corrected implementation: 217 files / 1,856 unit tests passed, with all 64 feature
+coverage floors and 21 protected-boundary floors. Corrected lint, typecheck and
+production build passed; the desktop/tablet/mobile browser regression passed
+again. A test-only TypeScript selector-options error was fixed and its 34-test
+file rerun passed. Dependency audit passed with zero affected packages.
+
+Graphify was updated after the code changes; `portfolioTextError()` now maps to
+its schema, readiness and UI consumers. Unrelated Graphify filter and generated
+video work remain untouched. The FV-001 return-review receipt is
+`/tmp/nak-field-validation-review-report-2.md`; the coordinating handoff records
+its verdict and provenance separately from this contract.
+
+Implementation is prepared on `fix/nak-107-portfolio-field-validation`. Full clean Supabase migration/pgTAP CI
+remains required before release, followed by schema-first protected CD and the
+matching app. No production values were changed and no data backfill runs.
+
+### Push preparation
+
+The required `db:smoke` gate caught two conventions in the new pgTAP file: its
+assertion counter does not recognize `matches()`, and runtime roles must not
+inspect private objects directly. The test now uses an equivalent `ok()` regex
+assertion and a session-local security-invoker wrapper for the permission denial.
+All 15 assertions remain; no application or migration behavior changed.
+`npm run db:smoke` passes. Clean Supabase/pgTAP execution is still pending.

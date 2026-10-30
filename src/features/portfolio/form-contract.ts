@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { HEIGHT_OPTIONS } from "@/features/portfolio/blueprint-options";
 import { resolvePortfolioNameParts } from "@/features/portfolio/name";
 import { isValidPhoneNumber } from "@/features/portfolio/phone-number";
+import { NAME_PART_PATTERN, portfolioTextError } from "./field-validation";
 import {
   portfolioDataSchema,
   portfolioDraftSchema,
@@ -9,7 +10,7 @@ import {
 } from "@/types/portfolio";
 
 /** Pilot authoring rules. Stored historical snapshots retain the broader read schema. */
-export const NAME_PART_PATTERN = /^(?=.*[A-Za-z])[A-Za-z '-]+$/;
+export { NAME_PART_PATTERN } from "./field-validation";
 export const NAME_PART_MAX_LENGTH = 50;
 export const FORM_LIST_LIMITS = { languages: 10, hobbies: 6, values_statement: 5 } as const;
 
@@ -58,6 +59,21 @@ function validateEditorFields(data: PortfolioDraftData, ctx: z.RefinementCtx, pu
     } else if (value && (value.length > NAME_PART_MAX_LENGTH || !NAME_PART_PATTERN.test(value))) {
       addIssue(ctx, ["personal", field], `${label} must be at most 50 letters, spaces, apostrophes or hyphens.`);
     }
+  }
+
+  const textFields: Array<[string, string | undefined]> = [
+    ["career.title", data.career?.title],
+    ["personal.short_bio", data.personal.short_bio],
+    ["personal.city", data.personal.city],
+    ["family.father.name", data.family?.father?.name],
+    ["family.mother.name", data.family?.mother?.name],
+    ["contact.contact_person", data.contact?.contact_person],
+  ];
+  data.family?.siblings?.forEach((sibling, index) => textFields.push([`family.siblings.${index}.name`, sibling.name]));
+  data.contact?.contacts?.forEach((contact, index) => textFields.push([`contact.contacts.${index}.name`, contact.name]));
+  for (const [path, value] of textFields) {
+    const error = portfolioTextError(path, value || "");
+    if (error) addIssue(ctx, path.split("."), error);
   }
 
   const dob = data.personal.dob?.trim();
