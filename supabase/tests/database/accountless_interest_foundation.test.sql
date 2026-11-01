@@ -151,29 +151,30 @@ select is((select count(*)::integer from public.claim_guest_interest_mail(10)),2
 select ok((select bool_and(public.guest_interest_mail_is_current(id,lease_token))
   from app_private.guest_interest_mail_outbox
   where status='processing'),'claimed messages are current');
+create temp table retry_challenge as
 select public.begin_guest_interest_verification(
-  pg_temp.guest_input(),repeat('e',64),repeat('b',64),repeat('c',64)) as retry_challenge_id \gset
-select ok(:'retry_challenge_id'::uuid is not null,
+  pg_temp.guest_input(),repeat('e',64),repeat('b',64),repeat('c',64)) as challenge_id;
+select ok((select challenge_id from retry_challenge) is not null,
   'another visitor challenge can begin on a shared network');
+create temp table latest_challenge as
 select public.begin_guest_interest_verification(
-  pg_temp.guest_input(),repeat('f',64),repeat('b',64),repeat('c',64)) as latest_challenge_id \gset
+  pg_temp.guest_input(),repeat('f',64),repeat('b',64),repeat('c',64)) as challenge_id;
 select is(public.complete_guest_interest_verification(
-  :'retry_challenge_id'::uuid,repeat('e',64),repeat('c',64)),
+  (select challenge_id from retry_challenge),repeat('e',64),repeat('c',64)),
   'expired','new code invalidates the previous code for this address and link');
-select ok(:'latest_challenge_id'::uuid is not null,
+select ok((select challenge_id from latest_challenge) is not null,
   'latest challenge remains available after replacement');
-select set_config('app.test_retry_challenge', :'latest_challenge_id', true);
 do $$ begin
   for i in 1..4 loop
     perform public.complete_guest_interest_verification(
-      current_setting('app.test_retry_challenge')::uuid,repeat('d',64),repeat('c',64));
+      (select challenge_id from latest_challenge),repeat('d',64),repeat('c',64));
   end loop;
 end $$;
 select is(public.complete_guest_interest_verification(
-  :'latest_challenge_id'::uuid,repeat('d',64),repeat('c',64)),
+  (select challenge_id from latest_challenge),repeat('d',64),repeat('c',64)),
   'invalid_code','fifth wrong code consumes the final challenge attempt');
 select is(public.complete_guest_interest_verification(
-  :'latest_challenge_id'::uuid,repeat('f',64),repeat('c',64)),
+  (select challenge_id from latest_challenge),repeat('f',64),repeat('c',64)),
   'expired','correct code cannot pass after five wrong attempts');
 reset role;
 update public.interest_requests set status='rejected'
