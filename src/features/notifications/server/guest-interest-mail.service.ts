@@ -19,6 +19,23 @@ const contactSchema = z.object({
   })).max(5).optional(),
 });
 
+type GuestMailRpcArgs = {
+  claim_guest_interest_mail: { p_limit?: number };
+  guest_interest_mail_is_current: { p_id: string; p_lease_token: string };
+  complete_guest_interest_mail: {
+    p_id: string; p_lease_token: string; p_sent: boolean;
+    p_error_code?: string; p_retryable?: boolean;
+  };
+  purge_guest_interest_ephemera: { p_limit?: number };
+};
+
+/** The additive migration supplies these RPCs before its generated schema types reach main. */
+function guestMailRpc(client: SupabaseClient<Database>) {
+  return client.rpc.bind(client) as unknown as <Name extends keyof GuestMailRpcArgs>(
+    name: Name, args: GuestMailRpcArgs[Name]
+  ) => Promise<{ data: unknown; error: unknown }>;
+}
+
 function clean(value?: string) {
   return value?.replace(/[\r\n\x00-\x1f\x7f]/g, " ").trim() || "";
 }
@@ -44,7 +61,8 @@ function contactMessage(payload: unknown) {
 export async function processGuestInterestMail(
   client: SupabaseClient<Database>, limit = 5, transport?: typeof fetch,
 ) {
-  const { data, error } = await client.rpc("claim_guest_interest_mail", { p_limit: limit });
+  const rpc = guestMailRpc(client);
+  const { data, error } = await rpc("claim_guest_interest_mail", { p_limit: limit });
   if (error) throw new Error("GUEST_MAIL_CLAIM_FAILED");
   const jobs = z.array(jobSchema).parse(data || []);
   let failed = 0;
@@ -53,7 +71,7 @@ export async function processGuestInterestMail(
     let code = "GUEST_MAIL_UNAVAILABLE";
     let retryable = true;
     try {
-      const current = await client.rpc("guest_interest_mail_is_current", {
+      const current = await rpc("guest_interest_mail_is_current", {
         p_id: job.id, p_lease_token: job.lease_token,
       });
       if (current.error) throw new Error("GUEST_MAIL_CHECK_FAILED");
@@ -76,13 +94,13 @@ export async function processGuestInterestMail(
         retryable = false;
       }
     }
-    const completion = await client.rpc("complete_guest_interest_mail", {
+    const completion = await rpc("complete_guest_interest_mail", {
       p_id: job.id, p_lease_token: job.lease_token, p_sent: sent,
       p_error_code: sent ? undefined : code, p_retryable: !sent && retryable,
     });
     if (completion.error || completion.data !== true || (!sent && retryable)) failed++;
   }
-  const purge = await client.rpc("purge_guest_interest_ephemera", { p_limit: 100 });
+  const purge = await rpc("purge_guest_interest_ephemera", { p_limit: 100 });
   if (purge.error) failed++;
   return { claimed: jobs.length, failed };
 }
