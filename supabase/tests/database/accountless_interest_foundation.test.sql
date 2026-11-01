@@ -153,11 +153,12 @@ select is((select contact_payload->>'email'
   'queued email contains only the published chosen contact');
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
-select is((select count(*)::integer from public.claim_guest_interest_mail(10)),2,
+create temp table claimed_guest_mail as
+  select * from public.claim_guest_interest_mail(10);
+select is((select count(*)::integer from claimed_guest_mail),2,
   'worker claims receipt and contact email');
 select ok((select bool_and(public.guest_interest_mail_is_current(id,lease_token))
-  from app_private.guest_interest_mail_outbox
-  where status='processing'),'claimed messages are current');
+  from claimed_guest_mail),'claimed messages are current');
 create temp table retry_challenge as
 select public.begin_guest_interest_verification(
   pg_temp.guest_input(),repeat('e',64),repeat('b',64),repeat('c',64)) as challenge_id;
