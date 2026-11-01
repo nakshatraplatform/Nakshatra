@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(24);
+select plan(26);
 
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
@@ -151,7 +151,14 @@ select public.begin_guest_interest_verification(
   pg_temp.guest_input(),repeat('e',64),repeat('b',64),repeat('c',64)) as retry_challenge_id \gset
 select ok(:'retry_challenge_id'::uuid is not null,
   'another visitor challenge can begin on a shared network');
-select set_config('app.test_retry_challenge', :'retry_challenge_id', true);
+select public.begin_guest_interest_verification(
+  pg_temp.guest_input(),repeat('f',64),repeat('b',64),repeat('c',64)) as latest_challenge_id \gset
+select is(public.complete_guest_interest_verification(
+  :'retry_challenge_id'::uuid,repeat('e',64),repeat('c',64)),
+  'expired','new code invalidates the previous code for this address and link');
+select ok(:'latest_challenge_id'::uuid is not null,
+  'latest challenge remains available after replacement');
+select set_config('app.test_retry_challenge', :'latest_challenge_id', true);
 do $$ begin
   for i in 1..4 loop
     perform public.complete_guest_interest_verification(
@@ -159,10 +166,10 @@ do $$ begin
   end loop;
 end $$;
 select is(public.complete_guest_interest_verification(
-  :'retry_challenge_id'::uuid,repeat('d',64),repeat('c',64)),
+  :'latest_challenge_id'::uuid,repeat('d',64),repeat('c',64)),
   'invalid_code','fifth wrong code consumes the final challenge attempt');
 select is(public.complete_guest_interest_verification(
-  :'retry_challenge_id'::uuid,repeat('e',64),repeat('c',64)),
+  :'latest_challenge_id'::uuid,repeat('f',64),repeat('c',64)),
   'expired','correct code cannot pass after five wrong attempts');
 reset role;
 update public.interest_requests set status='rejected'

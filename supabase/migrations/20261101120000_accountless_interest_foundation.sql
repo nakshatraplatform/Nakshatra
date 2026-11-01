@@ -70,6 +70,14 @@ begin
     ) then
     return null;
   end if;
+  -- New sends replace earlier codes for this email and introduction. Serialize
+  -- concurrent sends so two live codes cannot be issued together.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_email || '|' || v_token, 917621));
+  update app_private.guest_interest_challenges
+    set consumed_at=now(),details='{}'::jsonb
+    where email=v_email and details->>'portfolioToken'=v_token
+      and consumed_at is null;
   insert into app_private.guest_interest_challenges(email,details,code_digest)
   values(v_email,p_details,p_code_digest) returning id into v_id;
   return v_id;
