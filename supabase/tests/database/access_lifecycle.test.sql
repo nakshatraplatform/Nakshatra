@@ -188,13 +188,18 @@ select ok(
 select is((select count(*)::integer from public.interest_requests), 1, 'repeat submissions do not create duplicate active requests');
 
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'approved', 'the owner can approve a new request');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'the old command cannot approve a new request');
+-- Seed an approval from the earlier release so its read, expiry and revocation
+-- contract remains tested after full-access approval is closed to users.
+reset role;
+select app_private.decide_interest_request_pre_contact_cutover((select id from public.interest_requests limit 1), 'approved');
+set local role authenticated;
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 1, 'approval creates exactly one active grant');
 select ok((select expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants limit 1), 'new Complete Portfolio access expires after 15 days');
 select is((select count(*)::integer from public.access_audit_events where event_type = 'grant_created'), 1, 'approval creates an immutable grant audit event');
 select is(public.list_portfolio_access() #>> '{grants,0,viewerName}', 'Rohan Mehta', 'the owner access summary returns the bounded grant history');
 select ok(pg_catalog.jsonb_array_length(public.list_portfolio_access() -> 'events') >= 2, 'the owner access summary includes recent lifecycle events');
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'already_approved', 'repeated approval is idempotent');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'repeated old approval cannot create another grant');
 select is((select count(*)::integer from public.reveal_grants), 1, 'repeated approval never duplicates the grant');
 
 reset role;
@@ -251,13 +256,16 @@ select ok(
 select is((select count(*)::integer from public.interest_requests), 1, 'rejection cannot be bypassed by submitting a second request');
 
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'invalid_transition', 'a rejected request cannot jump directly back to approved');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'a rejected request cannot use the old approval command');
 select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'reopened'), 'reopened', 'the owner can explicitly reopen a rejected request');
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'approved', 'a reopened request can be approved again');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'a reopened request still cannot use the old approval command');
+reset role;
+select app_private.decide_interest_request_pre_contact_cutover((select id from public.interest_requests limit 1), 'approved');
+set local role authenticated;
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 1, 'reapproval creates one replacement active grant');
 
-select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'renew') ->> 'status', 'renewed', 'the owner can renew active Complete Portfolio access');
-select ok((select renewed_at is not null and expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants where revoked_at is null), 'renewal resets access to 15 days from the action time');
+select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'renew') ->> 'status', 'renewal_disabled', 'legacy Complete Portfolio access cannot be renewed');
+select ok((select renewed_at is null and expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants where revoked_at is null), 'denied renewal leaves the existing expiry intact');
 select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'revoke') ->> 'status', 'revoked', 'the owner can revoke Complete Portfolio access');
 select is((select status::text from public.interest_requests limit 1), 'rejected', 'manual revocation returns the request to rejected');
 
@@ -271,7 +279,10 @@ select throws_ok(
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
 select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'reopened'), 'reopened', 'revoked access can be deliberately reopened');
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'approved', 'reopened access can receive a new grant');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'reopened access cannot receive a new grant through the old command');
+reset role;
+select app_private.decide_interest_request_pre_contact_cutover((select id from public.interest_requests limit 1), 'approved');
+set local role authenticated;
 select is(public.rotate_portfolio_transaction('rotated_secure_tok_01') ->> 'status', 'rotated', 'link rotation completes as one owner transaction');
 select is(public.resolve_public_portfolio('phase2_secure_token_1'), null, 'rotation invalidates the former public token immediately');
 select is((select count(*)::integer from public.reveal_grants where revoked_at is null), 0, 'rotation revokes every outstanding grant');

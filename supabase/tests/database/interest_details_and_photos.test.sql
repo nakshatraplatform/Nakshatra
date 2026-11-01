@@ -167,7 +167,10 @@ select is(public.get_interest_details((select id from public.interest_requests w
 select is(public.get_interest_details((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003')) ->> 'accessStatus','not_granted','initial access status is accurate');
 select is(jsonb_array_length(public.list_interest_history(0,25)),1,'retained interest history is owner scoped');
 select throws_ok($$select public.list_interest_history(0,null)$$,'22023','invalid history page','null page size cannot remove history bounds');
-select lives_ok($$select public.decide_interest_request((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003'),'approved')$$,'owner grants full access through existing decision command');
+select is(public.decide_interest_request((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003'),'approved'),'contact_review_required','old decision command cannot grant new full access');
+reset role;
+select app_private.decide_interest_request_pre_contact_cutover((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003'),'approved');
+set local role authenticated;
 select is(public.get_interest_details((select id from public.interest_requests where requester_user_id='a1000000-0000-4000-8000-000000000003')) ->> 'accessStatus','active','approval preserves submission and exposes active lineage');
 
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000003"}';
