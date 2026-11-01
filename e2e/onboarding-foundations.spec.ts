@@ -146,7 +146,11 @@ test("manual location entry is keyboard-visible and makes no lookup request", as
   const manual = editor.getByRole("button", { name: "Enter location manually" });
   await manual.focus();
   await expect(manual).toBeFocused();
-  await expect(manual).toHaveCSS("text-decoration-line", "underline");
+  await expect(manual).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(manual).toBeFocused();
+  await expect(manual).toHaveCSS("outline-style", "solid");
   const bounds = await manual.boundingBox();
   expect(bounds && bounds.height >= 44 && bounds.x >= 0 && bounds.x + bounds.width <= 390).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("manual-location-action.png"), animations: "disabled" });

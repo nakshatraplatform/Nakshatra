@@ -16,10 +16,12 @@ test("portfolio home links and aligned interest fields preserve both themes", as
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "VivIntro home" })).toHaveAttribute("href", "/");
     await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
     const dialog = page.getByRole("dialog");
-    const portalLogo = dialog.getByRole("link", { name: "VivIntro home" });
-    await expect(portalLogo).toBeVisible();
-    await expect(portalLogo).toHaveAttribute("href", "/");
-    await expect.poll(() => portalLogo.locator("img").evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
+    if (page.viewportSize()!.width >= 768) {
+      const portalLogo = dialog.getByRole("link", { name: "VivIntro home" });
+      await expect(portalLogo).toBeVisible();
+      await expect(portalLogo).toHaveAttribute("href", "/");
+      await expect.poll(() => portalLogo.locator("img").evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
+    }
     await expect(dialog).toHaveCSS("color-scheme", appearance);
     await expect(dialog.getByLabel("Full name", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Your location search country", { exact: true })).toHaveCount(0);

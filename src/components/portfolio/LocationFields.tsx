@@ -72,7 +72,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
 
   useEffect(() => {
     if (focusSelectedView.current && mode !== "search") {
-      selectedViewRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
+      selectedViewRef.current?.querySelector<HTMLElement>(mode === "manual" ? "select, input" : "button")?.focus();
       focusSelectedView.current = false;
     }
   }, [mode]);
