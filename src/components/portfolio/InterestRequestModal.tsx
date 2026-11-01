@@ -254,8 +254,15 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     const { ok, body } = await guestExchange<{ sent?: boolean; challengeId?: string; error?: string }>(
       { action: "start", details: requestPayload }, signal);
     if (signal.aborted) return;
-    if (!ok || !body?.sent || !body.challengeId) setError(body?.error || "We could not send another code.");
-    else {
+    if (!ok || !body?.sent || !body.challengeId) {
+      // A replacement request may have invalidated the previous challenge before
+      // delivery failed. Never leave an unusable old code in the verification UI.
+      setChallengeId(null);
+      setOtp("");
+      setVerificationNotice("");
+      setStep("details");
+      setError(`${body?.error || "Another code could not be sent."} The earlier code may no longer work. Request a new code when you can.`);
+    } else {
       setChallengeId(body.challengeId);
       setOtp("");
       setVerificationNotice("A new code was sent. Only the newest code will work; earlier codes are now invalid.");

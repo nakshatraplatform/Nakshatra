@@ -52,24 +52,16 @@ describe("access lifecycle service", () => {
     await expect(getPortfolioAccessSummary({} as never)).rejects.toMatchObject({ code: "ACCESS_SUMMARY_UNAVAILABLE" });
   });
 
-  it("renews and revokes through the atomic grant command", async () => {
-    repository.manageGrant.mockResolvedValue({
-      data: { status: "renewed", expiresAt: "2099-02-01T00:00:00.000Z" },
-      error: null,
-    });
-    await expect(managePortfolioGrant({} as never, summary.grants[0].id, "renew"))
-      .resolves.toMatchObject({ status: "renewed" });
-    expect(repository.manageGrant).toHaveBeenCalledWith(summary.grants[0].id, "renew");
-
+  it("revokes an existing grant through the atomic command", async () => {
     repository.manageGrant.mockResolvedValue({ data: { status: "revoked" }, error: null });
     await expect(managePortfolioGrant({} as never, summary.grants[0].id, "revoke"))
       .resolves.toEqual({ status: "revoked" });
   });
 
   it("maps authorization, transition, and persistence failures safely", async () => {
-    for (const status of ["not_found", "unauthorized", "invalid_transition"] as const) {
+    for (const status of ["not_found", "unauthorized", "invalid_transition", "renewal_disabled"] as const) {
       repository.manageGrant.mockResolvedValue({ data: { status }, error: null });
-      await expect(managePortfolioGrant({} as never, summary.grants[0].id, "renew"))
+      await expect(managePortfolioGrant({} as never, summary.grants[0].id, "revoke"))
         .rejects.toBeInstanceOf(AccessLifecycleError);
     }
     repository.manageGrant.mockResolvedValue({ data: null, error: new Error("private database error") });

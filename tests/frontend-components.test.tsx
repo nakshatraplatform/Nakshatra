@@ -43,7 +43,7 @@ describe("landing and shared frontend components", () => {
   it("offers distinct privacy and story-led landing concepts", () => {
     const { rerender } = render(<LandingExperience variant="control" />);
     expect(screen.getByRole("heading", { name: /Share your biodata. Choose when to share more/i })).toBeInTheDocument();
-    expect(document.querySelector("#privacy")).toHaveTextContent(/viewer signs in and confirms their email/i);
+    expect(document.querySelector("#privacy")).toHaveTextContent(/viewer can Show interest and confirm their email without an account/i);
 
     rerender(<LandingExperience variant="story" />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Introduce yourself the way you want to be known/i);

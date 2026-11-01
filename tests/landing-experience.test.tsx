@@ -24,7 +24,8 @@ describe("landing copy within the established presentation", () => {
     expect(document.querySelectorAll("#how [data-shelf-book]")).toHaveLength(4);
     expect(screen.getByRole("navigation", { name: "Guided tour steps" })).toBeInTheDocument();
     expect(document.querySelector("#vivara [data-vivara-word]")).toHaveTextContent("Vivara");
-    expect(document.querySelectorAll("main > section[id]")).toHaveLength(8);
+    expect(document.querySelectorAll("main > section[id]")).toHaveLength(9);
+    expect(document.querySelector("#control")).toHaveTextContent(/Unpublish to stop viewing/);
     expect(document.querySelector("#how")).toHaveTextContent(/Family and Astrology are optional/);
     expect(document.querySelector("#how")).toHaveTextContent(/Private details stay separate/);
     expect(screen.getByRole("link", { name: /Share your experience/ })).toHaveAttribute("href", "/share-feedback");
@@ -33,14 +34,14 @@ describe("landing copy within the established presentation", () => {
   it("keeps consent, privacy and saved-copy limits explicit", () => {
     render(<LandingExperience />);
     const privacy = document.querySelector("#privacy")!;
-    expect(privacy).toHaveTextContent(/viewer signs in and confirms their email/i);
-    expect(privacy).toHaveTextContent(/up to 15 days/i);
+    expect(privacy).toHaveTextContent(/viewer can Show interest and confirm their email without an account/i);
+    expect(privacy).toHaveTextContent(/Emailed only when you approve/i);
     expect(privacy).toHaveTextContent(/copies already saved can.t be recalled/i);
     expect(privacy).toHaveTextContent(/Your notes and street address aren.t included in either shared view/i);
     expect(document.querySelector("#top")).not.toHaveTextContent(/private link/i);
-    const expiry = screen.getByText("What happens after I share details?").closest("details");
-    expect(expiry).toHaveTextContent(/Unpublishing pauses viewing/i);
-    expect(expiry).toHaveTextContent(/replacing the link ends that sharing/i);
+    const approval = screen.getByText("What happens after someone shows interest?").closest("details");
+    expect(approval).toHaveTextContent(/email the contacts/i);
+    expect(approval).toHaveTextContent(/does not receive private profile access/i);
     const liveness = screen.getByText("What does “Liveness checked” mean?").closest("details");
     expect(liveness).toHaveTextContent(/does not verify legal identity/i);
   });

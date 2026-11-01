@@ -217,7 +217,7 @@ export default function CelestialUnion({
       title: "Personal story",
       content: (
         <div className="portfolio-personal-content">
-          {!personalVisible && <ProtectedDataVault title="Personal story shared privately" showAction={showInterestSection} />}
+          {!personalVisible && <ProtectedDataVault title="Personal story stays private" showAction={showInterestSection} />}
           {profileSummary && <PortfolioNarrative text={profileSummary} label="Personal story" />}
           {hasPersonalDetails && (
             <div className="portfolio-detail-grid portfolio-personal-details">
@@ -267,7 +267,7 @@ export default function CelestialUnion({
               detail={clean(data.education?.summary)}
             />
           )}
-          {!careerVisible && isPortfolioAudienceLocked(data, "career", accessMode) && <ProtectedDataVault title="Career shared privately" showAction={showInterestSection} />}
+          {!careerVisible && isPortfolioAudienceLocked(data, "career", accessMode) && <ProtectedDataVault title="Career details stay private" showAction={showInterestSection} />}
           {hasCareer && (
             <>
               <TimelineItem
@@ -297,7 +297,7 @@ export default function CelestialUnion({
       "journey",
       "Journey",
       "Education and career",
-      "Education and career information exists and may be shared privately.",
+      "Education and career details stay out of the public view.",
       showInterestSection
     ));
   }
@@ -355,7 +355,7 @@ export default function CelestialUnion({
           </div>
           {familyProtected && !hasApprovedAccess && (
             <ProtectedInline
-              heading="More family details are shared privately"
+              heading="More family details stay private"
               detail={privacyMode === "private"
                 ? "Additional family background, names, occupations, and exact locations stay private."
                 : "Names, occupations, and exact family locations stay private."}
@@ -370,7 +370,7 @@ export default function CelestialUnion({
       "family",
       "Family and roots",
       "Family",
-      "Family information exists and can be requested after a respectful introduction.",
+      "Family information stays private. You can Show interest to begin a conversation.",
       showInterestSection
     ));
   }
@@ -396,7 +396,7 @@ export default function CelestialUnion({
           </div>
           {astrologyProtected && !hasApprovedAccess && (
             <ProtectedInline
-              heading="More astrology details are shared privately"
+              heading="More astrology details stay private"
               detail={privacyMode === "private"
                 ? "Additional astrology and exact birth details stay private."
                 : "Exact birth date, time, place, and chart stay private."}
@@ -426,7 +426,7 @@ export default function CelestialUnion({
       "astrology",
       "Astrology",
       "Cultural alignment",
-      "Astrology information exists and can be shared privately.",
+      "Astrology details stay out of the public view.",
       showInterestSection
     ));
   }
@@ -557,7 +557,7 @@ export default function CelestialUnion({
           "astrology",
           "Astrology",
           "Cultural alignment",
-          "Astrology information exists and can be shared privately.",
+          "Astrology details stay out of the public view.",
           showInterestSection
         )}
         number={astrologyChapter.number}
@@ -580,7 +580,7 @@ export default function CelestialUnion({
   const gallery = data.visibility?.gallery === "restricted" && !hasApprovedAccess
     ? <section className="portfolio-gallery" aria-labelledby="portfolio-gallery-title">
         <ChapterHeading eyebrow="Captured moments" title="Gallery" id="portfolio-gallery-title" />
-        <ProtectedDataVault title="Photos shared privately" detail="Protected photos stay private until access is approved." showAction={showInterestSection} />
+        <ProtectedDataVault title="Private photos" detail="These photos stay out of the public view." showAction={showInterestSection} />
       </section>
     : <AdaptivePortfolioGallery photos={galleryPhotos} />;
 
@@ -701,26 +701,26 @@ export default function CelestialUnion({
           <section id="portfolio-interest" className="portfolio-protected-section">
             <div className="portfolio-protected-copy">
               <p className="portfolio-eyebrow">Respectful access</p>
-              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the introduction owner" : "More can be shared privately."}</h2>
+              <h2>{ownerPreview ? "Protected information preview" : approvedViewer ? "Contact shared by the introduction owner" : "Contacts stay private until shared."}</h2>
               <p>
                 {ownerPreview
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
                     ? "These contact details are visible because they chose to share them with you."
-                    : `Tap Show interest and confirm your email. ${firstName(data.personal.name)} decides whether to share the details below.`}
+                    : `Tap Show interest and confirm your email without creating an account. ${firstName(data.personal.name)} may email their chosen contacts after reviewing your request.`}
               </p>
             </div>
             {protectedItems.length > 0 && (
               <div className="portfolio-protected-summary">
-                <div className="portfolio-protected-items" aria-label="Private details available">
+                <div className="portfolio-protected-items" aria-label="Private details protected">
                   {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
                 </div>
                 {!hasApprovedAccess && (
-                  <p className="portfolio-protected-clarifier">When they choose to share, everything listed above is available for up to 15 days.</p>
+                  <p className="portfolio-protected-clarifier">These details stay private. Showing interest does not open private profile access.</p>
                 )}
               </div>
             )}
-            {contactLocked && <ProtectedDataVault title="Contact shared privately" detail="Phone numbers and email addresses stay private." />}
+            {contactLocked && <ProtectedDataVault title="Private contacts" detail="Phone numbers and email addresses stay private." />}
             {hasApprovedAccess && contactEntries.length > 0 ? (
               <div className="portfolio-contact-list">
                 {contactEntries.map((contact, index) => (
@@ -741,7 +741,7 @@ export default function CelestialUnion({
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
               <h2 id="portfolio-creator-cta-title">Want an introduction like this?</h2>
-              <p>Create yours privately. Share it when you’re ready, and choose who sees your private details.</p>
+              <p>Create yours privately. Share it when you’re ready, and decide when to email your chosen contacts.</p>
             </div>
             <Link href="/signup">
               Create your introduction
@@ -836,7 +836,7 @@ function protectedChapter(id: string, eyebrow: string, title: string, message: s
     id,
     eyebrow,
     title,
-    content: <ProtectedDataVault title={`${title} shared privately`} detail={message} showAction={showAction} />,
+    content: <ProtectedDataVault title={`${title} stays private`} detail={message} showAction={showAction} />,
   };
 }
 

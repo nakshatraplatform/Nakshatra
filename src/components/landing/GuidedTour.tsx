@@ -40,7 +40,7 @@ const tourSteps = [
     number: "04",
     label: "Share details",
     title: "Decide who sees more.",
-    body: "A viewer selects Show interest and confirms their email. You can share private details for up to 15 days, or set the request aside.",
+    body: "A viewer selects Show interest and confirms their email without creating an account. You can email your chosen contacts or set the request aside.",
     icon: UserCheck,
   },
 ] as const;

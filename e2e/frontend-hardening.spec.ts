@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { themeTestCookie } from "./support/theme-session.mjs";
 
 test("server-rendered auth fields wait for hydration before accepting answers", async ({ page }) => {
@@ -73,15 +73,19 @@ for (const theme of ["light", "dark"]) {
   for (const viewport of [{ width: 320, height: 850 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
     test(`interest verification labels reflow without clipping (${theme}, ${viewport.width}px)`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
-      await page.route("**/api/auth/start", route => route.fulfill({ json: { sent: true } }));
-      await page.route("**/api/auth/verify", route => route.fulfill({ status: 400, json: { error: "That code has expired. Send another code." } }));
+      await page.route("**/api/interest/guest", route => route.fulfill({
+        status: route.request().postDataJSON().action === "start" ? 200 : 400,
+        json: route.request().postDataJSON().action === "start"
+          ? { sent: true, challengeId: "11111111-1111-4111-8111-111111111111" }
+          : { error: "That code has expired. Send another code." },
+      }));
       // Portfolio appearance owns the portaled dialog, independently of app theme.
       await page.goto(`/p/${theme === "dark" ? "e2e-dark-portfolio-token" : "e2e-portfolio-token"}`);
       await page.getByRole("button", { name: "Show interest", exact: true }).click();
       const dialog = page.getByRole("dialog");
-      await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
       await dialog.getByLabel("Full name", { exact: true }).fill("Mira Rao");
       await dialog.getByLabel("Who are you contacting for?").selectOption("daughter");
+      await dialog.getByRole("textbox", { name: "Country calling code", exact: true }).fill("1");
       await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("6175550123");
       await dialog.getByLabel("Email address", { exact: true }).fill("mira@example.test");
       const location = dialog.getByRole("group", { name: "Your location", exact: true });
@@ -139,42 +143,59 @@ for (const theme of ["light", "dark"]) {
   }
 }
 
-test("pending interest is dismissible without allowing a duplicate or a surprise redirect", async ({ page }) => {
+async function fillGuestInterest(dialog: Locator) {
+  await dialog.getByLabel("Full name", { exact: true }).fill("Mira Rao");
+  await dialog.getByLabel("Who are you contacting for?").selectOption("self");
+  await dialog.getByRole("textbox", { name: "Country calling code", exact: true }).fill("91");
+  await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("9876543210");
+  await dialog.getByLabel("Email address", { exact: true }).fill("mira@example.test");
+  await dialog.getByRole("button", { name: "Enter location manually" }).click();
+  await dialog.getByLabel("State", { exact: true }).selectOption("IN-KA");
+  await dialog.getByLabel("City", { exact: true }).fill("Bengaluru");
+  await dialog.getByLabel("ZIP or PIN code", { exact: true }).fill("560001");
+  await dialog.getByLabel("Family context", { exact: true }).fill("Our family values kindness, honesty, and mutual respect in every conversation.");
+}
+
+test("pending guest verification is dismissible without a duplicate or redirect", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   let release!: () => void;
   let requests = 0;
   const wait = new Promise<void>(resolve => { release = resolve; });
-  await page.route("**/api/auth/start", async route => {
+  await page.route("**/api/interest/guest", async route => {
     requests++;
     await wait;
-    await route.fulfill({ json: { url: "https://accounts.google.test/oauth" } });
+    await route.fulfill({ json: { sent: true, challengeId: "11111111-1111-4111-8111-111111111111" } });
   });
   await page.getByRole("button", { name: "Show interest" }).click();
-  await page.getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page.getByRole("button", { name: "Connecting to Google" })).toBeDisabled();
+  const dialog = page.getByRole("dialog");
+  await fillGuestInterest(dialog);
+  await dialog.getByRole("button", { name: "Verify email and continue" }).click();
+  await expect(dialog.getByRole("button", { name: "Sending verification code" })).toBeDisabled();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(dialog).toHaveCount(0);
   release();
   await page.getByRole("button", { name: "Show interest" }).click();
-  await expect(page.getByRole("button", { name: "Continue to Google" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Verify your email" })).toBeVisible();
   expect(requests).toBe(1);
   expect(new URL(page.url()).pathname).toBe("/p/e2e-portfolio-token");
 });
 
-test("a stalled handoff settles without retrying and remains locally recoverable", async ({ page }) => {
+test("a failed guest code request remains locally recoverable", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
-  await page.clock.install();
   let requests = 0;
-  await page.route("**/api/auth/start", () => { requests++; });
+  await page.route("**/api/interest/guest", route => {
+    requests++;
+    return route.fulfill({ status: 503, json: { error: "Verification unavailable" } });
+  });
   await page.getByRole("button", { name: "Show interest" }).click();
-  await page.getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page.getByRole("button", { name: "Connecting to Google" })).toBeDisabled();
-  await page.clock.fastForward(20_001);
-  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("may have completed");
-  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+  const dialog = page.getByRole("dialog");
+  await fillGuestInterest(dialog);
+  await dialog.getByRole("button", { name: "Verify email and continue" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Verification unavailable");
+  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeEnabled();
   expect(requests).toBe(1);
-  await page.getByRole("button", { name: "Close interest form" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close interest form" }).click();
+  await expect(dialog).toHaveCount(0);
 });
 
 test("shared materials honor independent contrast and transparency preferences", async ({ page, context, browserName }) => {

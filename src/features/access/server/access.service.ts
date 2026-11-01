@@ -30,7 +30,7 @@ export async function getPortfolioAccessSummary(
   return parsed.data;
 }
 
-/** Renews or revokes one owner-managed Complete Portfolio grant through an atomic command. */
+/** Revokes an existing Complete Portfolio grant through an atomic command. */
 export async function managePortfolioGrant(
   supabase: SupabaseClient,
   grantId: string,
@@ -54,10 +54,13 @@ export async function managePortfolioGrant(
   }
   if (parsed.data.status === "invalid_transition") {
     throw new AccessLifecycleError(
-      "Only an approved request can be renewed.",
+      "This access can no longer be changed.",
       "ACCESS_INVALID_TRANSITION",
       409
     );
+  }
+  if (parsed.data.status === "renewal_disabled") {
+    throw new AccessLifecycleError("Existing private access cannot be extended.", "ACCESS_RENEWAL_DISABLED", 409);
   }
   return parsed.data;
 }

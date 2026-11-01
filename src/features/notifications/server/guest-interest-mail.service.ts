@@ -12,10 +12,10 @@ const jobSchema = z.object({
 const contactSchema = z.object({
   contact_person: z.string().trim().max(100).optional(),
   phone: z.string().trim().max(40).optional(),
-  email: z.email().max(180).optional(),
+  email: z.union([z.email().max(254), z.literal("")]).optional(),
   contacts: z.array(z.object({
-    name: z.string().trim().max(100), relationship: z.string().trim().max(80).optional(),
-    phone: z.string().trim().max(40).optional(), email: z.email().max(180).optional(),
+    name: z.string().trim().max(100).optional(), relationship: z.string().trim().max(80).optional(),
+    phone: z.string().trim().max(40).optional(), email: z.union([z.email().max(254), z.literal("")]).optional(),
   })).max(5).optional(),
 });
 

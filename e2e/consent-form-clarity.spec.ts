@@ -21,7 +21,6 @@ test("portfolio home links and aligned interest fields preserve both themes", as
     await expect(portalLogo).toHaveAttribute("href", "/");
     await expect.poll(() => portalLogo.locator("img").evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
     await expect(dialog).toHaveCSS("color-scheme", appearance);
-    await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
     await expect(dialog.getByLabel("Full name", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Your location search country", { exact: true })).toHaveCount(0);
     const location = dialog.getByRole("group", { name: "Your location", exact: true });

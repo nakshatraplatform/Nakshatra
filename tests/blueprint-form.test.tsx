@@ -138,6 +138,14 @@ describe("blueprint form", () => {
     fireEvent.change(screen.getByLabelText("Number of siblings"), { target: { value: "" } });
     expect(onUpdate).toHaveBeenLastCalledWith("family", expect.objectContaining({ sibling_count: undefined }));
   });
+  it("accepts digits only for the optional sibling count", () => {
+    const onUpdate = vi.fn();
+    render(<BlueprintForm data={{ ...completeBlueprint, family: { sibling_count: 0, siblings: [] } }} onUpdate={onUpdate} activeSection="family" />);
+    const count = screen.getByLabelText("Number of siblings");
+    expect(count).toHaveAttribute("inputmode", "numeric");
+    fireEvent.change(count, { target: { value: "2a" } });
+    expect(onUpdate).toHaveBeenLastCalledWith("family", expect.objectContaining({ sibling_count: 2 }));
+  });
   it("keeps name inputs concise and moves the public-link disclosure to sharing settings", () => {
     const { rerender } = render(<BlueprintForm data={completeBlueprint} onUpdate={vi.fn()} activeSection="foundation" />);
     expect(screen.queryByText(/Your full name appears/)).not.toBeInTheDocument();
@@ -189,6 +197,9 @@ describe("blueprint form", () => {
     }
     render(<Editor />);
     const community = () => screen.getByRole("combobox", { name: "Community or cultural background" });
+    expect(within(community()).getByRole("option", { name: "Lingayat" })).toBeInTheDocument();
+    expect(within(community()).getByRole("option", { name: "Vokkaliga" })).toBeInTheDocument();
+    expect(within(community()).getByRole("option", { name: "Reddy" })).toBeInTheDocument();
     fireEvent.change(community(), { target: { value: "Other / self-describe" } });
     const custom = screen.getByLabelText("Describe your community or background");
     expect(custom).toHaveAttribute("maxlength", "150");

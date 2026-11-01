@@ -1236,7 +1236,7 @@ describe("dashboard client", () => {
     expect(await screen.findByText("0 waiting")).toBeInTheDocument();
   });
 
-  it("lets the owner renew and revoke private details access", async () => {
+  it("lets the owner revoke existing private details access without extending it", async () => {
     renderDashboard({
       ...shareablePublished,
       isExpired: false,
@@ -1268,12 +1268,8 @@ describe("dashboard client", () => {
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    fireEvent.click(screen.getByRole("button", { name: "Share for another 15 days" }));
-    await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "renew"));
-    expect(await screen.findByText("Active until Feb 1, 2099")).toBeInTheDocument();
-
+    expect(screen.queryByRole("button", { name: "Share for another 15 days" })).not.toBeInTheDocument();
     mocks.manageAccess.mockResolvedValueOnce({ ok: true, status: "revoked" });
-    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
     fireEvent.click(screen.getByRole("button", { name: "Stop sharing" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
     fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));

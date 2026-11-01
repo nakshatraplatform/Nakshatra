@@ -251,10 +251,10 @@ export const LANGUAGE_OPTIONS = [
 
 export const COMMUNITY_OPTIONS = [
   option("", "Select community or background"),
-  "Not applicable", "Prefer not to say", "No caste", "Intercaste", "Arya Vysya", "Bestha", "Brahmin", "Goud",
-  "Kamma", "Kalinga Vysya", "Kapu", "Kshatriya", "Lambadi", "Madiga", "Mala",
-  "Mudaliyar", "Mudhiraj", "Nai Brahmin", "Padmasali", "Padmanayaka Velama",
-  "Perika", "Reddy", "Velama", "Viswabrahmin", "Yadav", "Other / self-describe",
+  "Not applicable", "Prefer not to say", "No caste", "Intercaste",
+  "Arya Vysya", "Billava", "Brahmin", "Bunt", "Ezhava", "Gowda",
+  "Kamma", "Kapu", "Kuruba", "Lingayat", "Mudaliyar", "Nair",
+  "Reddy", "Vellalar", "Vokkaliga", "Yadav", "Other / self-describe",
 ].map((value) => typeof value === "string" ? option(value) : value);
 
 export const CASTE_PREFERENCE_OPTIONS = [

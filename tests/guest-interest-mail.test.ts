@@ -28,6 +28,38 @@ describe("guest interest mail worker", () => {
     expect(rpc).toHaveBeenCalledWith("complete_guest_interest_mail", expect.objectContaining({ p_sent: true, p_retryable: false }));
   });
 
+  it("delivers a phone-only published contact with a blank email", async () => {
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, contact_payload: { contact_person: "Chosen contact", phone: "+91 9876543210", email: "" } }] : true, error: null }));
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    expect(send.mock.calls[0][0].text).toContain("+91 9876543210");
+    expect(rpc).toHaveBeenCalledWith("complete_guest_interest_mail", expect.objectContaining({ p_sent: true }));
+  });
+
+  it("delivers an additional phone-only contact without a name", async () => {
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, contact_payload: { contacts: [{ phone: "+91 9876543210", email: "" }] } }] : true, error: null }));
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    expect(send.mock.calls[0][0].text).toContain("+91 9876543210");
+  });
+
+  it("delivers a published email within the editor's 254-character limit", async () => {
+    const longEmail = `${"a".repeat(60)}@${"b".repeat(60)}.${"c".repeat(60)}.example`;
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, contact_payload: { email: longEmail } }] : true, error: null }));
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    expect(send.mock.calls[0][0].text).toContain(longEmail);
+  });
+
+  it.each(["receipt", "declined"] as const)("never puts contacts in a %s email", async kind => {
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, kind }] : true, error: null }));
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    const text = send.mock.calls[0][0].text as string;
+    expect(text).not.toContain("chosen@example.test");
+    expect(text).not.toContain("+1 617 555 0101");
+  });
+
   it("does not send contacts when the decision has changed", async () => {
     rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail" ? [job]
       : name === "guest_interest_mail_is_current" ? false : true, error: null }));

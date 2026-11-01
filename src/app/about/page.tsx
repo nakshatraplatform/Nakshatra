@@ -11,11 +11,11 @@ export default function AboutPage() {
     <PolicyLayout
       eyebrow="About VivIntro"
       title="A more thoughtful way to share marriage introductions."
-      summary="VivIntro helps people create a marriage introduction, share it through their existing family network, and decide when to release private details."
+      summary="VivIntro helps people create a marriage introduction, share it through their existing family network, and decide when to share contact details."
     >
       <MarketingBreadcrumb name="About" path="/about" />
       <PolicySection title="The product idea">
-        <p>VivIntro is the product. Your Vivara is the link you share to your marriage introduction. Publish updates at the same link and handle requests for private details from your dashboard. VivIntro does not list profiles or recommend matches.</p>
+        <p>VivIntro is the product. Your Vivara is the link you share to your marriage introduction. Publish updates at the same link and review interest from your dashboard. You can email your chosen contacts after reviewing a request. VivIntro does not list profiles or recommend matches.</p>
       </PolicySection>
       <PolicySection title="The design promise">
         <p>VivIntro uses readable typography, plain language, and explicit privacy cues. The person stays at the centre; sharing and “set aside” choices stay private and dignified.</p>

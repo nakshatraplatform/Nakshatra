@@ -8,7 +8,7 @@ import styles from "./ProductStory.module.css";
 export const ananyaScreens = [
   { name: "overview", image: overview, alt: "Ananya’s fictional introduction with her AI-generated portrait and public story" },
   { name: "story", image: story, alt: "Personal story section from Ananya’s fictional sample introduction" },
-  { name: "privacy", image: privacy, alt: "Ananya’s sample introduction keeps contact and other private details behind an access request" },
+  { name: "privacy", image: privacy, alt: "Ananya’s sample introduction keeps contacts and other private details out of the public view" },
 ] as const;
 
 /** Hardware is outside the capture viewport, so its border cannot crop the UI. */

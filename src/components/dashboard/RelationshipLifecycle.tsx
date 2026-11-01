@@ -78,7 +78,7 @@ export function RelationshipLifecycle({
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review", previous: DashboardInterest["status"]) => void;
-  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
+  onGrantChange: (grantId: string, action: "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
   overview: RelationshipPage | null;
   loadFailed: boolean;
   onRetry: () => void;
@@ -106,7 +106,7 @@ export function RelationshipLifecycle({
         const parsed = relationshipPageSchema.safeParse(await response.json());
         if (!response.ok || !parsed.success || !parsed.data.disclosure) throw new Error("Review unavailable");
         if (!controller.signal.aborted) setApprovalReview({ data: parsed.data.disclosure });
-      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published private details. Try again before sharing." }); });
+      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published contacts. Try again before sharing." }); });
     return () => controller.abort();
   }, [approvalCandidate, reviewAttempt]);
   const [listModal, setListModal] = useState<ListModal>(null);
@@ -175,21 +175,18 @@ export function RelationshipLifecycle({
     }
   }
 
-  async function manage(grant: AccessGrant, action: "renew" | "revoke") {
-    const prompt = action === "revoke"
-      ? `Stop sharing with ${grant.viewerName || "this person"}? They will no longer be able to open the private details.`
-      : `Share private details with ${grant.viewerName || "this person"} for another 15 days?`;
-    if (!confirm(prompt)) return;
+  async function manage(grant: AccessGrant) {
+    if (!confirm(`Stop sharing with ${grant.viewerName || "this person"}? They will no longer be able to open the private details.`)) return;
     setWorkingId(grant.id);
     setActionError(null);
     try {
       const { manageAccessGrantRequest } = await import("@/features/access/client/access-dashboard.api");
-      const result = await manageAccessGrantRequest(grant.id, action);
+      const result = await manageAccessGrantRequest(grant.id, "revoke");
       if (!result.ok) {
         setActionError(result.error);
         return;
       }
-      onGrantChange(grant.id, action, result.expiresAt, grant.status);
+      onGrantChange(grant.id, "revoke", result.expiresAt, grant.status);
       setListAttempt(value => value + 1);
       setRecordDetail(null);
     } finally {
@@ -365,8 +362,7 @@ export function RelationshipLifecycle({
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
-                <button type="button" className="dashboard-secondary-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "renew")}>Share for another 15 days</button>
-                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "revoke")}>Stop sharing</button>}
+                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item)}>Stop sharing</button>}
               </>
             ) : null}
           </div>

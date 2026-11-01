@@ -29,7 +29,6 @@ test("new visitor fields have usable mobile space, required context and conditio
     await page.setViewportSize({width,height});
     await page.goto("/p/e2e-portfolio-token");
     await page.locator("#portfolio-interest").getByRole("button",{name:"Show interest",exact:true}).click();
-    await page.getByRole("button",{name:"Continue as a new visitor"}).click();
     const dialog=page.getByRole("dialog");
     const scroll=dialog.locator(".interest-form-scroll");
     expect((await scroll.boundingBox())!.height).toBeGreaterThan(height*.55);

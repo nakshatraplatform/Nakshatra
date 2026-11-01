@@ -5,7 +5,8 @@ test("the revised landing copy uses the product-first section order in both them
   for (const theme of ["light", "dark"]) {
     if (await page.locator("html").getAttribute("data-app-theme") !== theme) await page.getByRole("switch", { name: "Dark mode", checked: theme !== "dark" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your marriage biodata, shared through one link.");
-    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "vivara", "beta", "viewer", "testimonials", "questions"]);
+    expect(await page.locator("main > section[id]").evaluateAll(nodes => nodes.map(node => node.id))).toEqual(["top", "product-story", "how", "control", "vivara", "beta", "viewer", "testimonials", "questions"]);
+    await expect(page.locator("#control article")).toHaveCount(4);
     await expect(page.locator("#how article")).toHaveCount(4);
     await expect(page.locator("#questions details")).toHaveCount(6);
     await expect(page.locator("#top").getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
@@ -17,16 +18,20 @@ test("the revised landing copy uses the product-first section order in both them
 });
 
 test("unsent interest survives close, verification back, and errors without hidden focus targets", async ({ page }, testInfo) => {
-  await page.route("**/api/auth/start", route => route.fulfill({ json: { sent: true } }));
-  await page.route("**/api/auth/verify", route => route.fulfill({ status: 400, json: { error: "That code has expired. Send another code." } }));
+  await page.route("**/api/interest/guest", route => route.fulfill({
+    status: route.request().postDataJSON().action === "start" ? 200 : 400,
+    json: route.request().postDataJSON().action === "start"
+      ? { sent: true, challengeId: "11111111-1111-4111-8111-111111111111" }
+      : { error: "That code has expired. Send another code." },
+  }));
   await page.goto("/p/e2e-portfolio-token");
   const trigger = page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true });
   await trigger.click();
   let dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("link", { name: "Sign in to VivIntro" })).toHaveAttribute("href", "/login?redirect=%2Fp%2Fe2e-portfolio-token%23portfolio-interest");
-  await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
+  await expect(dialog.getByRole("link", { name: "Sign in to VivIntro" })).toHaveCount(0);
   await dialog.getByLabel("Full name", { exact: true }).fill("Mira Rao");
   await dialog.getByLabel("Who are you contacting for?").selectOption("daughter");
+  await dialog.getByRole("textbox", { name: "Country calling code", exact: true }).fill("1");
   await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("6175550123");
   await dialog.getByLabel("Email address", { exact: true }).fill("mira@example.test");
   const location = dialog.getByRole("group", { name: "Your location", exact: true });

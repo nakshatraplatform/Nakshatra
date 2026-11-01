@@ -31,18 +31,18 @@ test("published creator can understand sharing, requests, and Complete access", 
   await expect(awaiting.getByText("Verification pending")).toBeVisible();
   await awaiting.getByRole("button", { name: "Review", exact: true }).last().click();
   const details = page.getByRole("dialog", { name: /A long family name/ });
-  await expect(details.getByText("A verified VivIntro account is required before private details can be shared.")).toBeVisible();
-  await expect(details.getByRole("button", { name: "Share details" })).toHaveCount(0);
+  await expect(details.getByText("A verified email is required before contacts can be shared.")).toBeVisible();
+  await expect(details.getByRole("button", { name: "Email chosen contacts" })).toHaveCount(0);
   await details.getByRole("button", { name: "Close details" }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();
-  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Share details" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Email chosen contacts" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("published-request-detail-mobile.png"), animations: "disabled" });
-  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Share details" }).click();
-  await expect(page.getByRole("dialog", { name: /Share details with Maya Shah/ })).toContainText("Details are shared for 15 days.");
+  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Email chosen contacts" }).click();
+  await expect(page.getByRole("dialog", { name: /Email your chosen contacts to Maya Shah/ })).toContainText("This sends contact details once");
   await expect(page.locator(".dashboard-modal-backdrop")).toHaveAttribute("inert", "");
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  for (const name of ["Cancel", "Share details for 15 days"]) {
+  for (const name of ["Cancel", "Email chosen contacts"]) {
     const box = await page.getByRole("dialog").getByRole("button", { name }).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y).toBeGreaterThanOrEqual(0);
@@ -51,7 +51,7 @@ test("published creator can understand sharing, requests, and Complete access", 
   }
   await page.screenshot({ path: testInfo.outputPath("published-approval-mobile.png"), animations: "disabled" });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Share details with Maya Shah/ })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: /Email your chosen contacts to Maya Shah/ })).toHaveCount(0);
   await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Close details" }).click();
   await page.getByRole("link", { name: "Manage access" }).click();
   const access = page.locator('[data-stage="access"]');

@@ -14,7 +14,7 @@ import {
 } from "@/lib/api/request-security";
 import { enforceRateLimit } from "@/features/security/server/rate-limit.service";
 
-/** Renews or revokes one Complete Portfolio grant owned by the authenticated portfolio manager. */
+/** Revokes an existing Complete Portfolio grant owned by the authenticated portfolio manager. */
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
