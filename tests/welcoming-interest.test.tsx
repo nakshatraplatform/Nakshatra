@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const startAuthentication = vi.hoisted(() => vi.fn());
@@ -19,12 +19,12 @@ describe("welcoming interest journey", () => {
     startAuthentication.mockResolvedValue({ ok: false, body: { error: "Please try again." } });
   });
 
-  it("offers password sign-in and Google without asking for the account email twice", () => {
+  it("shows a direct accountless form with a clear privacy promise", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByRole("link", { name: "Sign in to VivIntro" })).toHaveAttribute("href", "/login?redirect=%2Fp%2Fportfolio-token%23portfolio-interest");
-    expect(screen.queryByLabelText("Registered email")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+    expect(screen.getByLabelText("Email address")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in to VivIntro" })).not.toBeInTheDocument();
+    expect(screen.getByText(/does not create an account/)).toBeInTheDocument();
   });
 
   it.each(["button", "Escape"])("retains incomplete answers after closing by %s and reopening", (method) => {
@@ -58,43 +58,11 @@ describe("welcoming interest journey", () => {
     expect(within(screen.getByRole("group", { name: "Candidate details" })).getByLabelText("Candidate’s full name")).toHaveValue("Arun");
   });
 
-  it("retains a corrected existing-profile location after session recovery goes back to details", async () => {
-    const request = vi.fn().mockResolvedValue(new Response("{}", { status: 401 }));
-    vi.stubGlobal("fetch", request);
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" existingViewerProfile={{ name: "Mira Rao", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
+  it("does not reuse a signed-in viewer profile or imply private access", () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" existingViewerProfile={{ name: "Mira Rao", profileFor: "self", phone: "+1 6175550123", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    const location = within(screen.getByRole("group", { name: "Your location" }));
-    fireEvent.click(location.getByRole("button", { name: "Change" }));
-    fireEvent.click(location.getByRole("button", { name: "Enter location manually" }));
-fireEvent.change(location.getByRole("combobox", { name: "State" }), { target: { value: "US-MA" } });
-    fireEvent.change(location.getByRole("textbox", { name: "City" }), { target: { value: "Quincy" } });
-    fireEvent.change(location.getByRole("textbox", { name: "ZIP or PIN code" }), { target: { value: "02171" } });
-    fireEvent.change(screen.getByLabelText("Family context"), { target: { value: "Our family values kindness, honesty and mutual respect." } });
-    fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
-    expect(await screen.findByRole("heading", { name: "Verify your email" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Change details" }));
-    expect(location.getByRole("textbox", { name: "City" })).toHaveValue("Quincy");
-    expect(location.getByRole("textbox", { name: "ZIP or PIN code" })).toHaveValue("02171");
-    expect(JSON.parse(request.mock.calls[0][1].body)).toMatchObject({ city: "Quincy", postalCode: "02171" });
-  });
-
-  it("dismisses without duplicating an in-flight submission and clears the form after success", async () => {
-    let complete!: (response: Response) => void;
-    const request = vi.fn(() => new Promise<Response>(resolve => { complete = resolve; }));
-    vi.stubGlobal("fetch", request);
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" existingViewerProfile={{ name: "Mira Rao", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.change(screen.getByLabelText("Family context"), { target: { value: "Our family values kindness, honesty and mutual respect." } });
-    fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
-    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
-    expect(screen.getByLabelText("Family context")).toHaveValue("Our family values kindness, honesty and mutual respect.");
-    expect(request).toHaveBeenCalledTimes(1);
-    complete(new Response('{"ok":true}', { status: 201 }));
-    expect(await screen.findByRole("heading", { name: "Interest sent", level: 2 })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Family context")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Full name")).toHaveValue("");
+    expect(screen.getByLabelText("Email address")).toHaveValue("");
+    expect(screen.getByText(/does not create an account/)).toBeInTheDocument();
   });
 });

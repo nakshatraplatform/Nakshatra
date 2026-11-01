@@ -1,21 +1,17 @@
 "use client";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
-import { InterestContextFields, VisitorInterestFields } from "./VisitorInterestFields";
+import { VisitorInterestFields } from "./VisitorInterestFields";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
-import { ArrowLeft, CheckCircle2, LoaderCircle, MailCheck, MessageCircle, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LoaderCircle, MessageCircle, ShieldCheck, X } from "lucide-react";
 import type { NewViewerInterestInput } from "@/features/interest/server/interest.contract";
-import { continueToAuthProvider, startAuthentication, verifyAuthenticationCode } from "@/features/auth/client/auth.api";
 import type { ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import type { CelestialAppearance } from "@/features/portfolio/celestial-theme";
-import type { LocationValue } from "@/components/portfolio/LocationFields";
-import { StructuredInterestLocation, interestLocationError } from "./StructuredInterestLocation";
 import { activateModalLifecycle } from "@/lib/ui/modal-lifecycle";
-import { boundedJsonRequest, JsonRequestInterrupted, withRequestDeadline } from "@/lib/api/bounded-json-request";
+import { boundedJsonRequest, withRequestDeadline } from "@/lib/api/bounded-json-request";
 
-type ModalStep = "choice" | "details" | "verify" | "success";
+type ModalStep = "details" | "verify" | "success";
 type InterestPayload = {
   portfolioToken: string;
   name: FormDataEntryValue | null;
@@ -37,7 +33,19 @@ type InterestPayload = {
   candidate?: NonNullable<NewViewerInterestInput["candidate"]>;
 };
 
-export function InterestRequestModal({ portfolioToken, profileName, profileSummary, authenticated, verifiedEmail, existingViewerProfile, isOwner = false, appearance = "light" }: {
+async function guestExchange<T>(body: unknown, signal: AbortSignal): Promise<{ ok: boolean; body: T | null }> {
+  try {
+    const result = await boundedJsonRequest<T>("/api/interest/guest", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body), signal,
+    });
+    return { ok: result.response.ok, body: result.body };
+  } catch {
+    return { ok: false, body: null };
+  }
+}
+
+export function InterestRequestModal({ portfolioToken, profileName, profileSummary, isOwner = false, appearance = "light" }: {
   portfolioToken: string;
   profileName: string;
   profileSummary?: string;
@@ -49,12 +57,13 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 }) {
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
-  const [step, setStep] = useState<ModalStep>(authenticated ? "details" : "choice");
+  const [step, setStep] = useState<ModalStep>("details");
   const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [email, setEmail] = useState(verifiedEmail || "");
+  const [email, setEmail] = useState("");
+  const [challengeId, setChallengeId] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [resendSeconds, setResendSeconds] = useState(0);
   const [verificationNotice, setVerificationNotice] = useState("");
@@ -68,10 +77,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   const codeInputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
   const operation = useRef<AbortController | null>(null);
-  const mayNavigate = useRef(false);
-  const [providerUrl, setProviderUrl] = useState<string | null>(null);
-  const portfolioPath = `/p/${encodeURIComponent(portfolioToken)}`;
-  const sessionEmail = authenticated ? verifiedEmail?.trim().toLowerCase() || null : null;
+  const sessionEmail = null;
 
   useEffect(() => () => { operation.current?.abort(); }, []);
 
@@ -80,7 +86,6 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     operation.current = controller;
     inFlight.current = true;
     setPending(true);
-    setProviderUrl(null);
     return controller.signal;
   }
 
@@ -93,7 +98,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   }, [fieldErrors, step]);
 
   useEffect(() => {
-    if (!authenticated || window.location.hash !== "#portfolio-interest") return;
+    if (window.location.hash !== "#portfolio-interest") return;
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     const resume = window.setTimeout(() => {
       setStep("details");
@@ -101,7 +106,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       setOpen(true);
     }, 0);
     return () => window.clearTimeout(resume);
-  }, [authenticated]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -124,7 +129,6 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
   function closeModal() {
     // Dismissal does not undo a request. Keep the draft and duplicate guard alive.
-    mayNavigate.current = false;
     setOpen(false);
   }
 
@@ -156,9 +160,9 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       locationSource: formData.get("locationSource"),
       familyContext: formData.get("familyContext"),
       message: formData.get("message"),
-      useExistingProfile: Boolean(sessionEmail && existingViewerProfile),
+      useExistingProfile: false,
       location: viewerLocation() as NewViewerInterestInput["location"],
-      ...(formData.get("profileFor") !== "self" && !existingViewerProfile ? { candidate: {
+      ...(formData.get("profileFor") !== "self" ? { candidate: {
         name: String(formData.get("candidateName") || ""), email: String(formData.get("candidateEmail") || ""), phone: String(formData.get("candidatePhone") || ""), relationship: "",
         ...(formData.has("candidateCountryCode") ? { location: viewerLocation("candidate") as NewViewerInterestInput["location"] } : {}),
       } } : {}),
@@ -195,16 +199,16 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     setRequestPayload(payload);
     setEmail(payload.email);
 
-    if (sessionEmail) return void await sendInterest(payload, signal);
-
-    const { ok, body } = await startAuthentication({ method: "email_otp", email: enteredEmail, redirect: portfolioPath }, signal);
+    const { ok, body } = await guestExchange<{ sent?: boolean; challengeId?: string; error?: string }>(
+      { action: "start", details: payload }, signal);
     if (signal.aborted) return;
-    if (!ok || !body?.sent) {
+    if (!ok || !body?.sent || !body.challengeId) {
       setError(body?.error || "We could not send the verification code. Please try again.");
       setPending(false);
       inFlight.current = false;
       return;
     }
+    setChallengeId(body.challengeId);
     setOtp("");
     setVerificationNotice("");
     setResendSeconds(60);
@@ -213,38 +217,17 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     inFlight.current = false;
   }
 
-  async function continueWithVivIntro() {
-    if (inFlight.current) return;
-    if (providerUrl) return continueToAuthProvider(providerUrl);
-    const signal = startOperation();
-    mayNavigate.current = true;
-    setError("");
-    const { ok, body } = await startAuthentication({ method: "google", redirect: `${portfolioPath}#portfolio-interest` }, signal);
-    if (signal.aborted) return;
-    if (!ok || !body?.url) {
-      setError(body?.error || "We could not connect to Google. Please try again.");
-      setPending(false);
-      inFlight.current = false;
-      return;
-    }
-    if (mayNavigate.current) continueToAuthProvider(body.url);
-    else {
-      setProviderUrl(body.url);
-      setPending(false);
-      inFlight.current = false;
-    }
-  }
-
   async function verifyAndSend(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
-    if (!requestPayload) return setStep("details");
+    if (!requestPayload || !challengeId) return setStep("details");
     const signal = startOperation();
     setVerificationAction("verifying");
     setError("");
-    const { ok, body } = await verifyAuthenticationCode({ purpose: "viewer_interest", email, token: otp, redirect: portfolioPath }, signal);
+    const { ok, body } = await guestExchange<{ submitted?: boolean; error?: string }>(
+      { action: "complete", challengeId, email, code: otp }, signal);
     if (signal.aborted) return;
-    if (!ok || !body?.verified) {
+    if (!ok || !body?.submitted) {
       setError(body?.error || "That code is incorrect or has expired.");
       setOtp("");
       setPending(false);
@@ -253,18 +236,27 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
       window.requestAnimationFrame(() => codeInputRef.current?.focus());
       return;
     }
-    setVerificationAction("sending");
-    await sendInterest({ ...requestPayload, email: body.email || email }, signal);
+    setSubmitted(true);
+    setStep("success");
+    setRequestPayload(null);
+    setChallengeId(null);
+    setOtp("");
+    setPending(false);
+    inFlight.current = false;
+    setVerificationAction("idle");
   }
 
   async function resendCode() {
     if (resendSeconds > 0 || inFlight.current) return;
+    if (!requestPayload) { setStep("details"); return; }
     const signal = startOperation();
     setError("");
-    const { ok, body } = await startAuthentication({ method: "email_otp", email, redirect: portfolioPath }, signal);
+    const { ok, body } = await guestExchange<{ sent?: boolean; challengeId?: string; error?: string }>(
+      { action: "start", details: requestPayload }, signal);
     if (signal.aborted) return;
-    if (!ok || !body?.sent) setError(body?.error || "We could not send another code.");
+    if (!ok || !body?.sent || !body.challengeId) setError(body?.error || "We could not send another code.");
     else {
+      setChallengeId(body.challengeId);
       setOtp("");
       setVerificationNotice("A new code was sent. Only the newest code will work; earlier codes are now invalid.");
       setResendSeconds(60);
@@ -272,39 +264,6 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     }
     setPending(false);
     inFlight.current = false;
-  }
-
-  async function sendInterest(payload: InterestPayload, signal: AbortSignal) {
-    try {
-      const { response, body: result } = await boundedJsonRequest<{ error?: string }>("/api/interest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal,
-      });
-      if (signal.aborted) return;
-      if (response.status === 401) {
-        setStep("verify");
-        setError("Your verification session ended. Send a new code and try again.");
-        return;
-      }
-      if (!response.ok) throw new Error(result?.error || "Unable to send interest");
-      setSubmitted(true);
-      setStep("success");
-      setRequestPayload(null);
-      setOtp("");
-    } catch (requestError) {
-      if (signal.aborted) return;
-      setError(requestError instanceof JsonRequestInterrupted
-        ? "We could not confirm delivery. Your request may have been sent. Your details are saved here; check your requests before sending again."
-        : requestError instanceof Error ? requestError.message : "Unable to send interest");
-    } finally {
-      if (!signal.aborted) {
-        setPending(false);
-        inFlight.current = false;
-        setVerificationAction("idle");
-      }
-    }
   }
 
   function openModal() {
@@ -316,7 +275,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> They’ll share more if they’d like to continue.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> The family may email you the contact details they choose to share.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -344,35 +303,23 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                   <li>{firstName(profileName)} reviews your interest.</li>
                 </ol>
               </div>
-              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />They’ll share more if they’d like to continue.</p>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />This does not create an account or give you access to private details.</p>
             </aside>
             <div className="interest-main-pane">
             <div className="interest-brand-lockup"><VivIntroBrand href="/" openInNewTab className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "choice" ? "How would you like to continue?" : step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : sessionEmail && existingViewerProfile ? `Confirm your details for ${firstName(profileName)}'s family` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "choice" ? "Sign in to reuse your details, or continue with email. You don’t need to create an introduction." : step === "verify" ? "Enter the six-digit code we sent. Your details will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : sessionEmail && existingViewerProfile ? "Check your location and add a short introduction. Your signed-in details are already filled in." : "A few details help the family understand who is getting in touch."}</p>
+                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "verify" ? "Enter the six-digit code we sent. Your interest will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : "A few details help the family understand who is getting in touch. No account is needed."}</p>
               </div>
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
 
             {pending && <p className="interest-verification-help interest-pending-note">You can close this window. Your request may still finish; reopening will keep your progress. We stop waiting after 20 seconds per request.</p>}
 
-            {step === "choice" && (
-              <div className="interest-account-choice">
-                <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with your usual account to reuse your details.</p></div>
-                {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
-                <Link href={`/login?redirect=${encodeURIComponent(`${portfolioPath}#portfolio-interest`)}`} className="portfolio-button portfolio-button-primary">Sign in to VivIntro</Link>
-                <div className="interest-account-choice-alternatives">
-                  <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : providerUrl ? "Continue to Google" : "Continue with Google"}</button>
-                  <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setProviderUrl(null); setError(""); setStep("details"); }}>Continue as a new visitor</button>
-                </div>
-              </div>
-            )}
-
             {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
-            {(step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} existingViewerProfile={existingViewerProfile} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
+            {(step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -395,7 +342,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
                 <h3>Interest sent to {firstName(profileName)}.</h3>
-                <p>{firstName(profileName)} can review your interest and decide whether to share private details. There’s nothing else to send now.</p>
+                <p>{firstName(profileName)} can review your interest and may email you their chosen contact details. This does not open private profile details.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
@@ -407,65 +354,26 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   );
 }
 
-function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, existingViewerProfile, pending, error, fieldErrors, onSubmit }: {
+function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, pending, error, fieldErrors, onSubmit }: {
   hidden: boolean;
   draft: InterestPayload | null;
   portfolioToken: string;
   sessionEmail: string | null;
-  existingViewerProfile?: ExistingViewerProfile | null;
   pending: boolean;
   error: string;
   fieldErrors: Record<string, string>;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
-  const [location, setLocation] = useState<LocationValue>(() => existingViewerProfile ? {
-    country: existingViewerProfile.country,
-    countryCode: existingViewerProfile.countryCode,
-    region: existingViewerProfile.state,
-    regionCode: existingViewerProfile.subdivisionCode,
-    city: existingViewerProfile.city,
-    cityGeonameId: existingViewerProfile.cityGeonameId,
-    postalCode: existingViewerProfile.postalCode,
-    locationSource: "existing_profile",
-  } : {});
-  function updateLocation(changes: LocationValue) {
-    setLocation((current) => ({ ...current, ...changes }));
-  }
-
   return (
     <form onSubmit={onSubmit} hidden={hidden} className="interest-form" noValidate>
       <div className="interest-form-scroll">
-        {sessionEmail && existingViewerProfile ? (
-          <>
-            <div className="interest-existing-profile" aria-label="VivIntro profile in use">
-              <span><MailCheck aria-hidden="true" /><strong>Using your VivIntro profile</strong></span>
-              <p>{existingViewerProfile.name} · {sessionEmail}</p>
-              {existingViewerProfile.city && <p>{[existingViewerProfile.city, existingViewerProfile.state, existingViewerProfile.country].filter(Boolean).join(", ")}</p>}
-              {existingViewerProfile.profession && <p>Profession: {existingViewerProfile.profession}</p>}
-              {existingViewerProfile.coreValues && <p>Core values: {existingViewerProfile.coreValues}</p>}
-            </div>
-            <input type="hidden" name="name" value={existingViewerProfile.name} />
-            <input type="hidden" name="profileFor" value={existingViewerProfile.profileFor} />
-            <input type="hidden" name="phone" value={existingViewerProfile.phone} />
-            <input type="hidden" name="email" value={sessionEmail} />
-            <fieldset className="interest-form-section">
-              <legend>Current location · Required</legend>
-              <StructuredInterestLocation label="Your location" value={location} onChange={updateLocation} portfolioToken={portfolioToken}
-                error={interestLocationError(fieldErrors)} />
-            </fieldset>
-            <InterestContextFields draft={{ familyContext: fieldValue(draft?.familyContext), message: fieldValue(draft?.message) }} errors={fieldErrors} />
-          </>
-        ) : (
-          <>
         <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
-          </>
-        )}
-        <p className="interest-verification-help">Your answers stay here while this page is open. {sessionEmail ? "Sending shares them with this family." : "Next, confirm your email to send your interest."}</p>
+        <p className="interest-verification-help">Your answers stay here while this page is open. Next, confirm your email to send your interest.</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
-        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>{existingViewerProfile ? "Only your verified profile identity and the context above will be shared." : "Your phone is contact information only. We verify your email before sending."}</p><p>Showing interest shares these details with the person you’re contacting. They’ll share more if they’d like to continue. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
+        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>Your phone is contact information only. We verify your email before sending.</p><p>Showing interest shares these details with the person you’re contacting. If they approve, we email only their chosen contact details to you. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
       </div>
       <div className="interest-form-footer">
-        <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? sessionEmail ? "Sending interest" : "Sending verification code" : undefined}>{pending ? <InterestActionProgress label={sessionEmail ? "Sending interest" : "Sending verification code"} /> : sessionEmail ? "Send interest" : "Verify email and continue"}</button>
+        <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? "Sending verification code" : undefined}>{pending ? <InterestActionProgress label="Sending verification code" /> : "Verify email and continue"}</button>
       </div>
     </form>
   );

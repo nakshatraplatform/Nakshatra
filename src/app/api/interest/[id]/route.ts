@@ -29,9 +29,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 const decisionSchema = z.object({
   decision: z.enum(["approved", "rejected", "reopened"]),
   revision: z.string().regex(/^[a-f0-9]{32}$/).optional(),
-}).refine(value => value.decision !== "approved" || Boolean(value.revision), "Review the current published details before sharing.");
+}).refine(value => value.decision !== "approved" || Boolean(value.revision), "Review the current published contacts before sharing.");
 
-/** Lets a portfolio owner approve identity-bound Complete Portfolio access or decline an interest. */
+/** Lets the owner email reviewed published contacts or decline an interest. */
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -55,7 +55,7 @@ export async function PATCH(
   const parsed = decisionSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json(
-      { code: "INTEREST_DECISION_INVALID", error: "Choose approve, decline, or reopen. To share details, open the current disclosure confirmation first." },
+      { code: "INTEREST_DECISION_INVALID", error: "Choose approve, decline, or reopen. To share contacts, review the current published contacts first." },
       { status: 400 }
     );
   }
@@ -71,16 +71,17 @@ export async function PATCH(
   if (result === "not_found") {
     return NextResponse.json({ code: "INTEREST_NOT_FOUND", error: "This interest could not be found." }, { status: 404 });
   }
-  if (result === "review_changed") return NextResponse.json({ code: "SHARING_REVIEW_CHANGED", error: "Published details changed. Close this confirmation and review them again before sharing." }, { status: 409 });
+  if (result === "review_changed") return NextResponse.json({ code: "SHARING_REVIEW_CHANGED", error: "Published contacts changed. Close this confirmation and review them again before sharing." }, { status: 409 });
+  if (result === "no_contact") return NextResponse.json({ code: "NO_PUBLISHED_CONTACT", error: "Add and publish a private contact before sharing it." }, { status: 409 });
   if (result === "signin_required") {
     return NextResponse.json(
-      { code: "INTEREST_SIGNIN_REQUIRED", error: "Ask this viewer to sign in and verify their email before approving access." },
+      { code: "INTEREST_SIGNIN_REQUIRED", error: "This interest cannot be approved yet. Please retry after the contact-sharing update is complete." },
       { status: 409 }
     );
   }
   if (result === "verification_required") {
     return NextResponse.json(
-      { code: "INTEREST_VERIFICATION_REQUIRED", error: "Ask this viewer to verify their email before approving access." },
+      { code: "INTEREST_VERIFICATION_REQUIRED", error: "A verified email is required before contacts can be shared." },
       { status: 409 }
     );
   }

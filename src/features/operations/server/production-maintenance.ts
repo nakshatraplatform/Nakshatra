@@ -11,6 +11,7 @@ import { resendConfigurationReady } from "@/features/notifications/server/resend
 import { recipientHmacConfigured } from "@/features/notifications/server/delivery.runtime.mjs";
 import { resendWebhookConfigured } from "@/features/notifications/server/resend-webhook";
 import { sendResendEmail } from "@/features/notifications/server/resend.provider";
+import { processGuestInterestMail } from "@/features/notifications/server/guest-interest-mail.service";
 import { createIdentityVerificationWorker } from "../../../../scripts/identity-verification-worker.mjs";
 import { processDeletedProviderCleanup } from "../../../../scripts/deleted-provider-cleanup.mjs";
 import { processCandidateLivenessEmails } from "../../../../scripts/candidate-liveness-email-worker.mjs";
@@ -80,6 +81,7 @@ export async function runProductionMaintenance(dispatchId?: string) {
       await expiryRun.catch(() => undefined);
       return (await processRelationshipNotifications(client, 5, transport)).failed === 0;
     },
+    guestInterestEmail: async () => (await processGuestInterestMail(client, 5, transport)).failed === 0,
     accountDeletion: async () => (await createAccountDeletionWorker(client).run(1)).deferred === 0,
   };
   const entries = Object.entries(tasks);
