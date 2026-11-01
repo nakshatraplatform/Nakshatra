@@ -364,8 +364,10 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                 <div className="interest-account-choice-copy"><strong>Already use VivIntro?</strong><p>Sign in with your usual account to reuse your details.</p></div>
                 {error && <p id={verificationErrorId} className="interest-form-error" role="alert">{error}</p>}
                 <Link href={`/login?redirect=${encodeURIComponent(`${portfolioPath}#portfolio-interest`)}`} className="portfolio-button portfolio-button-primary">Sign in to VivIntro</Link>
-                <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : providerUrl ? "Continue to Google" : "Continue with Google"}</button>
-                <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setProviderUrl(null); setError(""); setStep("details"); }}>Continue as a new visitor</button>
+                <div className="interest-account-choice-alternatives">
+                  <button type="button" className="interest-secondary-action" onClick={() => void continueWithVivIntro()} disabled={pending} aria-busy={pending} aria-label={pending ? "Connecting to Google" : undefined}>{pending ? <InterestActionProgress label="Connecting to Google" /> : providerUrl ? "Continue to Google" : "Continue with Google"}</button>
+                  <button type="button" className="interest-secondary-action" disabled={pending} onClick={() => { setProviderUrl(null); setError(""); setStep("details"); }}>Continue as a new visitor</button>
+                </div>
               </div>
             )}
 

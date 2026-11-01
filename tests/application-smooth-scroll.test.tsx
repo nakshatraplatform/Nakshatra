@@ -55,6 +55,25 @@ it("suspends inertia for modal dialogs even without a body style lock", async ()
   await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 });
 
+it("resumes after a retained interest dialog's backdrop is hidden", async () => {
+  const backdrop = document.createElement("div");
+  const dialog = document.createElement("div");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  backdrop.append(dialog);
+  const view = render(<ApplicationSmoothScroll />);
+  try {
+    document.body.append(backdrop);
+    await waitFor(() => expect(mocks.stop).toHaveBeenCalled());
+    mocks.start.mockClear();
+    backdrop.hidden = true;
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+  } finally {
+    backdrop.remove();
+    view.unmount();
+  }
+});
+
 it("leaves the native history position unlocked while hidden and recreates on return", () => {
   render(<ApplicationSmoothScroll />);
   mocks.stop.mockClear();

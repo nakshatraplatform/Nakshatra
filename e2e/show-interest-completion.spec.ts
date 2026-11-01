@@ -1,0 +1,54 @@
+import { expect, test } from "@playwright/test";
+
+test("visitor can complete Show interest and return to a scrollable introduction", async ({ page }, testInfo) => {
+  const sent: unknown[] = [];
+  await page.route("**/api/auth/start", route => route.fulfill({ status: 200, json: { sent: true } }));
+  await page.route("**/api/auth/verify", route => route.fulfill({ status: 200, json: { verified: true, email: "viewer@example.test" } }));
+  await page.route("**/api/interest", route => {
+    sent.push(route.request().postDataJSON());
+    return route.fulfill({ status: 201, json: { ok: true } });
+  });
+
+  await page.goto("/p/e2e-portfolio-token");
+  await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  const google = dialog.getByRole("button", { name: "Continue with Google" });
+  const visitor = dialog.getByRole("button", { name: "Continue as a new visitor" });
+  const googleBox = await google.boundingBox();
+  const visitorBox = await visitor.boundingBox();
+  expect(googleBox && visitorBox && Math.abs(googleBox.y - visitorBox.y)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("interest-choice.png"), animations: "disabled" });
+  await visitor.click();
+  await dialog.getByLabel("Full name", { exact: true }).fill("ಕಾವ್ಯ ರಾವ್");
+  await dialog.getByLabel("Who are you contacting for?").selectOption("self");
+  await dialog.getByRole("textbox", { name: "Country calling code" }).fill("91");
+  const phone = dialog.getByRole("textbox", { name: "Phone number", exact: true });
+  await phone.fill("98abc7654321");
+  await expect(phone).toHaveValue("987654321");
+  await dialog.getByLabel("Email address").fill("viewer@example.test");
+  await dialog.getByRole("button", { name: "Enter location manually" }).click();
+  await dialog.getByRole("combobox", { name: "State" }).selectOption("IN-KA");
+  await dialog.getByRole("textbox", { name: "City" }).fill("Bengaluru");
+  const postal = dialog.getByRole("textbox", { name: "ZIP or PIN code" });
+  await postal.fill("56ab0001");
+  await expect(postal).toHaveValue("560001");
+  await dialog.getByLabel("Family context").fill("Our family values kindness, honesty and mutual respect in every conversation.");
+  await dialog.getByRole("button", { name: "Verify email and continue" }).click();
+  await expect(phone).toHaveAttribute("aria-invalid", "true");
+  await expect(dialog.getByText(/For India and the US, use 10 digits/).first()).toBeVisible();
+  await phone.fill("9876543210");
+  await dialog.getByRole("button", { name: "Verify email and continue" }).click();
+  await expect(dialog.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  await dialog.getByLabel("Six-digit code").fill("123456");
+  await dialog.getByRole("button", { name: "Verify email", exact: true }).click();
+  await expect(dialog.getByRole("heading", { name: "Interest sent", exact: true })).toBeVisible();
+  expect(sent).toHaveLength(1);
+  await dialog.getByRole("button", { name: "Return to introduction" }).click();
+  await expect(dialog).toBeHidden();
+  const { beforeWheel, maxScroll } = await page.evaluate(() => ({ beforeWheel: window.scrollY, maxScroll: document.documentElement.scrollHeight - window.innerHeight }));
+  const direction = maxScroll - beforeWheel > 100 ? 1 : -1;
+  await page.mouse.move(200, 350);
+  await page.mouse.wheel(0, 700 * direction);
+  if (direction > 0) await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforeWheel);
+  else await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(beforeWheel);
+});

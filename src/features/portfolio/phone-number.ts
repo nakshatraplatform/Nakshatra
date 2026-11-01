@@ -17,6 +17,16 @@ export function isValidPhoneNumber(value: string) {
   return phone.length <= 40 && /^\+?[\d ()-]+$/.test(phone) && digits >= 7 && digits <= 20;
 }
 
+/** New interest contacts use ten national digits for India and the US. */
+export function isValidInterestPhoneNumber(value: string) {
+  if (!isValidPhoneNumber(value)) return false;
+  if (!/^\+[1-9]/.test(value.trim())) return false;
+  const parts = splitPhoneNumber(value);
+  const nationalDigits = parts.nationalNumber.replace(/\D/g, "");
+  if (parts.callingCode === "1" || parts.callingCode === "91") return nationalDigits.length === 10;
+  return true;
+}
+
 export function splitPhoneNumber(value: string, defaultCallingCode = "") {
   const phone = value.trim();
   if (!phone) return { callingCode: defaultCallingCode.replace(/\D/g, "").slice(0, 3), nationalNumber: "" };

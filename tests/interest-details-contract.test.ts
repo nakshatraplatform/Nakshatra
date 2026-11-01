@@ -4,6 +4,13 @@ import { interestFieldErrors, interestRequestValidationMessage, interestSubmissi
 const location = { country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108", locationSource: "manual" };
 const valid = { portfolioToken: "portfolio-token", name: "Mira Rao", profileFor: "self", phone: "+1 617 555 0123", email: "mira@example.com", familyContext: "Our family values honesty, kindness and mutual respect.", message: "I enjoyed reading your introduction and would like to learn more about your family, interests and plans for the future.", ...location, location };
 describe("new visitor interest contract", () => {
+  it("shares the portfolio name rule and rejects numeric-only cities and short Indian or US phones", () => {
+    for (const name of ["Rohan123", "Rohan@Rao"]) expect(interestSubmissionSchema.safeParse({ ...valid, name }).success).toBe(false);
+    expect(interestSubmissionSchema.safeParse({ ...valid, name: "ಕಾವ್ಯ ರಾವ್" }).success).toBe(true);
+    expect(interestSubmissionSchema.safeParse({ ...valid, city: "123", location: { ...location, city: "123" } }).success).toBe(false);
+    expect(interestSubmissionSchema.safeParse({ ...valid, phone: "+1 617555012" }).success).toBe(false);
+    expect(interestSubmissionSchema.safeParse({ ...valid, profileFor: "son", candidate: { name: "Ananya Rao", phone: "+91 987654321" } }).success).toBe(false);
+  });
   it("accepts name-only candidate details and derives the relationship once", () => {
     for (const [profileFor, relationship] of [["son", "Parent"], ["daughter", "Parent"], ["sibling", "Sibling"], ["relative", "Relative"]]) {
       const result = interestSubmissionSchema.safeParse({ ...valid, profileFor, message: "", candidate: { name: "Arun Rao" } });
@@ -80,7 +87,7 @@ describe("new visitor interest contract", () => {
     if (result.success) return;
     const errors = interestFieldErrors(result.error);
     expect(errors["candidate.name"]).toBe("Please provide the candidate’s full name.");
-    expect(errors["candidate.phone"]).toBe("Enter a valid phone number.");
+    expect(errors["candidate.phone"]).toContain("For India and the US, use 10 digits");
     expect(errors["candidate.location.cityId"]).toBe("Choose a city.");
     expect(interestRequestValidationMessage(result.error)).toContain("candidate");
   });
