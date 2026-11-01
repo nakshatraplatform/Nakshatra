@@ -43,6 +43,13 @@ select pg_temp.prime_paid_publication(
   pg_temp.complete_portfolio_draft());
 update public.portfolios set is_published=true,published_data=draft_data
   where id='d3000000-0000-4000-8000-000000000001';
+insert into public.public_portfolio_snapshots(
+  portfolio_id,share_token,data,template_id,expires_at,is_active
+) values(
+  'd3000000-0000-4000-8000-000000000001',
+  'guest_owner_fixture_01',
+  '{"privacy_mode":"balanced","personal":{"name":"Guest Owner","age":36,"marital_status":"Never Married"}}'::jsonb,
+  3,now()+interval '30 days',true);
 insert into public.approved_portfolio_snapshots(portfolio_id,data,template_id,published_at)
 values('d3000000-0000-4000-8000-000000000001',
   '{"personal":{"name":"Guest Owner","dob":"1990-01-01","gender":"female"},
