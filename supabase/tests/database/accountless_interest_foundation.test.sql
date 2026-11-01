@@ -16,6 +16,8 @@ insert into public.candidates(id,primary_owner_user_id,display_name,created_by)
 values('d2000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001','Guest Owner',
   'd1000000-0000-4000-8000-000000000001');
+insert into public.candidate_personal_details(candidate_id,profile_for)
+values('d2000000-0000-4000-8000-000000000001','self');
 update app_private.identity_verification_subjects
   set status='verified',verified_at=now(),expires_at=now()+interval '365 days'
   where candidate_id='d2000000-0000-4000-8000-000000000001';
@@ -91,17 +93,19 @@ select ok(not has_function_privilege('anon',
   'anonymous clients cannot approve contacts');
 set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
+create temp table guest_challenge as
 select public.begin_guest_interest_verification(
-  pg_temp.guest_input(),repeat('a',64),repeat('b',64),repeat('c',64)) as challenge_id \gset
-select ok(:'challenge_id'::uuid is not null,'service can start a guest challenge');
+  pg_temp.guest_input(),repeat('a',64),repeat('b',64),repeat('c',64)) as challenge_id;
+select ok((select challenge_id from guest_challenge) is not null,
+  'service can start a guest challenge');
 select is(public.complete_guest_interest_verification(
-  :'challenge_id'::uuid,repeat('d',64),repeat('c',64)),
+  (select challenge_id from guest_challenge),repeat('d',64),repeat('c',64)),
   'invalid_code','incorrect code is rejected');
 select is(public.complete_guest_interest_verification(
-  :'challenge_id'::uuid,repeat('a',64),repeat('c',64)),
+  (select challenge_id from guest_challenge),repeat('a',64),repeat('c',64)),
   'submitted','correct code atomically submits the interest');
 select is(public.complete_guest_interest_verification(
-  :'challenge_id'::uuid,repeat('a',64),repeat('c',64)),
+  (select challenge_id from guest_challenge),repeat('a',64),repeat('c',64)),
   'expired','consumed code cannot replay');
 reset role;
 select is((select count(*)::integer from public.interest_requests
