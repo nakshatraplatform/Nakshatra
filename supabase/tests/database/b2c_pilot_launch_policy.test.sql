@@ -181,13 +181,13 @@ select pg_temp.set_authenticated_claims(
 );
 select is(
   public.manage_reveal_grant('76000000-0000-4000-8000-000000000001', 'renew') ->> 'status',
-  'renewed',
-  'Complete Portfolio renewal succeeds through the owner command'
+  'renewal_disabled',
+  'legacy Complete Portfolio access cannot be extended'
 );
 select ok(
-  (select expires_at between now() + interval '14 days 23 hours' and now() + interval '15 days'
+  (select renewed_at is null and expires_at between now() + interval '6 days' and now() + interval '8 days'
    from public.reveal_grants where id = '76000000-0000-4000-8000-000000000001'),
-  'Complete Portfolio renewal resets to no more than 15 days'
+  'blocked renewal leaves the original expiry in place'
 );
 select is(public.unpublish_portfolio_transaction() ->> 'status', 'unpublished', 'unpublish succeeds');
 

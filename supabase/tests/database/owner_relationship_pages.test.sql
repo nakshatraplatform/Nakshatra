@@ -64,7 +64,10 @@ select throws_ok($$select public.get_owner_relationship_page('awaiting',-1)$$,'2
 select throws_ok($$select public.get_owner_relationship_page('access',0,repeat('x',81))$$,'22023','invalid relationship page','oversized searches rejected at SQL boundary');
 select is(public.decide_interest_request_reviewed('c2000000-0000-4000-8000-000000000001',repeat('0',32)),'review_changed','stale confirmation cannot create a grant');
 select is(public.get_owner_relationship_page()#>>'{counts,active}','0','stale approval has no grant side effect');
-select is(public.decide_interest_request_reviewed('c2000000-0000-4000-8000-000000000001',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','current review uses canonical atomic approval');
+select is(public.decide_interest_request_reviewed('c2000000-0000-4000-8000-000000000001',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'contact_review_required','old reviewed command cannot create another grant');
+reset role;
+select app_private.decide_interest_request_pre_contact_cutover('c2000000-0000-4000-8000-000000000001','approved');
+set local role authenticated;
 select is(public.get_owner_relationship_page()#>>'{counts,active}','1','successful approval creates access');
 
 reset role;
