@@ -33,7 +33,7 @@ language sql stable security definer set search_path='' as $$
     join public.portfolios recipient on recipient.id=r.portfolio_id and recipient.user_id=s.recipient_user_id
     join auth.users u on u.id=s.recipient_user_id and u.email_confirmed_at is not null
     where s.id=p_id and s.revoked_at is null and s.expires_at>now()
-      and r.status not in ('rejected','closed') and r.email_verified_at is not null
+      and r.status not in ('rejected','closed') and r.email_verified_at is not null and r.verification_channel='email'
       and public.is_published_portfolio(own.id) and app_private.pilot_public_portfolio_allowed(own.share_token))
 $$;
 revoke all on function app_private.member_share_current(uuid) from public,anon,authenticated,service_role;
@@ -271,6 +271,11 @@ grant execute on function public.resolve_approved_horoscope(text) to authenticat
 
 create unique index guest_interest_mail_one_decline_idx on app_private.guest_interest_mail_outbox(interest_request_id) where kind='declined';
 
+-- All full-profile approval entry points share the same duplicate-direction guard.
+alter function public.decide_interest_portfolio_reviewed(uuid,text) rename to decide_interest_portfolio_reviewed_before_members;
+alter function public.decide_interest_portfolio_reviewed_before_members(uuid,text) set schema app_private;
+revoke all on function app_private.decide_interest_portfolio_reviewed_before_members(uuid,text) from public,anon,authenticated,service_role;
+
 create function public.decide_interest_relationship(p_interest_request_id uuid,p_decision text,p_revision text default null)
 returns text language plpgsql volatile security definer set search_path='' as $$
 declare r public.interest_requests%rowtype; owner_id uuid; result text; review jsonb;
@@ -289,6 +294,7 @@ begin
     delete from app_private.interest_deferrals where interest_request_id=r.id;
     return 'reopened';
   elsif p_decision='approved' then
+    if r.email_verified_at is null or r.verification_channel is distinct from 'email' or r.viewer_email is null then return 'verification_required'; end if;
     -- An explicit crossed send may already provide this owner's disclosure.
     if r.requester_user_id is not null and app_private.member_full_access_current(owner_id,r.requester_user_id) then
       review:=public.get_owner_relationship_page()->'disclosure';
@@ -297,7 +303,7 @@ begin
       update public.interest_requests set status='approved',decided_at=now(),decided_by=auth.uid(),updated_at=now() where id=r.id;
       result:='approved';
     else
-      result:=public.decide_interest_portfolio_reviewed(r.id,p_revision);
+      result:=app_private.decide_interest_portfolio_reviewed_before_members(r.id,p_revision);
     end if;
   elsif p_decision in ('rejected','reopened') then
     result:=public.decide_interest_request(r.id,p_decision);
@@ -317,6 +323,14 @@ begin
 end $$;
 revoke all on function public.decide_interest_relationship(uuid,text,text) from public,anon;
 grant execute on function public.decide_interest_relationship(uuid,text,text) to authenticated;
+
+create function public.decide_interest_portfolio_reviewed(p_interest_request_id uuid,p_revision text)
+returns text language plpgsql volatile security definer set search_path='' as $$
+begin
+  return public.decide_interest_relationship(p_interest_request_id,'approved',p_revision);
+end $$;
+revoke all on function public.decide_interest_portfolio_reviewed(uuid,text) from public,anon;
+grant execute on function public.decide_interest_portfolio_reviewed(uuid,text) to authenticated;
 
 -- The existing grant endpoint remains the owner's single Stop sharing action.
 alter function public.manage_reveal_grant(uuid,text) rename to manage_reveal_grant_before_member_sharing;

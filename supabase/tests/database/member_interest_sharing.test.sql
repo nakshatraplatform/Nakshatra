@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(33);
+select plan(39);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -165,6 +165,28 @@ reset role;
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
 select is(public.resolve_approved_portfolio('guest_owner_fixture_01'),null::jsonb,'revocation removes recipient private access immediately');
+reset role;
+update public.interest_requests set status='closed';
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.send_member_interest_and_share('member_recipient_fixture_02',public.member_interest_context('member_recipient_fixture_02')->>'revision')->>'status','submitted','a fresh closed exchange can start with explicit consent');
+reset role;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
+select is(public.send_member_interest_and_share('guest_owner_fixture_01',public.member_interest_context('guest_owner_fixture_01')->>'revision')->>'mutual','true','pure crossed interests also become mutual without an approval grant');
+reset role;
+select is((select count(*)::integer from app_private.member_interest_shares where revoked_at is null),2,'pure crossed sharing has exactly two active directions');
+update app_private.member_interest_shares set created_at=now()-interval '16 days',expires_at=now()-interval '1 day' where portfolio_id='d3000000-0000-4000-8000-000000000001' and revoked_at is null;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
+select is(public.resolve_approved_portfolio('guest_owner_fixture_01'),null::jsonb,'expired sender disclosure fails closed');
+reset role;
+update app_private.member_interest_shares set created_at=now(),expires_at=now()+interval '15 days' where portfolio_id='d3000000-0000-4000-8000-000000000001' and revoked_at is null;
+update public.portfolios set is_published=false where id='d3000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
+select is(public.resolve_approved_portfolio('guest_owner_fixture_01'),null::jsonb,'unpublishing sender immediately stops member viewing');
+select is(public.member_interest_context('guest_owner_fixture_01')->>'available','false','unpublished target cannot receive a new member disclosure');
 reset role;
 select * from finish();
 rollback;
