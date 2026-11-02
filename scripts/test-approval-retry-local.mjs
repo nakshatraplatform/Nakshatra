@@ -193,9 +193,11 @@ async function memberScenario(mode) {
   if (mode === "accept-then-send") {
     await query(`begin; ${claims(a.user, a.authSession)} ${sendA} commit;`, true);
     const request = await query(`select id from public.interest_requests where portfolio_id='${b.portfolio}' and requester_user_id='${a.user}'`);
-    holder.send(`${begin} ${claims(b.user, b.authSession)} select public.decide_interest_relationship('${request}','approved','${bRevision}'); \echo MEMBER_LOCKED`);
+    holder.send(`${begin} ${claims(b.user, b.authSession)} select public.decide_interest_relationship('${request}','approved','${bRevision}'); 
+      \\echo MEMBER_LOCKED`);
   } else {
-    holder.send(`${begin} ${claims(a.user, a.authSession)} ${sendA} \echo MEMBER_LOCKED`);
+    holder.send(`${begin} ${claims(a.user, a.authSession)} ${sendA} 
+      \\echo MEMBER_LOCKED`);
   }
   await holder.marker("MEMBER_LOCKED");
   const waiting = mode === "retry" ? a : b;
