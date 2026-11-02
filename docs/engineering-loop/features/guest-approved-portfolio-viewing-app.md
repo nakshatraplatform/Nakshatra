@@ -21,11 +21,11 @@ No portfolio layout, fonts, colours, optional fields or mandatory-field requirem
 
 ## Evaluation and evidence
 
-Local lint, typecheck and production build passed with loopback configuration. Eighteen focused Chrome checks passed across desktop/tablet/mobile. Initial broader coverage run passed 1869/1875 but six unchanged telemetry tests timed out during concurrent build/browser load; a bounded-worker rerun is pending. No timeout or assertion was relaxed.
+Local lint, typecheck and production build passed with loopback configuration. Eighteen focused Chrome checks passed across desktop/tablet/mobile. Initial broader coverage run passed 1869/1875 but six unchanged telemetry tests timed out during concurrent build/browser load; the bounded-worker rerun passed all 1875 tests. The mail boundary coverage was 79.62% (minimum 80%); added unsafe-origin and malformed-payload refusal tests now bring focused branch coverage to 87.03%. Final combined coverage remains pending. No timeout or assertion was relaxed.
 
-Browser testing caught pre-hydration email input loss on WebKit. The new verification form now uses the existing useHydrated fieldset guard; two client regression tests pass. Cross-browser rerun and final CI are pending.
+Browser testing caught pre-hydration email input loss on WebKit. The new verification form now uses the existing useHydrated fieldset guard; two client regression tests pass. All six viewing checks passed in Firefox, desktop WebKit and mobile WebKit after that correction; final CI is pending.
 
-Fresh-context independent app review of add54cb found no material issues and independently passed 53 focused tests. Hydration correction requires follow-up review. DB review corrected legacy grant duplication and historical unverified request recovery; clean CI replay, pgTAP and approval/retry concurrency passed. Generated types were replaced with the clean CI artifact after one no-argument type mismatch.
+Fresh-context independent app review of add54cb found no material issues and independently passed 53 focused tests. Follow-up review of 05e573e passed nine focused tests and found no material issues. DB review corrected legacy grant duplication and historical unverified request recovery; clean CI replay, pgTAP and approval/retry concurrency passed. Generated types were replaced with the clean CI artifact after one no-argument type mismatch.
 
 ## Rollout and remaining release checks
 

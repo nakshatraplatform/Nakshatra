@@ -98,6 +98,25 @@ describe("guest interest mail worker", () => {
     expect(email.text).not.toContain("chosen@example.test");
     vi.unstubAllEnvs();
   });
+  it.each(["http://www.vivintro.com", "ftp://example.test", "not-a-url"])("refuses an unsafe configured approval-email origin (%s)", async origin => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", origin);
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, kind: "approved_access", contact_payload: { grantId: job.interest_request_id, shareToken: "guest-portfolio", expiresAt: "2026-11-16T12:00:00+00:00" } }] : true, error: null }));
+    try {
+      expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 1 });
+      expect(send).not.toHaveBeenCalled();
+      expect(rpc).toHaveBeenCalledWith("complete_guest_interest_mail", expect.objectContaining({ p_sent: false, p_retryable: true }));
+    } finally { vi.unstubAllEnvs(); }
+  });
+  it("does not email a malformed approval payload", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://www.vivintro.com");
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, kind: "approved_access", contact_payload: { shareToken: "guest-portfolio" } }] : true, error: null }));
+    try {
+      expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 1 });
+      expect(send).not.toHaveBeenCalled();
+    } finally { vi.unstubAllEnvs(); }
+  });
   it("reports permanent provider failures instead of marking maintenance healthy", async () => {
     send.mockResolvedValue({ status: "failed", code: "EMAIL_CREDENTIALS_REJECTED", retryable: false });
     expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 1 });
