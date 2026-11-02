@@ -1140,7 +1140,10 @@ isOneToOne: false
                            },
 "claim_horoscope_cleanup":
 { Args: { "p_limit"?: number }; Returns: {
-              "claim_token": string,"storage_path": string
+              "claim_token": string,"send_member_interest_and_share":
+{ Args: { "p_message"?: string,"p_revision": string,"p_share_token": string }; Returns: Json
+                           },
+"storage_path": string
             }[]
                            },
 "claim_identity_verification_work":
@@ -1262,6 +1265,9 @@ isOneToOne: false
 "decide_interest_portfolio_reviewed":
 { Args: { "p_interest_request_id": string,"p_revision": string }; Returns: string
                            },
+"decide_interest_relationship":
+{ Args: { "p_decision": string,"p_interest_request_id": string,"p_revision"?: string }; Returns: string
+                           },
 "decide_interest_request":
 { Args: { "p_decision": string,"p_interest_request_id": string }; Returns: string
                            },
@@ -1278,6 +1284,12 @@ isOneToOne: false
 "file_extension": string,
 "id": string,
 "language_label": string | null,
+"member_interest_context":
+{ Args: { "p_share_token": string }; Returns: Json
+                           },
+"member_interest_notification_link":
+{ Args: { "p_recipient_user_id": string,"p_request_id": string }; Returns: string
+                           },
 "mime_type": string,
 "page_count": number | null,
 "portfolio_id": string,
