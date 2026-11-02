@@ -1,5 +1,12 @@
 # VivIntro / Nakshatra project map
 
+- [Accountless interest and contact sharing](features/accountless-interest-and-contact-sharing.md):
+  critical staged change for visitor email verification without Auth account or
+  session and owner-approved contact-only email. The additive database foundation
+  is isolated from the later approval cutover and application changes. Existing
+  15-day grants keep their scheduled expiry. SQL replay and hosted CI are
+  pending; no production migration has been applied by this work.
+
 - [NAK-84 implementation audit remediation](features/implementation-audit-remediation.md):
   integrates current main's consent and owner queue, adds durable photo retirement,
   concurrent cap/retirement fencing, partial-upload recovery and shared frontend

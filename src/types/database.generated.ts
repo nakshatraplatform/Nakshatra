@@ -1061,6 +1061,9 @@ isOneToOne: false
               "attempt_id": string,"portfolio_id": string,"provider_subject_ref": string,"reference_media_id": string,"reference_storage_path": string
             }[]
                            },
+"begin_guest_interest_verification":
+{ Args: { "p_code_digest": string,"p_details": Json,"p_email_subject_hash": string,"p_network_subject_hash": string }; Returns: string
+                           },
 "begin_identity_verification":
 { Args: { "p_candidate_id": string,"p_invitation_token_hash": string,"p_management_token_hash": string }; Returns: {
               "attempt_id": string,"birth_date": string,"legal_name": string,"provider_subject_ref": string
@@ -1093,6 +1096,9 @@ isOneToOne: false
 "cancel_candidate_liveness_verification":
 { Args: { "p_attempt_id": string,"p_candidate_id": string }; Returns: Json
                            },
+"cancel_guest_interest_verification":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
 "claim_account_deletion_batch":
 { Args: { "p_limit"?: number }; Returns: {
               "claim_token": string,"processing_stage": string,"request_id": string,"user_id": string
@@ -1122,6 +1128,11 @@ isOneToOne: false
 "claim_deleted_provider_cleanup":
 { Args: { "p_limit"?: number }; Returns: {
               "claim_token": string,"id": string,"provider_session_ref": string,"provider_vendor_data": string,"provider_workflow_id": string,"provider_workflow_version": number
+            }[]
+                           },
+"claim_guest_interest_mail":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempt_count": number,"contact_payload": Json,"id": string,"interest_request_id": string,"kind": string,"lease_token": string,"recipient_email": string
             }[]
                            },
 "claim_horoscope_cleanup":
@@ -1170,6 +1181,12 @@ isOneToOne: false
                            },
 "complete_candidate_liveness_email":
 { Args: { "p_claim_token": string,"p_delivery_id": string,"p_error_code"?: string,"p_provider_message_id"?: string,"p_retryable"?: boolean }; Returns: boolean
+                           },
+"complete_guest_interest_mail":
+{ Args: { "p_error_code"?: string,"p_id": string,"p_lease_token": string,"p_retryable"?: boolean,"p_sent": boolean }; Returns: boolean
+                           },
+"complete_guest_interest_verification":
+{ Args: { "p_code_digest": string,"p_id": string,"p_network_subject_hash": string }; Returns: string
                            },
 "complete_identity_verification_provider_absence":
 { Args: { "p_attempt_id": string,"p_claim_token": string }; Returns: boolean
@@ -1229,6 +1246,9 @@ isOneToOne: false
                            },
 "decide_family_viewer_proposal":
 { Args: { "p_decision": string,"p_email_hash": string,"p_idempotency_key": string,"p_token_hash": string,"p_viewer_ref": string }; Returns: Json
+                           },
+"decide_interest_contact_reviewed":
+{ Args: { "p_interest_request_id": string,"p_revision": string }; Returns: string
                            },
 "decide_interest_request":
 { Args: { "p_decision": string,"p_interest_request_id": string }; Returns: string
@@ -1320,6 +1340,9 @@ isOneToOne: false
                            },
 "get_portfolio_publication_readiness":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"guest_interest_mail_is_current":
+{ Args: { "p_id": string,"p_lease_token": string }; Returns: boolean
                            },
 "has_brokerdesk_capability":
 { Args: { "p_capability": string,"p_relationship_ref"?: string,"p_workspace_ref": string }; Returns: boolean
@@ -1414,6 +1437,9 @@ isOneToOne: false
                            },
 "publish_portfolio_transaction":
 { Args: { "p_approved_data": Json,"p_draft_data": Json,"p_expires_at": string,"p_portfolio_id": string,"p_public_data": Json,"p_share_token": string,"p_sun_sign": string,"p_template_id": number,"p_theme_color": string }; Returns: Json
+                           },
+"purge_guest_interest_ephemera":
+{ Args: { "p_limit"?: number }; Returns: number
                            },
 "purge_landing_feedback":
 { Args: Record<PropertyKey, never>; Returns: number
