@@ -22,7 +22,7 @@ test("Ananya's public sample has a fictional portrait and readable product chapt
   for (const [name, target] of [["overview", "#portfolio-top"], ["story", "#personal-story"], ["privacy", "#portfolio-interest"]] as const) {
     if (name !== "overview") await page.locator(target).evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }));
     await expect(page.locator(target)).toBeInViewport();
-    if (name === "privacy") await expect(page.getByRole("heading", { name: "More can be shared privately." })).toBeVisible();
+    if (name === "privacy") await expect(page.getByRole("heading", { name: "Contacts stay private until shared." })).toBeVisible();
     const heading = name === "overview" ? page.getByRole("heading", { level: 1 }) : page.locator(`${target} h2`).first();
     // A visible element can still be above the viewport or behind sticky chrome.
     await expect.poll(async () => {

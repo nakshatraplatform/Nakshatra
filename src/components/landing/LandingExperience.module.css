@@ -398,7 +398,8 @@
 .stepsGrid article:first-child { padding-left: 0; }
 .stepsGrid article:last-child { border: 0; }
 .stepsGrid span { color: var(--gold); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.16em; }
-.stepsGrid h3 { margin-top: 2.5rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 2rem; font-weight: 500; }
+.stepsGrid article > svg { display: block; width: 1.5rem; height: 1.5rem; margin-top: 1.5rem; color: var(--workspace-teal); }
+.stepsGrid h3 { margin-top: 1rem; font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: 2rem; font-weight: 500; }
 .stepsGrid p { max-width: 34ch; margin-top: 0.5rem; color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 
 .tourVisual { position: relative; display: grid; align-content: center; min-height: 300px; gap: 1rem; border-top: 1px solid var(--line); padding: clamp(1.5rem, 4vw, 3rem); background: var(--workspace-surface-muted); }

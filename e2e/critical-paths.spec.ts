@@ -85,8 +85,8 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
     "aria-label",
     /does not verify legal identity, introduction photo ownership, profile statements, or endorse a match/
   );
-  await expect(page.getByText(/Family information exists and can be requested/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "More can be shared privately." })).toBeVisible();
+  await expect(page.getByText(/Family information stays private/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contacts stay private until shared." })).toBeVisible();
   await expect(page.getByText("Direct contact", { exact: true })).toBeVisible();
   await expect(page.getByText("Ramesh Rao", { exact: true })).toHaveCount(0);
   await expect(page.getByText("family@example.com", { exact: true })).toHaveCount(0);
@@ -94,15 +94,9 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(interestButton).toBeVisible();
   await interestButton.click();
 
-  const viewerChoiceDialog = page.getByRole("dialog", { name: /how would you like to continue/i });
-  await expect(viewerChoiceDialog).toBeVisible();
-  const googleContinuation = viewerChoiceDialog.getByRole("button", { name: "Continue with Google" });
-  await expect(googleContinuation).toBeVisible();
-  await expect(viewerChoiceDialog.getByRole("link", { name: "Sign in to VivIntro" })).toHaveCSS("background-color", "rgb(35, 75, 104)");
-  await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
-
   const interestDialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(interestDialog).toBeVisible();
+  await expect(interestDialog.getByRole("button", { name: "Continue with Google" })).toHaveCount(0);
   await expect(interestDialog.getByLabel("Full name", { exact: true })).toHaveValue("");
   await expect(interestDialog.getByLabel("Who are you contacting for?")).toHaveValue("");
   await expect(interestDialog.getByLabel("Phone number")).toHaveValue("");
@@ -138,7 +132,7 @@ test("public portfolio renders sanitized data and adaptive media", async ({ page
   await expect(gallery.locator('.portfolio-gallery-thumbnail:not([data-presentation="blurred"])')).toHaveCount(7);
   await expect(gallery.locator('.portfolio-gallery-thumbnail[data-presentation="blurred"]')).toHaveCount(1);
   await expect(gallery.getByRole("button", { name: "Show photo 1" })).toBeVisible();
-  await expect(gallery.getByRole("button", { name: "Photo 8, shared privately" })).toBeVisible();
+  await expect(gallery.getByRole("button", { name: "Photo 8, private" })).toBeVisible();
   await expect(gallery.getByAltText("Protected portrait")).toHaveCount(0);
   const galleryColumns = await gallery.locator(".portfolio-gallery-viewer").evaluate(
     (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length
@@ -238,10 +232,6 @@ test("public portfolio exposes production-ready metadata and distinct accent rol
 test("interest popup stays in view and requires decision-making details", async ({ page }) => {
   await page.goto("/p/e2e-portfolio-token");
   await page.getByRole("button", { name: "Show interest" }).click();
-
-  const viewerChoiceDialog = page.getByRole("dialog", { name: /how would you like to continue/i });
-  await expect(viewerChoiceDialog).toBeVisible();
-  await viewerChoiceDialog.getByRole("button", { name: "Continue as a new visitor" }).click();
 
   const dialog = page.getByRole("dialog", { name: /introduce yourself/i });
   await expect(dialog).toBeVisible();

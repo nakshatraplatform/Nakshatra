@@ -23,7 +23,7 @@ test("account deletion protects keyboard focus and returns it on cancellation", 
 
   await page.goto("/account?reauth=complete");
   await expect(dialog.getByRole("heading")).toBeFocused();
-  await expect(dialog).toContainText("When you confirm deletion");
+  await expect(dialog).toContainText("After you confirm, your public link and existing approved access stop working.");
   await expect(dialog).toContainText("may take longer");
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();

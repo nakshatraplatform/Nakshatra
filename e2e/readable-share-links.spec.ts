@@ -8,6 +8,6 @@ for (const path of ["aditi-rao", "aditi-rao-2", "li-xu", "e2e-portfolio-token"])
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continue as a new visitor" })).toBeVisible();
+    await expect(page.getByRole("dialog").getByLabel("Full name", { exact: true })).toBeVisible();
   });
 }

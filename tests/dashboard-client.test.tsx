@@ -1177,7 +1177,7 @@ describe("dashboard client", () => {
     expect(mocks.publish).not.toHaveBeenCalled();
   });
 
-  it("lets an owner approve a signed-in interest from the dashboard", async () => {
+  it("lets an owner email published contacts without opening new private access", async () => {
     const decisionFetch = vi.fn(async (input: string) => String(input).startsWith("/api/dashboard/relationships")
       ? Response.json({ ...relationshipFixture, records: [] }) : Response.json({ ok: true, status: "approved" }));
     vi.stubGlobal("fetch", decisionFetch);
@@ -1220,19 +1220,14 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Share details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Email chosen contacts" }));
 
-    const approval = screen.getByRole("dialog", { name: /Share details with Rohan Mehta/i });
-    expect(within(approval).getByText(/Details are shared for 15 days/i)).toBeInTheDocument();
-    expect(await within(approval).findByText(/Personal profile, location, and story details/i)).toBeInTheDocument();
-    expect(within(approval).getByText("Exact date of birth")).toBeInTheDocument();
-    expect(within(approval).getByText(/Education, employer, career/i)).toBeInTheDocument();
-    expect(within(approval).getByText(/Family members, origins/i)).toBeInTheDocument();
-    expect(within(approval).getByText(/Lifestyle, languages/i)).toBeInTheDocument();
-    expect(within(approval).getByText(/Partner preferences/i)).toBeInTheDocument();
-    expect(within(approval).getByText("Private contact details")).toBeInTheDocument();
+    const approval = screen.getByRole("dialog", { name: /Email your chosen contacts to Rohan Mehta/i });
+    expect(await within(approval).findByText(/Rao · family@example.com/i)).toBeInTheDocument();
+    expect(within(approval).getByText(/does not open private profile details/i)).toBeInTheDocument();
+    expect(within(approval).queryByText(/15 days/i)).not.toBeInTheDocument();
     expect(decisionFetch.mock.calls.some(([url]) => String(url).startsWith("/api/interest/"))).toBe(false);
-    fireEvent.click(within(approval).getByRole("button", { name: "Share details for 15 days" }));
+    fireEvent.click(within(approval).getByRole("button", { name: "Email chosen contacts" }));
 
     await waitFor(() => expect(decisionFetch).toHaveBeenCalledWith(
       "/api/interest/interest-1",
@@ -1241,7 +1236,7 @@ describe("dashboard client", () => {
     expect(await screen.findByText("0 waiting")).toBeInTheDocument();
   });
 
-  it("lets the owner renew and revoke private details access", async () => {
+  it("lets the owner revoke existing private details access without extending it", async () => {
     renderDashboard({
       ...shareablePublished,
       isExpired: false,
@@ -1273,12 +1268,8 @@ describe("dashboard client", () => {
 
     expect(screen.getByText("Active until Jan 1, 2099")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    fireEvent.click(screen.getByRole("button", { name: "Share for another 15 days" }));
-    await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "renew"));
-    expect(await screen.findByText("Active until Feb 1, 2099")).toBeInTheDocument();
-
+    expect(screen.queryByRole("button", { name: "Share for another 15 days" })).not.toBeInTheDocument();
     mocks.manageAccess.mockResolvedValueOnce({ ok: true, status: "revoked" });
-    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
     fireEvent.click(screen.getByRole("button", { name: "Stop sharing" }));
     await waitFor(() => expect(mocks.manageAccess).toHaveBeenCalledWith(accessGrantId, "revoke"));
     fireEvent.click(screen.getByRole("button", { name: /Sharing history/i }));

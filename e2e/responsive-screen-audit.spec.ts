@@ -132,7 +132,6 @@ test("account confirmation and public interest form keep their fields reachable"
   for (const token of ["e2e-portfolio-token", "e2e-dark-portfolio-token"]) {
     await page.goto(`/p/${token}`);
     await page.getByRole("button", { name: "Show interest", exact: true }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Continue as a new visitor" }).click();
     await expect(page.getByRole("dialog").getByLabel("Full name", { exact: true })).toBeVisible();
     await inspectSizes(page, info, token, page.getByRole("dialog"));
     await page.keyboard.press("Escape");

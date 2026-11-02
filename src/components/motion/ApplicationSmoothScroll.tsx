@@ -11,6 +11,12 @@ export function interruptSmoothScroll(lenis: Pick<Lenis, "isStopped" | "stop" | 
   lenis.start();
 }
 
+/** A retained, hidden interest dialog must not keep page scrolling locked. */
+export function hasActiveModal(document: Document) {
+  return Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], dialog[open]'))
+    .some(dialog => !dialog.closest("[hidden], [aria-hidden='true']"));
+}
+
 /** Progressive enhancement only: the browser owns layout, focus and history. */
 export function ApplicationSmoothScroll() {
   const pathname = usePathname();
@@ -35,12 +41,24 @@ export function ApplicationSmoothScroll() {
       });
       controller.current = lenis;
 
+      let wasLocked = false;
       const syncLock = () => {
         const overflow = document.body.style.overflowY || document.body.style.overflow
           || getComputedStyle(document.body).overflowY;
-        const modal = document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]');
-        if (modal || overflow === "hidden" || overflow === "clip") lenis.stop();
-        else lenis.start();
+        const locked = hasActiveModal(document) || overflow === "hidden" || overflow === "clip";
+        if (locked) {
+          wasLocked = true;
+          lenis.stop();
+        } else {
+          lenis.start();
+          if (wasLocked) {
+            wasLocked = false;
+            lenis.resize();
+            // The scroll lock restores the browser's position. Reset stale
+            // Lenis momentum to that position before accepting another wheel.
+            lenis.scrollTo(window.scrollY, { immediate: true, force: true });
+          }
+        }
       };
       const dialogSelector = '[role="dialog"][aria-modal="true"], dialog';
       const containsDialog = (node: Node) => node instanceof Element
@@ -48,11 +66,11 @@ export function ApplicationSmoothScroll() {
       const observer = new MutationObserver(records => {
         // Ignore routine editor text updates; only locks and dialog lifecycles matter.
         if (records.some(record => record.type === "attributes"
-          ? record.target === document.body || (record.target instanceof Element && record.target.matches(dialogSelector))
+          ? record.target === document.body || containsDialog(record.target)
           : [...record.addedNodes, ...record.removedNodes].some(containsDialog))) syncLock();
       });
       observer.observe(document.body, {
-        attributes: true, attributeFilter: ["style", "class", "open", "aria-modal"], childList: true, subtree: true,
+        attributes: true, attributeFilter: ["style", "class", "hidden", "aria-hidden", "open", "aria-modal"], childList: true, subtree: true,
       });
       const onKeyDown = (event: KeyboardEvent) => {
         if (!event.defaultPrevented && ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) {

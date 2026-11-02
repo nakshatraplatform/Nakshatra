@@ -31,10 +31,11 @@ describe("location reference client", () => {
     render(<LocationFields value={{}} onChange={vi.fn()} requireCompleteHierarchy />);
     const manual = screen.getByRole("button", { name: "Enter location manually" });
     const search = screen.getByRole("combobox", { name: "ZIP or PIN code" });
-    expect(manual.className).toContain("workspace-focus");
-    expect(manual.className).toContain("underline");
+    expect(manual).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Search by ZIP or PIN" })).toHaveAttribute("aria-pressed", "true");
     expect(manual.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(manual);
+    expect(screen.getByRole("button", { name: "Enter location manually" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("City")).toBeRequired();
     expect(fetchMock).not.toHaveBeenCalled();
   });

@@ -107,7 +107,7 @@ describe("API route authentication", () => {
     renewPortfolioLink.mockResolvedValue({ expiresAt: "2099-01-01" });
     rotatePortfolioLink.mockResolvedValue({ shareUrl: "https://example.test/p/new", shareToken: "new" });
     unpublishPortfolio.mockResolvedValue({ status: "unpublished" });
-    managePortfolioGrant.mockResolvedValue({ status: "renewed", expiresAt: "2099-02-01" });
+    managePortfolioGrant.mockResolvedValue({ status: "revoked" });
   });
 
   it.each([
@@ -117,7 +117,7 @@ describe("API route authentication", () => {
     ["rotate", () => rotatePost(mutationRequest("http://local/api/portfolio/share/rotate"))],
     ["unpublish", () => unpublishPost(mutationRequest("http://local/api/portfolio/share/unpublish"))],
     ["access grant", () => accessGrantPatch(
-      jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "renew" }),
+      jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "revoke" }),
       { params: Promise.resolve({ id: accessGrantId }) }
     )],
     ["owner horoscope view", () => horoscopeView(new Request("http://local/api/portfolio-horoscope/view"))],
@@ -137,7 +137,7 @@ describe("dashboard and portfolio lifecycle routes", () => {
     renewPortfolioLink.mockResolvedValue({ expiresAt: "2099-01-01" });
     rotatePortfolioLink.mockResolvedValue({ shareUrl: "https://example.test/p/new", shareToken: "new" });
     unpublishPortfolio.mockResolvedValue({ status: "unpublished" });
-    managePortfolioGrant.mockResolvedValue({ status: "renewed", expiresAt: "2099-02-01" });
+    managePortfolioGrant.mockResolvedValue({ status: "revoked" });
   });
 
   it("validates and saves dashboard drafts", async () => {
@@ -223,11 +223,17 @@ describe("dashboard and portfolio lifecycle routes", () => {
 
   it("validates and safely maps owner grant actions", async () => {
     const success = await accessGrantPatch(
+      jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "revoke" }),
+      { params: Promise.resolve({ id: accessGrantId }) }
+    );
+    expect(await success.json()).toMatchObject({ status: "revoked" });
+    expect(managePortfolioGrant).toHaveBeenCalledWith(actor.supabase, accessGrantId, "revoke");
+
+    const oldRenewal = await accessGrantPatch(
       jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "renew" }),
       { params: Promise.resolve({ id: accessGrantId }) }
     );
-    expect(await success.json()).toMatchObject({ status: "renewed", expiresAt: "2099-02-01" });
-    expect(managePortfolioGrant).toHaveBeenCalledWith(actor.supabase, accessGrantId, "renew");
+    expect(oldRenewal.status).toBe(400);
 
     const invalid = await accessGrantPatch(
       jsonRequest("http://local/api/access-grants/not-a-uuid", "PATCH", { action: "delete" }),
@@ -236,16 +242,16 @@ describe("dashboard and portfolio lifecycle routes", () => {
     expect(invalid.status).toBe(400);
 
     managePortfolioGrant.mockRejectedValueOnce(
-      new AccessLifecycleError("Only approved access can be renewed.", "ACCESS_INVALID_TRANSITION", 409)
+      new AccessLifecycleError("This access can no longer be changed.", "ACCESS_INVALID_TRANSITION", 409)
     );
     const conflict = await accessGrantPatch(
-      jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "renew" }),
+      jsonRequest(`http://local/api/access-grants/${accessGrantId}`, "PATCH", { action: "revoke" }),
       { params: Promise.resolve({ id: accessGrantId }) }
     );
     expect(conflict.status).toBe(409);
     expect(await conflict.json()).toEqual({
       code: "ACCESS_INVALID_TRANSITION",
-      error: "Only approved access can be renewed.",
+      error: "This access can no longer be changed.",
     });
   });
 });

@@ -18,9 +18,12 @@ async function textContrast(locator: Locator) {
 
 for (const [token, appearance] of [["e2e-portfolio-token", "light"], ["e2e-dark-portfolio-token", "dark"]]) {
 test(`gold metadata and split interest panes remain legible through OTP and success: ${appearance}`, async ({ page }, testInfo) => {
-  await page.route("**/api/auth/start", route => route.fulfill({ json: { sent: true } }));
-  await page.route("**/api/auth/verify", route => route.fulfill({ json: { verified: true, authenticated: true } }));
-  await page.route("**/api/interest", route => route.fulfill({ status: 201, json: { ok: true } }));
+  await page.route("**/api/interest/guest", route => route.fulfill({
+    status: route.request().postDataJSON().action === "start" ? 200 : 201,
+    json: route.request().postDataJSON().action === "start"
+      ? { sent: true, challengeId: "11111111-1111-4111-8111-111111111111" }
+      : { submitted: true },
+  }));
     await page.goto("/");
     await page.evaluate(theme => localStorage.setItem("nakshatra-app-theme", theme), appearance === "light" ? "dark" : "light");
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -44,9 +47,9 @@ test(`gold metadata and split interest panes remain legible through OTP and succ
     const sidebar = dialog.getByRole("complementary", { name: "About this introduction" });
     await expect(sidebar).toBeVisible();
     await expect(sidebar.getByRole("heading", { name: "Next steps" })).toBeVisible();
-    await dialog.getByRole("button", { name: "Continue as a new visitor" }).click();
     await dialog.getByLabel("Full name", { exact: true }).fill("Maya Shah");
     await dialog.getByLabel("Who are you contacting for?").selectOption("self");
+    await dialog.getByRole("textbox", { name: "Country calling code" }).fill("1");
     await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("6175550123");
     await dialog.getByLabel("Email address", { exact: true }).fill("maya@example.test");
     await dialog.getByRole("button", { name: "Enter location manually", exact: true }).click();

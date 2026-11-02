@@ -45,9 +45,11 @@ for (const appearance of ["light", "dark"]) {
     await page.screenshot({ path: testInfo.outputPath(`portfolio-${appearance}.png`), animations: "disabled" });
     await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("link", { name })).toHaveAttribute("target", "_blank");
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      await expect(dialog.getByRole("link", { name })).toHaveAttribute("target", "_blank");
+    }
     await expect(dialog).toHaveCSS("color-scheme", appearance);
-    await expect(dialog.getByText("They’ll share more if they’d like to continue.")).toHaveCount(1);
+    await expect(dialog.getByText(/No account is needed\./)).toBeVisible();
   });
 }
 

@@ -214,7 +214,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByText("Marriage introduction")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Education and career" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Family" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Contacts stay private until shared." })).toBeInTheDocument();
     const heroLine = document.querySelector(".portfolio-hero-line");
     expect(heroLine).toHaveTextContent("Engineer, Boston");
     expect(heroLine).not.toHaveTextContent(/\d+ years/);
@@ -365,7 +365,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("link", { name: "Show Interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(within(screen.getByRole("navigation", { name: "Introduction quick actions" })).queryByRole("link", { name: "Show interest" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show interest" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "More can be shared privately." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Contacts stay private until shared." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create your introduction" })).toHaveAttribute("href", "/signup");
   });
 
@@ -401,9 +401,9 @@ describe("celestial union portfolio", () => {
 
     const family = document.getElementById("family");
     expect(family).toBeTruthy();
-    expect(within(family!).getByText("Family shared privately")).toBeInTheDocument();
+    expect(within(family!).getByText("Family stays private")).toBeInTheDocument();
     expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(screen.getByText("When they choose to share, everything listed above is available for up to 15 days.")).toBeInTheDocument();
+    expect(screen.getByText("These details stay private. Showing interest does not open private profile access.")).toBeInTheDocument();
   });
 
   it("does not promise another approval when a private details has no details in a restricted chapter", () => {
@@ -420,7 +420,7 @@ describe("celestial union portfolio", () => {
     expect(screen.queryByText(/shared privately/i)).not.toBeInTheDocument();
 
     rerender(<CelestialUnion data={sparseData} sunSign={null} accessMode="public" interestAction={<button type="button">Show interest</button>} />);
-    expect(screen.getByText("Family shared privately")).toBeInTheDocument();
+    expect(screen.getByText("Family stays private")).toBeInTheDocument();
   });
 
   it("keeps protected gallery slots visible in the Brief Introduction", () => {
@@ -439,10 +439,10 @@ describe("celestial union portfolio", () => {
       />
     );
 
-    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, shared privately" });
+    const protectedPhoto = screen.getByRole("button", { name: "Photo 3, private" });
     expect(protectedPhoto).toBeInTheDocument();
     fireEvent.click(protectedPhoto);
-    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
+    expect(screen.getByText("Private photo")).toBeInTheDocument();
     expect(screen.getByText("3 photos")).toBeInTheDocument();
     const gallery = document.querySelector(".portfolio-gallery");
     const astrology = document.getElementById("astrology");
@@ -539,7 +539,7 @@ describe("celestial union portfolio", () => {
     expect(screen.getByRole("heading", { name: "Minimal" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Education and career" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Family" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "More can be shared privately." })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Contacts stay private until shared." })).not.toBeInTheDocument();
   });
 
   it("clears stale fields while rerendering Private and Balanced modes", () => {
@@ -705,7 +705,7 @@ describe("adaptive portfolio media", () => {
     const { container } = render(<AdaptivePortfolioGallery photos={[protectedPhoto]} />);
 
     expect(screen.queryByAltText(protectedPhoto.alt)).not.toBeInTheDocument();
-    expect(screen.getByText("Photo shared privately")).toBeInTheDocument();
+    expect(screen.getByText("Private photo")).toBeInTheDocument();
     expect(
       container.querySelector('.portfolio-gallery-feature[data-presentation="blurred"]')
     ).toBeTruthy();
@@ -737,7 +737,7 @@ describe("adaptive portfolio media", () => {
     expect(screen.getByText("1 of 3")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show photo 1" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "Show photo 2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Photo 3, shared privately" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 3, private" })).toBeInTheDocument();
   });
 
   it("detects orientation for legacy photos without stored dimensions", () => {

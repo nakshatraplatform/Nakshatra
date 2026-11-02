@@ -978,7 +978,7 @@ export default function DashboardClient({
             {viewerAccessAvailable ? (
               <section id="introduction-link" className="dashboard-glass dashboard-sharing-card scroll-mt-24" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Anyone with this name-based link can see your public introduction. Private details need your approval.</p>
+                <p className="dashboard-sharing-description">Anyone with this link can see your public introduction. After someone shows interest, you choose whether to email your published contacts.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1139,7 +1139,7 @@ export default function DashboardClient({
                 <>
                   <section aria-labelledby="publish-readiness-heading" className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4 sm:p-6">
                     <h3 id="publish-readiness-heading" className="font-semibold">Publishing checklist</h3>
-                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public introduction link; you still choose who sees your private details.</p>
+                     <p className="mt-2 text-sm text-[var(--workspace-muted)]">Follow the next incomplete step below. Publishing activates your public introduction link. You choose whether to share your published contacts after someone shows interest.</p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewRequirement complete={completion.readyToPublish} label="Required details complete" pendingLabel={completion.missing.length ? `${completion.missing.length} required item${completion.missing.length === 1 ? "" : "s"} missing` : completion.invalidAnswers[0]?.label || "Review your answers"} />
                       <ReviewRequirement complete={canPublishWithVerificationStatus(readinessState.verificationStatus)} label={readinessState.verificationStatus === "test_exempt" ? "Test publishing access active (not Didit verified)" : "Liveness checks complete"} pendingLabel="Complete the liveness checks" />
@@ -1149,7 +1149,7 @@ export default function DashboardClient({
                   </section>
                   {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
                     <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
-                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. Contact information, exact birth details, and other private details are shared only when I choose. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
+                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. New Show interest approvals email only the contacts I choose to publish. Existing approved private access remains until expiry or revocation. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
                   </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Complete the required details, liveness check and account setup to give publication consent here. Consent for the liveness check is requested separately.</p>}
                   <h3 className="mt-6 font-semibold">Optional previews</h3>
                   <div id="review-preview-links" className="mt-4 grid gap-4 lg:grid-cols-2">

@@ -22,7 +22,6 @@ it("bounds a stalled validation download, retains answers, and ignores its late 
   const request = vi.fn(); vi.stubGlobal("fetch", request);
   render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
   fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-  fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
   fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
   await act(async () => { await vi.advanceTimersByTimeAsync(20_001); });

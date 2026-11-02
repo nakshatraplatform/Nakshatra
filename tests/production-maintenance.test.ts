@@ -5,13 +5,14 @@ vi.mock("@/features/horoscope/server/horoscope-cleanup.service", () => ({ proces
 vi.mock("@/features/media/server/photo-cleanup.service", () => ({ processPhotoCleanup: mocks.photoCleanup }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), retention: vi.fn(), horoscopeCleanup: vi.fn(), photoCleanup: vi.fn(), factory: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), deletion: vi.fn(), report: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), retention: vi.fn(), horoscopeCleanup: vi.fn(), photoCleanup: vi.fn(), factory: vi.fn(), identity: vi.fn(), cleanup: vi.fn(), email: vi.fn(), relationship: vi.fn(), guest: vi.fn(), deletion: vi.fn(), report: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createServiceRoleClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("../scripts/identity-verification-worker.mjs", () => ({ createIdentityVerificationWorker: mocks.factory }));
 vi.mock("../scripts/deleted-provider-cleanup.mjs", () => ({ processDeletedProviderCleanup: mocks.cleanup }));
 vi.mock("../scripts/candidate-liveness-email-worker.mjs", () => ({ processCandidateLivenessEmails: mocks.email }));
 vi.mock("../scripts/account-deletion-worker.mjs", () => ({ createAccountDeletionWorker: () => ({ run: mocks.deletion }) }));
 vi.mock("@/features/notifications/server/relationship-notification.service", () => ({ processRelationshipNotifications: mocks.relationship }));
+vi.mock("@/features/notifications/server/guest-interest-mail.service", () => ({ processGuestInterestMail: mocks.guest }));
 vi.mock("@/lib/observability/operations.mjs", async original => ({ ...await original<typeof import("@/lib/observability/operations.mjs")>(), reportOperationFailure: mocks.report }));
 import { productionHealth, runProductionMaintenance, workerAuthorized } from "@/features/operations/server/production-maintenance";
 import { GET } from "@/app/api/internal/production-health/route";
@@ -27,7 +28,7 @@ beforeEach(() => {
   mocks.retention.mockReset().mockResolvedValue(true); mocks.horoscopeCleanup.mockReset().mockResolvedValue({ deferred: 0 }); mocks.photoCleanup.mockReset().mockResolvedValue({ deferred: 0 });
   mocks.factory.mockReset().mockReturnValue({ run: mocks.identity });
   mocks.identity.mockResolvedValue({ deferred: 0 }); mocks.cleanup.mockResolvedValue({ deferred: 0 });
-  mocks.email.mockResolvedValue({ failed: 0 }); mocks.relationship.mockResolvedValue({ failed: 0 }); mocks.deletion.mockResolvedValue({ deferred: 0 });
+  mocks.email.mockResolvedValue({ failed: 0 }); mocks.relationship.mockResolvedValue({ failed: 0 }); mocks.guest.mockResolvedValue({ failed: 0 }); mocks.deletion.mockResolvedValue({ deferred: 0 });
 });
 describe("production maintenance", () => {
   it("waits for the proof commit before claiming confirmation emails without delaying unrelated queues", async () => {

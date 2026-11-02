@@ -148,20 +148,15 @@ describe("dashboard read repositories", () => {
 });
 
 describe("AccessRepository", () => {
-  it("uses only the owner-scoped access RPCs and forwards the requested lifecycle action", async () => {
+  it("uses only the owner-scoped access RPCs for revocation", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: { status: "ok" }, error: null });
     const repository = new AccessRepository({ rpc } as never);
 
     await repository.listPortfolioAccess();
-    await repository.manageGrant("grant-1", "renew");
     await repository.manageGrant("grant-2", "revoke");
 
     expect(rpc).toHaveBeenNthCalledWith(1, "list_portfolio_access");
     expect(rpc).toHaveBeenNthCalledWith(2, "manage_reveal_grant", {
-      p_grant_id: "grant-1",
-      p_action: "renew",
-    });
-    expect(rpc).toHaveBeenNthCalledWith(3, "manage_reveal_grant", {
       p_grant_id: "grant-2",
       p_action: "revoke",
     });

@@ -11,7 +11,7 @@ test("shared details reveals protected contact only to the confirmed recipient",
   await expect(page).toHaveURL(/\/p\/e2e-portfolio-token$/);
   await expect(page.getByLabel("Private sharing details")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Contact shared by the introduction owner" })).toBeVisible();
-  await expect(page.getByText("Family shared privately")).toHaveCount(0);
+  await expect(page.getByText("Family stays private")).toHaveCount(0);
   await expect(page.getByText("aditi@example.test")).toBeVisible();
   await expect(page.getByRole("button", { name: "Show interest" })).toHaveCount(0);
   await expect.poll(() => page.getByAltText("Public portrait").first().evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);

@@ -14,8 +14,8 @@ export async function ensureOwnerPortfolio(
   supabase: SupabaseClient,
   userId: string
 ) {
-  // A viewer may sign in only to request protected access. Do not create a
-  // draft unless the owner journey explicitly calls this helper.
+  // Do not create an introduction unless the owner journey explicitly calls
+  // this helper and the account has creator capability.
   if (!(await canCreatePortfolio(supabase))) return null;
 
   const { data: existing, error: lookupError } = await supabase
@@ -36,7 +36,6 @@ export async function ensureOwnerPortfolio(
           personal: {
             name: "",
             dob: "",
-            gender: "male",
           },
         },
       },

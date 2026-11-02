@@ -48,7 +48,7 @@ describe("owner portfolio bootstrap", () => {
     expect(inserted.upsert).toHaveBeenCalledWith(
       {
         user_id: "owner",
-        draft_data: { personal: { name: "", dob: "", gender: "male" } },
+        draft_data: { personal: { name: "", dob: "" } },
       },
       { onConflict: "user_id", ignoreDuplicates: true }
     );

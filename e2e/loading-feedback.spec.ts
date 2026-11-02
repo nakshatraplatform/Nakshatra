@@ -77,16 +77,25 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
   await page.getByRole("button", { name: "Show interest" }).click();
   let release!: () => void;
   const wait = new Promise<void>((resolve) => { release = resolve; });
-  await page.route("**/api/auth/start", async (route) => {
+  await page.route("**/api/interest/guest", async (route) => {
     await wait;
-    await route.fulfill({ status: 503, json: { error: "Google unavailable" } });
+    await route.fulfill({ status: 503, json: { error: "Verification unavailable" } });
   });
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByLabel("Registered email")).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Continue with Google" }).click();
-  const pendingButton = dialog.getByRole("button", { name: "Connecting to Google", exact: true });
+  await dialog.getByLabel("Full name", { exact: true }).fill("Mira Rao");
+  await dialog.getByLabel("Who are you contacting for?").selectOption("self");
+  await dialog.getByRole("textbox", { name: "Country calling code", exact: true }).fill("91");
+  await dialog.getByRole("textbox", { name: "Phone number", exact: true }).fill("9876543210");
+  await dialog.getByLabel("Email address", { exact: true }).fill("mira@example.test");
+  await dialog.getByRole("button", { name: "Enter location manually" }).click();
+  await dialog.getByLabel("State", { exact: true }).selectOption("IN-KA");
+  await dialog.getByLabel("City", { exact: true }).fill("Bengaluru");
+  await dialog.getByLabel("ZIP or PIN code", { exact: true }).fill("560001");
+  await dialog.getByLabel("Family context", { exact: true }).fill("Our family values kindness, honesty, and mutual respect in every conversation.");
+  await dialog.getByRole("button", { name: "Verify email and continue" }).click();
+  const pendingButton = dialog.getByRole("button", { name: "Sending verification code", exact: true });
   const status = pendingButton.getByRole("status");
-  await expect(status).toHaveText("Connecting to Google");
+  await expect(status).toHaveText("Sending verification code");
   await expect(pendingButton).toBeDisabled();
   await expect(pendingButton).toHaveAttribute("aria-busy", "true");
   await expect(status).toHaveCSS("color-scheme", "light");
@@ -109,7 +118,7 @@ test("portaled interest waits retain the owner's appearance and disappear on fai
   await expect(spinner).toHaveCSS("height", "24px");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   release();
-  await expect(dialog.getByRole("alert")).toHaveText("Google unavailable");
+  await expect(dialog.getByRole("alert")).toHaveText("Verification unavailable");
   await expect(status).toHaveCount(0);
-  await expect(dialog.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+  await expect(dialog.getByRole("button", { name: "Verify email and continue" })).toBeEnabled();
 });

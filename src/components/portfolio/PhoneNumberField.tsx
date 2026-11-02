@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { combinePhoneNumber, splitPhoneNumber, isValidPhoneNumber } from "@/features/portfolio/phone-number";
+import { combinePhoneNumber, splitPhoneNumber, isValidPhoneNumber, isValidInterestPhoneNumber } from "@/features/portfolio/phone-number";
 
 export function PhoneNumberField({
   value,
@@ -13,6 +13,7 @@ export function PhoneNumberField({
   label = "Phone number",
   error: externalError,
   showPartLabels = true,
+  interestContact = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -23,11 +24,17 @@ export function PhoneNumberField({
   label?: string;
   error?: string;
   showPartLabels?: boolean;
+  interestContact?: boolean;
 }) {
   const errorId = useId();
   const [touched, setTouched] = useState(false);
-  const error = externalError || (touched && value.trim() && !isValidPhoneNumber(value)
-    ? "Enter a valid phone number with 7–20 digits, or leave it blank." : undefined);
+  const valid = interestContact ? isValidInterestPhoneNumber(value) : isValidPhoneNumber(value);
+  const error = externalError || (touched && value.trim() && !valid
+    ? interestContact && !value.trim().startsWith("+")
+      ? "Add a country calling code before the phone number."
+      : interestContact && (splitPhoneNumber(value).callingCode === "1" || splitPhoneNumber(value).callingCode === "91")
+      ? "Enter a 10-digit phone number. Keep the country code separate."
+      : "Enter a valid phone number with 7–20 digits, or leave it blank." : undefined);
   const [emptyNumberCode, setEmptyNumberCode] = useState(defaultCallingCode.replace(/\D/g, "").slice(0, 3));
   const parts = splitPhoneNumber(value, emptyNumberCode);
   const callingCode = parts.callingCode;
@@ -65,14 +72,14 @@ export function PhoneNumberField({
           <span className={showPartLabels ? undefined : "sr-only"}>Phone number</span>
           <input
             type="tel"
-            inputMode="tel"
+            inputMode="numeric"
             autoComplete="tel-national"
             aria-label={label}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
             value={nationalNumber}
             onChange={(event) => {
-              const entered = event.target.value;
+              const entered = event.target.value.replace(/[^\d+ ()-]/g, "");
               if (entered.startsWith("+")) {
                 const pasted = splitPhoneNumber(entered);
                 if (pasted.callingCode) {
@@ -85,7 +92,9 @@ export function PhoneNumberField({
                 return;
               }
               setEmptyNumberCode(callingCode);
-              onChange(combinePhoneNumber(callingCode, entered));
+              // Keep extra digits visible so validation can flag a mistaken paste;
+              // silently trimming a contact number could send the wrong number.
+              onChange(combinePhoneNumber(callingCode, entered.replace(/\D/g, "").slice(0, 20 - callingCode.length)));
             }}
             maxLength={24}
             placeholder="98765 43210"
@@ -95,7 +104,7 @@ export function PhoneNumberField({
       </div>
       {hint && <small>{hint}</small>}
       {error && <small id={errorId} role={externalError ? undefined : "alert"} className="interest-form-error">{error}</small>}
-      {nationalNumber.startsWith("+") && <small role="alert">Enter the country calling code separately and remove it from the phone number to avoid a wrong number.</small>}
+      {nationalNumber.startsWith("+") && nationalNumber.replace(/\D/g, "").length >= 7 && <small role="alert">Enter the country calling code separately and remove it from the phone number to avoid a wrong number.</small>}
       {name && <input type="hidden" name={name} value={value} />}
     </fieldset>
   );

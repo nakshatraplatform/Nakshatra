@@ -16,18 +16,19 @@ const interestDecisionResultSchema = z.enum([
   "verification_required",
   "unauthorized",
   "review_changed",
+  "no_contact",
 ]);
 
 export type InterestDecisionResult = z.infer<typeof interestDecisionResultSchema>;
 
-/** Applies an owner decision atomically with grant creation or revocation. */
+/** New approvals send published chosen contacts; legacy access remains separate. */
 export async function decideInterestRequest(
   supabase: SupabaseClient,
   interestRequestId: string,
   decision: "approved" | "rejected" | "reopened",
   revision?: string
 ): Promise<InterestDecisionResult> {
-  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_request_reviewed", {
+  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_contact_reviewed", {
     p_interest_request_id: interestRequestId, p_revision: revision ?? "",
   }) : await supabase.rpc("decide_interest_request", {
     p_interest_request_id: interestRequestId,

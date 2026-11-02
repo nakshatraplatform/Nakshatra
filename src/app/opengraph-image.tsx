@@ -51,7 +51,7 @@ export default function OpenGraphImage() {
               Your Vivara. Shared on your terms.
             </div>
             <div style={{ display: "flex", maxWidth: "870px", marginTop: "28px", color: "#52666d", fontFamily: "Arial, sans-serif", fontSize: 27, lineHeight: 1.45 }}>
-              Marriage biodata, shared through your Vivara link. You choose who sees private details.
+              Marriage biodata, shared through your Vivara link. You choose when to share your contacts.
             </div>
           </div>
 

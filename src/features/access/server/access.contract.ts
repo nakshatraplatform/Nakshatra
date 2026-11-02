@@ -39,7 +39,7 @@ export const portfolioAccessSummarySchema = z.object({
 });
 
 export const grantActionSchema = z.object({
-  action: z.enum(["renew", "revoke"]),
+  action: z.literal("revoke"),
 });
 
 export const grantActionResultSchema = z.object({
@@ -48,6 +48,7 @@ export const grantActionResultSchema = z.object({
     "revoked",
     "already_revoked",
     "invalid_transition",
+    "renewal_disabled",
     "not_found",
     "unauthorized",
   ]),

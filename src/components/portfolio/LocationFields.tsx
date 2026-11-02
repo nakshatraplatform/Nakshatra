@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { LocationSuggestion, StructuredLocation } from "@/features/location/location.contract";
-import { isValidPostalCode, locationDisplayValue, normalizePostalCode } from "@/features/location/location.contract";
+import { isValidPostalCode, locationDisplayValue } from "@/features/location/location.contract";
 import { portfolioTextError } from "@/features/portfolio/field-validation";
 import { subdivisionsForCountry } from "@/features/location/subdivisions";
 import { resolveLocationSuggestion, searchLocationSuggestions } from "@/features/portfolio/client/location-reference.api";
@@ -72,7 +72,7 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
 
   useEffect(() => {
     if (focusSelectedView.current && mode !== "search") {
-      selectedViewRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
+      selectedViewRef.current?.querySelector<HTMLElement>(mode === "manual" ? "select, input" : "button")?.focus();
       focusSelectedView.current = false;
     }
   }, [mode]);
@@ -161,20 +161,24 @@ export function LocationFields({ value, onChange, labels = { country: "Country",
 
   if (mode === "manual") return (
     <div ref={selectedViewRef} className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:col-span-2" role="group" aria-label="Location entry method">
+        <button type="button" className="location-method-choice" aria-pressed="false" onClick={beginSearch}>Search by ZIP or PIN</button>
+        <button type="button" className="location-method-choice" aria-pressed="true">Enter location manually</button>
+      </div>
       {message ? <p className="text-sm text-[color:var(--workspace-muted)] sm:col-span-2" role="status">{message}</p> : null}
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.country}{locationRequired ? " *" : ""}</span><select {...validationProps} aria-label={labels.country} autoComplete="country" required={locationRequired} value={value.countryCode || countryCode} onChange={(event) => chooseCountry(event.target.value as SupportedCountryCode)} className="biodata-field min-h-12">{COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.region}{requireCompleteHierarchy ? " *" : ""}</span><select {...validationProps} aria-label={labels.region} autoComplete="address-level1" required={requireCompleteHierarchy} value={value.regionCode || ""} onChange={(event) => { const subdivision = subdivisions.find((item) => item.subdivisionCode === event.target.value); onChange({ region: subdivision?.name || "", regionCode: subdivision?.subdivisionCode, city: "", cityGeonameId: undefined, postalCode: "", locationSource: "manual" }); }} className="biodata-field min-h-12"><option value="">Select state</option>{subdivisions.map((item) => <option key={item.subdivisionCode} value={item.subdivisionCode}>{item.name}</option>)}</select></label>
       <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.city}{locationRequired ? " *" : ""}</span><input {...validationProps} aria-invalid={Boolean(errorDescriptionId || cityError)} aria-describedby={[errorDescriptionId, cityError && cityErrorId].filter(Boolean).join(" ") || undefined} onBlur={() => setCityTouched(true)} aria-label={labels.city} autoComplete="address-level2" required={locationRequired} maxLength={120} value={value.city || ""} onChange={(event) => onChange({ city: event.target.value, cityGeonameId: undefined, locationSource: "manual" })} className="biodata-field min-h-12" />{cityError && <span id={cityErrorId} role="alert" className="text-sm font-normal text-[var(--ui-danger)]">{cityError}</span>}</label>
-      <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.postalCode ?? "ZIP or PIN code"}{requireCompleteHierarchy ? " *" : ""}</span><input {...validationProps} aria-label={labels.postalCode ?? "ZIP or PIN code"} autoComplete="postal-code" inputMode="numeric" required={requireCompleteHierarchy} pattern={countryCode === "IN" ? "[1-9][0-9]{5}" : "[0-9]{5}"} title={countryCode === "IN" ? "Enter a six-digit Indian PIN code." : "Enter a five-digit US ZIP code. ZIP+4 input is stored as its first five digits."} maxLength={countryCode === "IN" ? 6 : 10} value={value.postalCode || ""} onChange={(event) => onChange({ postalCode: normalizePostalCode(event.target.value), locationSource: "manual" })} className="biodata-field min-h-12" /></label>
-      <div className="flex gap-4 sm:col-span-2"><button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-teal)]" onClick={beginSearch}>Use search instead</button>{(requireCompleteHierarchy ? hasCompleteLocationHierarchy(value) : value.country && value.city) ? <button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-ink)]" onClick={() => setMode("confirmed")}>Done</button> : null}</div>
+      <label className="flex flex-col gap-2 text-[15px] font-semibold text-[color:var(--workspace-ink)]"><span>{labels.postalCode ?? "ZIP or PIN code"}{requireCompleteHierarchy ? " *" : ""}</span><input {...validationProps} aria-label={labels.postalCode ?? "ZIP or PIN code"} autoComplete="postal-code" inputMode="numeric" required={requireCompleteHierarchy} pattern={countryCode === "IN" ? "[1-9][0-9]{5}" : "[0-9]{5}"} title={countryCode === "IN" ? "Enter a six-digit Indian PIN code." : "Enter a five-digit US ZIP code. ZIP+4 input is stored as its first five digits."} value={value.postalCode || ""} onChange={(event) => onChange({ postalCode: event.target.value.replace(/\D/g, "").slice(0, countryCode === "IN" ? 6 : 5), locationSource: "manual" })} className="biodata-field min-h-12" /></label>
+      {(requireCompleteHierarchy ? hasCompleteLocationHierarchy(value) : value.country && value.city) ? <div className="sm:col-span-2"><button type="button" className="min-h-11 px-2 text-sm font-semibold text-[color:var(--workspace-ink)]" onClick={() => setMode("confirmed")}>Done</button></div> : null}
     </div>
   );
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <p className="text-sm text-[color:var(--workspace-muted)]">Search by ZIP or PIN code, or</p>
-        <button type="button" aria-describedby={errorDescriptionId} className="workspace-focus inline-flex min-h-11 items-center rounded-md px-2 text-left text-sm font-semibold text-[color:var(--workspace-ink)] underline decoration-2 underline-offset-4" onClick={beginManualEntry}>Enter location manually</button>
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Location entry method">
+        <button type="button" className="location-method-choice" aria-pressed="true">Search by ZIP or PIN</button>
+        <button type="button" aria-describedby={errorDescriptionId} className="location-method-choice" aria-pressed="false" onClick={beginManualEntry}>Enter location manually</button>
       </div>
       <p className="text-sm leading-5 text-[color:var(--workspace-muted)]">Search sends your entry to a postal lookup provider or Google Places when enabled. Manual entry avoids external lookups. <a href="/privacy#location-search" target="_blank" rel="noopener noreferrer" aria-label="Location search privacy (opens in a new tab)" className="workspace-focus font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">Location search privacy</a>.</p>
       <div className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">

@@ -57,15 +57,15 @@ describe("portfolio presentation mapping", () => {
     for (const value of ["Private company", "Private family story", "Private star", "private@example.test", "Photography", "Private values", "English", "Data Engineer"]) {
       expect(screen.queryByText(value, { exact: false })).not.toBeInTheDocument();
     }
-    expect(screen.getByText("Family shared privately")).toBeInTheDocument();
-    expect(screen.getByText("Contact shared privately")).toBeInTheDocument();
+    expect(screen.getByText("Family stays private")).toBeInTheDocument();
+    expect(screen.getByText("Private contacts")).toBeInTheDocument();
   });
 
   it("uses a vault instead of clear photos for restricted gallery metadata", () => {
     render(<CelestialUnion data={{ ...data, visibility: { gallery: "restricted" } }} sunSign={null} accessMode="public"
       photos={[{ id: "private", src: "https://example.test/photo", alt: "Private portrait", mediaType: "gallery", orientation: "portrait" }]} />);
     expect(screen.queryByAltText("Private portrait")).not.toBeInTheDocument();
-    expect(screen.getByText("Photos shared privately")).toBeInTheDocument();
+    expect(screen.getByText("Private photos")).toBeInTheDocument();
   });
 
   it("keeps public rows and approved contact actions on their authorized paths", () => {
@@ -135,7 +135,7 @@ describe("portfolio micro-components", () => {
     expect(screen.getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
     expect(container.querySelector('svg[viewBox="0 0 480 480"]')).toHaveAttribute("aria-hidden", "true");
     expect(container.querySelector('svg[viewBox="0 0 480 480"]')).toHaveAttribute("focusable", "false");
-    expect(screen.getByText("More details shared privately")).toBeInTheDocument();
+    expect(screen.getByText("More details stay private")).toBeInTheDocument();
   });
 
   it("keeps mobile chapter links reachable and restores menu focus on Escape", () => {

@@ -78,7 +78,7 @@ export function RelationshipLifecycle({
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
   onDecision: (id: string, status: "approved" | "rejected" | "pending_review", previous: DashboardInterest["status"]) => void;
-  onGrantChange: (grantId: string, action: "renew" | "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
+  onGrantChange: (grantId: string, action: "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
   overview: RelationshipPage | null;
   loadFailed: boolean;
   onRetry: () => void;
@@ -106,7 +106,7 @@ export function RelationshipLifecycle({
         const parsed = relationshipPageSchema.safeParse(await response.json());
         if (!response.ok || !parsed.success || !parsed.data.disclosure) throw new Error("Review unavailable");
         if (!controller.signal.aborted) setApprovalReview({ data: parsed.data.disclosure });
-      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published private details. Try again before sharing." }); });
+      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published contacts. Try again before sharing." }); });
     return () => controller.abort();
   }, [approvalCandidate, reviewAttempt]);
   const [listModal, setListModal] = useState<ListModal>(null);
@@ -175,21 +175,18 @@ export function RelationshipLifecycle({
     }
   }
 
-  async function manage(grant: AccessGrant, action: "renew" | "revoke") {
-    const prompt = action === "revoke"
-      ? `Stop sharing with ${grant.viewerName || "this person"}? They will no longer be able to open the private details.`
-      : `Share private details with ${grant.viewerName || "this person"} for another 15 days?`;
-    if (!confirm(prompt)) return;
+  async function manage(grant: AccessGrant) {
+    if (!confirm(`Stop sharing with ${grant.viewerName || "this person"}? They will no longer be able to open the private details.`)) return;
     setWorkingId(grant.id);
     setActionError(null);
     try {
       const { manageAccessGrantRequest } = await import("@/features/access/client/access-dashboard.api");
-      const result = await manageAccessGrantRequest(grant.id, action);
+      const result = await manageAccessGrantRequest(grant.id, "revoke");
       if (!result.ok) {
         setActionError(result.error);
         return;
       }
-      onGrantChange(grant.id, action, result.expiresAt, grant.status);
+      onGrantChange(grant.id, "revoke", result.expiresAt, grant.status);
       setListAttempt(value => value + 1);
       setRecordDetail(null);
     } finally {
@@ -365,8 +362,7 @@ export function RelationshipLifecycle({
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
-                <button type="button" className="dashboard-secondary-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "renew")}>Share for another 15 days</button>
-                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item, "revoke")}>Stop sharing</button>}
+                {recordDetail.item.status === "active" && <button type="button" className="dashboard-danger-action" disabled={workingId === recordDetail.item.id} onClick={() => void manage(recordDetail.item)}>Stop sharing</button>}
               </>
             ) : null}
           </div>
@@ -385,26 +381,26 @@ export function RelationshipLifecycle({
           >
             <div className="min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workspace-ink)]">Confirm controlled disclosure</p>
-              <h3 tabIndex={-1} id={approvalTitleId} className="mt-2 text-2xl font-semibold">Share details with {approvalCandidate.viewer_name || "this person"}?</h3>
+              <h3 tabIndex={-1} id={approvalTitleId} className="mt-2 text-2xl font-semibold">Email your chosen contacts to {approvalCandidate.viewer_name || "this person"}?</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--workspace-muted)]">
-                Recipient: {approvalCandidate.viewer_email || "verified viewer"}. Details are shared for 15 days.
+                Recipient: {approvalCandidate.viewer_email || "verified viewer"}. This sends contact details once; it does not open private profile details.
               </p>
-              <p className="mt-3 text-sm leading-6 text-[var(--workspace-muted)]">This shares your published private details. Unpublished draft changes are not included.</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--workspace-muted)]">Only contacts in your current published introduction are included. Draft changes are not shared.</p>
               <div className="mt-6 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-4">
                 <p className="text-sm font-semibold">You will share:</p>
-                {!approvalReview ? <LoadingStatus compact title="Checking published private details" /> : approvalReview.error ? <p role="alert">{approvalReview.error} <button type="button" className="dashboard-secondary-action" onClick={() => { setApprovalReview(null); setReviewAttempt(value => value + 1); }}>Retry disclosure review</button></p> : approvalReview.data ? (
+                {!approvalReview ? <LoadingStatus compact title="Checking published contacts" /> : approvalReview.error ? <p role="alert">{approvalReview.error} <button type="button" className="dashboard-secondary-action" onClick={() => { setApprovalReview(null); setReviewAttempt(value => value + 1); }}>Retry disclosure review</button></p> : approvalReview.data ? (
                   <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-5 text-[var(--workspace-ink)]">
-                    {fullViewDisclosureCategories(approvalReview.data).map((category) => <li key={category}>{category}</li>)}
+                    {contactDisclosureLines(approvalReview.data).map((contact) => <li key={contact}>{contact}</li>)}
                   </ul>
                 ) : (
                   <p role="alert">Published private details are unavailable. Nothing has been shared.</p>
                 )}
               </div>
               <p className="mt-4 text-sm leading-6 text-[var(--workspace-muted)]">
-                You can end this person&apos;s access at any time. Ending access prevents future openings but cannot recall information they already viewed or saved.
+                Once the email is sent, it cannot be recalled. Review the recipient and contacts before sharing.
               </p>
               {actionError && <p className="dashboard-action-error mt-4" role="alert">{actionError}</p>}
-              {workingId && <LoadingStatus compact className="mt-4" title="Sharing private details" />}
+              {workingId && <LoadingStatus compact className="mt-4" title="Queuing contact email" />}
             </div>
             <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--workspace-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end sm:p-6">
               <button  type="button" className="dashboard-secondary-action" disabled={workingId !== null} onClick={() => setApprovalCandidate(null)}>Cancel</button>
@@ -412,12 +408,12 @@ export function RelationshipLifecycle({
                 
                 type="button"
                 className="dashboard-primary-action"
-                disabled={workingId !== null || !approvalReview?.data || loadFailed}
+                disabled={workingId !== null || !approvalReview?.data || contactDisclosureLines(approvalReview.data).length === 0 || loadFailed}
                 onClick={() => void decide(approvalCandidate, "approved").then((approved) => {
                   if (approved) setApprovalCandidate(null);
                 })}
               >
-                {workingId === approvalCandidate.id ? "Sharing details…" : "Share details for 15 days"}
+                {workingId === approvalCandidate.id ? "Preparing email…" : "Email chosen contacts"}
               </button>
             </div>
           </section>
@@ -550,7 +546,7 @@ function InterestActions({ interest, working, onSetAside, onReopen, onGrant }: {
       {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
       {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
       {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro introduction</Link>}
-      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Revisit interest</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.requester_user_id ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Share details</button> : <span className="dashboard-action-note">A verified VivIntro account is required before private details can be shared.</span>}</> : null}
+      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Revisit interest</button> : ["new", "pending_review"].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.viewer_email ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Email chosen contacts</button> : <span className="dashboard-action-note">A verified email is required before contacts can be shared.</span>}</> : null}
     </>
   );
 }
@@ -648,68 +644,18 @@ function formatProfileFor(value: string) {
   return labels[value] || "themselves";
 }
 
-function fullViewDisclosureCategories(
-  disclosure: SharingDisclosure | null
-) {
+function contactDisclosureLines(disclosure: SharingDisclosure | null): string[] {
   if (!disclosure) return [];
-  const data = disclosure.data;
-  const categories: string[] = [];
-  if (containsDisclosure({
-    name: data.personal.name,
-    gender: data.personal.gender,
-    location: data.personal.current_location,
-    maritalStatus: data.personal.marital_status,
-    citizenship: data.personal.citizenship,
-    story: data.personal.profile_summary || data.personal.short_bio,
-    height: data.vitals?.height,
-  })) {
-    categories.push("Personal profile, location, and story details provided");
+  const contact = disclosure.data.contact;
+  if (!contact) return [];
+  const lines: string[] = [];
+  if (contact.phone?.trim() || contact.email?.trim()) {
+    lines.push([contact.contact_person, contact.phone, contact.email].filter(Boolean).join(" · "));
   }
-  if (data.personal.dob?.trim()) categories.push("Exact date of birth");
-  const birthDetails = [
-    data.astrology?.time_of_birth?.trim() ? "time" : "",
-    data.personal.place_of_birth?.trim() ? "place" : "",
-  ].filter(Boolean);
-  if (birthDetails.length) categories.push(`Exact ${birthDetails.join(" and ")} of birth`);
-  if (containsDisclosure(data.education) || containsDisclosure(data.career)) {
-    categories.push("Education, employer, career, and income details provided");
+  for (const item of contact.contacts || []) {
+    if (item.phone?.trim() || item.email?.trim()) {
+      lines.push([item.name, item.phone, item.email].filter(Boolean).join(" · "));
+    }
   }
-  if (containsDisclosure(data.family)) {
-    categories.push("Family members, origins, and family background provided");
-  }
-  if (containsDisclosure(data.lifestyle)) {
-    categories.push("Lifestyle, languages, interests, and values provided");
-  }
-  if (containsDisclosure(data.astrology) || Boolean(data.vitals?.gotra)) {
-    categories.push("Astrology and gotra details provided");
-  }
-  if (containsDisclosure(data.preferences)) {
-    categories.push("Partner preferences and future plans provided");
-  }
-  const contacts = data.contact?.contacts?.filter(
-    (contact) => contact.name?.trim() && (contact.phone?.trim() || contact.email?.trim())
-  ) || [];
-  if (
-    contacts.length > 0
-    || Boolean(data.contact?.contact_person?.trim() && (data.contact.phone?.trim() || data.contact.email?.trim()))
-  ) {
-    categories.push("Private contact details");
-  }
-  if (disclosure.photoCount > 0) {
-    const protectedPhotoCount = disclosure.privatePhotoCount;
-    const protectedCopy = protectedPhotoCount > 0
-      ? `, including ${protectedPhotoCount} private ${protectedPhotoCount === 1 ? "photo" : "photos"}`
-      : "";
-    categories.push(`${disclosure.photoCount} introduction ${disclosure.photoCount === 1 ? "photo" : "photos"}${protectedCopy}`);
-  }
-  if (disclosure.hasHoroscope) categories.push("Original horoscope attachment");
-  return categories;
-}
-
-function containsDisclosure(value: unknown): boolean {
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "number" || typeof value === "boolean") return true;
-  if (Array.isArray(value)) return value.some(containsDisclosure);
-  if (value && typeof value === "object") return Object.values(value).some(containsDisclosure);
-  return false;
+  return lines;
 }

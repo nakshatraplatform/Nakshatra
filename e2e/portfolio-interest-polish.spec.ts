@@ -152,7 +152,6 @@ test("portfolio end stays bounded after scrolling, resizing, and closing interes
       width: document.documentElement.scrollWidth, viewport: innerWidth };
   });
   let previous = 0;
-  let enteredDetails = false;
   for (const height of [874, 720, 874]) {
     await page.setViewportSize({ width: 402, height });
     for (let round = 0; round < 5; round++) {
@@ -175,10 +174,6 @@ test("portfolio end stays bounded after scrolling, resizing, and closing interes
     await expect(page.locator("body")).toHaveCSS("position", "fixed");
     const lockedScroll = await page.locator("body").evaluate(el => -parseFloat(el.style.top));
     expect(lockedScroll).toBeCloseTo(savedScroll, 0);
-    if (!enteredDetails) {
-      await page.getByRole("button", { name: "Continue as a new visitor" }).click();
-      enteredDetails = true;
-    }
     await expect(page.getByRole("group", { name: "About you" })).toBeVisible();
     await page.getByRole("button", { name: "Close interest form" }).click();
     await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - savedScroll)).toBeLessThanOrEqual(1);
@@ -222,7 +217,6 @@ test("candidate questions are optional except name and share the ZIP lookup", as
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/p/e2e-portfolio-token");
   await page.locator("#portfolio-interest").getByRole("button", { name: "Show interest", exact: true }).click();
-  await page.getByRole("button", { name: "Continue as a new visitor" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Who are you contacting for?").selectOption("daughter");
   await expect(dialog.getByLabel("Candidate’s full name")).toHaveAttribute("required", "");

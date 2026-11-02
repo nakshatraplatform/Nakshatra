@@ -10,7 +10,7 @@ export class AccessRepository {
     return this.supabase.rpc("list_portfolio_access");
   }
 
-  manageGrant(grantId: string, action: "renew" | "revoke") {
+  manageGrant(grantId: string, action: "revoke") {
     return this.supabase.rpc("manage_reveal_grant", {
       p_grant_id: grantId,
       p_action: action,

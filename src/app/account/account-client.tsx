@@ -215,7 +215,7 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
                   Public and approved portfolio access is already disabled.
                 </p>
               ) : (
-                <p>When you confirm deletion, public and approved access are revoked. A 24-hour recovery window follows; permanent deletion is processed afterward.</p>
+                <p>Confirm with a fresh sign-in, then request deletion. Your public link and existing approved access stop immediately. You can cancel for 24 hours; account and file removal begins afterward and may take longer.</p>
               )}
             </div>
             {deletionPending ? (
@@ -244,12 +244,12 @@ export default function AccountClient({ userEmail, initialDeletion, initialProfi
             <p className="site-eyebrow">Permanent action</p>
             <h2 ref={headingRef} tabIndex={-1} id="confirm-delete-heading">Schedule account deletion?</h2>
             {action && <LoadingStatus compact className="my-4" title={action === "reauth" ? "Preparing secure sign-in" : "Scheduling account deletion"} />}
-            <p>When you confirm deletion, your public links and approved access stop working. You can cancel during the 24-hour recovery window. After it ends, deletion becomes eligible for processing; removal of your account, stored files and provider data may take longer.</p>
+            <p>After you confirm, your public link and existing approved access stop working. You can cancel within 24 hours. Account and file removal begins afterward and may take longer.</p>
             <div aria-live="polite" aria-atomic="true">
               {error && <p className="account-notice is-error" role="alert">{error}</p>}
               {message && <p className="account-notice is-success">{message}</p>}
             </div>
-            <p>First complete a fresh sign-in. Your confirmation is submitted only after that sign-in succeeds.</p>
+            <p>First confirm it’s you with a fresh sign-in. Your account stays active until you select Schedule deletion below.</p>
             <fieldset>
               <legend>Reauthenticate with</legend>
               <label>

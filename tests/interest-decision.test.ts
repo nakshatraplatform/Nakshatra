@@ -74,7 +74,7 @@ describe("interest decision endpoint", () => {
     const approved = await patch("approved");
     expect(approved.status).toBe(200);
     await expect(approved.json()).resolves.toEqual({ ok: true, status: "approved" });
-    expect(approveRpc).toHaveBeenCalledWith("decide_interest_request_reviewed", {
+    expect(approveRpc).toHaveBeenCalledWith("decide_interest_contact_reviewed", {
       p_interest_request_id: "11111111-1111-4111-8111-111111111111",
       p_revision: "a".repeat(32),
     });

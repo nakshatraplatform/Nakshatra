@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import React from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 const getApiUser = vi.hoisted(() => vi.fn());
 const enforceRateLimit = vi.hoisted(() => vi.fn());
@@ -50,387 +50,76 @@ function fillDecisionDetails() {
   }
 }
 describe("interest flow", () => {
-  it("dismisses pending Google work, preserves one operation, and requires explicit continuation after dismissal", async () => {
-    let complete!: (value: unknown) => void;
-    startAuthentication.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByRole("button", { name: "Connecting to Google" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Close interest form" }));
-    await act(async () => complete({ ok: true, body: { url: "https://accounts.google.test/oauth" } }));
-    expect(continueToAuthProvider).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue to Google" }));
-    expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
-    expect(startAuthentication).toHaveBeenCalledTimes(1);
-  });
-
-  it("ignores a provider success after unmount", async () => {
-    let complete!: (value: unknown) => void;
-    startAuthentication.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
-    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    unmount();
-    await act(async () => complete({ ok: true, body: { url: "https://accounts.google.test/oauth" } }));
-    expect(continueToAuthProvider).not.toHaveBeenCalled();
-  });
-  it("does not submit interest when an email verification response arrives after unmount", async () => {
-    const request = vi.fn(); vi.stubGlobal("fetch", request);
-    let complete!: (value: unknown) => void;
-    verifyAuthenticationCode.mockReturnValueOnce(new Promise(resolve => { complete = resolve; }));
-    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
+  function fillVisitor() {
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
     fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 617 555 0123" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Country calling code" }), { target: { value: "1" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "6175550123" } });
     fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
     fillDecisionDetails();
+  }
+
+  it("opens the visitor form without sign-in or account creation choices", () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-step", "details");
+    expect(screen.queryByText("Continue with Google")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign in to VivIntro")).not.toBeInTheDocument();
+    expect(screen.getByText(/No account is needed/)).toBeInTheDocument();
+  });
+
+  it("validates the phone before starting guest verification", async () => {
+    const request = vi.fn(); vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fillVisitor();
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "abc" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Phone number" })).toHaveAttribute("aria-invalid", "true"));
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("starts and completes guest verification without calling the Auth OTP flow", async () => {
+    const request = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ sent: true, challengeId: "11111111-1111-4111-8111-111111111111" }))
+      .mockResolvedValueOnce(Response.json({ submitted: true }, { status: 201 }));
+    vi.stubGlobal("fetch", request);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
+    fillVisitor();
     fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
     const code = await screen.findByLabelText("Six-digit code");
+    const startBody = JSON.parse(request.mock.calls[0][1]!.body as string);
+    expect(request.mock.calls[0][0]).toBe("/api/interest/guest");
+    expect(startBody.action).toBe("start");
+    expect(startBody.details.email).toBe("rohan@example.com");
     fireEvent.change(code, { target: { value: "123456" } });
     fireEvent.submit(screen.getByRole("button", { name: "Verify email" }).closest("form")!);
-    unmount();
-    await act(async () => complete({ ok: true, body: { verified: true, email: "rohan@example.com" } }));
-    expect(request).not.toHaveBeenCalled();
-    expect(verifyAuthenticationCode.mock.calls[0][1].aborted).toBe(true);
-  });
-  it("focuses and describes an incomplete existing-profile location before sending", async () => {
-    const request = vi.fn();
-    vi.stubGlobal("fetch", request);
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston" }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.submit(screen.getByRole("button", { name: "Send interest" }).closest("form")!);
-    const location = await screen.findByRole("group", { name: "Your location", description: /./ });
-    await waitFor(() => expect(location).toHaveFocus());
-    expect(location).toHaveAttribute("data-invalid", "true");
-    expect(location).toHaveAccessibleDescription();
-    expect(request).not.toHaveBeenCalled();
-  });
-  it("submits a name-only candidate with a blank message and prevents duplicate in-flight sends", async () => {
-    let complete!: (response: Response) => void;
-    const request = vi.fn<typeof fetch>(() => new Promise<Response>(resolve => { complete = resolve; }));
-    vi.stubGlobal("fetch", request);
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "daughter" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 617 555 0123" } });
-    fillDecisionDetails();
-    fireEvent.change(screen.getByLabelText("Candidate’s email"), { target: { value: "" } });
-    fireEvent.change(screen.getByLabelText("Candidate’s phone (optional)"), { target: { value: "" } });
-    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "" } });
-    const form = screen.getByRole("button", { name: "Send interest" }).closest("form")!;
-    fireEvent.submit(form);
-    fireEvent.submit(form);
-    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole("button", { name: "Sending interest" })).toBeDisabled();
-    const payload = JSON.parse(String(request.mock.calls[0][1]?.body));
-    expect(payload.candidate).toEqual({ name: "Arun Mehta", relationship: "Parent" });
-    expect(payload.message).toBeNull();
-    complete(new Response(JSON.stringify({ ok: true }), { status: 201 }));
-    expect(await screen.findByText(/Interest sent to Ananya/)).toBeInTheDocument();
-  });
-
-  it("starts Google without a redundant registered-email field", async () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    expect(screen.queryByLabelText("Registered email")).not.toBeInTheDocument();
-    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/p/portfolio-token#portfolio-interest" }, expect.any(AbortSignal)));
-  });
-  it.each(["light", "dark"] as const)("uses the %s dialog artwork independently of the document theme", (appearance) => {
-    document.documentElement.dataset.appTheme = appearance === "dark" ? "light" : "dark";
-    const { unmount } = render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} appearance={appearance} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.closest("[data-appearance]")).toHaveAttribute("data-appearance", appearance);
-    const artwork = dialog.querySelector('[data-brand-variant="stacked"]')!;
-    expect(artwork).toHaveAttribute("data-brand-tone", appearance === "dark" ? "reverse" : "primary");
-    expect(artwork.querySelectorAll("img")).toHaveLength(1);
-    unmount();
-    delete document.documentElement.dataset.appTheme;
-  });
-  it.each(["abcdefg", "-------", "12", "+1 22222222222222222222"])("rejects invalid interest phone %s at the API contract", (phone) => {
-    const parsed = interestSubmissionSchema.safeParse({ portfolioToken: "portfolio-token", name: "Rohan Mehta", profileFor: "self", phone, email: "rohan@example.com" });
-    expect(parsed.success).toBe(false);
-  });
-  it("does not send an email code for an invalid phone entered in the modal", async () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 abcdefgh" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.submit(screen.getByRole("button", { name: "Verify email and continue" }).closest("form")!);
-    expect(await screen.findByRole("alert")).toHaveTextContent("valid phone number");
+    await screen.findByText("Interest sent to Ananya.");
+    const completeBody = JSON.parse(request.mock.calls[1][1]!.body as string);
+    expect(completeBody).toEqual({ action: "complete", challengeId: "11111111-1111-4111-8111-111111111111", email: "rohan@example.com", code: "123456" });
     expect(startAuthentication).not.toHaveBeenCalled();
-  });
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
-    enforceRateLimit.mockResolvedValue(null);
-    startAuthentication.mockResolvedValue({ ok: true, body: { sent: true } });
-    verifyAuthenticationCode.mockResolvedValue({ ok: true, body: { verified: true, email: "rohan@example.com" } });
-  });
-
-  it("submits from a modal and returns to the introduction confirmation state", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })));
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(document.body.style.overflow).toBe("hidden");
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Send interest" }));
-
-    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ananya can review your interest and decide whether to share private details/i)).toBeInTheDocument();
-    await new Promise((resolve) => setTimeout(resolve, 1900));
-    expect(screen.getByRole("dialog", { name: "Interest sent" })).toBeInTheDocument();
+    expect(verifyAuthenticationCode).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Return to introduction" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("They’ll share more if they’d like to continue.");
-    const request = vi.mocked(fetch).mock.calls[0];
-    const submitted = JSON.parse(String((request[1] as RequestInit).body));
-    expect(submitted).toMatchObject({
-      name: "Rohan Mehta",
-      profileFor: "self",
-      phone: "+1 555 010 2200",
-      email: "rohan@example.com",
-      ...requiredLocationPayload,
-      ...decisionDetails,
-    });
+    expect(document.body.style.position).not.toBe("fixed");
   });
 
-  it("verifies a signed-out viewer inside the modal before submitting", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 201 })));
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
-
-    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
-      method: "email_otp",
-      email: "rohan@example.com",
-      redirect: "/p/portfolio-token",
-    }, expect.any(AbortSignal)));
-    fireEvent.change(await screen.findByLabelText("Six-digit code"), { target: { value: "123456" } });
-    fireEvent.click(screen.getByRole("button", { name: "Verify email" }));
-
-    await waitFor(() => expect(verifyAuthenticationCode).toHaveBeenCalledWith({
-      purpose: "viewer_interest",
-      email: "rohan@example.com",
-      token: "123456",
-      redirect: "/p/portfolio-token",
-    }, expect.any(AbortSignal)));
-    expect(await screen.findByText(/Interest sent to Ananya/i)).toBeInTheDocument();
-  });
-
-  it("keeps verification disabled until six digits and resets an invalid code", async () => {
-    verifyAuthenticationCode.mockResolvedValueOnce({ ok: false, body: { error: "That code is incorrect or has expired." } });
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
-
-    const input = await screen.findByLabelText("Six-digit code");
-    const verifyButton = screen.getByRole("button", { name: "Verify email" });
-    expect(verifyButton).toBeDisabled();
-    fireEvent.change(input, { target: { value: "12345" } });
-    expect(verifyButton).toBeDisabled();
-    fireEvent.change(input, { target: { value: "123456" } });
-    expect(verifyButton).toBeEnabled();
-    fireEvent.click(verifyButton);
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("incorrect or has expired");
-    expect(input).toHaveValue("");
-    expect(input).toHaveFocus();
-  });
-
-  it("does not discard an in-progress verification when the backdrop is clicked", async () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
-
-    const codeInput = await screen.findByLabelText("Six-digit code");
-    fireEvent.change(codeInput, { target: { value: "123456" } });
-    const dialog = screen.getByRole("dialog");
-    fireEvent.mouseDown(dialog.parentElement!);
-
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByLabelText("Six-digit code")).toHaveValue("123456");
-  });
-
-  it("warns that a resent code replaces every earlier code", async () => {
-    vi.useFakeTimers();
-    try {
-      render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-      fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-      fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-      fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-      fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-      fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-      fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-      fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
-      await vi.runAllTimersAsync();
-
-      expect(screen.getByText(/requesting another code makes the earlier code stop working/i)).toBeInTheDocument();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("restores submitted details when the viewer returns from verification", async () => {
+  it("keeps form answers across close and reopen", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Rohan Mehta" } });
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "relative" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+1 555 010 2200" } });
-    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "rohan@example.com" } });
-    fillDecisionDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Verify email and continue" }));
-
-    fireEvent.click(await screen.findByRole("button", { name: "Change details" }));
-
+    fireEvent.click(screen.getByRole("button", { name: "Close interest form" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByLabelText("Full name")).toHaveValue("Rohan Mehta");
-    expect(screen.getByLabelText("Who are you contacting for?")).toHaveValue("relative");
-    expect(screen.getByRole("textbox", { name: "Country calling code" })).toHaveValue("1");
-    expect(screen.getByRole("textbox", { name: "Phone number" })).toHaveValue("555 010 2200");
-    expect(screen.getByLabelText("Email address")).toHaveValue("rohan@example.com");
   });
 
-  it("requires location and decision-making context in the new visitor form", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
+  it("uses the guest path even when the page was opened in a signed-in browser", () => {
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    fireEvent.click(screen.getByRole("button", { name: "Continue as a new visitor" }));
-    for (const label of ["Full name", "Who are you contacting for?", "Email address", "Country", "State", "City", "Family context"]) expect(screen.getByLabelText(label)).toBeRequired();
-expect(screen.getByRole("textbox", { name: "Phone number" })).toBeRequired();
-    expect(screen.getByLabelText("Message")).not.toBeRequired();
-    expect(screen.queryByRole("group", { name: "Candidate details" })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "son" } });
-    expect(screen.getByLabelText("Candidate’s full name")).toBeRequired();
-    expect(screen.getByLabelText("Candidate’s email")).not.toBeRequired();
-    expect(screen.getByLabelText("Candidate’s phone (optional)")).not.toBeRequired();
-    expect(screen.queryByLabelText("Your relationship to candidate")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Candidate’s location country")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "self" } });
-    expect(screen.queryByRole("group", { name: "Candidate details" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email address")).toBeInTheDocument();
+    expect(screen.queryByText("Using your VivIntro profile")).not.toBeInTheDocument();
   });
-
-  it("offers an existing VivIntro user a Google continuation", async () => {
-    startAuthentication.mockResolvedValueOnce({ ok: true, body: { url: "https://accounts.google.test/oauth" } });
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByText("Already use VivIntro?")).toBeInTheDocument();
-    const googleButton = screen.getByRole("button", { name: "Continue with Google" });
-    expect(screen.getByRole("link", { name: "Sign in to VivIntro" })).toHaveClass("portfolio-button-primary");
-    fireEvent.click(googleButton);
-
-    await waitFor(() => expect(startAuthentication).toHaveBeenCalledWith({
-      method: "google",
-      redirect: "/p/portfolio-token#portfolio-interest",
-    }, expect.any(AbortSignal)));
-    expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
-  });
-
-  it("reuses an authenticated VivIntro profile and asks only for context", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" existingViewerProfile={{ name: "Rohan Mehta", profileFor: "self", phone: "", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-
-    expect(screen.getByRole("heading", { name: "Confirm your details for Ananya's family" })).toBeInTheDocument();
-    expect(screen.getByLabelText("VivIntro profile in use")).toHaveTextContent("Rohan Mehta");
-    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument();
-    expect(screen.getByText(/Boston, Massachusetts, United States/)).toBeInTheDocument();
-    expect(screen.getByLabelText("Family context")).toBeInTheDocument();
-    expect(screen.getByLabelText("Message")).toBeInTheDocument();
-  });
-
-  it("derives an existing viewer identity from the authenticated account", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        draft_data: {
-          personal: { name: "Rohan Mehta", profile_for: "self", country: "United States", country_code: "US", region: "Massachusetts", region_code: "US-MA", city: "Boston", postal_code: "02108" },
-          contact: { phone: "" },
-        },
-        published_data: null,
-      },
-      error: null,
-    });
-    const eq = vi.fn(() => ({ maybeSingle }));
-    const select = vi.fn(() => ({ eq }));
-    const getUser = vi.fn().mockResolvedValue({
-      data: { user: { email: "ROHAN@EXAMPLE.COM", email_confirmed_at: "2026-09-20T12:00:00Z" } },
-    });
-    getApiUser.mockResolvedValue({
-      status: "authenticated",
-      user: { id: "viewer-1" },
-      supabase: { auth: { getUser }, from: vi.fn(() => ({ select })), rpc },
-    });
-
-    const response = await POST(new Request("http://local/api/interest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Origin: "http://local" },
-      body: JSON.stringify({
-        portfolioToken: "portfolio-token",
-        ...decisionDetails,
-        useExistingProfile: true,
-        country: "United States",
-        countryCode: "US",
-        state: "Massachusetts",
-        subdivisionCode: "US-MA",
-        city: "Boston",
-        postalCode: "02108",
-        locationSource: "existing_profile",
-        familyContext: decisionDetails.familyContext,
-        message: "",
-      }),
-    }));
-
-    expect(response.status).toBe(201);
-    expect(rpc).toHaveBeenCalledWith("submit_existing_interest", expect.objectContaining({
-      p_share_token: "portfolio-token",
-
-      p_family_context: decisionDetails.familyContext,
-      p_message: null,
-    }));
-  });
-
   it("disables interest on the signed-in owner's own portfolio", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="owner@example.com" isOwner />);
 

@@ -10,32 +10,31 @@ afterEach(() => {
 describe("access dashboard API", () => {
   it("returns a normalized successful grant action", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      status: "renewed",
-      expiresAt: "2099-02-01T00:00:00.000Z",
+      status: "revoked",
     })));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(manageAccessGrantRequest(grantId, "renew")).resolves.toEqual({
+    await expect(manageAccessGrantRequest(grantId, "revoke")).resolves.toEqual({
       ok: true,
-      status: "renewed",
-      expiresAt: "2099-02-01T00:00:00.000Z",
+      status: "revoked",
+      expiresAt: undefined,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/access-grants/${grantId}`,
-      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ action: "renew" }) })
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ action: "revoke" }) })
     );
   });
 
   it("preserves safe API errors for the dashboard", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: "ACCESS_INVALID_TRANSITION",
-      error: "Only approved access can be renewed.",
+      error: "This access can no longer be changed.",
     }), { status: 409 })));
 
-    await expect(manageAccessGrantRequest(grantId, "renew")).resolves.toEqual({
+    await expect(manageAccessGrantRequest(grantId, "revoke")).resolves.toEqual({
       ok: false,
       code: "ACCESS_INVALID_TRANSITION",
-      error: "Only approved access can be renewed.",
+      error: "This access can no longer be changed.",
       status: 409,
     });
   });
