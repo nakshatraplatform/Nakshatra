@@ -38,6 +38,28 @@ language sql stable security definer set search_path='' as $$
 $$;
 revoke all on function app_private.member_share_current(uuid) from public,anon,authenticated,service_role;
 
+-- Existing approval grants and outgoing disclosures are alternative evidence for
+-- one direction; a later send reuses current permission without extending it.
+create function app_private.member_full_access_current(p_portfolio_id uuid,p_viewer_user_id uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+  select exists(select 1 from public.portfolios p where p.id=p_portfolio_id
+    and public.is_published_portfolio(p.id) and app_private.pilot_public_portfolio_allowed(p.share_token)
+    and (exists(select 1 from app_private.member_interest_shares s where s.portfolio_id=p.id
+      and s.recipient_user_id=p_viewer_user_id and app_private.member_share_current(s.id))
+      or exists(select 1 from public.reveal_grants g where g.portfolio_id=p.id and g.viewer_user_id=p_viewer_user_id
+        and g.access_level='full' and g.revoked_at is null and g.expires_at>now())))
+$$;
+revoke all on function app_private.member_full_access_current(uuid,uuid) from public,anon,authenticated,service_role;
+create function app_private.member_request_disclosure_current(p_request_id uuid) returns boolean
+language sql stable security definer set search_path='' as $$
+  select exists(select 1 from public.interest_requests r join public.portfolios recipient on recipient.id=r.portfolio_id
+    join public.portfolios sender on sender.user_id=r.requester_user_id
+    where r.id=p_request_id and r.status not in ('rejected','closed')
+      and r.metadata->>'member_profile_shared'='true'
+      and app_private.member_full_access_current(sender.id,recipient.user_id))
+$$;
+revoke all on function app_private.member_request_disclosure_current(uuid) from public,anon,authenticated,service_role;
+
 -- One approved-data projection for accountless proofs and member sharing.
 create function app_private.approved_view_payload(p_portfolio_id uuid,p_expires_at timestamptz,p_horoscope boolean)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -126,17 +148,21 @@ begin
     jsonb_strip_nulls(jsonb_build_object('profile_for',coalesce(own.published_data#>>'{personal,profile_for}','self'),
       'country',approved#>>'{personal,country}','state',approved#>>'{personal,region}','city',approved#>>'{personal,city}',
       'member_profile_shared',true))) returning id into request_id;
+  if not app_private.member_full_access_current(own.id,target.user_id) then
   insert into app_private.member_interest_shares(source_interest_request_id,portfolio_id,recipient_user_id,recipient_email,granted_by,published_revision)
     values(request_id,own.id,target.user_id,lower(recipient.email),auth.uid(),p_revision) returning id into share_id;
+  end if;
   insert into public.access_audit_events(portfolio_id,interest_request_id,actor_user_id,subject_user_id,event_type,metadata)
     values(target.id,request_id,auth.uid(),auth.uid(),'request_submitted','{"profile_source":"published_member"}'::jsonb);
-  insert into public.access_audit_events(portfolio_id,actor_user_id,event_type,metadata)
-    values(own.id,auth.uid(),'grant_created',jsonb_build_object('member_share_id',share_id,'duration_days',15));
+  if share_id is not null then
+    insert into public.access_audit_events(portfolio_id,actor_user_id,event_type,metadata)
+      values(own.id,auth.uid(),'grant_created',jsonb_build_object('member_share_id',share_id,'duration_days',15));
+  end if;
   -- Both people explicitly shared by sending. Mark real crossed requests mutual;
   -- never invent a reverse interest or extend either permission's expiry.
-  select r.id into reverse_id from public.interest_requests r join app_private.member_interest_shares s on s.source_interest_request_id=r.id
+  select r.id into reverse_id from public.interest_requests r
     where r.portfolio_id=own.id and r.requester_user_id=target.user_id and r.status in ('new','pending_review','approved','revealed')
-      and app_private.member_share_current(s.id) order by r.created_at desc,r.id limit 1;
+      and app_private.member_request_disclosure_current(r.id) order by r.created_at desc,r.id limit 1;
   if reverse_id is not null then
     update public.interest_requests set status='approved',decided_at=now(),decided_by=auth.uid(),updated_at=now() where id in (request_id,reverse_id);
     delete from app_private.interest_deferrals where interest_request_id in (request_id,reverse_id);
@@ -152,8 +178,10 @@ returns text language plpgsql stable security definer set search_path='' as $$
 declare token text;
 begin
   perform app_private.require_email_operator();
-  select p.share_token into token from app_private.member_interest_shares s join public.portfolios p on p.id=s.portfolio_id
-    where s.source_interest_request_id=p_request_id and s.recipient_user_id=p_recipient_user_id and app_private.member_share_current(s.id);
+  select sender.share_token into token from public.interest_requests r
+    join public.portfolios sender on sender.user_id=r.requester_user_id
+    join public.portfolios recipient on recipient.id=r.portfolio_id
+    where r.id=p_request_id and recipient.user_id=p_recipient_user_id and app_private.member_request_disclosure_current(r.id);
   return token;
 end $$;
 revoke all on function public.member_interest_notification_link(uuid,uuid) from public,anon,authenticated;
@@ -262,8 +290,7 @@ begin
     return 'reopened';
   elsif p_decision='approved' then
     -- An explicit crossed send may already provide this owner's disclosure.
-    if r.requester_user_id is not null and exists(select 1 from app_private.member_interest_shares s
-      where s.portfolio_id=owner_id and s.recipient_user_id=r.requester_user_id and app_private.member_share_current(s.id)) then
+    if r.requester_user_id is not null and app_private.member_full_access_current(owner_id,r.requester_user_id) then
       review:=public.get_owner_relationship_page()->'disclosure';
       if review->>'revision' is distinct from p_revision or p_revision is null then return 'review_changed'; end if;
       if r.status not in ('new','pending_review','approved','revealed') then return 'invalid_transition'; end if;
@@ -297,11 +324,21 @@ alter function public.manage_reveal_grant_before_member_sharing(uuid,text) set s
 revoke all on function app_private.manage_reveal_grant_before_member_sharing(uuid,text) from public,anon,authenticated,service_role;
 create function public.manage_reveal_grant(p_grant_id uuid,p_action text) returns jsonb
 language plpgsql volatile security definer set search_path='' as $$
-declare s app_private.member_interest_shares%rowtype;
+declare s app_private.member_interest_shares%rowtype; g public.reveal_grants%rowtype;
 begin
   perform app_private.require_current_session();
   select * into s from app_private.member_interest_shares where id=p_grant_id for update;
-  if s.id is null then return app_private.manage_reveal_grant_before_member_sharing(p_grant_id,p_action); end if;
+  if s.id is null then
+    if p_action='renew' then return '{"status":"renewal_disabled"}'::jsonb; end if;
+    if p_action is distinct from 'revoke' then raise exception 'invalid grant action' using errcode='22023'; end if;
+    select * into g from public.reveal_grants where id=p_grant_id and public.can_manage_portfolio(portfolio_id) for update;
+    if g.id is null then return '{"status":"not_found"}'::jsonb; end if;
+    if g.revoked_at is not null then return '{"status":"already_revoked"}'::jsonb; end if;
+    update public.reveal_grants set revoked_at=now(),revocation_reason='owner_revoked' where id=g.id;
+    insert into public.access_audit_events(portfolio_id,interest_request_id,grant_id,actor_user_id,subject_user_id,event_type,metadata)
+      values(g.portfolio_id,g.interest_request_id,g.id,auth.uid(),g.viewer_user_id,'grant_revoked','{"reason":"owner_revoked"}'::jsonb);
+    return jsonb_build_object('status','revoked','expiresAt',g.expires_at);
+  end if;
   if s.granted_by<>auth.uid() or not public.can_manage_portfolio(s.portfolio_id) then return '{"status":"not_found"}'::jsonb; end if;
   if p_action is distinct from 'revoke' then return '{"status":"renewal_disabled"}'::jsonb; end if;
   if s.revoked_at is not null then return '{"status":"already_revoked"}'::jsonb; end if;
@@ -382,7 +419,7 @@ begin
         'requester_user_id',r.requester_user_id,'metadata',r.metadata - 'portfolio_url','created_at',r.created_at,
         'email_verified',p.verified,'source_type',case when p.broker then 'broker' else 'direct' end,
         'broker_name',o.name,'broker_representative_name',m.display_name,
-        'requester_full_profile_shared',exists(select 1 from app_private.member_interest_shares s where s.source_interest_request_id=r.id and app_private.member_share_current(s.id)),
+        'requester_full_profile_shared',app_private.member_request_disclosure_current(r.id),
         'requester_portfolio_token', (select v.share_token from public.portfolios v
           join public.public_portfolio_snapshots s on s.portfolio_id=v.id and s.share_token=v.share_token
           where v.user_id=r.requester_user_id and v.is_published and s.is_active

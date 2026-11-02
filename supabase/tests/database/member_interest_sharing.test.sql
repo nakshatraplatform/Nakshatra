@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(26);
+select plan(33);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -128,16 +128,34 @@ select is((select count(*)::integer from app_private.guest_interest_mail_outbox 
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
 select is(public.decide_interest_relationship((select id from sent_request),'reopened'),'reopened','deferred interest can return to review');
+select is(public.decide_interest_relationship((select id from sent_request),'approved',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','recipient accepts and shares back before sending a crossed interest');
+reset role;
+select is((select count(*)::integer from public.reveal_grants where revoked_at is null),1,'accept creates only one reverse-direction permission');
+create temp table accepted_grant as select id,expires_at from public.reveal_grants;
+grant select on accepted_grant to authenticated;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
 select is(public.send_member_interest_and_share('guest_owner_fixture_01',public.member_interest_context('guest_owner_fixture_01')->>'revision')->>'mutual','true','explicit crossed send accepts both real interests');
 reset role;
-select is((select count(*)::integer from app_private.member_interest_shares),2,'crossed interests create two independently controlled directions');
+select is((select count(*)::integer from app_private.member_interest_shares),1,'accept then crossed send reuses the active reverse grant');
 select is((select count(*)::integer from public.interest_requests where status='approved'),2,'both actual interests show mutual acceptance');
-select is((select count(*)::integer from public.reveal_grants),0,'crossed sharing does not create duplicate approval grants');
+select is((select count(*)::integer from public.reveal_grants),1,'crossed sharing does not create duplicate approval grants');
+select ok((select g.expires_at=a.expires_at from public.reveal_grants g join accepted_grant a on a.id=g.id),'crossed send preserves the original approval expiry');
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
 select is(public.resolve_approved_portfolio('member_recipient_fixture_02')#>>'{data,contact,email}','recipient-contact@fixture.test','sender can view the reciprocated full profile');
 select is(public.get_owner_relationship_page()#>>'{counts,active}','1','outgoing disclosure is visible in owner access management');
 reset role;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
+select is(public.manage_reveal_grant((select id from accepted_grant),'revoke')->>'status','revoked','recipient can stop only their own reverse disclosure');
+select ok(public.resolve_approved_portfolio('guest_owner_fixture_01') is not null,'stopping reverse sharing preserves original sender permission');
+reset role;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.resolve_approved_portfolio('member_recipient_fixture_02'),null::jsonb,'one Stop sharing removes the sole reverse permission');
+reset role;
+select is((select count(*)::integer from public.interest_requests where status='rejected'),0,'Stop sharing never records a decline');
 create temp table owner_share as select id from app_private.member_interest_shares where granted_by='d1000000-0000-4000-8000-000000000001';
 grant select on owner_share to authenticated;
 set local role authenticated;
