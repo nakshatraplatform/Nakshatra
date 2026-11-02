@@ -282,7 +282,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> The family may email you the contact details they choose to share.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> The family may approve full portfolio viewing and email you a viewing link.</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -310,7 +310,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
                   <li>{firstName(profileName)} reviews your interest.</li>
                 </ol>
               </div>
-              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />This does not create an account or give you access to private details.</p>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />This creates no account or VivIntro sign-in. Private viewing starts only after the owner approves.</p>
             </aside>
             <div className="interest-main-pane">
             <div className="interest-brand-lockup"><VivIntroBrand href="/" openInNewTab className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
@@ -349,7 +349,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
                 <h3>Interest sent to {firstName(profileName)}.</h3>
-                <p>{firstName(profileName)} can review your interest and may email you their chosen contact details. This does not open private profile details.</p>
+                <p>{firstName(profileName)} can review your interest and approve full portfolio viewing for 15 days. We’ll email you if they approve; this verified browser can then refresh the introduction.</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}
@@ -377,7 +377,7 @@ function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, pending, err
         <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
         <p className="interest-verification-help">Your answers stay here while this page is open. Next, confirm your email to send your interest.</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
-        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>Your phone is contact information only. We verify your email before sending.</p><p>Showing interest shares these details with the person you’re contacting. If they approve, we email only their chosen contact details to you. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
+        <details className="interest-sharing-info"><summary>How your details are shared</summary><p>Your phone is contact information only. We verify your email before sending.</p><p>Showing interest shares these details with the person you’re contacting. If they approve, we email a viewing link. Your verified browser can open the published full portfolio for up to 15 days; the owner can stop sharing earlier. Read the <a href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</p></details>
       </div>
       <div className="interest-form-footer">
         <button type="submit" className="portfolio-button portfolio-button-primary" disabled={pending} aria-busy={pending} aria-label={pending ? "Sending verification code" : undefined}>{pending ? <InterestActionProgress label="Sending verification code" /> : "Verify email and continue"}</button>

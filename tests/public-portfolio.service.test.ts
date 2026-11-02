@@ -53,6 +53,43 @@ function client(outcomes: Record<string, { data: unknown; error?: unknown }>) {
 }
 
 describe("public portfolio service", () => {
+  it("uses a portfolio-scoped guest proof without an Auth user and bounds private media", async () => {
+    const publicClient = client({ resolve_public_portfolio: { data: publicPayload } });
+    const signing = client({ resolve_guest_approved_portfolio: { data: {
+      ...publicPayload, data: { ...publicPayload.data, personal: { ...publicPayload.data.personal, dob: "1996-01-01" } },
+      accessExpiresAt: new Date(Date.now() + 90_000).toISOString(),
+    } } });
+    const view = await resolvePortfolioView(publicClient.supabase, "portfolio-token", false, {
+      guestProofHash: "a".repeat(64), createSigningClient: () => signing.supabase,
+    });
+    expect(view?.accessMode).toBe("approved");
+    expect(view?.data.personal.dob).toBe("1996-01-01");
+    expect(signing.rpc).toHaveBeenCalledWith("resolve_guest_approved_portfolio", { p_share_token: "portfolio-token", p_proof_hash: "a".repeat(64) });
+    expect(signing.createSignedUrls.mock.calls[0][1]).toBeLessThanOrEqual(90);
+  });
+  it("keeps the public projection when a remembered guest grant is unavailable", async () => {
+    const publicClient = client({ resolve_public_portfolio: { data: publicPayload } });
+    const signing = client({ resolve_guest_approved_portfolio: { data: null } });
+    const view = await resolvePortfolioView(publicClient.supabase, "portfolio-token", false, {
+      guestProofHash: "a".repeat(64), createSigningClient: () => signing.supabase,
+    });
+    expect(view?.accessMode).toBe("public");
+    expect(view?.data.personal.dob).toBeUndefined();
+    expect(signing.createSignedUrls).not.toHaveBeenCalled();
+  });
+  it("requires the same guest proof for horoscope descriptors and bounds the signed URL", async () => {
+    const publicClient = client({});
+    const signing = client({ resolve_guest_approved_portfolio: { data: {
+      accessPath: "owner/portfolio/chart.webp", mimeType: "image/webp", fileExtension: "webp",
+      accessExpiresAt: new Date(Date.now() + 90_000).toISOString(),
+    } } });
+    const result = await resolveApprovedHoroscope(publicClient.supabase, "portfolio-token", {
+      guestProofHash: "a".repeat(64), createSigningClient: () => signing.supabase,
+    });
+    expect(result?.signedUrl).toContain("chart.webp");
+    expect(signing.rpc).toHaveBeenCalledWith("resolve_guest_approved_portfolio", { p_share_token: "portfolio-token", p_proof_hash: "a".repeat(64), p_horoscope: true });
+    expect(signing.createSignedUrl.mock.calls[0][1]).toBeLessThanOrEqual(90);
+  });
   it("uses a separate trusted signer only after session-scoped authorization and caps private TTL", async () => {
     const requester = client({ resolve_public_portfolio: { data: publicPayload }, resolve_approved_portfolio: { data: { ...publicPayload, accessExpiresAt: new Date(Date.now() + 90_000).toISOString() } } });
     const trusted = client({});

@@ -15,7 +15,7 @@ export default function AboutPage() {
     >
       <MarketingBreadcrumb name="About" path="/about" />
       <PolicySection title="The product idea">
-        <p>VivIntro is the product. Your Vivara is the link you share to your marriage introduction. Publish updates at the same link and review interest from your dashboard. You can email your chosen contacts after reviewing a request. VivIntro does not list profiles or recommend matches.</p>
+        <p>VivIntro is the product. Your Vivara is the link you share to your marriage introduction. Publish updates at the same link and review interest from your dashboard. You can approve full portfolio viewing for a verified viewer after reviewing their request. VivIntro does not list profiles or recommend matches.</p>
       </PolicySection>
       <PolicySection title="The design promise">
         <p>VivIntro uses readable typography, plain language, and explicit privacy cues. The person stays at the centre; sharing and “set aside” choices stay private and dignified.</p>

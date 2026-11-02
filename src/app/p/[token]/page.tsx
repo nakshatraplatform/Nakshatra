@@ -10,6 +10,7 @@ import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.cont
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
 import { resolveExistingViewerProfile, type ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
+import { readGuestViewingProof } from "@/features/access/server/guest-viewing-cookie";
 import { formatPortfolioLocation } from "@/features/portfolio/presentation";
 import {
   isPortfolioOwner,
@@ -66,7 +67,9 @@ export default async function PublicBiodataPage({ params }: Props) {
   const verifiedEmail = authData.user?.email_confirmed_at
     ? authData.user.email?.trim().toLowerCase() || null
     : null;
-  const portfolio = await resolvePortfolioView(supabase, token, Boolean(verifiedEmail));
+  const portfolio = await resolvePortfolioView(supabase, token, Boolean(verifiedEmail), {
+    guestProofHash: await readGuestViewingProof(token),
+  });
   if (!portfolio) {
     const availability = await resolvePublicPortfolioAvailability(supabase, token);
     if (availability === "expired") return <ExpiredPortfolioLink />;
@@ -104,7 +107,7 @@ export default async function PublicBiodataPage({ params }: Props) {
       }))}
       viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} /> : undefined}
+      interestAction={portfolio.accessMode === "public" ? <div><InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} />{!viewingOwnPortfolio && <p className="mt-4 text-center text-sm"><Link href={`/p/${encodeURIComponent(token)}/view`} className="underline underline-offset-4">Already approved? Verify to view the full portfolio</Link></p>}</div> : undefined}
     />
   );
 }

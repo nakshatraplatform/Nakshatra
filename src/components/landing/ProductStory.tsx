@@ -73,10 +73,10 @@ export function ProductStory() {
     <article id="privacy" className={styles.chapter} data-story-chapter>
       <div className={styles.copy}>
         <h2>You decide who sees what.</h2>
-        <p>Anyone with your link can read the public introduction. A viewer can Show interest and confirm their email without an account. You decide whether to email your chosen contacts.</p>
+        <p>Anyone with your link can read the public introduction. A viewer can Show interest and confirm their email without an account. You decide whether to approve full portfolio viewing.</p>
         <dl className={styles.boundaries}>
           <div><dt>Public introduction</dt><dd>Your published name, age, marital status and the story and photos you choose for the public view.</dd></div>
-          <div><dt>Chosen contacts</dt><dd>Emailed only when you approve an interest request. Review the recipient and published contacts first.</dd></div>
+          <div><dt>Approved full portfolio</dt><dd>Includes your published private details and protected photos. Review the verified recipient and shared sections before approving 15 days of viewing.</dd></div>
           <div><dt>Private notes</dt><dd>Your notes and street address aren’t included in either shared view.</dd></div>
         </dl>
         <p className={styles.disclosure}>Anything someone can see, they can screenshot. Keep phone numbers and other private details out of your public story. Copies already saved can’t be recalled.</p>

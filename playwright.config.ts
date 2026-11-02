@@ -40,6 +40,7 @@ export default defineConfig({
         NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${appPort}`,
         // This key is scoped to the loopback mock server used by Playwright.
         RATE_LIMIT_SUBJECT_HMAC_KEY: "nakshatra-playwright-loopback-only-hmac-key-v1",
+        GUEST_INTEREST_OTP_SECRET: "loopback-only-viewing-verification-key".repeat(2),
       },
       url: `http://127.0.0.1:${appPort}`,
       reuseExistingServer: false,

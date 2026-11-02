@@ -6,6 +6,7 @@ import { processPhotoCleanup } from "@/features/media/server/photo-cleanup.servi
 import { processRetention } from "./retention.service";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { guestVerificationConfigured, guestViewingRpc } from "@/features/access/server/guest-viewing-proof";
 import { processRelationshipNotifications } from "@/features/notifications/server/relationship-notification.service";
 import { resendConfigurationReady } from "@/features/notifications/server/resend.runtime.mjs";
 import { recipientHmacConfigured } from "@/features/notifications/server/delivery.runtime.mjs";
@@ -104,19 +105,20 @@ export async function runProductionMaintenance(dispatchId?: string) {
 
 export async function productionHealth() {
   const client = createServiceRoleClient(boundedFetch());
-  const [{ data, error }, { data: expiry, error: expiryError }, { data: email, error: emailError }] = await Promise.all([
+  const [{ data, error }, { data: expiry, error: expiryError }, { data: email, error: emailError }, { data: guest, error: guestError }] = await Promise.all([
     client.rpc("production_worker_health"), client.rpc("portfolio_expiry_reminder_health"),
     client.rpc("email_delivery_health", {
       p_daily_limit: emailLimit(process.env.RESEND_DAILY_EMAIL_LIMIT, 100),
       p_monthly_limit: emailLimit(process.env.RESEND_MONTHLY_EMAIL_LIMIT, 3000),
     }),
+    guestViewingRpc(client)("guest_portfolio_delivery_health", {}),
   ]);
-  if (error || expiryError || emailError || !data || typeof data !== "object" || Array.isArray(data)
+  if (error || expiryError || emailError || guestError || !guest || typeof guest !== "object" || Array.isArray(guest) || !("healthy" in guest) || !data || typeof data !== "object" || Array.isArray(data)
     || !expiry || typeof expiry !== "object" || Array.isArray(expiry)
     || !email || typeof email !== "object" || Array.isArray(email)) throw new Error("HEALTH_UNAVAILABLE");
-  const configured = recipientHmacConfigured() && resendWebhookConfigured() && resendConfigurationReady();
-  return { ...data, healthy: data.healthy === true && expiry.healthy === true && email.healthy === true && configured,
-    expiryReminders: expiry, emailDelivery: { ...email, configured } };
+  const configured = recipientHmacConfigured() && resendWebhookConfigured() && resendConfigurationReady() && guestVerificationConfigured();
+  return { ...data, healthy: data.healthy === true && expiry.healthy === true && email.healthy === true && guest.healthy === true && configured,
+    expiryReminders: expiry, emailDelivery: { ...email, configured }, guestViewing: guest };
 }
 
 function emailLimit(value: string | undefined, fallback: number) {

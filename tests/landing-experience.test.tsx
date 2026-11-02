@@ -35,13 +35,13 @@ describe("landing copy within the established presentation", () => {
     render(<LandingExperience />);
     const privacy = document.querySelector("#privacy")!;
     expect(privacy).toHaveTextContent(/viewer can Show interest and confirm their email without an account/i);
-    expect(privacy).toHaveTextContent(/Emailed only when you approve/i);
+    expect(privacy).toHaveTextContent(/Review the verified recipient and shared sections before approving/i);
     expect(privacy).toHaveTextContent(/copies already saved can.t be recalled/i);
     expect(privacy).toHaveTextContent(/Your notes and street address aren.t included in either shared view/i);
     expect(document.querySelector("#top")).not.toHaveTextContent(/private link/i);
     const approval = screen.getByText("What happens after someone shows interest?").closest("details");
-    expect(approval).toHaveTextContent(/email the contacts/i);
-    expect(approval).toHaveTextContent(/does not receive private profile access/i);
+    expect(approval).toHaveTextContent(/approving full portfolio viewing for 15 days/i);
+    expect(approval).toHaveTextContent(/another device must verify the same email/i);
     const liveness = screen.getByText("What does “Liveness checked” mean?").closest("details");
     expect(liveness).toHaveTextContent(/does not verify legal identity/i);
   });

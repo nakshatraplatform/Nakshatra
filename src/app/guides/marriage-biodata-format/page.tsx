@@ -37,7 +37,7 @@ export default function MarriageBiodataFormatGuide() {
     </PolicySection>
     <PolicySection title="How VivIntro helps you share it">
       <p>VivIntro is the product used to create your introduction. Your Vivara is the link you share. Saving edits keeps them in your private draft; publishing updates the public view at the same link.</p>
-      <p>Private details stay separate. A visitor can Show interest and confirm their email without creating an account. You decide whether to email your chosen published contacts. Email confirmation is not identity verification.</p>
+      <p>Private details stay separate. A visitor can Show interest and confirm their email without creating an account. You decide whether to approve viewing of your published full portfolio for 15 days. Email confirmation is not identity verification.</p>
       <p><Link href="/demo" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">See a sample introduction</Link> or <Link href="/signup" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">create your introduction</Link>. For more about the sharing boundary, <Link href="/faq" className="font-semibold text-[color:var(--workspace-teal)] underline underline-offset-4">read the questions families ask</Link>.</p>
     </PolicySection>
   </PolicyLayout>;

@@ -24,7 +24,7 @@ describe("welcoming interest journey", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByLabelText("Email address")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sign in to VivIntro" })).not.toBeInTheDocument();
-    expect(screen.getByText(/does not create an account/)).toBeInTheDocument();
+    expect(screen.getByText(/creates no account or VivIntro sign-in/)).toBeInTheDocument();
   });
 
   it.each(["button", "Escape"])("retains incomplete answers after closing by %s and reopening", (method) => {
@@ -58,11 +58,11 @@ describe("welcoming interest journey", () => {
     expect(within(screen.getByRole("group", { name: "Candidate details" })).getByLabelText("Candidate’s full name")).toHaveValue("Arun");
   });
 
-  it("does not reuse a signed-in viewer profile or imply private access", () => {
+  it("does not reuse a signed-in viewer profile or grant private access before approval", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" existingViewerProfile={{ name: "Mira Rao", profileFor: "self", phone: "+1 6175550123", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     expect(screen.getByLabelText("Full name")).toHaveValue("");
     expect(screen.getByLabelText("Email address")).toHaveValue("");
-    expect(screen.getByText(/does not create an account/)).toBeInTheDocument();
+    expect(screen.getByText(/creates no account or VivIntro sign-in/)).toBeInTheDocument();
   });
 });

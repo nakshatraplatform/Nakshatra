@@ -13,8 +13,9 @@ import {
 } from "./public-portfolio.contract";
 import { PublicPortfolioRepository } from "./public-portfolio.repository";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { guestViewingRpc } from "@/features/access/server/guest-viewing-proof";
 
-type SigningOptions = { createSigningClient?: () => SupabaseClient };
+type SigningOptions = { createSigningClient?: () => SupabaseClient; guestProofHash?: string | null };
 
 /** Stored descriptors must not change object identity when the SDK constructs a URL. */
 function canonicalStoragePath(path: string) {
@@ -69,7 +70,7 @@ export async function resolvePortfolioView(
   supabase: SupabaseClient,
   token: string,
   authenticated: boolean,
-  { createSigningClient = createServiceRoleClient }: SigningOptions = {}
+  { createSigningClient = createServiceRoleClient, guestProofHash }: SigningOptions = {}
 ): Promise<PortfolioView | null> {
   const repository = new PublicPortfolioRepository(supabase);
   const publicPortfolio = await resolvePublicPortfolio(supabase, token);
@@ -82,6 +83,16 @@ export async function resolvePortfolioView(
     const { data } = await repository.resolveApproved(token);
     const approved = resolvedPortfolioSchema.safeParse(data);
     if (approved.success && approved.data.accessExpiresAt && privateCapabilityTtl(approved.data.accessExpiresAt)) {
+      resolved = approved.data;
+      accessMode = "approved";
+    }
+  }
+  if (accessMode === "public" && guestProofHash) {
+    const { data, error } = await guestViewingRpc(createSigningClient())("resolve_guest_approved_portfolio", {
+      p_share_token: token, p_proof_hash: guestProofHash,
+    });
+    const approved = resolvedPortfolioSchema.safeParse(data);
+    if (!error && approved.success && approved.data.accessExpiresAt && privateCapabilityTtl(approved.data.accessExpiresAt)) {
       resolved = approved.data;
       accessMode = "approved";
     }
@@ -126,11 +137,19 @@ export async function isPortfolioOwner(
 export async function resolveApprovedHoroscope(
   supabase: SupabaseClient,
   token: string,
-  { createSigningClient = createServiceRoleClient }: SigningOptions = {}
+  { createSigningClient = createServiceRoleClient, guestProofHash }: SigningOptions = {}
 ): Promise<(ApprovedHoroscope & { signedUrl: string }) | null> {
   const repository = new PublicPortfolioRepository(supabase);
-  const { data, error } = await repository.resolveApprovedHoroscope(token);
-  if (error || !data) return null;
+  const initial = await repository.resolveApprovedHoroscope(token);
+  let data: unknown = initial.data;
+  let unavailable = Boolean(initial.error);
+  if ((unavailable || !data) && guestProofHash) {
+    const guest = await guestViewingRpc(createSigningClient())("resolve_guest_approved_portfolio", {
+      p_share_token: token, p_proof_hash: guestProofHash, p_horoscope: true,
+    });
+    data = guest.data; unavailable = Boolean(guest.error);
+  }
+  if (unavailable || !data) return null;
   const parsed = approvedHoroscopeSchema.safeParse(data);
   if (!parsed.success || !canonicalStoragePath(parsed.data.accessPath)) return null;
   const ttl = privateCapabilityTtl(parsed.data.accessExpiresAt);

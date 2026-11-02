@@ -1,9 +1,11 @@
 import { createServer } from "node:http";
+import { createHmac } from "node:crypto";
 import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser, loadingTestToken } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.E2E_SUPABASE_PORT || 54329);
+const guestViewingProofs = new Map();
 const portfolioId = "11111111-1111-4111-8111-111111111111";
 const authenticatedAccessToken = "e2e-authenticated-user-token";
 const authenticatedUser = {
@@ -281,6 +283,36 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
+  // Loopback-only guest viewing fixtures exercise real app cookies and rendering.
+  if (request.method === "POST" && url.pathname === "/__test/guest-viewing") {
+    let body = ""; request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      const input = JSON.parse(body || "{}");
+      if (!guestViewingProofs.has(input.proofHash)) return sendJson(response, 404, {});
+      guestViewingProofs.set(input.proofHash, input.approved === true);
+      return sendJson(response, 200, { ok: true });
+    });
+  }
+  if (request.method === "POST" && ["complete_guest_interest_and_remember", "complete_guest_portfolio_access_verification", "resolve_guest_approved_portfolio"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
+    let body = ""; request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== "Bearer e2e-loopback-only-service-role-key") return sendJson(response, 403, {});
+      const input = JSON.parse(body || "{}");
+      if (url.pathname.endsWith("resolve_guest_approved_portfolio")) {
+        if (input.p_share_token !== "e2e-portfolio-token" || guestViewingProofs.get(input.p_proof_hash) !== true) return sendJson(response, 200, null);
+        const expiresAt = new Date(Date.now() + 3 * 86_400_000).toISOString();
+        if (input.p_horoscope) return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: expiresAt });
+        return sendJson(response, 200, { ...resolvedPortfolio(false), data: { ...publicSnapshot.data,
+          contact: { contact_person: "Approved family contact", phone: "+1 555 010 0200", email: "private-guest@example.test" } }, accessExpiresAt: expiresAt });
+      }
+      const viewing = url.pathname.endsWith("complete_guest_portfolio_access_verification");
+      const expected = createHmac("sha256", "loopback-only-viewing-verification-key".repeat(2))
+        .update(`vivintro-guest-interest:v1:${viewing ? "view-code" : "code"}:guest@example.test:123456`).digest("hex");
+      if (input.p_code_digest !== expected) return sendJson(response, 200, { status: "invalid_code" });
+      guestViewingProofs.set(input.p_proof_hash, viewing);
+      return sendJson(response, 200, { status: viewing ? "verified" : "submitted", shareToken: "e2e-portfolio-token" });
+    });
+  }
   if (url.pathname === "/__test/public-read-counts") return sendJson(response, 200, publicReadCounts.get(url.searchParams.get("token")) || {});
   if (request.method === "POST" && ["resolve_public_portfolio", "resolve_public_portfolio_identity_verified", "resolve_public_portfolio_status", "record_public_portfolio_view"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
     let observedBody = "";

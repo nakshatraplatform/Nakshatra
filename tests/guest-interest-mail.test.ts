@@ -73,7 +73,7 @@ describe("guest interest mail worker", () => {
   it("never sends malformed private contact data", async () => {
     rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
       ? [{ ...job, contact_payload: { email: "invalid" } }] : true, error: null }));
-    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 1 });
     expect(send).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith("complete_guest_interest_mail", expect.objectContaining({
       p_sent: false, p_error_code: "CONTACT_PAYLOAD_INVALID", p_retryable: false,
@@ -86,5 +86,20 @@ describe("guest interest mail worker", () => {
     expect(rpc).toHaveBeenCalledWith("complete_guest_interest_mail", expect.objectContaining({
       p_sent: false, p_error_code: "EMAIL_UNAVAILABLE", p_retryable: true,
     }));
+  });
+  it("sends an approval URL without copying private portfolio contents into email", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://www.vivintro.com");
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, kind: "approved_access", contact_payload: { grantId: job.interest_request_id, shareToken: "guest-portfolio", expiresAt: "2026-11-16T12:00:00+00:00" } }] : true, error: null }));
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+    const email = send.mock.calls[0][0];
+    expect(email.text).toContain("https://www.vivintro.com/p/guest-portfolio/view");
+    expect(email.text).toContain("same email");
+    expect(email.text).not.toContain("chosen@example.test");
+    vi.unstubAllEnvs();
+  });
+  it("reports permanent provider failures instead of marking maintenance healthy", async () => {
+    send.mockResolvedValue({ status: "failed", code: "EMAIL_CREDENTIALS_REJECTED", retryable: false });
+    expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 1 });
   });
 });

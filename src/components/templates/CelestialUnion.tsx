@@ -707,7 +707,7 @@ export default function CelestialUnion({
                   ? "These details are visible only in the authenticated owner view."
                   : approvedViewer
                     ? "These contact details are visible because they chose to share them with you."
-                    : `Tap Show interest and confirm your email without creating an account. ${firstName(data.personal.name)} may email their chosen contacts after reviewing your request.`}
+                    : `Tap Show interest and confirm your email without creating an account. ${firstName(data.personal.name)} may approve full portfolio viewing for 15 days after reviewing your request.`}
               </p>
             </div>
             {protectedItems.length > 0 && (
@@ -716,7 +716,7 @@ export default function CelestialUnion({
                   {protectedItems.map((item) => <span key={item}><LockKeyhole aria-hidden="true" />{item}</span>)}
                 </div>
                 {!hasApprovedAccess && (
-                  <p className="portfolio-protected-clarifier">These details stay private. Showing interest does not open private profile access.</p>
+                  <p className="portfolio-protected-clarifier">These details open only after the owner approves your verified email. You do not need a VivIntro account.</p>
                 )}
               </div>
             )}
@@ -741,7 +741,7 @@ export default function CelestialUnion({
             <div>
               <p className="portfolio-eyebrow">Make an introduction of your own</p>
               <h2 id="portfolio-creator-cta-title">Want an introduction like this?</h2>
-              <p>Create yours privately. Share it when you’re ready, and decide when to email your chosen contacts.</p>
+              <p>Create yours privately. Share it when you’re ready, and decide who can view your full portfolio.</p>
             </div>
             <Link href="/signup">
               Create your introduction

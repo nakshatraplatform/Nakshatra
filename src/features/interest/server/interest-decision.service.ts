@@ -21,14 +21,14 @@ const interestDecisionResultSchema = z.enum([
 
 export type InterestDecisionResult = z.infer<typeof interestDecisionResultSchema>;
 
-/** New approvals send published chosen contacts; legacy access remains separate. */
+/** Reviewed approvals create expiring viewing access without a visitor Auth account. */
 export async function decideInterestRequest(
   supabase: SupabaseClient,
   interestRequestId: string,
   decision: "approved" | "rejected" | "reopened",
   revision?: string
 ): Promise<InterestDecisionResult> {
-  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_contact_reviewed", {
+  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_portfolio_reviewed", {
     p_interest_request_id: interestRequestId, p_revision: revision ?? "",
   }) : await supabase.rpc("decide_interest_request", {
     p_interest_request_id: interestRequestId,

@@ -29,9 +29,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 const decisionSchema = z.object({
   decision: z.enum(["approved", "rejected", "reopened"]),
   revision: z.string().regex(/^[a-f0-9]{32}$/).optional(),
-}).refine(value => value.decision !== "approved" || Boolean(value.revision), "Review the current published contacts before sharing.");
+  scope: z.literal("full_portfolio").optional(),
+}).refine(value => value.decision !== "approved" || Boolean(value.revision && value.scope === "full_portfolio"), "Refresh and review the full published portfolio before approving access.");
 
-/** Lets the owner email reviewed published contacts or decline an interest. */
+/** Explicit scope prevents an older contact-only confirmation from granting full access. */
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -55,7 +56,7 @@ export async function PATCH(
   const parsed = decisionSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json(
-      { code: "INTEREST_DECISION_INVALID", error: "Choose approve, decline, or reopen. To share contacts, review the current published contacts first." },
+      { code: "INTEREST_DECISION_INVALID", error: "Refresh the dashboard and review the full published portfolio before approving access." },
       { status: 400 }
     );
   }
@@ -71,7 +72,7 @@ export async function PATCH(
   if (result === "not_found") {
     return NextResponse.json({ code: "INTEREST_NOT_FOUND", error: "This interest could not be found." }, { status: 404 });
   }
-  if (result === "review_changed") return NextResponse.json({ code: "SHARING_REVIEW_CHANGED", error: "Published contacts changed. Close this confirmation and review them again before sharing." }, { status: 409 });
+  if (result === "review_changed") return NextResponse.json({ code: "SHARING_REVIEW_CHANGED", error: "Published details changed or the introduction is unavailable. Close this confirmation and review again before sharing." }, { status: 409 });
   if (result === "no_contact") return NextResponse.json({ code: "NO_PUBLISHED_CONTACT", error: "Add and publish a private contact before sharing it." }, { status: 409 });
   if (result === "signin_required") {
     return NextResponse.json(
@@ -81,7 +82,7 @@ export async function PATCH(
   }
   if (result === "verification_required") {
     return NextResponse.json(
-      { code: "INTEREST_VERIFICATION_REQUIRED", error: "A verified email is required before contacts can be shared." },
+      { code: "INTEREST_VERIFICATION_REQUIRED", error: "A verified email is required before portfolio viewing can be approved." },
       { status: 409 }
     );
   }
