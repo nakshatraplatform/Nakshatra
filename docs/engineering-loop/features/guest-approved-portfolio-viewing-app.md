@@ -21,7 +21,7 @@ No portfolio layout, fonts, colours, optional fields or mandatory-field requirem
 
 ## Evaluation and evidence
 
-Local lint, typecheck and production build passed with loopback configuration. Eighteen focused Chrome checks passed across desktop/tablet/mobile. Initial broader coverage run passed 1869/1875 but six unchanged telemetry tests timed out during concurrent build/browser load; the bounded-worker rerun passed all 1875 tests. The mail boundary coverage was 79.62% (minimum 80%); added unsafe-origin and malformed-payload refusal tests now bring focused branch coverage to 87.03%. Final combined coverage remains pending. No timeout or assertion was relaxed.
+Local lint, typecheck and production build passed with loopback configuration. Eighteen focused Chrome checks passed across desktop/tablet/mobile. Initial broader coverage run passed 1869/1875 but six unchanged telemetry tests timed out during concurrent build/browser load; the bounded-worker rerun passed all 1875 tests. The mail boundary coverage was 79.62% (minimum 80%); added unsafe-origin and malformed-payload refusal tests now bring focused branch coverage to 87.03%. Final combined run passed all 1881 tests across 221 files, with 89.53% line and 82.35% branch coverage. All 65 feature-file and 21 protected-boundary coverage gates passed without changing thresholds. No timeout or assertion was relaxed.
 
 Browser testing caught pre-hydration email input loss on WebKit. The new verification form now uses the existing useHydrated fieldset guard; two client regression tests pass. All six viewing checks passed in Firefox, desktop WebKit and mobile WebKit after that correction; final CI is pending.
 
@@ -32,3 +32,5 @@ Fresh-context independent app review of add54cb found no material issues and ind
 Keep database and app PRs Draft until their final checks/reviews pass. Merge/apply the database prerequisite first and verify migration history; then refresh app against main and release. Do not enable the app before the new RPCs exist. No production write, merge, deployment or email send is part of this implementation.
 
 Production mail workers remain a separate release gate: check worker enablement, matching Vault secret, scheduler, delivery/suppression/webhook state and a consented inbox smoke test. Do not bulk replay old queued emails or claim delivery without provider evidence. No new secret is introduced: the existing GUEST_INTEREST_OTP_SECRET is reused with a separate viewing-code purpose.
+
+Final validation applies to runtime/test commit 2973b1a; this evidence update changes documentation only. Final lint/typecheck passed. Hosted CI remains visible in PR #144; do not infer a hosted pass from local checks. Latest main was re-fetched and remains c0bcb29.
