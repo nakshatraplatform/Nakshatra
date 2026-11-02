@@ -1357,7 +1357,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_lease_token": string }; Returns: boolean
                            },
 "guest_portfolio_delivery_health":
-{ Args: never; Returns: Json
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "has_brokerdesk_capability":
 { Args: { "p_capability": string,"p_relationship_ref"?: string,"p_workspace_ref": string }; Returns: boolean
