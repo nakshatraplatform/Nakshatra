@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(30);
+select plan(42);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -103,6 +103,16 @@ select is((select count(*)::integer from auth.users where email='new-guest@fixtu
 select is((select count(*)::integer from app_private.guest_portfolio_proofs),1,'only successful verification created a proof');
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.decide_interest_portfolio_reviewed('d5000000-0000-4000-8000-000000000001',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'already_approved','active legacy Auth grant is not duplicated or converted');
+reset role;
+update public.reveal_grants set created_at=now()-interval '10 days',expires_at=now()-interval '1 day' where interest_request_id='d5000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.decide_interest_portfolio_reviewed('d5000000-0000-4000-8000-000000000001',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'invalid_transition','expired unrevoked legacy grant cannot cause a duplicate-key failure or renewal');
+reset role;
+update public.reveal_grants set created_at=now(),expires_at=now()+interval '5 days' where interest_request_id='d5000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
 select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='new-guest@fixture.test'),repeat('0',32)),'review_changed','stale review cannot create viewing access');
 select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='new-guest@fixture.test'),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','reviewed owner approval grants portfolio viewing');
 select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='new-guest@fixture.test'),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'already_approved','approval retry does not create another grant');
@@ -121,6 +131,14 @@ select is((select data->>'eligible' from viewing_challenge),'true','approved ema
 select is(public.complete_guest_portfolio_access_verification((select (data->>'challengeId')::uuid from viewing_challenge),repeat('f',64),repeat('3',64))->>'status','verified','new browser can verify approved email without login');
 select is(public.complete_guest_portfolio_access_verification((select (data->>'challengeId')::uuid from viewing_challenge),repeat('f',64),repeat('4',64))->>'status','expired','access verification is one-use');
 select ok(public.resolve_guest_approved_portfolio('guest_owner_fixture_01',repeat('3',64)) is not null,'verified new browser can read its approved portfolio');
+create temp table exhausted_challenge as select public.begin_guest_portfolio_access_verification('guest_owner_fixture_01','new-guest@fixture.test',repeat('e',64),repeat('4',64),repeat('5',64)) data;
+do $$ begin for attempt in 1..5 loop
+  perform public.complete_guest_portfolio_access_verification((select (data->>'challengeId')::uuid from exhausted_challenge),repeat('0',64),repeat('7',64));
+end loop; end $$;
+select is(public.complete_guest_portfolio_access_verification((select (data->>'challengeId')::uuid from exhausted_challenge),repeat('e',64),repeat('7',64))->>'status','expired','five wrong codes lock the challenge even with the right code later');
+create temp table replaced_challenge as select public.begin_guest_portfolio_access_verification('guest_owner_fixture_01','new-guest@fixture.test',repeat('e',64),repeat('6',64),repeat('7',64)) data;
+create temp table replacement_challenge as select public.begin_guest_portfolio_access_verification('guest_owner_fixture_01','new-guest@fixture.test',repeat('e',64),repeat('8',64),repeat('9',64)) data;
+select is(public.complete_guest_portfolio_access_verification((select (data->>'challengeId')::uuid from replaced_challenge),repeat('e',64),repeat('8',64))->>'status','expired','requesting a fresh code invalidates the previous challenge');
 create temp table claimed_access_mail as select * from public.claim_guest_interest_mail(10);
 select ok((select public.guest_interest_mail_is_current(id,lease_token) from claimed_access_mail where kind='approved_access'),'queued approval is current while grant and publication are eligible');
 reset role;
@@ -142,6 +160,13 @@ set local role service_role;
 set local request.jwt.claims='{"role":"service_role"}';
 select is(public.resolve_guest_approved_portfolio('guest_owner_fixture_01',repeat('3',64)),null::jsonb,'expired browser proof cannot view an otherwise active grant');
 reset role;
+update public.reveal_grants set created_at=now()-interval '16 days',expires_at=now()-interval '1 day' where id in (select grant_id from app_private.guest_portfolio_grant_recipients);
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+select is(public.resolve_guest_approved_portfolio('guest_owner_fixture_01',repeat('1',64)),null::jsonb,'expired approval blocks an unexpired browser proof');
+select ok(not (select public.guest_interest_mail_is_current(id,lease_token) from claimed_access_mail where kind='approved_access'),'expired grant suppresses its queued approval email');
+reset role;
+update public.reveal_grants set created_at=now(),expires_at=now()+interval '15 days' where id in (select grant_id from app_private.guest_portfolio_grant_recipients);
 create temp table guest_grant_id as select grant_id from app_private.guest_portfolio_grant_recipients;
 grant select on guest_grant_id to authenticated;
 set local role authenticated;
@@ -153,5 +178,23 @@ set local request.jwt.claims='{"role":"service_role"}';
 select is(public.resolve_guest_approved_portfolio('guest_owner_fixture_01',repeat('1',64)),null::jsonb,'revocation blocks the original verified browser');
 reset role;
 select is((select count(*)::integer from public.reveal_grants where viewer_user_id='d1000000-0000-4000-8000-000000000002' and revoked_at is null),1,'legacy grant remains active with original expiry');
+
+insert into public.interest_requests(portfolio_id,viewer_name,viewer_email,viewer_phone,status)
+ values('d3000000-0000-4000-8000-000000000001','Unverified old name','recover-guest@fixture.test','+1 617 555 0188','new');
+set local role service_role;
+set local request.jwt.claims='{"role":"service_role"}';
+create temp table recovery_challenge as select public.begin_guest_interest_verification(jsonb_set(pg_temp.guest_input(),'{email}','"recover-guest@fixture.test"'),repeat('e',64),repeat('8',64),repeat('7',64)) id;
+select is(public.complete_guest_interest_and_remember((select id from recovery_challenge),repeat('e',64),repeat('7',64),repeat('6',64))->>'status','submitted','valid email verification recovers from historical unverified pending request');
+reset role;
+select is((select count(*)::integer from public.interest_requests where viewer_email='recover-guest@fixture.test' and status='closed'),1,'unverified old submission is retained closed');
+select is((select count(*)::integer from public.interest_requests where viewer_email='recover-guest@fixture.test' and email_verified_at is not null and viewer_name='Mira Rao'),1,'recovery uses the newly validated form and verified email');
+insert into public.interest_requests(portfolio_id,viewer_name,viewer_email,viewer_phone,email_verified_at,verification_channel,status)
+ values('d3000000-0000-4000-8000-000000000001','Contact-only guest','contact-only@fixture.test','+1 617 555 0187',now(),'email','approved');
+select is((select count(*)::integer from public.reveal_grants g join public.interest_requests r on r.id=g.interest_request_id where r.viewer_email='contact-only@fixture.test'),0,'previous contact approval is not automatically converted');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='contact-only@fixture.test'),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','previous contact approval requires fresh full-disclosure approval');
+reset role;
+select is((select count(*)::integer from auth.users where email in ('contact-only@fixture.test','recover-guest@fixture.test','new-guest@fixture.test')),0,'all guest verification and approval paths remain accountless');
 select * from finish();
 rollback;

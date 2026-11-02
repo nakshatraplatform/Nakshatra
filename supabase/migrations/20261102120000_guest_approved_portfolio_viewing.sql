@@ -57,6 +57,24 @@ begin
   select * into c from app_private.guest_interest_challenges where id=p_id for update;
   token:=c.details->>'portfolioToken';
   outcome:=public.complete_guest_interest_verification(p_id,p_code_digest,p_network_subject_hash);
+  if outcome='existing_request' then
+    -- A newly verified email must not remain stranded behind an old unverified
+    -- pending submission. Retain that history closed; insert the validated new
+    -- form under the portfolio lock already acquired by the submission helper.
+    begin
+    update public.interest_requests r set status='closed',updated_at=now()
+      from public.portfolios p where p.id=r.portfolio_id and p.share_token=token
+        and lower(r.viewer_email)=c.email and r.status in ('new','pending_review')
+        and (r.email_verified_at is null or r.verification_channel is distinct from 'email');
+    if found then
+      outcome:=app_private.submit_verified_guest_interest(c.details,c.email,p_network_subject_hash);
+      if outcome<>'submitted' then raise exception 'recovery could not submit' using errcode='P0409'; end if;
+    end if;
+    exception when sqlstate 'P0409' then
+      -- Restore the prior request if quota or availability prevented replacement.
+      return jsonb_build_object('status',outcome);
+    end;
+  end if;
   if outcome not in ('submitted','existing_request') then
     return jsonb_build_object('status',outcome); end if;
   select r.id into r_id from public.interest_requests r join public.portfolios p on p.id=r.portfolio_id
@@ -64,7 +82,7 @@ begin
       and r.email_verified_at is not null and r.verification_channel='email'
       and r.status in ('new','pending_review','approved','revealed','rejected')
     order by r.created_at desc,r.id limit 1;
-  if r_id is null then raise exception 'verified request unavailable' using errcode='40001'; end if;
+  if r_id is null then return jsonb_build_object('status','existing_request'); end if;
   insert into app_private.guest_portfolio_proofs(proof_hash,interest_request_id,recipient_email)
     values(p_proof_hash,r_id,c.email);
   return jsonb_build_object('status','submitted','shareToken',token);
@@ -101,8 +119,10 @@ begin
   select * into r from public.interest_requests where id=p_interest_request_id and portfolio_id=p_id for update;
   if r.id is null then return 'not_found'; end if;
   if r.email_verified_at is null or r.verification_channel<>'email' or r.viewer_email is null then return 'verification_required'; end if;
-  if exists(select 1 from public.reveal_grants g join app_private.guest_portfolio_grant_recipients b on b.grant_id=g.id
+  if exists(select 1 from public.reveal_grants g
     where g.interest_request_id=r.id and g.revoked_at is null and g.expires_at>now()) then return 'already_approved'; end if;
+  if exists(select 1 from public.reveal_grants g
+    where g.interest_request_id=r.id and g.revoked_at is null) then return 'invalid_transition'; end if;
   -- Prior contact-only approvals require this explicit fresh full-disclosure review.
   if r.status not in ('new','pending_review','approved','revealed') then return 'invalid_transition'; end if;
   review:=public.get_owner_relationship_page()->'disclosure';
