@@ -121,12 +121,13 @@ async function scenario(retryFirst) {
     select 'REVISION:'||(public.get_owner_relationship_page()#>>'{disclosure,revision}'); rollback;`, true);
   const review = revision.match(/REVISION:([a-f0-9]{32})/)?.[1];
   assert.ok(review, "owner must review a real published disclosure");
-  const approve = `select public.decide_interest_request_reviewed('${request}','${review}');`;
+  const approve = `select public.decide_interest_contact_reviewed('${request}','${review}');`;
   const retry = session(`retry-${portfolio}`), approval = session(`approval-${portfolio}`);
   const begin = "begin; set local statement_timeout='12s'; set local idle_in_transaction_session_timeout='15s';";
   if (retryFirst) {
     // Hold the actual submission engine's first lock, then pause at that
-    // boundary. The old request-first approval would now deadlock on retry.
+    // boundary. Approval must wait for the retry's portfolio lock, then
+    // decide exactly once without creating a private portfolio grant.
     retry.send(`${begin} select id from public.portfolios where id='${portfolio}' for update;
       ${claims(viewer, viewerSession)}
       \\echo RETRY_LOCKED`);
@@ -150,16 +151,16 @@ async function scenario(retryFirst) {
     'approved',(select count(*) from public.interest_requests where portfolio_id='${portfolio}' and status='approved'
       and requester_user_id='${viewer}' and viewer_email='${viewerEmail}' and email_verified_at is not null and verification_channel='email'),
     'grants',(select count(*) from public.reveal_grants where portfolio_id='${portfolio}'),
-    'boundGrants',(select count(*) from public.reveal_grants where portfolio_id='${portfolio}' and interest_request_id='${request}'
-      and viewer_user_id='${viewer}' and granted_by='${owner}' and revoked_at is null
-      and expires_at-created_at=interval '15 days'),
     'grantAudit',(select count(*) from public.access_audit_events where interest_request_id='${request}' and event_type='grant_created'),
+    'contactAudit',(select count(*) from app_private.guest_contact_decision_audit where interest_request_id='${request}' and owner_user_id='${owner}' and published_revision='${review}'),
     'submissionAudit',(select count(*) from public.access_audit_events where interest_request_id='${request}' and event_type='request_submitted'),
-    'approvalMail',(select count(*) from app_private.notification_outbox where interest_request_id='${request}' and notification_type='full_view_approved'),
+    'legacyApprovalMail',(select count(*) from app_private.notification_outbox where interest_request_id='${request}' and notification_type='full_view_approved'),
+    'contactMail',(select count(*) from app_private.guest_interest_mail_outbox where interest_request_id='${request}' and kind='approved_contact' and recipient_email='${viewerEmail}'),
     'requestMail',(select count(*) from app_private.notification_outbox where interest_request_id='${request}' and notification_type='new_introduction'))`));
-  assert.deepEqual(state, { requests: 1, approved: 1, grants: 1, boundGrants: 1,
-    grantAudit: 1, submissionAudit: 1, approvalMail: 1, requestMail: 1 }, "retry must not duplicate or corrupt approval, identity, lifetime, audit or outbox");
-  console.log(`Approval/retry: ${retryFirst ? "retry-first" : "approval-first"} overlap passed; one verified recipient, 15-day grant, audit and outbox.`);
+  assert.deepEqual(state, { requests: 1, approved: 1, grants: 0, grantAudit: 0,
+    contactAudit: 1, submissionAudit: 1, legacyApprovalMail: 0, contactMail: 1, requestMail: 1 },
+  "retry must not duplicate or corrupt contact approval, identity, audit or outbox, or grant private access");
+  console.log(`Approval/retry: ${retryFirst ? "retry-first" : "approval-first"} overlap passed; one verified recipient, contact email and audit, no private grant.`);
 }
 try {
   await scenario(true);

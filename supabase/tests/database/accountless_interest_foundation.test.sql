@@ -2,7 +2,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(26);
+select plan(28);
+select ok(not has_function_privilege('authenticated',
+  'app_private.decide_interest_request_pre_contact_cutover(uuid,text)',
+  'EXECUTE'),'authenticated owners cannot call the retired grant implementation');
+select ok(not has_function_privilege('authenticated',
+  'app_private.manage_reveal_grant_pre_contact_cutover(uuid,text)',
+  'EXECUTE'),'authenticated owners cannot call the retired renewal implementation');
 
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
@@ -134,7 +140,7 @@ select pg_temp.set_authenticated_claims(
 select is(public.decide_interest_request(
   (select id from public.interest_requests
     where viewer_email='new-guest@fixture.test'),'approved'),
-  'signin_required','old approval command cannot grant a guest');
+  'contact_review_required','old approval command cannot grant a guest');
 select is(public.decide_interest_contact_reviewed(
   (select id from public.interest_requests
     where viewer_email='new-guest@fixture.test'),repeat('0',32)),
