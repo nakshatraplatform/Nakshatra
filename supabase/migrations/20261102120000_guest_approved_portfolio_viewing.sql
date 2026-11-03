@@ -150,7 +150,7 @@ create function public.begin_guest_portfolio_access_verification(
 declare r_id uuid; c_id uuid:=extensions.gen_random_uuid(); quota jsonb; email text:=lower(btrim(p_email));
 begin
   perform app_private.require_email_operator();
-  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{8,160}$'
+  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{3,160}$'
     or email is null or length(email) not between 3 and 180 or email !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
     or p_code_digest is null or p_code_digest !~ '^[a-f0-9]{64}$'
     or p_email_subject_hash is null or p_email_subject_hash !~ '^[a-f0-9]{64}$'
@@ -206,7 +206,7 @@ returns jsonb language plpgsql volatile security definer set search_path='' as $
 declare g public.reveal_grants%rowtype; result jsonb;
 begin
   perform app_private.require_email_operator();
-  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{8,160}$'
+  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{3,160}$'
     or p_proof_hash is null or p_proof_hash !~ '^[a-f0-9]{64}$' or p_horoscope is null then return null; end if;
   select grant_row.* into g from app_private.guest_portfolio_proofs proof
     join public.interest_requests r on r.id=proof.interest_request_id

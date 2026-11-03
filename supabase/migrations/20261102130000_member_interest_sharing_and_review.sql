@@ -503,3 +503,19 @@ begin
 end $$;
 revoke all on function public.get_interest_details(uuid) from public,anon;
 grant execute on function public.get_interest_details(uuid) to authenticated;
+
+-- The pre-existing readable-link contract permits 3-160 characters. Retain the
+-- deployed guest verifier's quotas and validation, changing only its path guard.
+do $migration$
+declare definition text; target regprocedure;
+begin
+  target:='public.begin_guest_interest_verification(jsonb,text,text,text)'::regprocedure;
+  definition:=pg_get_functiondef(target);
+  if strpos(definition,'between 8 and 160')=0 then raise exception 'unexpected guest start path guard'; end if;
+  execute replace(definition,'between 8 and 160','between 3 and 160');
+  target:='app_private.submit_verified_guest_interest(jsonb,text,text)'::regprocedure;
+  definition:=pg_get_functiondef(target);
+  if strpos(definition,'{8,160}')=0 then raise exception 'unexpected guest submit path guard'; end if;
+  execute replace(definition,'{8,160}','{3,160}');
+end;
+$migration$;

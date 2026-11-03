@@ -267,7 +267,7 @@ select is((select count(*)::integer from public.reveal_grants where revoked_at i
 select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'renew') ->> 'status', 'renewal_disabled', 'legacy Complete Portfolio access cannot be renewed');
 select ok((select renewed_at is null and expires_at between now() + interval '14 days' and now() + interval '16 days' from public.reveal_grants where revoked_at is null), 'denied renewal leaves the existing expiry intact');
 select is(public.manage_reveal_grant((select id from public.reveal_grants where revoked_at is null), 'revoke') ->> 'status', 'revoked', 'the owner can revoke Complete Portfolio access');
-select is((select status::text from public.interest_requests limit 1), 'rejected', 'manual revocation returns the request to rejected');
+select is((select status::text from public.interest_requests limit 1), 'approved', 'Stop sharing preserves the interest decision and does not implicitly decline it');
 
 reset role;
 select throws_ok(
