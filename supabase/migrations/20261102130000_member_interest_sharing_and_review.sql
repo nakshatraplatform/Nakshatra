@@ -192,7 +192,7 @@ returns jsonb language plpgsql volatile security definer set search_path='' as $
 declare g public.reveal_grants%rowtype; result jsonb;
 begin
   perform app_private.require_email_operator();
-  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{8,160}$'
+  if p_share_token is null or p_share_token !~ '^[A-Za-z0-9_-]{3,160}$'
     or p_proof_hash is null or p_proof_hash !~ '^[a-f0-9]{64}$' or p_horoscope is null then return null; end if;
   select grant_row.* into g from app_private.guest_portfolio_proofs proof
     join public.interest_requests r on r.id=proof.interest_request_id
@@ -301,7 +301,11 @@ begin
       if review->>'revision' is distinct from p_revision or p_revision is null then return 'review_changed'; end if;
       if r.status not in ('new','pending_review','approved','revealed') then return 'invalid_transition'; end if;
       update public.interest_requests set status='approved',decided_at=now(),decided_by=auth.uid(),updated_at=now() where id=r.id;
-      result:='approved';
+      result:=case when r.status in ('approved','revealed') then 'already_approved' else 'approved' end;
+    elsif exists(select 1 from public.reveal_grants g where g.interest_request_id=r.id and g.access_level='full') then
+      -- A prior disclosure on this request is sticky: an old approval cannot
+      -- restore revoked access or reset its expiry. A fresh exchange is needed.
+      return 'invalid_transition';
     else
       result:=app_private.decide_interest_portfolio_reviewed_before_members(r.id,p_revision);
     end if;

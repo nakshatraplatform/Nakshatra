@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(42);
+select plan(44);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -196,5 +196,9 @@ select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','
 select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='contact-only@fixture.test'),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','previous contact approval requires fresh full-disclosure approval');
 reset role;
 select is((select count(*)::integer from auth.users where email in ('contact-only@fixture.test','recover-guest@fixture.test','new-guest@fixture.test')),0,'all guest verification and approval paths remain accountless');
+-- Readable paths may contain as few as three characters.
+update public.portfolios set share_token='abc' where id='d3000000-0000-4000-8000-000000000001';
+select ok(strpos(pg_get_functiondef('public.resolve_guest_approved_portfolio(text,text,boolean)'::regprocedure),'{3,160}')>0,'guest resolver retains short readable path guard');
+select ok(strpos(pg_get_functiondef('public.begin_guest_interest_verification(jsonb,text,text,text)'::regprocedure),'between 3 and 160')>0,'guest verifier retains the same readable path contract');
 select * from finish();
 rollback;

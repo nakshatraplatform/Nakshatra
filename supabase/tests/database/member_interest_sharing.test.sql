@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(39);
+select plan(41);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -150,6 +150,11 @@ set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
 select is(public.manage_reveal_grant((select id from accepted_grant),'revoke')->>'status','revoked','recipient can stop only their own reverse disclosure');
 select ok(public.resolve_approved_portfolio('guest_owner_fixture_01') is not null,'stopping reverse sharing preserves original sender permission');
+select is(public.decide_interest_portfolio_reviewed((select id from sent_request),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'invalid_transition','replayed approval cannot restore revoked access');
+reset role;
+select is((select count(*)::integer from public.reveal_grants),1,'replayed approval cannot create a replacement grant');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000002','d1100000-0000-4000-8000-000000000002');
 reset role;
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
