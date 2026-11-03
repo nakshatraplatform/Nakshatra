@@ -1,3 +1,4 @@
+import { portfolioSharePathSchema } from "@/features/portfolio/share-path";
 import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
       p_proof_hash: proof.hash,
     });
     if (error) return failure(503, "VERIFICATION_UNAVAILABLE", "We could not verify the code. Please try again.");
-    const parsedResult = z.object({ status: z.string(), shareToken: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/).optional() }).safeParse(data);
+    const parsedResult = z.object({ status: z.string(), shareToken: portfolioSharePathSchema.optional() }).safeParse(data);
     const result = parsedResult.success ? parsedResult.data.status : null;
     if (result === "submitted" && parsedResult.success && parsedResult.data.shareToken) {
       const response = NextResponse.json({ submitted: true }, { status: 201, headers: privateHeaders });

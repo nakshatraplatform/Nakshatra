@@ -58,6 +58,19 @@ describe("relationship notification delivery", () => {
     expect(rpc.mock.calls.at(-1)?.[1]).not.toHaveProperty("p_error_code");
   });
 
+  it.each(["abc", "aditi-rao"])("sends one identity-bound member notification for readable path %s", async (token) => {
+    const requestId = "55555555-5555-4555-8555-555555555555";
+    const recipientId = "44444444-4444-4444-8444-444444444444";
+    const rpc = vi.fn().mockResolvedValueOnce({ data: [{ notification_ref: "ntf_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", recipient_user_id: recipientId, notification_type: "new_introduction", attempt_count: 1, interest_request_id: requestId, grant_id: null, payload: {} }], error: null })
+      .mockResolvedValueOnce({ data: token, error: null }).mockResolvedValueOnce({ data: "sent", error: null });
+    const client = { rpc, from: vi.fn(), auth: { admin: { getUserById: vi.fn().mockResolvedValue({ data: { user: { email: "recipient@example.test" } }, error: null }) } } };
+    await expect(processRelationshipNotifications(client as never)).resolves.toMatchObject({ sent: 1, failed: 0 });
+    expect(rpc).toHaveBeenCalledWith("member_interest_notification_link", { p_request_id: requestId, p_recipient_user_id: recipientId });
+    expect(sendResendEmail).toHaveBeenCalledTimes(1);
+    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject: "Someone shared their full profile with you", text: expect.stringContaining(`/login?redirect=${encodeURIComponent(`/p/${token}`)}`) }));
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
   it("does nothing when no relationship notifications are due", async () => {
     const client = { rpc: vi.fn().mockResolvedValue({ data: [], error: null }) };
     await expect(processRelationshipNotifications(client as never)).resolves.toEqual({ claimed: 0, sent: 0, failed: 0, skipped: 0 });

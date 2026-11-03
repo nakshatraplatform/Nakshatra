@@ -1,8 +1,10 @@
 "use client";
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
+import { useRouter } from "next/navigation";
+import { MemberInterestForm } from "./MemberInterestForm";
 import { VisitorInterestFields } from "./VisitorInterestFields";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, CheckCircle2, LoaderCircle, MessageCircle, ShieldCheck, X } from "lucide-react";
 import type { NewViewerInterestInput } from "@/features/interest/server/interest.contract";
@@ -45,7 +47,7 @@ async function guestExchange<T>(body: unknown, signal: AbortSignal): Promise<{ o
   }
 }
 
-export function InterestRequestModal({ portfolioToken, profileName, profileSummary, isOwner = false, appearance = "light" }: {
+export function InterestRequestModal({ portfolioToken, profileName, profileSummary, authenticated, isOwner = false, appearance = "light" }: {
   portfolioToken: string;
   profileName: string;
   profileSummary?: string;
@@ -55,6 +57,10 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   isOwner?: boolean;
   appearance?: CelestialAppearance;
 }) {
+  const router = useRouter();
+  const [memberMode, setMemberMode] = useState(authenticated);
+  const [memberMutual, setMemberMutual] = useState(false);
+  const useVisitorForm = useCallback(() => setMemberMode(false), []);
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
   const [step, setStep] = useState<ModalStep>("details");
@@ -131,6 +137,10 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
     // Dismissal does not undo a request. Keep the draft and duplicate guard alive.
     setOpen(false);
   }
+
+  useEffect(() => {
+    if (!open && submitted && memberMode) router.refresh();
+  }, [open, submitted, memberMode, router]);
 
   async function beginRequest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -282,7 +292,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   return (
     <>
       {submitted ? (
-        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> The family may approve full portfolio viewing and email you a viewing link.</span></div>
+        <div className="interest-sent" role="status"><CheckCircle2 aria-hidden="true" /><span><strong>Interest sent.</strong> {memberMode ? memberMutual ? "You have both shared your full profiles." : "Your full profile is shared for 15 days. You can stop sharing from your dashboard." : "The family may approve full portfolio viewing and email you a viewing link."}</span></div>
       ) : isOwner ? (
         <div className="interest-owner-action">
           <button type="button" className="portfolio-button portfolio-button-primary" disabled aria-describedby="own-portfolio-interest-note"><MessageCircle aria-hidden="true" /> Show interest</button>
@@ -305,20 +315,20 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
               <div className="interest-context-steps">
                 <h3>Next steps</h3>
                 <ol>
-                  <li>Introduce yourself and your family.</li>
-                  <li>Verify your email before sending.</li>
+                  <li>{memberMode ? "Share your published full profile." : "Introduce yourself and your family."}</li>
+                  <li>{memberMode ? "No repeated form or email code." : "Verify your email before sending."}</li>
                   <li>{firstName(profileName)} reviews your interest.</li>
                 </ol>
               </div>
-              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />This creates no account or VivIntro sign-in. Private viewing starts only after the owner approves.</p>
+              <p className="interest-context-privacy"><ShieldCheck aria-hidden="true" />{memberMode ? "You choose to share your full published profile when sending interest." : "This creates no account or VivIntro sign-in. Private viewing starts only after the owner approves."}</p>
             </aside>
             <div className="interest-main-pane">
             <div className="interest-brand-lockup"><VivIntroBrand href="/" openInNewTab className="interest-brand" variant="stacked" tone={appearance === "dark" ? "reverse" : "primary"} displayWidth={112} /></div>
             <div className="interest-modal-header">
               <div>
                 <p className="portfolio-eyebrow">Show interest</p>
-                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
-                <p>{step === "verify" ? "Enter the six-digit code we sent. Your interest will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : "A few details help the family understand who is getting in touch. No account is needed."}</p>
+                <h2 ref={headingRef} tabIndex={-1} id={titleId}>{step === "verify" ? "Verify your email" : step === "success" ? "Interest sent" : memberMode ? `Share your profile with ${firstName(profileName)}` : `Introduce yourself to ${firstName(profileName)}'s family`}</h2>
+                <p>{step === "verify" ? "Enter the six-digit code we sent. Your interest will be submitted after verification." : step === "success" ? `${firstName(profileName)} can now review your interest.` : memberMode ? "Use your published profile to introduce yourself." : "A few details help the family understand who is getting in touch. No account is needed."}</p>
               </div>
               <button type="button" className="interest-modal-close" onClick={closeModal} aria-label="Close interest form"><X aria-hidden="true" /></button>
             </div>
@@ -326,7 +336,9 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
             {pending && <p className="interest-verification-help interest-pending-note">You can close this window. Your request may still finish; reopening will keep your progress. We stop waiting after 20 seconds per request.</p>}
 
             {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
-            {(step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
+            {memberMode && step === "details" && <MemberInterestForm token={portfolioToken} recipientName={firstName(profileName)} onUnavailable={useVisitorForm} onSent={(mutual) => { setMemberMutual(mutual); setSubmitted(true); setStep("success"); }} />}
+            {!memberMode && !authenticated && step === "details" && <p className="interest-verification-help px-6">Already use VivIntro? <a className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${portfolioToken}#portfolio-interest`)}`}>Sign in to share your full profile</a></p>}
+            {!memberMode && (step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -349,7 +361,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
               <div className="interest-success" role="status">
                 <CheckCircle2 aria-hidden="true" />
                 <h3>Interest sent to {firstName(profileName)}.</h3>
-                <p>{firstName(profileName)} can review your interest and approve full portfolio viewing for 15 days. We’ll email you if they approve; this verified browser can then refresh the introduction.</p>
+                <p>{memberMode ? memberMutual ? "You have both shared your full profiles. Return to the introduction to view theirs." : `${firstName(profileName)} can now view your published full profile for 15 days. If they accept and share back, you can view theirs too.` : `${firstName(profileName)} can review your interest and approve full portfolio viewing for 15 days. We’ll email you if they approve; this verified browser can then refresh the introduction.`}</p>
                 <button type="button" className="portfolio-button portfolio-button-primary" onClick={closeModal}>Return to introduction</button>
               </div>
             )}

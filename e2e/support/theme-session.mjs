@@ -71,3 +71,11 @@ export const legacyOwnerCookie = { ...themeTestCookie, value: `base64-${encode({
 export const draftOwnerUser = { ...publishedOwnerUser, id: "99999999-9999-4999-8999-999999999999", email: "draft-owner@example.test" };
 export const draftOwnerToken = [encode({ alg: "HS256", typ: "JWT" }), encode({ sub: draftOwnerUser.id, role: "authenticated", exp: 4102444800, session_id: "77777777-7777-4777-8777-777777777777" }), Buffer.from("draft-local-ui-fixture").toString("base64url")].join(".");
 export const draftOwnerCookie = { ...themeTestCookie, value: `base64-${encode({ access_token: draftOwnerToken, refresh_token: "draft-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: draftOwnerUser })}` };
+
+// Distinct loopback-only variant for testing one-action registered-member review.
+export const memberOwnerToken = [
+  encode({ alg: "HS256", typ: "JWT" }),
+  encode({ sub: publishedOwnerUser.id, role: "authenticated", exp: 4102444800, session_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", fixture: "member-owner-review" }),
+  Buffer.from("not-a-signature-member-review-fixture").toString("base64url"),
+].join(".");
+export const memberOwnerCookie = { ...publishedOwnerCookie, value: `base64-${encode({ access_token: memberOwnerToken, refresh_token: "member-review-local-ui-fixture", expires_at: 4102444800, expires_in: 3600, token_type: "bearer", user: publishedOwnerUser })}` };

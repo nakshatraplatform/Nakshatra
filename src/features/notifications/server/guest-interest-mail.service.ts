@@ -58,7 +58,7 @@ function contactMessage(payload: unknown) {
 }
 
 function viewingMessage(payload: unknown) {
-  const access = z.object({ grantId: z.uuid(), shareToken: z.string().regex(/^[A-Za-z0-9_-]{8,160}$/), expiresAt: z.iso.datetime({ offset: true }) }).parse(payload);
+  const access = z.object({ grantId: z.uuid(), shareToken: z.string().regex(/^[A-Za-z0-9_-]{3,160}$/), expiresAt: z.iso.datetime({ offset: true }) }).parse(payload);
   const origin = new URL(z.url().parse(process.env.NEXT_PUBLIC_APP_URL));
   if (origin.protocol !== "https:" && origin.hostname !== "127.0.0.1" && origin.hostname !== "localhost") throw new Error("ACCESS_EMAIL_INVALID");
   const link = new URL(`/p/${encodeURIComponent(access.shareToken)}/view`, origin.origin).toString();

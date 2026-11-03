@@ -32,17 +32,17 @@ test("published creator can understand sharing, requests, and Complete access", 
   await awaiting.getByRole("button", { name: "Review", exact: true }).last().click();
   const details = page.getByRole("dialog", { name: /A long family name/ });
   await expect(details.getByText("A verified email is required before access can be approved.")).toBeVisible();
-  await expect(details.getByRole("button", { name: "Approve full portfolio access" })).toHaveCount(0);
+  await expect(details.getByRole("button", { name: "Accept and share full profile" })).toHaveCount(0);
   await details.getByRole("button", { name: "Close details" }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();
-  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Approve full portfolio access" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Accept and share full profile" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("published-request-detail-mobile.png"), animations: "disabled" });
-  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Approve full portfolio access" }).click();
+  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Accept and share full profile" }).click();
   await expect(page.getByRole("dialog", { name: /Approve full portfolio viewing for Maya Shah/ })).toContainText("This gives this verified viewer access for 15 days");
   await expect(page.locator(".dashboard-modal-backdrop")).toHaveAttribute("inert", "");
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  for (const name of ["Cancel", "Approve full portfolio access"]) {
+  for (const name of ["Cancel", "Accept and share full profile"]) {
     const box = await page.getByRole("dialog").getByRole("button", { name }).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y).toBeGreaterThanOrEqual(0);

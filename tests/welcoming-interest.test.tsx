@@ -10,6 +10,8 @@ vi.mock("@/features/auth/client/auth.api", () => ({
   continueToAuthProvider: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
 
 describe("welcoming interest journey", () => {
@@ -28,7 +30,7 @@ describe("welcoming interest journey", () => {
   });
 
   it.each(["button", "Escape"])("retains incomplete answers after closing by %s and reopening", (method) => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" />);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Mira" } });
     fireEvent.change(screen.getByLabelText("Who are you contacting for?"), { target: { value: "daughter" } });
@@ -47,7 +49,7 @@ describe("welcoming interest journey", () => {
   });
 
   it("keeps candidate answers when temporarily switching back to Myself", () => {
-    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" />);
+    render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
     const contacting = screen.getByLabelText("Who are you contacting for?");
     fireEvent.change(contacting, { target: { value: "son" } });
@@ -58,10 +60,11 @@ describe("welcoming interest journey", () => {
     expect(within(screen.getByRole("group", { name: "Candidate details" })).getByLabelText("Candidate’s full name")).toHaveValue("Arun");
   });
 
-  it("does not reuse a signed-in viewer profile or grant private access before approval", () => {
+  it("falls back to a visitor form without reusing an unpublished member draft", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ available: false })));
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="mira@example.com" existingViewerProfile={{ name: "Mira Rao", profileFor: "self", phone: "+1 6175550123", country: "United States", countryCode: "US", state: "Massachusetts", subdivisionCode: "US-MA", city: "Boston", postalCode: "02108" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByLabelText("Full name")).toHaveValue("");
+    expect(await screen.findByLabelText("Full name")).toHaveValue("");
     expect(screen.getByLabelText("Email address")).toHaveValue("");
     expect(screen.getByText(/creates no account or VivIntro sign-in/)).toBeInTheDocument();
   });

@@ -21,7 +21,7 @@ function patch(decision: unknown, id = "11111111-1111-4111-8111-111111111111") {
   return PATCH(new Request("http://local/api/interest/request", {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Origin: "http://local" },
-    body: JSON.stringify({ decision, ...(decision === "approved" ? { revision: "a".repeat(32), scope: "full_portfolio" } : {}) }),
+    body: JSON.stringify({ workflow: "relationship_v2", decision, ...(decision === "approved" ? { revision: "a".repeat(32), scope: "full_portfolio" } : {}) }),
   }), { params: Promise.resolve({ id }) });
 }
 
@@ -77,7 +77,8 @@ describe("interest decision endpoint", () => {
     const approved = await patch("approved");
     expect(approved.status).toBe(200);
     await expect(approved.json()).resolves.toEqual({ ok: true, status: "approved" });
-    expect(approveRpc).toHaveBeenCalledWith("decide_interest_portfolio_reviewed", {
+    expect(approveRpc).toHaveBeenCalledWith("decide_interest_relationship", {
+      p_decision: "approved",
       p_interest_request_id: "11111111-1111-4111-8111-111111111111",
       p_revision: "a".repeat(32),
     });
@@ -85,19 +86,23 @@ describe("interest decision endpoint", () => {
     const rejectRpc = authenticatedClient("rejected");
     const rejected = await patch("rejected");
     expect(rejected.status).toBe(200);
-    expect(rejectRpc).toHaveBeenCalledWith("decide_interest_request", expect.objectContaining({ p_decision: "rejected" }));
+    expect(rejectRpc).toHaveBeenCalledWith("decide_interest_relationship", expect.objectContaining({ p_decision: "rejected" }));
+
+    const deferRpc = authenticatedClient("set_aside");
+    expect((await patch("set_aside")).status).toBe(200);
+    expect(deferRpc).toHaveBeenCalledWith("decide_interest_relationship", expect.objectContaining({ p_decision: "set_aside" }));
 
     const reopenRpc = authenticatedClient("reopened");
     const reopened = await patch("reopened");
     expect(reopened.status).toBe(200);
-    expect(reopenRpc).toHaveBeenCalledWith("decide_interest_request", expect.objectContaining({ p_decision: "reopened" }));
+    expect(reopenRpc).toHaveBeenCalledWith("decide_interest_relationship", expect.objectContaining({ p_decision: "reopened" }));
   });
 
   it("reports invalid transitions and treats repeated decisions idempotently", async () => {
     authenticatedClient("invalid_transition");
     const invalid = await patch("approved");
     expect(invalid.status).toBe(409);
-    await expect(invalid.json()).resolves.toMatchObject({ error: expect.stringMatching(/reopen/i) });
+    await expect(invalid.json()).resolves.toMatchObject({ error: expect.stringMatching(/current state/i) });
 
     authenticatedClient("already_approved");
     await expect((await patch("approved")).json()).resolves.toEqual({ ok: true, status: "already_approved" });

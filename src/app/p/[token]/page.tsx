@@ -8,7 +8,6 @@ import type { Metadata } from "next";
 import type { PortfolioHoroscopeAttachment } from "@/types/portfolio";
 import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.contract";
 import { InterestRequestModal } from "@/components/portfolio/InterestRequestModal";
-import { resolveExistingViewerProfile, type ExistingViewerProfile } from "@/features/interest/server/existing-viewer-profile.service";
 import { getCelestialAppearance } from "@/features/portfolio/celestial-theme";
 import { readGuestViewingProof } from "@/features/access/server/guest-viewing-cookie";
 import { formatPortfolioLocation } from "@/features/portfolio/presentation";
@@ -76,10 +75,6 @@ export default async function PublicBiodataPage({ params }: Props) {
     notFound();
   }
   const viewingOwnPortfolio = await isPortfolioOwner(supabase, token, authData.user?.id);
-  let existingViewerProfile: ExistingViewerProfile | null = null;
-  if (authData.user?.id && verifiedEmail && !viewingOwnPortfolio) {
-    existingViewerProfile = await resolveExistingViewerProfile(supabase, authData.user.id);
-  }
 
   after(() => recordPublicPortfolioView(supabase, token));
   const horoscopeAttachment: PortfolioHoroscopeAttachment | undefined = portfolio.horoscope
@@ -107,7 +102,7 @@ export default async function PublicBiodataPage({ params }: Props) {
       }))}
       viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" ? <div><InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} existingViewerProfile={existingViewerProfile} isOwner={viewingOwnPortfolio} />{!viewingOwnPortfolio && <p className="mt-4 text-center text-sm"><Link href={`/p/${encodeURIComponent(token)}/view`} className="underline underline-offset-4">Already approved? Verify to view the full portfolio</Link></p>}</div> : undefined}
+      interestAction={portfolio.accessMode === "public" || Boolean(verifiedEmail) && !viewingOwnPortfolio ? <div><InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} />{!viewingOwnPortfolio && portfolio.accessMode === "public" && <p className="mt-4 text-center text-sm"><Link href={`/p/${encodeURIComponent(token)}/view`} className="underline underline-offset-4">Already approved? Verify to view the full portfolio</Link></p>}</div> : undefined}
     />
   );
 }

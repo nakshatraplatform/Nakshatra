@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getApiUser } from "@/lib/auth";
 import { apiAuthFailureResponse } from "@/lib/api/auth-response";
+import { loadRelationshipPage } from "@/features/access/server/relationship-dashboard.service";
 import { decideInterestRequest } from "@/features/interest/server/interest-decision.service";
 import {
   readJsonBody,
@@ -27,7 +28,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 }
 
 const decisionSchema = z.object({
-  decision: z.enum(["approved", "rejected", "reopened"]),
+  workflow: z.literal("relationship_v2"),
+  decision: z.enum(["approved", "rejected", "reopened", "set_aside"]),
   revision: z.string().regex(/^[a-f0-9]{32}$/).optional(),
   scope: z.literal("full_portfolio").optional(),
 }).refine(value => value.decision !== "approved" || Boolean(value.revision && value.scope === "full_portfolio"), "Refresh and review the full published portfolio before approving access.");
@@ -91,7 +93,7 @@ export async function PATCH(
   }
   if (result === "invalid_transition") {
     return NextResponse.json(
-      { code: "INTEREST_INVALID_TRANSITION", error: "Reopen this request before approving it again." },
+      { code: "INTEREST_INVALID_TRANSITION", error: "This request cannot be changed in its current state. Refresh the dashboard to see its status." },
       { status: 409 }
     );
   }
@@ -99,5 +101,6 @@ export async function PATCH(
     return NextResponse.json({ code: "INTEREST_DECISION_FAILED", error: "This interest could not be updated." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, status: result });
+  const overview = await loadRelationshipPage(auth.supabase).catch(() => null);
+  return NextResponse.json({ ok: true, status: result, ...(overview ? { counts: overview.counts } : {}) });
 }

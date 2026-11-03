@@ -948,12 +948,12 @@ export default function DashboardClient({
             overview={relationshipOverview && relationshipCounts ? { ...relationshipOverview, counts: relationshipCounts } : relationshipOverview}
             loadFailed={relationshipsError}
             onRetry={refreshDashboard}
-            onDecision={(id, status, previous) => {
-              setRelationshipCounts(current => current ? { ...current,
+            onDecision={(id, status, previous, counts) => {
+              setRelationshipCounts(current => counts ?? (current ? { ...current,
                 awaiting: Math.max(0, current.awaiting + (status === "pending_review" ? 1 : 0) - (previous && ["new", "pending_review"].includes(previous) ? 1 : 0)),
-                setAside: Math.max(0, current.setAside + (status === "rejected" ? 1 : 0) - (previous === "rejected" ? 1 : 0)),
-                active: current.active + (status === "approved" ? 1 : 0),
-              } : current);
+                setAside: Math.max(0, current.setAside + (status === "set_aside" ? 1 : 0) - (previous === "set_aside" ? 1 : 0)),
+                active: current.active,
+              } : current));
               setInterestItems((current) =>
                 current.map((interest) =>
                   interest.id === id ? { ...interest, status } : interest

@@ -1,3 +1,4 @@
+import { portfolioSharePathSchema } from "@/features/portfolio/share-path";
 import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
@@ -7,7 +8,7 @@ import { anonymousSubjectHash } from "@/features/security/server/rate-limit.serv
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { readJsonBody, requireSameOrigin, RequestSecurityError, requestSecurityErrorResponse } from "@/lib/api/request-security";
 
-const shareToken = z.string().regex(/^[A-Za-z0-9_-]{8,160}$/);
+const shareToken = portfolioSharePathSchema;
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start"), shareToken, email: z.email().max(180) }).strict(),
   z.object({ action: z.literal("complete"), challengeId: z.uuid(), email: z.email().max(180), code: z.string().regex(/^[0-9]{6}$/) }).strict(),

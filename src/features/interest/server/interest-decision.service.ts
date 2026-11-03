@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 
 const interestDecisionResultSchema = z.enum([
   "approved",
+  "set_aside",
   "rejected",
   "reopened",
   "already_approved",
@@ -25,14 +26,11 @@ export type InterestDecisionResult = z.infer<typeof interestDecisionResultSchema
 export async function decideInterestRequest(
   supabase: SupabaseClient,
   interestRequestId: string,
-  decision: "approved" | "rejected" | "reopened",
+  decision: "approved" | "rejected" | "reopened" | "set_aside",
   revision?: string
 ): Promise<InterestDecisionResult> {
-  const { data, error } = decision === "approved" ? await supabase.rpc("decide_interest_portfolio_reviewed", {
-    p_interest_request_id: interestRequestId, p_revision: revision ?? "",
-  }) : await supabase.rpc("decide_interest_request", {
-    p_interest_request_id: interestRequestId,
-    p_decision: decision,
+  const { data, error } = await supabase.rpc("decide_interest_relationship", {
+    p_interest_request_id: interestRequestId, p_decision: decision, p_revision: revision ?? null,
   });
   const result = interestDecisionResultSchema.safeParse(data);
   if (error || !result.success) throw new Error("Interest decision could not be stored");

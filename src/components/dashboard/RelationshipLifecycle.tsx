@@ -77,7 +77,7 @@ export function RelationshipLifecycle({
   viewerAccessAvailable: boolean;
   events: AccessAuditEvent[];
   brokerResponses: OwnerBrokerIntroductionResponse[];
-  onDecision: (id: string, status: "approved" | "rejected" | "pending_review", previous: DashboardInterest["status"]) => void;
+  onDecision: (id: string, status: "approved" | "rejected" | "pending_review" | "set_aside", previous: DashboardInterest["status"], counts?: RelationshipPage["counts"]) => void;
   onGrantChange: (grantId: string, action: "revoke", expiresAt: string | undefined, previous: AccessGrant["status"]) => void;
   overview: RelationshipPage | null;
   loadFailed: boolean;
@@ -91,26 +91,30 @@ export function RelationshipLifecycle({
     | null;
 
   const waitingInterests = sortByNewest(interests.filter((interest) => interest.status === "new" || interest.status === "pending_review"), (interest) => interest.created_at);
-  const setAsideInterests = sortByNewest(interests.filter((interest) => interest.status === "rejected"), (interest) => interest.created_at);
+  const setAsideInterests = sortByNewest(interests.filter((interest) => interest.status === "set_aside"), (interest) => interest.created_at);
   const activeGrants = sortByNewest(grants.filter((grant) => grant.status === "active"), (grant) => grant.renewedAt || grant.expiresAt);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [recordDetail, setRecordDetail] = useState<RecordDetail>(null);
   const [approvalCandidate, setApprovalCandidate] = useState<DashboardInterest | null>(null);
-  const [approvalReview, setApprovalReview] = useState<{ data?: SharingDisclosure; error?: string } | null>(null);
+  const [reviewResource, setApprovalReview] = useState<{ key: string; data?: SharingDisclosure; error?: string } | null>(null);
   const [reviewAttempt, setReviewAttempt] = useState(0);
+  const inlineMember = recordDetail?.kind === "interest" && recordDetail.item.requester_user_id ? recordDetail.item : null;
+  const reviewSubjectId = approvalCandidate?.id || inlineMember?.id;
+  const reviewKey = reviewSubjectId ? `${reviewSubjectId}:${reviewAttempt}` : null;
+  const approvalReview = reviewResource?.key === reviewKey ? reviewResource : null;
   useEffect(() => {
-    if (!approvalCandidate) return;
+    if (!reviewKey) return;
     const controller = new AbortController();
     void fetch("/api/dashboard/relationships?queue=overview", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) })
       .then(async response => {
         const parsed = relationshipPageSchema.safeParse(await response.json());
         if (!response.ok || !parsed.success || !parsed.data.disclosure) throw new Error("Review unavailable");
-        if (!controller.signal.aborted) setApprovalReview({ data: parsed.data.disclosure });
-      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ error: "We could not check the published contacts. Try again before sharing." }); });
+        if (!controller.signal.aborted) setApprovalReview({ key: reviewKey, data: parsed.data.disclosure });
+      }).catch(() => { if (!controller.signal.aborted) setApprovalReview({ key: reviewKey, error: "We could not check the published full profile. Try again before sharing." }); });
     return () => controller.abort();
-  }, [approvalCandidate, reviewAttempt]);
+  }, [reviewKey]);
   const [listModal, setListModal] = useState<ListModal>(null);
-  const [recordDetail, setRecordDetail] = useState<RecordDetail>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [recordFilter, setRecordFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -148,7 +152,7 @@ export function RelationshipLifecycle({
     if (workingId === null) setApprovalCandidate(null);
   });
 
-  async function decide(interest: DashboardInterest, decision: "approved" | "rejected" | "reopened") {
+  async function decide(interest: DashboardInterest, decision: "approved" | "rejected" | "reopened" | "set_aside") {
     setWorkingId(interest.id);
     setActionError(null);
     try {
@@ -156,14 +160,15 @@ export function RelationshipLifecycle({
         method: "PATCH",
         signal: AbortSignal.timeout(20000),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, ...(decision === "approved" ? { revision: approvalReview?.data?.revision, scope: "full_portfolio" } : {}) }),
+        body: JSON.stringify({ workflow: "relationship_v2", decision, ...(decision === "approved" ? { revision: approvalReview?.data?.revision, scope: "full_portfolio" } : {}) }),
       });
-      const result = (await response.json()) as { error?: string };
+      const result = (await response.json()) as { error?: string; counts?: unknown };
       if (!response.ok) {
         setActionError(result.error || "This interest could not be updated.");
         return false;
       }
-      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision, interest.status);
+      const counts = relationshipPageSchema.shape.counts.safeParse(result.counts);
+      onDecision(interest.id, decision === "reopened" ? "pending_review" : decision, interest.status, counts.success ? counts.data : undefined);
       setListAttempt(value => value + 1);
       setRecordDetail(null);
       return true;
@@ -349,7 +354,12 @@ export function RelationshipLifecycle({
           ) : (
             <BrokerResponseDetail response={recordDetail.item} />
           )}
-          {recordDetail.kind !== "broker-response" && <InterestDetailsPanel requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
+          {recordDetail.kind !== "broker-response" && !(recordDetail.kind === "grant" && recordDetail.item.direction === "outbound_interest") && <InterestDetailsPanel activityOnly requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
+          {inlineMember && ["new", "pending_review", "set_aside"].includes(inlineMember.status) && <section className="mt-5 rounded-xl border border-[var(--workspace-border)] p-4" aria-label="Full profile sharing consent">
+            <h3 className="font-semibold">Accept and share your full profile</h3>
+            <p className="mt-2 text-sm leading-6">This shares your current published full profile for 15 days. Drafts, owner notes and street addresses stay private. You can stop sharing earlier; saved copies cannot be recalled.</p>
+            {!approvalReview ? <LoadingStatus compact title="Checking published profile" /> : approvalReview.error ? <p role="alert">{approvalReview.error} <button type="button" className="dashboard-secondary-action" onClick={() => setReviewAttempt(value => value + 1)}>Retry sharing review</button></p> : approvalReview.data && <details className="mt-3"><summary>What you will share</summary><ul className="mt-2 list-disc pl-5 text-sm">{fullViewDisclosureCategories(approvalReview.data).map(category => <li key={category}>{category}</li>)}</ul></details>}
+          </section>}
           <div className="dashboard-modal-sticky-actions">
             {workingId && !approvalCandidate && <LoadingStatus compact title="Updating sharing" />}
             {recordDetail.kind === "interest" ? (
@@ -357,9 +367,11 @@ export function RelationshipLifecycle({
                 interest={recordDetail.item}
                 hasGrant={grants.some(grant => grant.interestRequestId === recordDetail.item.id)}
                 working={workingId === recordDetail.item.id}
-                onSetAside={() => void decide(recordDetail.item, "rejected")}
+                onSetAside={() => void decide(recordDetail.item, "set_aside")}
+                onDecline={() => void decide(recordDetail.item, "rejected")}
+                sharingReady={!inlineMember || Boolean(approvalReview?.data) && !loadFailed}
                 onReopen={() => void decide(recordDetail.item, "reopened")}
-                onGrant={() => { setActionError(null); setApprovalReview(null); setApprovalCandidate(recordDetail.item); }}
+                onGrant={() => { if (inlineMember) { void decide(recordDetail.item, "approved"); } else { setActionError(null); setApprovalReview(null); setApprovalCandidate(recordDetail.item); } }}
               />
             ) : recordDetail.kind === "grant" && recordDetail.item.status !== "revoked" ? (
               <>
@@ -414,7 +426,7 @@ export function RelationshipLifecycle({
                   if (approved) setApprovalCandidate(null);
                 })}
               >
-                {workingId === approvalCandidate.id ? "Approving access…" : "Approve full portfolio access"}
+                {workingId === approvalCandidate.id ? "Approving access…" : "Accept and share full profile"}
               </button>
             </div>
           </section>
@@ -527,29 +539,33 @@ function InterestDetail({ interest }: { interest: DashboardInterest }) {
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${interest.source_type}`}>{sourceLabel}</span><span className="dashboard-interest-status">{interestStatusLabel(interest.status)}</span></div>
       <dl className="dashboard-detail-grid">
-        <div><dt>Email</dt><dd>{interest.viewer_email || "Not provided"}{interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</dd></div>
-        <div><dt>Phone</dt><dd>{interest.viewer_phone || "Not provided"}</dd></div>
+        <div><dt>Email</dt><dd>{interest.viewer_email ? <a href={`mailto:${interest.viewer_email}`}>{interest.viewer_email}</a> : "Not provided"}{interest.email_verified && <span className="dashboard-verified-label"><ShieldCheck aria-hidden="true" /> Verified</span>}</dd></div>
+        {interest.viewer_phone && <div><dt>Phone</dt><dd><a href={`tel:${interest.viewer_phone}`}>{interest.viewer_phone}</a></dd></div>}
         <div><dt>Contacting for</dt><dd>{formatProfileFor(profileFor)}</dd></div>
-        <div><dt>Received</dt><dd>{formatAccessDate(interest.created_at)}</dd></div>
         {interest.broker_representative_name && <div><dt>Broker representative</dt><dd>{interest.broker_representative_name}</dd></div>}
         {formatInterestLocation(interest.metadata) && <div><dt>Location</dt><dd>{formatInterestLocation(interest.metadata)}</dd></div>}
       </dl>
-      <section><h3>Family context</h3><p>{interest.viewer_family_context || "No family context was provided."}</p></section>
-      <section><h3>Message</h3><p>{interest.message || "No message was provided."}</p></section>
+      {interest.viewer_family_context && <section><h3>Family context</h3><p>{interest.viewer_family_context}</p></section>}
+      {interest.message && <section><h3>Message</h3><p>{interest.message}</p></section>}
+      <SubmittedCandidate metadata={interest.metadata} />
     </div>
   );
 }
 
-function InterestActions({ interest, hasGrant, working, onSetAside, onReopen, onGrant }: { interest: DashboardInterest; hasGrant: boolean; working: boolean; onSetAside: () => void; onReopen: () => void; onGrant: () => void }) {
-  const requesterPortfolioPath = interest.requester_portfolio_token ? `/p/${encodeURIComponent(interest.requester_portfolio_token)}` : null;
-  return (
-    <>
-      {interest.viewer_phone && <a href={`tel:${interest.viewer_phone}`} className="dashboard-secondary-action">Call</a>}
-      {interest.viewer_email && <a href={`mailto:${interest.viewer_email}`} className="dashboard-secondary-action">Email</a>}
-      {requesterPortfolioPath && <Link href={requesterPortfolioPath} target="_blank" rel="noreferrer" className="dashboard-secondary-action">View their VivIntro introduction</Link>}
-      {interest.status === "rejected" ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onReopen}>Revisit interest</button> : ["new", "pending_review", ...(!hasGrant ? ["approved", "revealed"] : [])].includes(interest.status) ? <><button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>{interest.email_verified && interest.viewer_email ? <button type="button" className="dashboard-primary-action" disabled={working} onClick={onGrant}>Approve full portfolio access</button> : <span className="dashboard-action-note">A verified email is required before access can be approved.</span>}</> : null}
-    </>
-  );
+function InterestActions({ interest, hasGrant, working, sharingReady, onSetAside, onDecline, onReopen, onGrant }: {
+  interest: DashboardInterest; hasGrant: boolean; working: boolean; sharingReady: boolean;
+  onSetAside: () => void; onDecline: () => void; onReopen: () => void; onGrant: () => void;
+}) {
+  const path = interest.requester_portfolio_token ? `/p/${encodeURIComponent(interest.requester_portfolio_token)}` : null;
+  const actionable = ["new", "pending_review", "set_aside", ...(!hasGrant ? ["approved", "revealed"] : [])].includes(interest.status);
+  return <>
+    {path && <Link href={path} target="_blank" rel="noreferrer" className="dashboard-secondary-action">{interest.requester_full_profile_shared ? "View full profile" : "View their introduction"}</Link>}
+    {interest.status === "rejected" ? <button type="button" className="dashboard-secondary-action" disabled={working} onClick={onReopen}>Revisit interest</button> : actionable && <>
+      <button type="button" className="dashboard-secondary-action" disabled={working} onClick={onDecline}>Decline</button>
+      {interest.status === "set_aside" ? <button type="button" className="dashboard-secondary-action" disabled={working} onClick={onReopen}>Return to review</button> : <button type="button" className="dashboard-secondary-action" disabled={working} onClick={onSetAside}>Set aside</button>}
+      {interest.email_verified && interest.viewer_email ? <button type="button" className="dashboard-primary-action" disabled={working || !sharingReady} onClick={onGrant}>Accept and share full profile</button> : <span className="dashboard-action-note">A verified email is required before access can be shared.</span>}
+    </>}
+  </>;
 }
 
 function GrantDetail({ grant, viewerAccessAvailable }: { grant: AccessGrant; viewerAccessAvailable: boolean }) {
@@ -557,6 +573,8 @@ function GrantDetail({ grant, viewerAccessAvailable }: { grant: AccessGrant; vie
     <div className="dashboard-record-detail">
       <div className="dashboard-detail-status-row"><span className={`dashboard-source-tag is-${grant.sourceType || "direct"}`}>{grant.sourceType === "broker" ? `Broker introduction via ${grant.brokerName || "broker network"}` : "Direct introduction"}</span><span className="dashboard-interest-status">{grant.status === "revoked" ? "Ended" : grant.status}</span></div>
       {grant.status === "active" && !viewerAccessAvailable && <p>Your sharing choice remains on record, but this person cannot open private details while your introduction is unavailable.</p>}
+      {grant.direction === "outbound_interest" && <p>You shared this profile when sending interest. Reply: {interestStatusLabel(grant.requestStatus || "new")}.</p>}
+      {grant.recipientPortfolioToken && <Link className="dashboard-secondary-action" href={`/p/${encodeURIComponent(grant.recipientPortfolioToken)}`}>View their introduction</Link>}
       <dl className="dashboard-detail-grid">
         <div><dt>Email</dt><dd>{grant.viewerEmail || "Verified viewer"}</dd></div>
         <div><dt>Sharing ends</dt><dd>{formatAccessDate(grant.expiresAt)}</dd></div>
@@ -608,7 +626,7 @@ function accessEventLabel(type: AccessAuditEvent["eventType"], viewerName?: stri
   const labels: Record<AccessAuditEvent["eventType"], string> = {
     request_submitted: `${viewer} showed interest`,
     request_reopened: `${viewer}'s interest was revisited`,
-    request_rejected: `${viewer}'s interest was set aside`,
+    request_rejected: `${viewer}'s interest was declined`,
     grant_created: `Private details shared with ${viewer}`,
     grant_renewed: `Private details access renewed for ${viewer}`,
     grant_accessed: `${viewer} opened the private details`,
@@ -709,4 +727,11 @@ function containsDisclosure(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(containsDisclosure);
   if (value && typeof value === "object") return Object.values(value).some(containsDisclosure);
   return false;
+}
+
+function SubmittedCandidate({ metadata }: { metadata: Record<string, unknown> | null }) {
+  const value = metadata?.candidate;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  return <section><h3>Candidate details</h3><dl className="dashboard-detail-grid">{[["Name", candidate.name], ["Email", candidate.email], ["Phone", candidate.phone], ["Relationship", candidate.relationship], ["Location", candidate.location && typeof candidate.location === "object" && !Array.isArray(candidate.location) ? formatInterestLocation(candidate.location as Record<string, unknown>) : ""]].filter(([, value]) => typeof value === "string" && value.trim()).map(([label, value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{String(value)}</dd></div>)}</dl></section>;
 }

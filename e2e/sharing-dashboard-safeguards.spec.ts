@@ -23,15 +23,15 @@ test("published consent must load successfully and changed revisions remain unap
   const awaiting = page.locator('[data-stage="awaiting"]');
   if (await awaiting.getByRole("button", { name: /Awaiting review/ }).getAttribute("aria-expanded") === "false") await awaiting.getByRole("button", { name: /Awaiting review/ }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();
-  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Approve full portfolio access", exact: true }).click();
+  await page.getByRole("dialog", { name: "Maya Shah" }).getByRole("button", { name: "Accept and share full profile", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: /Approve full portfolio viewing for Maya Shah/ });
-  await expect(dialog.getByRole("button", { name: "Approve full portfolio access" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Accept and share full profile" })).toBeDisabled();
   await expect(dialog.getByRole("alert")).toContainText("We could not check");
   expect(decisions).toBe(0);
   await dialog.getByRole("button", { name: "Retry disclosure review" }).click();
   await expect(dialog.getByText("You will share:", { exact: true })).toBeVisible();
   await expect(dialog).toContainText("Draft changes, owner notes and street addresses are excluded");
-  await dialog.getByRole("button", { name: "Approve full portfolio access" }).click();
+  await dialog.getByRole("button", { name: "Accept and share full profile" }).click();
   await expect(dialog.getByRole("alert")).toContainText("Published details changed");
   expect(decisions).toBe(1);
   await expect(dialog).toBeVisible();

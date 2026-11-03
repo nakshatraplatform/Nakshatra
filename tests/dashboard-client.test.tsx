@@ -1202,7 +1202,7 @@ describe("dashboard client", () => {
         viewer_family_context: "Our family is based in Toronto and Bengaluru.",
         message: "We would be glad to introduce our families.",
         status: "new",
-        requester_user_id: "viewer-1",
+        requester_user_id: null,
         metadata: { profile_for: "self", country: "Canada", state: "Ontario", city: "Toronto" },
         created_at: "2026-08-09T12:00:00.000Z",
         email_verified: true,
@@ -1220,7 +1220,7 @@ describe("dashboard client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText(/Toronto, Ontario, Canada/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Approve full portfolio access" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept and share full profile" }));
 
     const approval = screen.getByRole("dialog", { name: /Approve full portfolio viewing for Rohan Mehta/i });
     expect(await within(approval).findByText(/Private contact details/i)).toBeInTheDocument();
@@ -1228,7 +1228,7 @@ describe("dashboard client", () => {
     expect(within(approval).getByText(/This gives this verified viewer access for 15 days/i)).toBeInTheDocument();
     expect(within(approval).getByText(/creates no VivIntro account/i)).toBeInTheDocument();
     expect(decisionFetch.mock.calls.some(([url]) => String(url).startsWith("/api/interest/"))).toBe(false);
-    fireEvent.click(within(approval).getByRole("button", { name: "Approve full portfolio access" }));
+    fireEvent.click(within(approval).getByRole("button", { name: "Accept and share full profile" }));
 
     await waitFor(() => expect(decisionFetch).toHaveBeenCalledWith(
       "/api/interest/interest-1",
@@ -1516,7 +1516,7 @@ describe("dashboard client", () => {
     const mayaCard = screen.getByText("Maya Shah").closest("article");
     expect(mayaCard).not.toBeNull();
     fireEvent.click(within(mayaCard as HTMLElement).getByRole("button", { name: "Review" }));
-    expect(screen.getByRole("link", { name: "View their VivIntro introduction" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "View their introduction" })).toHaveAttribute(
       "href",
       "/p/maya-authenticated-token"
     );
