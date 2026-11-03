@@ -16,4 +16,8 @@ Evaluate wrong owner/session/scope/revision, no published profile, draft isolati
 
 ## Execution context
 
-Next: implement database commands/read contracts and member form; then regression tests, independent review and update the existing Draft PRs. Docker unavailable locally; hosted CI supplies real SQL execution. Production maintenance workers remain a separate readiness gate.
+Database commands/read contracts, one-action app form and separate defer/decline review are implemented in Draft #143/#144. Docker is unavailable locally; hosted CI supplies real SQL execution. Production maintenance workers remain a separate readiness gate.
+
+Current runtime SQL snapshot ae9e0e0: migration parses (68 statements), local-target guard tests8/8 pass. Hosted migration replay passes but pgTAP still fails; logs blocked by unavailable GitHub connection and browser-control kernel-assets error. Concurrency runtime and generated-type parity remain pending, not passed.
+
+Independent fresh-context DB and app reviews found and corrected opposite-permission revocation, duplicate direction after accept/cross, short readable-path override, and revoked approval replay. Keep active full-grant retries idempotent (already_approved), while inactive previous full grants cannot be restored by replaying old consent. Member pgTAP41 assertions; guest pgTAP42 exercises short abc path. Reviewer round3 found active guest retry interaction; final5-line correction awaits runtime and release review. Review budget exhausted; no fourth reviewer launched. Both PRs remain Draft. No production mutation performed.
