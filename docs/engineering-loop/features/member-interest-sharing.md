@@ -24,8 +24,25 @@ Chrome desktop/tablet/mobile: member send, inline recipient accept, guest refres
 
 Fresh-context read-only reviewer /root/member_sharing_final_review reviewed app7d955b4 and DBbf85c54, following initial DB review. Two SQL behavior findings were corrected: short readable-path resolver override, and stale approval replay restoring revoked access. SQL now preserves active-grant idempotency separately from sticky inactive-grant rejection. Reviewer additionally identified the active guest retry interaction; final 5-line guard was corrected after the third reviewer round and awaits runtime evidence and release review. App review found no material runtime defect; two new test arity errors were corrected and full suite subsequently passed.
 
-Database snapshot ae9e0e0: 68 outer SQL statements parse; 8 local-target concurrency guard tests pass. Hosted clean migration replay passed, but pgTAP still fails. Failure log is blocked by unavailable GitHub connection and browser kernel-assets error. This is not a passing database result. Actual concurrency scenarios and generated-type parity cannot run until pgTAP passes. Docker is absent locally.
+Database prerequisite #143 passed required CI, including migration replay, pgTAP, concurrency tests and exact generated-type parity. It merged to main as8098359. The user reports its production SQL deployment succeeded; this task has not independently inspected production migration history.
 
 ## Release gates
 
-Keep both PRs Draft. Require clean SQL replay, all pgTAP and real concurrency scenarios, generated type parity, app CI and mobile review. The independent review budget was three rounds; no further automated reviewer was launched. Latest SQL correction still needs the pending runtime/release review. Merge/apply/verify DB prerequisite before app release. Production maintenance workers and notification delivery receipts remain separate operational checks; do not replay queued emails or activate deletion workers as part of this implementation. No production change or email send performed.
+Database #143 is merged. Keep app #144 Draft pending its updated CI and mobile review. The independent review budget was three rounds; no further automated reviewer was launched. Database runtime checks subsequently passed in #143. Confirm production migration history before app release. Production maintenance workers and notification delivery receipts remain separate operational checks; do not replay queued emails or activate deletion workers as part of this implementation. No production change or email send performed.
+
+## Database implementation history
+
+The following records from merged main are retained as historical evidence; the current database status is recorded above.
+
+## CI log diagnosis, November 2
+
+The supplied log for head700c6fc shows2085 assertions across71 files, with only access_lifecycle54 and session_perimeter12 failing. Guest approved viewing and member sharing passed. Access lifecycle still expected Stop sharing to change the request to rejected and permit reopen; the agreed independent-permission behavior preserves approved, so reopening is now invalid while the existing earlier rejected-request reopen case remains. Rotation continues to use an explicitly privileged replacement-grant fixture.
+
+The compatibility public approval wrapper delegated to a guarded command but omitted its own explicit live-session check. Added require_current_session directly without adding an allowlist exception or weakening the perimeter query. Added two revoked-session runtime assertions for that wrapper and member-send. Full SQL execution remains a hosted CI check because Docker is unavailable locally.
+
+
+## Generated type correction, November 3
+
+CI41571801537 on ac08a03 passed pgTAP and the real readable-link, approval/retry (including member overlap), Family Viewer and photo-cap concurrency checks. Only exact generated-type parity failed. Three manually added RPC definitions were incorrectly nested under horoscope return types. Replaced the committed file with the exact generated database-types artifact13202450236, downloaded publicly with SHA256 verified against GitHub API metadata (a1df590bfbe614d447122fff61a86d15f83b91587763787a082da9d332e43d19). No SQL runtime or parity checker changes.
+
+Lesson: use clean-database generation or an integrity-verified CI artifact for this file; textual insertion can remain valid TypeScript while placing functions under nested return shapes. The existing exact parity gate caught this and remains unchanged.

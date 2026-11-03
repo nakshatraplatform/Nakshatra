@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 \ir auth-fixtures.psql
 
-select plan(41);
+select plan(43);
 
 select has_function('public', 'is_current_session_active', array[]::text[], 'live Auth session predicate exists');
 select has_function('app_private', 'require_current_session', array[]::text[], 'internal live-session guard exists');
@@ -229,6 +229,19 @@ select throws_ok(
   '42501',
   'authentication session is no longer active',
   'a revoked session cannot execute publication lifecycle RPCs'
+);
+
+select throws_ok(
+  $$select public.decide_interest_portfolio_reviewed('55000000-0000-4000-8000-000000000001', repeat('a',32))$$,
+  '42501',
+  'authentication session is no longer active',
+  'a revoked session cannot invoke the compatibility approval wrapper'
+);
+select throws_ok(
+  $$select public.send_member_interest_and_share('session-test-token', repeat('a',32))$$,
+  '42501',
+  'authentication session is no longer active',
+  'a revoked session cannot send member interest or disclose its portfolio'
 );
 
 reset role;
