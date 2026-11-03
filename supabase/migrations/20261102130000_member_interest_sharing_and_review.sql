@@ -295,6 +295,11 @@ begin
     return 'reopened';
   elsif p_decision='approved' then
     if r.email_verified_at is null or r.verification_channel is distinct from 'email' or r.viewer_email is null then return 'verification_required'; end if;
+    -- Keep retries idempotent for both accountless and signed-in viewers.
+    if exists(select 1 from public.reveal_grants g where g.interest_request_id=r.id
+      and g.access_level='full' and g.revoked_at is null and g.expires_at>now()) then
+      return 'already_approved';
+    end if;
     -- An explicit crossed send may already provide this owner's disclosure.
     if r.requester_user_id is not null and app_private.member_full_access_current(owner_id,r.requester_user_id) then
       review:=public.get_owner_relationship_page()->'disclosure';
