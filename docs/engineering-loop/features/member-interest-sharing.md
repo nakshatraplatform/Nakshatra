@@ -46,3 +46,12 @@ The compatibility public approval wrapper delegated to a guarded command but omi
 CI41571801537 on ac08a03 passed pgTAP and the real readable-link, approval/retry (including member overlap), Family Viewer and photo-cap concurrency checks. Only exact generated-type parity failed. Three manually added RPC definitions were incorrectly nested under horoscope return types. Replaced the committed file with the exact generated database-types artifact13202450236, downloaded publicly with SHA256 verified against GitHub API metadata (a1df590bfbe614d447122fff61a86d15f83b91587763787a082da9d332e43d19). No SQL runtime or parity checker changes.
 
 Lesson: use clean-database generation or an integrity-verified CI artifact for this file; textual insertion can remain valid TypeScript while placing functions under nested return shapes. The existing exact parity gate caught this and remains unchanged.
+
+
+## App merge and browser corrections, November 3
+
+Merged latest main8098359 into app branch; the sole add/add conflict was this feature record, reconciled to retain app and database history. Production workflow41641087683 on8098359 passed Apply pending migrations and Verify production migration history. No additional SQL change is introduced by the app branch.
+
+Downloaded and SHA256-verified the three failed shard2 browser artifacts from CI41568426819. All three projects reported the same failures: visitor sign-in prompt consumed fixed space outside the scrollable form, and access-management grant dialogs lost their View interest details disclosure when Activity-only rendering was applied too broadly. Moved the optional sign-in link inside the form scroll area and restricted Activity-only to incoming interests; grant dialogs retain their owner-authorized submitted-details disclosure. Outgoing member-share grants still omit the foreign-request panel. No portfolio template, validation, authorization, timeout or assertion was weakened.
+
+Validation:132 focused tests in6 files passed; lint/typecheck passed; the existing viewer-experience suite passed12 Chrome desktop/tablet/mobile cases and12 Firefox/desktop-WebKit/mobile-WebKit cases, including320px/568px form-space guards, retained histories and600-character wrapping. App remains Draft while fresh CI runs.

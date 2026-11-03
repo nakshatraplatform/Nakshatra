@@ -354,7 +354,7 @@ export function RelationshipLifecycle({
           ) : (
             <BrokerResponseDetail response={recordDetail.item} />
           )}
-          {recordDetail.kind !== "broker-response" && !(recordDetail.kind === "grant" && recordDetail.item.direction === "outbound_interest") && <InterestDetailsPanel activityOnly requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
+          {recordDetail.kind !== "broker-response" && !(recordDetail.kind === "grant" && recordDetail.item.direction === "outbound_interest") && <InterestDetailsPanel activityOnly={recordDetail.kind === "interest"} requestId={recordDetail.kind === "interest" ? recordDetail.item.id : recordDetail.item.interestRequestId} />}
           {inlineMember && ["new", "pending_review", "set_aside"].includes(inlineMember.status) && <section className="mt-5 rounded-xl border border-[var(--workspace-border)] p-4" aria-label="Full profile sharing consent">
             <h3 className="font-semibold">Accept and share your full profile</h3>
             <p className="mt-2 text-sm leading-6">This shares your current published full profile for 15 days. Drafts, owner notes and street addresses stay private. You can stop sharing earlier; saved copies cannot be recalled.</p>

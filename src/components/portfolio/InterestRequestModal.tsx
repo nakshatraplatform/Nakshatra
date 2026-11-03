@@ -338,8 +338,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
             {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
             {memberMode && step === "details" && <MemberInterestForm token={portfolioToken} recipientName={firstName(profileName)} onUnavailable={useVisitorForm} onSent={(mutual) => { setMemberMutual(mutual); setSubmitted(true); setStep("success"); }} />}
-            {!memberMode && !authenticated && step === "details" && <p className="interest-verification-help px-6">Already use VivIntro? <Link className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${portfolioToken}#portfolio-interest`)}`}>Sign in to share your full profile</Link></p>}
-            {!memberMode && (step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
+            {!memberMode && (step === "details" || step === "verify") && <DetailsForm showMemberSignIn={!authenticated} hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (
               <form className="interest-verification" onSubmit={verifyAndSend}>
@@ -374,7 +373,8 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
   );
 }
 
-function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, pending, error, fieldErrors, onSubmit }: {
+function DetailsForm({ showMemberSignIn = false, hidden, draft, portfolioToken, sessionEmail, pending, error, fieldErrors, onSubmit }: {
+  showMemberSignIn?: boolean;
   hidden: boolean;
   draft: InterestPayload | null;
   portfolioToken: string;
@@ -387,6 +387,7 @@ function DetailsForm({ hidden, draft, portfolioToken, sessionEmail, pending, err
   return (
     <form onSubmit={onSubmit} hidden={hidden} className="interest-form" noValidate>
       <div className="interest-form-scroll">
+        {showMemberSignIn && <p className="interest-verification-help">Already use VivIntro? <Link className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${portfolioToken}#portfolio-interest`)}`}>Sign in to share your full profile</Link></p>}
         <VisitorInterestFields draft={draft ? { name: fieldValue(draft.name), phone: fieldValue(draft.phone), email: draft.email, profileFor: fieldValue(draft.profileFor) as NewViewerInterestInput["profileFor"], familyContext: fieldValue(draft.familyContext), message: fieldValue(draft.message), location: draft.location, candidate: draft.candidate } : null} sessionEmail={sessionEmail} errors={fieldErrors} portfolioToken={draft?.portfolioToken || portfolioToken} />
         <p className="interest-verification-help">Your answers stay here while this page is open. Next, confirm your email to send your interest.</p>
         {error && <p className="interest-form-error" role="alert">{error}</p>}
