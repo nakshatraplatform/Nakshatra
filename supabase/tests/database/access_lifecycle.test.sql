@@ -278,9 +278,11 @@ select throws_ok(
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"a1100000-0000-4000-8000-000000000001"}';
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'reopened'), 'reopened', 'revoked access can be deliberately reopened');
-select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'reopened access cannot receive a new grant through the old command');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'reopened'), 'invalid_transition', 'Stop sharing does not turn an approved interest into a rejected request that can be reopened');
+select is(public.decide_interest_request((select id from public.interest_requests limit 1), 'approved'), 'contact_review_required', 'stopped sharing cannot receive a new grant through the old command');
 reset role;
+-- Privileged fixture only: seed replacement access to verify rotation below.
+-- Neither public command above can restore the stopped permission.
 select app_private.decide_interest_request_pre_contact_cutover((select id from public.interest_requests limit 1), 'approved');
 set local role authenticated;
 select is(public.rotate_portfolio_transaction('rotated_secure_tok_01') ->> 'status', 'rotated', 'link rotation completes as one owner transaction');

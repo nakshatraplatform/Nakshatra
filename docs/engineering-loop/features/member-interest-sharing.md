@@ -21,3 +21,10 @@ Database commands/read contracts, one-action app form and separate defer/decline
 Current runtime SQL snapshot ae9e0e0: migration parses (68 statements), local-target guard tests8/8 pass. Hosted migration replay passes but pgTAP still fails; logs blocked by unavailable GitHub connection and browser-control kernel-assets error. Concurrency runtime and generated-type parity remain pending, not passed.
 
 Independent fresh-context DB and app reviews found and corrected opposite-permission revocation, duplicate direction after accept/cross, short readable-path override, and revoked approval replay. Keep active full-grant retries idempotent (already_approved), while inactive previous full grants cannot be restored by replaying old consent. Member pgTAP41 assertions; guest pgTAP42 exercises short abc path. Reviewer round3 found active guest retry interaction; final5-line correction awaits runtime and release review. Review budget exhausted; no fourth reviewer launched. Both PRs remain Draft. No production mutation performed.
+
+
+## CI log diagnosis, November 2
+
+The supplied log for head700c6fc shows2085 assertions across71 files, with only access_lifecycle54 and session_perimeter12 failing. Guest approved viewing and member sharing passed. Access lifecycle still expected Stop sharing to change the request to rejected and permit reopen; the agreed independent-permission behavior preserves approved, so reopening is now invalid while the existing earlier rejected-request reopen case remains. Rotation continues to use an explicitly privileged replacement-grant fixture.
+
+The compatibility public approval wrapper delegated to a guarded command but omitted its own explicit live-session check. Added require_current_session directly without adding an allowlist exception or weakening the perimeter query. Added two revoked-session runtime assertions for that wrapper and member-send. Full SQL execution remains a hosted CI check because Docker is unavailable locally.

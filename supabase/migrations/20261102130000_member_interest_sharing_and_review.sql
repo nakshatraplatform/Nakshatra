@@ -336,6 +336,7 @@ grant execute on function public.decide_interest_relationship(uuid,text,text) to
 create function public.decide_interest_portfolio_reviewed(p_interest_request_id uuid,p_revision text)
 returns text language plpgsql volatile security definer set search_path='' as $$
 begin
+  perform app_private.require_current_session();
   return public.decide_interest_relationship(p_interest_request_id,'approved',p_revision);
 end $$;
 revoke all on function public.decide_interest_portfolio_reviewed(uuid,text) from public,anon;
