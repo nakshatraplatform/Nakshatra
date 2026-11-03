@@ -84,7 +84,7 @@ function claims(user, authSession) {
     select pg_temp.set_authenticated_claims('${user}','${authSession}');`;
 }
 
-async function scenario(retryFirst) {
+async function scenario(retryFirst, portfolioAccess = false) {
   const owner = randomUUID(), ownerSession = randomUUID(), viewer = randomUUID(), viewerSession = randomUUID();
   const candidate = randomUUID(), portfolio = randomUUID(), token = `approval_retry_${randomUUID().replaceAll("-", "")}`;
   const ownerEmail = `owner-${owner}@fixture.test`, viewerEmail = `viewer-${viewer}@fixture.test`;
@@ -121,13 +121,14 @@ async function scenario(retryFirst) {
     select 'REVISION:'||(public.get_owner_relationship_page()#>>'{disclosure,revision}'); rollback;`, true);
   const review = revision.match(/REVISION:([a-f0-9]{32})/)?.[1];
   assert.ok(review, "owner must review a real published disclosure");
-  const approve = `select public.decide_interest_contact_reviewed('${request}','${review}');`;
+  const approvalCommand = portfolioAccess ? "decide_interest_portfolio_reviewed" : "decide_interest_contact_reviewed";
+  const approve = `select public.${approvalCommand}('${request}','${review}');`;
   const retry = session(`retry-${portfolio}`), approval = session(`approval-${portfolio}`);
   const begin = "begin; set local statement_timeout='12s'; set local idle_in_transaction_session_timeout='15s';";
   if (retryFirst) {
     // Hold the actual submission engine's first lock, then pause at that
     // boundary. Approval must wait for the retry's portfolio lock, then
-    // decide exactly once without creating a private portfolio grant.
+    // decide exactly once under the selected disclosure contract.
     retry.send(`${begin} select id from public.portfolios where id='${portfolio}' for update;
       ${claims(viewer, viewerSession)}
       \\echo RETRY_LOCKED`);
@@ -156,15 +157,76 @@ async function scenario(retryFirst) {
     'submissionAudit',(select count(*) from public.access_audit_events where interest_request_id='${request}' and event_type='request_submitted'),
     'legacyApprovalMail',(select count(*) from app_private.notification_outbox where interest_request_id='${request}' and notification_type='full_view_approved'),
     'contactMail',(select count(*) from app_private.guest_interest_mail_outbox where interest_request_id='${request}' and kind='approved_contact' and recipient_email='${viewerEmail}'),
+    'accessMail',(select count(*) from app_private.guest_interest_mail_outbox where interest_request_id='${request}' and kind='approved_access' and recipient_email='${viewerEmail}'),
     'requestMail',(select count(*) from app_private.notification_outbox where interest_request_id='${request}' and notification_type='new_introduction'))`));
-  assert.deepEqual(state, { requests: 1, approved: 1, grants: 0, grantAudit: 0,
-    contactAudit: 1, submissionAudit: 1, legacyApprovalMail: 0, contactMail: 1, requestMail: 1 },
-  "retry must not duplicate or corrupt contact approval, identity, audit or outbox, or grant private access");
-  console.log(`Approval/retry: ${retryFirst ? "retry-first" : "approval-first"} overlap passed; one verified recipient, contact email and audit, no private grant.`);
+  assert.deepEqual(state, { requests: 1, approved: 1, grants: portfolioAccess ? 1 : 0, grantAudit: portfolioAccess ? 1 : 0,
+    contactAudit: portfolioAccess ? 0 : 1, submissionAudit: 1, legacyApprovalMail: 0,
+    contactMail: portfolioAccess ? 0 : 1, accessMail: portfolioAccess ? 1 : 0, requestMail: 1 },
+  "retry must preserve the reviewed disclosure, one verified recipient and one matching delivery without duplication");
+  console.log(`Approval/retry: ${retryFirst ? "retry-first" : "approval-first"} overlap passed for ${portfolioAccess ? "approved portfolio viewing" : "contact sharing"}.`);
 }
+async function memberScenario(mode) {
+  const members = [0, 1].map(() => ({ user: randomUUID(), authSession: randomUUID(), candidate: randomUUID(), portfolio: randomUUID(), token: `member_overlap_${randomUUID().replaceAll("-", "")}` }));
+  for (const [index, member] of members.entries()) {
+    await query(`begin;
+      select pg_temp.create_auth_actor('${member.user}','${member.authSession}','member-${member.user}@fixture.test');
+      insert into public.candidates(id,primary_owner_user_id,display_name,created_by) values('${member.candidate}','${member.user}','Member ${index}','${member.user}');
+      insert into public.portfolios(id,user_id,candidate_id,share_token,draft_data,template_id) values('${member.portfolio}','${member.user}','${member.candidate}','${member.token}','{}',3);
+      insert into public.portfolio_media(portfolio_id,candidate_id,media_type,storage_path,visibility) values('${member.portfolio}','${member.candidate}','hero','${member.user}/${member.portfolio}/hero.webp','public');
+      update app_private.identity_verification_subjects set status='verified',verified_at=now(),expires_at=now()+interval '365 days' where candidate_id='${member.candidate}';
+      select pg_temp.prime_paid_publication('${member.portfolio}',pg_temp.complete_portfolio_draft());
+      set local role service_role; select pg_temp.set_service_role_claims();
+      select public.service_publish_portfolio_transaction('${member.user}','${member.authSession}','${member.portfolio}',pg_temp.complete_portfolio_draft(),
+        '{"personal":{"name":"Member ${index}"}}','{"personal":{"name":"Member ${index}"},"contact":{"email":"member-${member.user}@fixture.test"}}',
+        '${member.token}',now()+interval '30 days',3,'#17151c',null); commit;`, true);
+  }
+  const [a, b] = members;
+  const review = async member => {
+    const result = await query(`begin; ${claims(member.user, member.authSession)} select 'REVISION:'||(public.get_owner_relationship_page()#>>'{disclosure,revision}'); rollback;`, true);
+    const value = result.match(/REVISION:([a-f0-9]{32})/)?.[1]; assert.ok(value); return value;
+  };
+  const [aRevision, bRevision] = await Promise.all(members.map(review));
+  const sendA = `select public.send_member_interest_and_share('${b.token}','${aRevision}');`;
+  const sendB = `select public.send_member_interest_and_share('${a.token}','${bRevision}');`;
+  const holder = session(`member-holder-${a.portfolio}`), waiter = session(`member-waiter-${a.portfolio}`);
+  const begin = "begin; set local statement_timeout='12s'; set local idle_in_transaction_session_timeout='15s';";
+  if (mode === "accept-then-send") {
+    await query(`begin; ${claims(a.user, a.authSession)} ${sendA} commit;`, true);
+    const request = await query(`select id from public.interest_requests where portfolio_id='${b.portfolio}' and requester_user_id='${a.user}'`);
+    holder.send(`${begin} ${claims(b.user, b.authSession)} select public.decide_interest_relationship('${request}','approved','${bRevision}'); 
+      \\echo MEMBER_LOCKED`);
+  } else {
+    holder.send(`${begin} ${claims(a.user, a.authSession)} ${sendA} 
+      \\echo MEMBER_LOCKED`);
+  }
+  await holder.marker("MEMBER_LOCKED");
+  const waiting = mode === "retry" ? a : b;
+  waiter.send(`${begin} ${claims(waiting.user, waiting.authSession)} ${mode === "retry" ? sendA : sendB} commit;`);
+  await blockedBy(waiter, holder);
+  holder.send("commit;");
+  const outputs = await Promise.all([holder.finish(), waiter.finish()]);
+  assert.ok(outputs[1].includes(mode === "retry" ? "existing_request" : "submitted"));
+  const ids = members.map(m => `'${m.portfolio}'`).join(",");
+  const state = JSON.parse(await query(`select jsonb_build_object(
+    'requests',(select count(*) from public.interest_requests where portfolio_id in (${ids})),
+    'memberShares',(select count(*) from app_private.member_interest_shares where portfolio_id in (${ids}) and revoked_at is null),
+    'approvalGrants',(select count(*) from public.reveal_grants where portfolio_id in (${ids}) and revoked_at is null),
+    'newIntroductionMail',(select count(*) from app_private.notification_outbox where notification_type='new_introduction' and interest_request_id in (select id from public.interest_requests where portfolio_id in (${ids}))))`));
+  const expected = mode === "retry" ? { requests: 1, memberShares: 1, approvalGrants: 0, newIntroductionMail: 1 }
+    : mode === "accept-then-send" ? { requests: 2, memberShares: 1, approvalGrants: 1, newIntroductionMail: 2 }
+    : { requests: 2, memberShares: 2, approvalGrants: 0, newIntroductionMail: 2 };
+  assert.deepEqual(state, expected, "overlapping sends/approval must preserve exactly one permission per direction and one introduction email per real request");
+  console.log(`Member sharing: ${mode} overlap passed with bounded independent permissions.`);
+}
+
 try {
   await scenario(true);
   await scenario(false);
+  await scenario(true, true);
+  await scenario(false, true);
+  await memberScenario("retry");
+  await memberScenario("crossed");
+  await memberScenario("accept-then-send");
 } finally {
   for (const child of live) { child.stdin.destroy(); child.kill(); }
 }

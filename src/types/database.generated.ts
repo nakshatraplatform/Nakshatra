@@ -1064,6 +1064,9 @@ isOneToOne: false
 "begin_guest_interest_verification":
 { Args: { "p_code_digest": string,"p_details": Json,"p_email_subject_hash": string,"p_network_subject_hash": string }; Returns: string
                            },
+"begin_guest_portfolio_access_verification":
+{ Args: { "p_code_digest": string,"p_email": string,"p_email_subject_hash": string,"p_network_subject_hash": string,"p_share_token": string }; Returns: Json
+                           },
 "begin_identity_verification":
 { Args: { "p_candidate_id": string,"p_invitation_token_hash": string,"p_management_token_hash": string }; Returns: {
               "attempt_id": string,"birth_date": string,"legal_name": string,"provider_subject_ref": string
@@ -1182,11 +1185,17 @@ isOneToOne: false
 "complete_candidate_liveness_email":
 { Args: { "p_claim_token": string,"p_delivery_id": string,"p_error_code"?: string,"p_provider_message_id"?: string,"p_retryable"?: boolean }; Returns: boolean
                            },
+"complete_guest_interest_and_remember":
+{ Args: { "p_code_digest": string,"p_id": string,"p_network_subject_hash": string,"p_proof_hash": string }; Returns: Json
+                           },
 "complete_guest_interest_mail":
 { Args: { "p_error_code"?: string,"p_id": string,"p_lease_token": string,"p_retryable"?: boolean,"p_sent": boolean }; Returns: boolean
                            },
 "complete_guest_interest_verification":
 { Args: { "p_code_digest": string,"p_id": string,"p_network_subject_hash": string }; Returns: string
+                           },
+"complete_guest_portfolio_access_verification":
+{ Args: { "p_code_digest": string,"p_id": string,"p_proof_hash": string }; Returns: Json
                            },
 "complete_identity_verification_provider_absence":
 { Args: { "p_attempt_id": string,"p_claim_token": string }; Returns: boolean
@@ -1249,6 +1258,12 @@ isOneToOne: false
                            },
 "decide_interest_contact_reviewed":
 { Args: { "p_interest_request_id": string,"p_revision": string }; Returns: string
+                           },
+"decide_interest_portfolio_reviewed":
+{ Args: { "p_interest_request_id": string,"p_revision": string }; Returns: string
+                           },
+"decide_interest_relationship":
+{ Args: { "p_decision": string,"p_interest_request_id": string,"p_revision"?: string }; Returns: string
                            },
 "decide_interest_request":
 { Args: { "p_decision": string,"p_interest_request_id": string }; Returns: string
@@ -1344,6 +1359,9 @@ isOneToOne: false
 "guest_interest_mail_is_current":
 { Args: { "p_id": string,"p_lease_token": string }; Returns: boolean
                            },
+"guest_portfolio_delivery_health":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "has_brokerdesk_capability":
 { Args: { "p_capability": string,"p_relationship_ref"?: string,"p_workspace_ref": string }; Returns: boolean
                            },
@@ -1407,6 +1425,12 @@ isOneToOne: false
                            },
 "mark_broker_introduction_shared":
 { Args: { "p_expected_version": number,"p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"member_interest_context":
+{ Args: { "p_share_token": string }; Returns: Json
+                           },
+"member_interest_notification_link":
+{ Args: { "p_recipient_user_id": string,"p_request_id": string }; Returns: string
                            },
 "owns_candidate":
 { Args: { "p_candidate_id": string }; Returns: boolean
@@ -1565,6 +1589,9 @@ isOneToOne: false
 "resolve_customer_broker_relationships":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"resolve_guest_approved_portfolio":
+{ Args: { "p_horoscope"?: boolean,"p_proof_hash": string,"p_share_token": string }; Returns: Json
+                           },
 "resolve_my_broker_introduction_responses":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -1627,6 +1654,9 @@ isOneToOne: false
                            },
 "save_dashboard_draft_transaction":
 { Args: { "p_payload": Json }; Returns: Json
+                           },
+"send_member_interest_and_share":
+{ Args: { "p_message"?: string,"p_revision": string,"p_share_token": string }; Returns: Json
                            },
 "service_b2c_invite_matches":
 { Args: { "p_email": string,"p_token_hash": string }; Returns: boolean
