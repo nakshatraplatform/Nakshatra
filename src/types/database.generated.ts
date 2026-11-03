@@ -1140,10 +1140,7 @@ isOneToOne: false
                            },
 "claim_horoscope_cleanup":
 { Args: { "p_limit"?: number }; Returns: {
-              "claim_token": string,"send_member_interest_and_share":
-{ Args: { "p_message"?: string,"p_revision": string,"p_share_token": string }; Returns: Json
-                           },
-"storage_path": string
+              "claim_token": string,"storage_path": string
             }[]
                            },
 "claim_identity_verification_work":
@@ -1284,12 +1281,6 @@ isOneToOne: false
 "file_extension": string,
 "id": string,
 "language_label": string | null,
-"member_interest_context":
-{ Args: { "p_share_token": string }; Returns: Json
-                           },
-"member_interest_notification_link":
-{ Args: { "p_recipient_user_id": string,"p_request_id": string }; Returns: string
-                           },
 "mime_type": string,
 "page_count": number | null,
 "portfolio_id": string,
@@ -1434,6 +1425,12 @@ isOneToOne: false
                            },
 "mark_broker_introduction_shared":
 { Args: { "p_expected_version": number,"p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"member_interest_context":
+{ Args: { "p_share_token": string }; Returns: Json
+                           },
+"member_interest_notification_link":
+{ Args: { "p_recipient_user_id": string,"p_request_id": string }; Returns: string
                            },
 "owns_candidate":
 { Args: { "p_candidate_id": string }; Returns: boolean
@@ -1657,6 +1654,9 @@ isOneToOne: false
                            },
 "save_dashboard_draft_transaction":
 { Args: { "p_payload": Json }; Returns: Json
+                           },
+"send_member_interest_and_share":
+{ Args: { "p_message"?: string,"p_revision": string,"p_share_token": string }; Returns: Json
                            },
 "service_b2c_invite_matches":
 { Args: { "p_email": string,"p_token_hash": string }; Returns: boolean

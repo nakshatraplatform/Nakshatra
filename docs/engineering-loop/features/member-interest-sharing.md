@@ -28,3 +28,10 @@ Independent fresh-context DB and app reviews found and corrected opposite-permis
 The supplied log for head700c6fc shows2085 assertions across71 files, with only access_lifecycle54 and session_perimeter12 failing. Guest approved viewing and member sharing passed. Access lifecycle still expected Stop sharing to change the request to rejected and permit reopen; the agreed independent-permission behavior preserves approved, so reopening is now invalid while the existing earlier rejected-request reopen case remains. Rotation continues to use an explicitly privileged replacement-grant fixture.
 
 The compatibility public approval wrapper delegated to a guarded command but omitted its own explicit live-session check. Added require_current_session directly without adding an allowlist exception or weakening the perimeter query. Added two revoked-session runtime assertions for that wrapper and member-send. Full SQL execution remains a hosted CI check because Docker is unavailable locally.
+
+
+## Generated type correction, November 3
+
+CI41571801537 on ac08a03 passed pgTAP and the real readable-link, approval/retry (including member overlap), Family Viewer and photo-cap concurrency checks. Only exact generated-type parity failed. Three manually added RPC definitions were incorrectly nested under horoscope return types. Replaced the committed file with the exact generated database-types artifact13202450236, downloaded publicly with SHA256 verified against GitHub API metadata (a1df590bfbe614d447122fff61a86d15f83b91587763787a082da9d332e43d19). No SQL runtime or parity checker changes.
+
+Lesson: use clean-database generation or an integrity-verified CI artifact for this file; textual insertion can remain valid TypeScript while placing functions under nested return shapes. The existing exact parity gate caught this and remains unchanged.
