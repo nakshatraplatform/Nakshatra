@@ -2,6 +2,7 @@
 
 import { VivIntroBrand } from "@/components/brand/VivIntroBrand";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { MemberInterestForm } from "./MemberInterestForm";
 import { VisitorInterestFields } from "./VisitorInterestFields";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -337,7 +338,7 @@ export function InterestRequestModal({ portfolioToken, profileName, profileSumma
 
             {/* Retain unsent answers only in this page session, including close/reopen and verification back. */}
             {memberMode && step === "details" && <MemberInterestForm token={portfolioToken} recipientName={firstName(profileName)} onUnavailable={useVisitorForm} onSent={(mutual) => { setMemberMutual(mutual); setSubmitted(true); setStep("success"); }} />}
-            {!memberMode && !authenticated && step === "details" && <p className="interest-verification-help px-6">Already use VivIntro? <a className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${portfolioToken}#portfolio-interest`)}`}>Sign in to share your full profile</a></p>}
+            {!memberMode && !authenticated && step === "details" && <p className="interest-verification-help px-6">Already use VivIntro? <Link className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${portfolioToken}#portfolio-interest`)}`}>Sign in to share your full profile</Link></p>}
             {!memberMode && (step === "details" || step === "verify") && <DetailsForm hidden={step !== "details"} draft={requestPayload} portfolioToken={portfolioToken} sessionEmail={sessionEmail} pending={pending} error={error} fieldErrors={fieldErrors} onSubmit={beginRequest} />}
 
             {step === "verify" && (

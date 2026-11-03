@@ -29,7 +29,7 @@ describe("public introduction WhatsApp text", () => {
 });
 
 describe("warm status labels", () => {
-  it.each([['new','Awaiting review'],['pending_review','Awaiting review'],['rejected','Set aside'],['approved','Details shared'],['revealed','Details shared'],['unknown','Closed']])("labels interest %s without changing its status", (status, label) => {
+  it.each([['new','Awaiting review'],['pending_review','Awaiting review'],['rejected','Declined'],['set_aside','Set aside'],['approved','Details shared'],['revealed','Details shared'],['unknown','Closed']])("labels interest %s without changing its status", (status, label) => {
     expect(interestStatusLabel(status)).toBe(label);
   });
   it.each([['active','Sharing details'],['expired','Sharing period ended'],['revoked','Sharing stopped'],['unknown','Not sharing']])("labels sharing %s", (status, label) => {

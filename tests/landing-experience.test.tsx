@@ -40,7 +40,7 @@ describe("landing copy within the established presentation", () => {
     expect(privacy).toHaveTextContent(/Your notes and street address aren.t included in either shared view/i);
     expect(document.querySelector("#top")).not.toHaveTextContent(/private link/i);
     const approval = screen.getByText("What happens after someone shows interest?").closest("details");
-    expect(approval).toHaveTextContent(/approving full portfolio viewing for 15 days/i);
+    expect(approval).toHaveTextContent(/accept and share your full portfolio for 15 days/i);
     expect(approval).toHaveTextContent(/another device must verify the same email/i);
     const liveness = screen.getByText("What does “Liveness checked” mean?").closest("details");
     expect(liveness).toHaveTextContent(/does not verify legal identity/i);

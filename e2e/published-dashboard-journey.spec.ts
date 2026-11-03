@@ -31,7 +31,7 @@ test("published creator can understand sharing, requests, and Complete access", 
   await expect(awaiting.getByText("Verification pending")).toBeVisible();
   await awaiting.getByRole("button", { name: "Review", exact: true }).last().click();
   const details = page.getByRole("dialog", { name: /A long family name/ });
-  await expect(details.getByText("A verified email is required before access can be approved.")).toBeVisible();
+  await expect(details.getByText("A verified email is required before access can be shared.")).toBeVisible();
   await expect(details.getByRole("button", { name: "Accept and share full profile" })).toHaveCount(0);
   await details.getByRole("button", { name: "Close details" }).click();
   await awaiting.getByRole("button", { name: "Review", exact: true }).first().click();

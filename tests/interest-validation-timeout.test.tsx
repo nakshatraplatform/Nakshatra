@@ -9,6 +9,7 @@ const lateValidation = vi.hoisted(() => {
   return { promise, resolve };
 });
 const startAuthentication = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/features/interest/server/interest.contract", () => lateValidation.promise);
 vi.mock("@/features/auth/client/auth.api", () => ({ startAuthentication, verifyAuthenticationCode: vi.fn(), continueToAuthProvider: vi.fn() }));
 vi.mock("@/components/portfolio/LocationFields", () => ({ hasCompleteLocationHierarchy: () => true, LocationFields: () => null }));

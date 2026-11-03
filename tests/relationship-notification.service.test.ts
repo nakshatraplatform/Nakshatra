@@ -67,7 +67,7 @@ describe("relationship notification delivery", () => {
     await expect(processRelationshipNotifications(client as never)).resolves.toMatchObject({ sent: 1, failed: 0 });
     expect(rpc).toHaveBeenCalledWith("member_interest_notification_link", { p_request_id: requestId, p_recipient_user_id: recipientId });
     expect(sendResendEmail).toHaveBeenCalledTimes(1);
-    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject: "Someone shared their full profile with you", text: expect.stringContaining(`/login?redirect=${encodeURIComponent(`/p/${token}`)}`) }));
+    expect(sendResendEmail.mock.calls[0][0]).toEqual(expect.objectContaining({ subject: "Someone shared their full profile with you", text: expect.stringContaining(`/login?redirect=${encodeURIComponent(`/p/${token}`)}`) }));
     expect(client.from).not.toHaveBeenCalled();
   });
 
