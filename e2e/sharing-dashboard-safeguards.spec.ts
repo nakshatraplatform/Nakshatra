@@ -14,7 +14,7 @@ test("published consent must load successfully and changed revisions remain unap
   await page.route("**/api/interest/*", route => {
     if (route.request().method() !== "PATCH") return route.continue();
     decisions += 1;
-    expect(route.request().postDataJSON()).toEqual({ decision: "approved", scope: "full_portfolio", revision: "b".repeat(32) });
+    expect(route.request().postDataJSON()).toEqual({ workflow: "relationship_v2", decision: "approved", scope: "full_portfolio", revision: "b".repeat(32) });
     return route.fulfill({ status: 409, json: { code: "SHARING_REVIEW_CHANGED", error: "Published details changed. Close this confirmation and review them again before sharing." } });
   });
   await page.goto("/dashboard");

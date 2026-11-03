@@ -1,5 +1,7 @@
 # VivIntro / Nakshatra project map
 
+- [Member interest and reciprocal sharing](features/member-interest-sharing.md): one-action published member disclosure, inline reciprocal acceptance, distinct defer/decline, and submitted-only visitor review. Draft app #144 requires Draft DB #143 first; see current verification and release blockers in the feature record.
+
 - [Accountless interest and contact sharing](features/accountless-interest-and-contact-sharing.md):
   critical staged change for visitor email verification without Auth account or
   session and owner-approved contact-only email. The additive database foundation
