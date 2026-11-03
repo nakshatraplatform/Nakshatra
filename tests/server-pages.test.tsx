@@ -53,7 +53,7 @@ function databaseClient() {
 }
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound, useRouter: () => ({ push: vi.fn(), refresh: mocks.refresh }) }));
-vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }) }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "nakshatra.test", "x-forwarded-proto": "https" }), cookies: async () => ({ get: () => undefined }) }));
 vi.mock("next/font/google", () => ({
   Inter: () => ({ variable: "portfolio-body" }),
   Plus_Jakarta_Sans: () => ({ variable: "portfolio-display" }),

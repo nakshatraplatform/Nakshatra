@@ -3,6 +3,9 @@ import { z } from "zod/v4";
 export const accessGrantSchema = z.object({
   id: z.string().uuid(),
   interestRequestId: z.string().uuid(),
+  direction: z.literal("outbound_interest").optional(),
+  recipientPortfolioToken: z.string().nullable().optional(),
+  requestStatus: z.string().optional(),
   viewerName: z.string().nullable(),
   viewerEmail: z.string().nullable().optional(),
   sourceType: z.enum(["direct", "broker"]).optional(),

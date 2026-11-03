@@ -10,12 +10,12 @@ import { metadata } from "../src/app/page";
 import OpenGraphImage, { alt, contentType, size } from "../src/app/opengraph-image";
 
 describe("marketing metadata", () => {
-  it("uses the controlled-introduction category and contact-sharing promise", () => {
+  it("uses the controlled-introduction category and owner-approved viewing promise", () => {
     expect(metadata.title).toEqual({ absolute: "Marriage biodata as a link | VivIntro" });
     expect(metadata.description).toMatch(/marriage.*VivIntro.*Vivara link/i);
     expect(metadata.description).toMatch(/marriage biodata/i);
-    expect(metadata.description).toMatch(/choose when to share your contact details/i);
-    expect(metadata.description).not.toMatch(/private link|approve access/i);
+    expect(metadata.description).toMatch(/choose who can view your full portfolio/i);
+    expect(metadata.description).not.toMatch(/private link/i);
     expect(metadata.openGraph).toMatchObject({
       type: "website",
       title: "Your marriage biodata, shared through one link.",

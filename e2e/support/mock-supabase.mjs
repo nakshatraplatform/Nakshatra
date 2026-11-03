@@ -1,9 +1,11 @@
 import { createServer } from "node:http";
-import { approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser, loadingTestToken } from "./theme-session.mjs";
+import { createHmac } from "node:crypto";
+import { memberOwnerToken, approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser, loadingTestToken } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.E2E_SUPABASE_PORT || 54329);
+const guestViewingProofs = new Map();
 const portfolioId = "11111111-1111-4111-8111-111111111111";
 const authenticatedAccessToken = "e2e-authenticated-user-token";
 const authenticatedUser = {
@@ -80,8 +82,8 @@ const ownerPortfolio = {
 const legacyPublishedData = ownerPortfolio.published_data;
 ownerPortfolio.published_data = structuredClone(ownerPortfolio.draft_data);
 
-const ownerInterests = [
-  { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
+const ownerInterestsBase = [
+  { id: "12121212-1212-4212-8212-121212121212", viewer_name: "Maya Shah", viewer_phone: null, viewer_email: "maya@example.test", viewer_family_context: "Our families have spoken once.", message: "We would like to learn more.", status: "pending_review", requester_user_id: null, metadata: { profile_for: "self" }, created_at: "2026-10-03T00:30:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "34343434-3434-4434-8434-343434343434", viewer_name: "A long family name for layout testing that should wrap without hiding the decision", viewer_phone: null, viewer_email: "family@example.test", viewer_family_context: null, message: "Would it be possible to talk first?", status: "new", requester_user_id: "abababab-abab-4bab-8bab-abababababab", metadata: { profile_for: "family" }, created_at: "2026-10-02T12:00:00Z", email_verified: false, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
   { id: "56565656-5656-4656-8656-565656565656", viewer_name: "Samira", viewer_phone: null, viewer_email: "samira@example.test", viewer_family_context: null, message: null, status: "rejected", requester_user_id: null, metadata: {}, created_at: "2026-09-27T12:00:00Z", email_verified: true, source_type: "direct", broker_name: null, broker_representative_name: null, requester_portfolio_token: null },
 ];
@@ -266,6 +268,9 @@ function sendPortfolioImage(response, path) {
 const publicReadCounts = new Map();
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${host}:${port}`);
+  const memberOwner = request.headers.authorization === `Bearer ${memberOwnerToken}`;
+  if (memberOwner) request.headers.authorization = `Bearer ${publishedOwnerToken}`;
+  const ownerInterests = ownerInterestsBase.map((item, index) => memberOwner && index === 0 ? { ...item, requester_user_id: approvedViewerUser.id, requester_full_profile_shared: true, requester_portfolio_token: "aditi-rao" } : item);
   if (request.headers.authorization === `Bearer ${loadingTestToken}`) {
     request.headers.authorization = `Bearer ${themeTestToken}`;
     if (["/rest/v1/portfolios", "/rest/v1/account_deletion_requests", "/rest/v1/rpc/resolve_customer_broker_relationships"].includes(url.pathname)) delayedResponses.add(response);
@@ -281,6 +286,46 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/health") return sendJson(response, 200, { ok: true });
+  // Loopback-only guest viewing fixtures exercise real app cookies and rendering.
+  if (request.method === "POST" && url.pathname === "/__test/guest-viewing") {
+    let body = ""; request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      const input = JSON.parse(body || "{}");
+      if (!guestViewingProofs.has(input.proofHash)) return sendJson(response, 404, {});
+      guestViewingProofs.set(input.proofHash, input.approved === true);
+      return sendJson(response, 200, { ok: true });
+    });
+  }
+  if (request.method === "POST" && url.pathname === "/rest/v1/rpc/is_current_session_active" && request.headers.authorization === `Bearer ${approvedViewerToken}`) return sendJson(response, 200, true);
+  if (request.method === "POST" && ["member_interest_context", "send_member_interest_and_share"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
+    let body = ""; request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== `Bearer ${approvedViewerToken}`) return sendJson(response, 200, { available: false });
+      const input = JSON.parse(body || "{}");
+      if (url.pathname.endsWith("member_interest_context")) return sendJson(response, 200, { available: true, name: "Rohan Member", revision: "a".repeat(32), photoCount: 3, privatePhotoCount: 1, hasHoroscope: true, alreadySent: false, requestStatus: null, sharingActive: false });
+      return sendJson(response, 200, { status: input.p_revision === "a".repeat(32) ? "submitted" : "review_changed", mutual: false });
+    });
+  }
+  if (request.method === "POST" && ["complete_guest_interest_and_remember", "complete_guest_portfolio_access_verification", "resolve_guest_approved_portfolio"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
+    let body = ""; request.on("data", chunk => { body += chunk; });
+    return request.on("end", () => {
+      if (request.headers.authorization !== "Bearer e2e-loopback-only-service-role-key") return sendJson(response, 403, {});
+      const input = JSON.parse(body || "{}");
+      if (url.pathname.endsWith("resolve_guest_approved_portfolio")) {
+        if (input.p_share_token !== "e2e-portfolio-token" || guestViewingProofs.get(input.p_proof_hash) !== true) return sendJson(response, 200, null);
+        const expiresAt = new Date(Date.now() + 3 * 86_400_000).toISOString();
+        if (input.p_horoscope) return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: expiresAt });
+        return sendJson(response, 200, { ...resolvedPortfolio(false), data: { ...publicSnapshot.data,
+          contact: { contact_person: "Approved family contact", phone: "+1 555 010 0200", email: "private-guest@example.test" } }, accessExpiresAt: expiresAt });
+      }
+      const viewing = url.pathname.endsWith("complete_guest_portfolio_access_verification");
+      const expected = createHmac("sha256", "loopback-only-viewing-verification-key".repeat(2))
+        .update(`vivintro-guest-interest:v1:${viewing ? "view-code" : "code"}:guest@example.test:123456`).digest("hex");
+      if (input.p_code_digest !== expected) return sendJson(response, 200, { status: "invalid_code" });
+      guestViewingProofs.set(input.p_proof_hash, viewing);
+      return sendJson(response, 200, { status: viewing ? "verified" : "submitted", shareToken: "e2e-portfolio-token" });
+    });
+  }
   if (url.pathname === "/__test/public-read-counts") return sendJson(response, 200, publicReadCounts.get(url.searchParams.get("token")) || {});
   if (request.method === "POST" && ["resolve_public_portfolio", "resolve_public_portfolio_identity_verified", "resolve_public_portfolio_status", "record_public_portfolio_view"].some(name => url.pathname === `/rest/v1/rpc/${name}`)) {
     let observedBody = "";
@@ -391,17 +436,22 @@ const server = createServer((request, response) => {
         const records = [...ownerInterests.map(item => ({ kind: "interest", item })), ...ownerAccess.grants.map(item => ({ kind: "grant", item }))].filter(record => {
           const status = record.item.status;
           const matchesQueue = p_queue === "overview" || p_queue === "awaiting" && record.kind === "interest" && ["new", "pending_review"].includes(status)
-            || p_queue === "set-aside" && record.kind === "interest" && status === "rejected" || p_queue === "access" && record.kind === "grant" && status === "active"
-            || p_queue === "history" && (record.kind === "grant" && status !== "active" || record.kind === "interest" && !["new", "pending_review", "rejected"].includes(status));
+            || p_queue === "set-aside" && record.kind === "interest" && status === "set_aside" || p_queue === "access" && record.kind === "grant" && status === "active"
+            || p_queue === "history" && (record.kind === "grant" && status !== "active" || record.kind === "interest" && !["new", "pending_review", "set_aside"].includes(status));
           const name = record.item.viewer_name ?? record.item.viewerName ?? "";
           const email = record.item.viewer_email ?? record.item.viewerEmail ?? "";
           const source = record.item.source_type ?? record.item.sourceType;
           return matchesQueue && `${name} ${email}`.toLowerCase().includes(p_query.toLowerCase()) && (p_filter === "all" || p_filter === source || p_filter === "verified" && record.item.email_verified || p_filter === "pending" && ["new", "pending_review"].includes(status) || p_filter === "active" && status === "active" || p_filter === "ended" && ["revoked", "expired"].includes(status));
         });
         return sendJson(response, 200, { records: records.slice(p_offset, p_offset + (p_queue === "overview" ? 50 : 8)), total: records.length,
-          counts: { interests: ownerInterests.length, awaiting: ownerInterests.filter(item => ["new", "pending_review"].includes(item.status)).length, setAside: ownerInterests.filter(item => item.status === "rejected").length, active: ownerAccess.grants.filter(item => item.status === "active").length },
+          counts: { interests: ownerInterests.length, awaiting: ownerInterests.filter(item => ["new", "pending_review"].includes(item.status)).length, setAside: ownerInterests.filter(item => item.status === "set_aside").length, active: ownerAccess.grants.filter(item => item.status === "active").length },
           disclosure: draftOwner ? null : { revision: "a".repeat(32), data: dashboardPortfolio.published_data, photoCount: 1, privatePhotoCount: 0, hasHoroscope: false } });
       });
+    }
+    if (url.pathname === "/rest/v1/rpc/decide_interest_relationship") {
+      let body = ""; request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => { const input = JSON.parse(body || "{}");
+        return sendJson(response, 200, input.p_decision === "reopened" ? "reopened" : input.p_decision); });
     }
     if (url.pathname === "/rest/v1/rpc/list_interest_history") return sendJson(response, 200, ownerInterests.map(item => ({ id: item.id, name: item.viewer_name, submittedAt: item.created_at, status: item.status })));
     if (url.pathname === "/rest/v1/rpc/get_interest_details") {

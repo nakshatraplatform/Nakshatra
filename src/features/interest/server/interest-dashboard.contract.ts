@@ -18,6 +18,7 @@ export const dashboardInterestSchema = z.object({
   source_type: z.enum(["direct", "broker"]).default("direct"),
   broker_name: z.string().nullable().default(null),
   broker_representative_name: z.string().nullable().default(null),
+  requester_full_profile_shared: z.boolean().optional(),
   requester_portfolio_token: z.string().nullable().default(null),
 });
 

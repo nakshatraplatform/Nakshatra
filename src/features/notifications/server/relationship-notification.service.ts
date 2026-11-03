@@ -1,4 +1,5 @@
 import "server-only";
+import { loadMemberInterestNotificationLink } from "@/features/interest/server/member-interest.service";
 import { createHash } from "node:crypto";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -147,9 +148,19 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
     return { to, subject: "Your Vivara has been published", text: `You published your Vivara. You can manage its current link and sharing settings in your VivIntro dashboard:\n\n${origin}/dashboard\n\nPrivate details remain subject to your sharing permissions.` };
   }
   if (job.notification_type === "interest_received") {
-    return { to, subject: "Your request has been received", text: `Your request to view private details was received. Submitting a request does not grant access; the owner decides whether to share. We will email you when a decision is made.\n\nUse the same verified email when returning to VivIntro: ${origin}/dashboard` };
+    return { to, subject: "Your request has been received", text: `Your interest was sent. Sending interest does not grant access to the other person’s private details; they decide whether to share back. We will email you when a decision is made.\n\nUse the same verified email when returning to VivIntro: ${origin}/dashboard` };
   }
   if (job.notification_type === "new_introduction") {
+    if (job.interest_request_id) {
+      const token = await loadMemberInterestNotificationLink(supabase, job.interest_request_id, job.recipient_user_id)
+        .catch(() => { throw new NotificationRenderError("MEMBER_SHARE_LOOKUP_FAILED", true); });
+      if (typeof token === "string" && /^[A-Za-z0-9_-]{3,160}$/.test(token)) {
+        const destination = `/p/${encodeURIComponent(token)}`;
+        const link = `${origin}/login?redirect=${encodeURIComponent(destination)}`;
+        return { to, subject: "Someone shared their full profile with you", text: `A VivIntro member showed interest and shared their published full profile with you for up to 15 days. Sign in with your existing VivIntro account to view it:\n\n${link}\n\nYou can review the request and choose Accept and share full profile in your dashboard. Email confirmation is not proof of identity.` };
+      }
+    }
+
     return { to, subject: "Someone has shown interest", text: `Someone has confirmed their email and introduced themselves.\n\nReview their interest in your VivIntro dashboard: ${origin}/dashboard\n\nRead their details before deciding whether to share private details. Email confirmation is not proof of identity.` };
   }
   if (job.notification_type === "introduction_declined") {

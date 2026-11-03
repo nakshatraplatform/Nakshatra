@@ -58,19 +58,23 @@ describe("accountless interest verification route", () => {
   });
 
   it("finishes only after the database accepts the code", async () => {
-    mocks.rpc.mockResolvedValue({ data: "submitted", error: null });
+    mocks.rpc.mockResolvedValue({ data: { status: "submitted", shareToken: "guest-portfolio" }, error: null });
     const response = await POST(request({ action: "complete", challengeId, email: "Mira@example.test", code: "123456" }));
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ submitted: true });
-    expect(mocks.rpc).toHaveBeenCalledWith("complete_guest_interest_verification", expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith("complete_guest_interest_and_remember", expect.objectContaining({
       p_id: challengeId, p_network_subject_hash: "c".repeat(64), p_code_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
+      p_proof_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
     }));
+    expect(response.headers.get("set-cookie")).toContain("HttpOnly");
+    expect(response.headers.get("set-cookie")).toContain("Path=/p/guest-portfolio");
+    expect(response.headers.get("set-cookie")).not.toContain("sb-");
     expect(mocks.mail).not.toHaveBeenCalled();
   });
 
   it.each([["invalid_code", 400], ["expired", 410], ["existing_request", 409], ["unavailable", 404], ["rate_limited", 429]] as const)(
     "maps %s to a bounded client response", async (outcome, status) => {
-      mocks.rpc.mockResolvedValue({ data: outcome, error: null });
+      mocks.rpc.mockResolvedValue({ data: { status: outcome }, error: null });
       const response = await POST(request({ action: "complete", challengeId, email: "mira@example.test", code: "123456" }));
       expect(response.status).toBe(status);
       expect(JSON.stringify(await response.json())).not.toContain("stack");

@@ -5,6 +5,7 @@ import { ArrowLeft, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.contract";
 import { resolveApprovedHoroscope } from "@/features/portfolio/server/public-portfolio.service";
+import { readGuestViewingProof } from "@/features/access/server/guest-viewing-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export default async function HoroscopePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = await createClient();
-  const horoscope = await resolveApprovedHoroscope(supabase, token);
+  const horoscope = await resolveApprovedHoroscope(supabase, token, { guestProofHash: await readGuestViewingProof(token) });
   if (!horoscope) return notFound();
 
   return (

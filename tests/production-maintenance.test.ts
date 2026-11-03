@@ -20,6 +20,7 @@ import { POST } from "@/app/api/internal/production-maintenance/route";
 const secret = "x".repeat(32);
 const request = () => new Request("https://app.test/internal", { headers: { authorization: `Bearer ${secret}` } });
 beforeEach(() => {
+  vi.stubEnv("GUEST_INTEREST_OTP_SECRET", "synthetic-guest-verification-key-32-characters");
   vi.stubEnv("RESEND_API_KEY", "synthetic-key"); vi.stubEnv("RESEND_FROM_EMAIL", "notifications@example.test");
   vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "synthetic-independent-32-plus-character-key");
   vi.stubEnv("RESEND_WEBHOOK_SECRET", "whsec_c3ludGhldGljLWtleS1mb3ItdGVzdHM=");
@@ -173,6 +174,14 @@ it("aggregates signed delivery health and conceals missing configuration", async
   expect((await GET(request())).status).toBe(200);
   expect(mocks.rpc).toHaveBeenCalledWith("email_delivery_health", { p_daily_limit: 100, p_monthly_limit: 3000 });
   vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "");
+  expect((await GET(request())).status).toBe(503);
+});
+it("fails health for missing guest verification configuration or guest delivery backlog", async () => {
+  mocks.rpc.mockResolvedValue({ data: { healthy: true }, error: null });
+  vi.stubEnv("GUEST_INTEREST_OTP_SECRET", "");
+  expect((await GET(request())).status).toBe(503);
+  vi.stubEnv("GUEST_INTEREST_OTP_SECRET", "synthetic-guest-verification-key-32-characters");
+  mocks.rpc.mockImplementation(async (name: string) => ({ data: { healthy: name !== "guest_portfolio_delivery_health" }, error: null }));
   expect((await GET(request())).status).toBe(503);
 });
 it.each(["0", "-1", "NaN", "1000000000"])("refuses malformed mail quota configuration %s", async value => {

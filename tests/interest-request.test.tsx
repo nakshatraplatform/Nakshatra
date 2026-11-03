@@ -23,6 +23,8 @@ vi.mock("@/lib/auth", () => ({ getApiUser }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit }));
 vi.mock("@/features/auth/client/auth.api", () => ({ continueToAuthProvider, startAuthentication, verifyAuthenticationCode }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 import { InterestRequestModal } from "../src/components/portfolio/InterestRequestModal";
 import { POST } from "../src/app/api/interest/route";
 import {
@@ -114,12 +116,14 @@ describe("interest flow", () => {
     expect(screen.getByLabelText("Full name")).toHaveValue("Rohan Mehta");
   });
 
-  it("uses the guest path even when the page was opened in a signed-in browser", () => {
+  it("uses the guest form if a signed-in user has no published eligible profile", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ available: false })));
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="rohan@example.com" />);
     fireEvent.click(screen.getByRole("button", { name: "Show interest" }));
-    expect(screen.getByLabelText("Email address")).toBeInTheDocument();
-    expect(screen.queryByText("Using your VivIntro profile")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("Email address")).toHaveValue("");
+    expect(startAuthentication).not.toHaveBeenCalled();
   });
+
   it("disables interest on the signed-in owner's own portfolio", () => {
     render(<InterestRequestModal portfolioToken="portfolio-token" profileName="Ananya Rao" authenticated verifiedEmail="owner@example.com" isOwner />);
 

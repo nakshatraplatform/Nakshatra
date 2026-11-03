@@ -1,4 +1,5 @@
-import { createHmac, randomInt } from "node:crypto";
+import { portfolioSharePathSchema } from "@/features/portfolio/share-path";
+import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { interestSubmissionSchema, interestRequestValidationMessage } from "@/features/interest/server/interest.contract";
@@ -6,6 +7,7 @@ import { sendResendEmail } from "@/features/notifications/server/resend.provider
 import { anonymousSubjectHash } from "@/features/security/server/rate-limit.service";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { readJsonBody, requireSameOrigin, RequestSecurityError, requestSecurityErrorResponse } from "@/lib/api/request-security";
+import { guestVerificationDigest as digest, guestViewingRpc, newGuestViewingProof, rememberGuestViewing } from "@/features/access/server/guest-viewing-proof";
 
 const startSchema = z.object({ action: z.literal("start"), details: z.unknown() }).strict();
 const completeSchema = z.object({
@@ -13,13 +15,7 @@ const completeSchema = z.object({
   email: z.email().max(180), code: z.string().regex(/^[0-9]{6}$/),
 }).strict();
 const requestSchema = z.discriminatedUnion("action", [startSchema, completeSchema]);
-const otpSecretSchema = z.string().min(32);
 const privateHeaders = { "Cache-Control": "private, no-store" };
-
-function digest(kind: string, value: string) {
-  const secret = otpSecretSchema.parse(process.env.GUEST_INTEREST_OTP_SECRET);
-  return createHmac("sha256", secret).update(`vivintro-guest-interest:v1:${kind}:${value}`).digest("hex");
-}
 
 function failure(status: number, code: string, error: string) {
   return NextResponse.json({ code, error }, { status, headers: privateHeaders });
@@ -56,7 +52,7 @@ export async function POST(request: Request) {
         deliveryId: challengeId,
         to: email,
         subject: "Your VivIntro Show interest code",
-        text: `Your six-digit VivIntro Show interest code is ${code}. It expires in 10 minutes. Enter it on the introduction page to send your request. This code does not sign you in or create an account. If you did not request it, you can ignore this email.`,
+        text: `Your six-digit VivIntro Show interest code is ${code}. It expires in 10 minutes. Enter it on the introduction page to send your request. This does not sign you in or create an account. This browser can view the full portfolio only if the owner approves. If you did not request it, you can ignore this email.`,
       });
       if (delivery.status !== "accepted") {
         await supabase.rpc("cancel_guest_interest_verification", { p_id: challengeId });
@@ -66,13 +62,21 @@ export async function POST(request: Request) {
     }
 
     const email = parsed.data.email.trim().toLowerCase();
-    const { data: result, error } = await supabase.rpc("complete_guest_interest_verification", {
+    const proof = newGuestViewingProof();
+    const { data, error } = await guestViewingRpc(supabase)("complete_guest_interest_and_remember", {
       p_id: parsed.data.challengeId,
       p_code_digest: digest("code", `${email}:${parsed.data.code}`),
       p_network_subject_hash: networkHash,
+      p_proof_hash: proof.hash,
     });
     if (error) return failure(503, "VERIFICATION_UNAVAILABLE", "We could not verify the code. Please try again.");
-    if (result === "submitted") return NextResponse.json({ submitted: true }, { status: 201, headers: privateHeaders });
+    const parsedResult = z.object({ status: z.string(), shareToken: portfolioSharePathSchema.optional() }).safeParse(data);
+    const result = parsedResult.success ? parsedResult.data.status : null;
+    if (result === "submitted" && parsedResult.success && parsedResult.data.shareToken) {
+      const response = NextResponse.json({ submitted: true }, { status: 201, headers: privateHeaders });
+      rememberGuestViewing(response, parsedResult.data.shareToken, proof.value);
+      return response;
+    }
     if (result === "invalid_code") return failure(400, "INVALID_CODE", "That code is incorrect. Try again.");
     if (result === "expired") return failure(410, "EXPIRED_CODE", "This code has expired. Send a new code.");
     if (result === "existing_request") return failure(409, "INTEREST_REQUEST_EXISTS", "An interest request from this email already exists for this introduction.");

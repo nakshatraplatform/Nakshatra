@@ -1,27 +1,38 @@
-# Member interest and reciprocal sharing
+# Member interest sharing and relationship review
 
-Risk: Critical. Latest main c0bcb29; extends Draft DB #143 and app #144, preserving separate deployment order.
+Risk: Critical. Extends Draft app PR #144; requires DB PR #143 migrations before app release. Base main c0bcb2956037dcc044cbcfec02e8bcad4610cac6.
 
-## Approved contract
+## Contract
 
-A signed-in member with a currently published eligible portfolio sends interest and shares that published full portfolio with the target owner in one explicitly labelled action. No repeated identity/location form, OTP, or extra consent screen. The recipient can view the sender immediately and accept/share their own full published profile back. Both permissions expire after 15 days and remain independently revocable; rejection ends sharing attached to the declined request. Concurrent crossed interests must not duplicate permissions, notifications or fabricate interest from either person. Visitors retain accountless email verification and explicit owner approval. Unpublished member drafts are never disclosed.
+A signed-in member with an eligible published profile sends interest and shares that published full profile in one clearly labelled action. No repeated identity form, OTP or second consent dialog. Recipient views that profile and can accept/share back inline. Independent permissions expire in 15 days and can be stopped separately. Duplicate retries and crossed sends must not renew or duplicate permissions. Unpublished members fall back to the accountless visitor form; no guest account or Supabase session is created. Visitors require explicit owner approval for full portfolio viewing.
 
-Set aside is private deferral, not rejection; no declined notification. Decline and accepted-access revocation are distinct actions. Visitor details show submitted fields only; operational history stays in a separate collapsed activity disclosure.
+Set aside is private deferral; Decline is separate. Incoming visitor details show submitted fields only, with operational history in collapsed Activity. Drafts, owner notes and street addresses stay private. Approved portfolio design, typography and validation remain unchanged.
 
-## Design and evaluations
+## Implementation
 
-Private first-class sender disclosures bind a real incoming request to the sender portfolio and exact recipient user. They do not fabricate reverse interest rows or weaken existing reveal-grant constraints. Current publication, verified live session, request state, expiry and revocation authorize each read. Owner pagination/counts and existing Stop sharing controls include these disclosures. Signed media remain bounded to authorized descriptors and access expiry.
+- Member contract, authenticated context/send route, narrow RPC service, and published-profile consent form.
+- Existing modal chooses member flow only after server eligibility; transient failure offers retry, never silently changes sharing consent. Guest verification and browser-scoped access remain intact.
+- Relationship review uses current server disclosure revision for inline member approval, explicit workflow version for old-tab safety, separate defer/decline, and authoritative returned queue counts.
+- Existing new-introduction email gains an identity-bound full-profile link only after exact-recipient server validation; no extra notification or private email payload.
+- Privacy/help copy and bounded readable paths align with the shared-link contract.
 
-Evaluate wrong owner/session/scope/revision, no published profile, draft isolation, guest preservation, duplicate/crossed submissions, expiry/revoke/unpublish/rotation, separate defer/decline mail, owner counts/pagination, submitted-only visitor details, and Chrome/Firefox/WebKit responsive flows. Database replay, pgTAP/concurrency, generated-type parity and independent fresh review remain required. No production mutation is authorized by implementation.
+## Evaluation and review
 
-## Execution context
+App runtime snapshot 7d955b4: all 1,896 tests in 223 files passed; global coverage statements 85.87%, branches 82.21%, functions 85.66%, lines 89.53%. Feature coverage passed 67 files and 21 protected boundaries. Lint, typecheck and production build passed; build used only loopback public configuration because no local environment file is present. Initial build without that configuration failed the existing required-env validation; no validation was relaxed.
 
-Database commands/read contracts, one-action app form and separate defer/decline review are implemented in Draft #143/#144. Docker is unavailable locally; hosted CI supplies real SQL execution. Production maintenance workers remain a separate readiness gate.
+Chrome desktop/tablet/mobile: member send, inline recipient accept, guest refresh/revoke and forwarded-link verification, owner responsive light/dark journey, failed revocation and old-grant paging passed (21 initial passes plus 3 successful consent-test reruns). The consent fixture now asserts the new relationship_v2 workflow discriminator, retaining503/stale-revision rejection checks. Firefox, desktop WebKit and mobile WebKit passed all 24 selected browser checks, including the same member/guest/owner and error scenarios. These use loopback service fixtures; they do not prove production provider delivery or physical-device behavior.
 
-Current runtime SQL snapshot ae9e0e0: migration parses (68 statements), local-target guard tests8/8 pass. Hosted migration replay passes but pgTAP still fails; logs blocked by unavailable GitHub connection and browser-control kernel-assets error. Concurrency runtime and generated-type parity remain pending, not passed.
+Fresh-context read-only reviewer /root/member_sharing_final_review reviewed app7d955b4 and DBbf85c54, following initial DB review. Two SQL behavior findings were corrected: short readable-path resolver override, and stale approval replay restoring revoked access. SQL now preserves active-grant idempotency separately from sticky inactive-grant rejection. Reviewer additionally identified the active guest retry interaction; final 5-line guard was corrected after the third reviewer round and awaits runtime evidence and release review. App review found no material runtime defect; two new test arity errors were corrected and full suite subsequently passed.
 
-Independent fresh-context DB and app reviews found and corrected opposite-permission revocation, duplicate direction after accept/cross, short readable-path override, and revoked approval replay. Keep active full-grant retries idempotent (already_approved), while inactive previous full grants cannot be restored by replaying old consent. Member pgTAP41 assertions; guest pgTAP42 exercises short abc path. Reviewer round3 found active guest retry interaction; final5-line correction awaits runtime and release review. Review budget exhausted; no fourth reviewer launched. Both PRs remain Draft. No production mutation performed.
+Database prerequisite #143 passed required CI, including migration replay, pgTAP, concurrency tests and exact generated-type parity. It merged to main as8098359. The user reports its production SQL deployment succeeded; this task has not independently inspected production migration history.
 
+## Release gates
+
+Database #143 is merged. Keep app #144 Draft pending its updated CI and mobile review. The independent review budget was three rounds; no further automated reviewer was launched. Database runtime checks subsequently passed in #143. Confirm production migration history before app release. Production maintenance workers and notification delivery receipts remain separate operational checks; do not replay queued emails or activate deletion workers as part of this implementation. No production change or email send performed.
+
+## Database implementation history
+
+The following records from merged main are retained as historical evidence; the current database status is recorded above.
 
 ## CI log diagnosis, November 2
 
@@ -35,3 +46,12 @@ The compatibility public approval wrapper delegated to a guarded command but omi
 CI41571801537 on ac08a03 passed pgTAP and the real readable-link, approval/retry (including member overlap), Family Viewer and photo-cap concurrency checks. Only exact generated-type parity failed. Three manually added RPC definitions were incorrectly nested under horoscope return types. Replaced the committed file with the exact generated database-types artifact13202450236, downloaded publicly with SHA256 verified against GitHub API metadata (a1df590bfbe614d447122fff61a86d15f83b91587763787a082da9d332e43d19). No SQL runtime or parity checker changes.
 
 Lesson: use clean-database generation or an integrity-verified CI artifact for this file; textual insertion can remain valid TypeScript while placing functions under nested return shapes. The existing exact parity gate caught this and remains unchanged.
+
+
+## App merge and browser corrections, November 3
+
+Merged latest main8098359 into app branch; the sole add/add conflict was this feature record, reconciled to retain app and database history. Production workflow41641087683 on8098359 passed Apply pending migrations and Verify production migration history. No additional SQL change is introduced by the app branch.
+
+Downloaded and SHA256-verified the three failed shard2 browser artifacts from CI41568426819. All three projects reported the same failures: visitor sign-in prompt consumed fixed space outside the scrollable form, and access-management grant dialogs lost their View interest details disclosure when Activity-only rendering was applied too broadly. Moved the optional sign-in link inside the form scroll area and restricted Activity-only to incoming interests; grant dialogs retain their owner-authorized submitted-details disclosure. Outgoing member-share grants still omit the foreign-request panel. No portfolio template, validation, authorization, timeout or assertion was weakened.
+
+Validation:132 focused tests in6 files passed; lint/typecheck passed; the existing viewer-experience suite passed12 Chrome desktop/tablet/mobile cases and12 Firefox/desktop-WebKit/mobile-WebKit cases, including320px/568px form-space guards, retained histories and600-character wrapping. App remains Draft while fresh CI runs.

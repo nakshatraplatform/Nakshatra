@@ -403,7 +403,7 @@ describe("celestial union portfolio", () => {
     expect(family).toBeTruthy();
     expect(within(family!).getByText("Family stays private")).toBeInTheDocument();
     expect(within(family!).getByRole("link", { name: "Show interest" })).toHaveAttribute("href", "#portfolio-interest");
-    expect(screen.getByText("These details stay private. Showing interest does not open private profile access.")).toBeInTheDocument();
+    expect(screen.getByText("These details open only after the owner approves your verified email. You do not need a VivIntro account.")).toBeInTheDocument();
   });
 
   it("does not promise another approval when a private details has no details in a restricted chapter", () => {

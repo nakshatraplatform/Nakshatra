@@ -12,12 +12,12 @@ function location(value: unknown) {
   return [record.city, record.state, record.country].filter(item => typeof item === "string" && item.trim()).join(", ") || (typeof record.location === "string" && record.location.trim() ? record.location : "Not provided");
 }
 
-export function InterestDetailsPanel({ requestId }: { requestId: string }) {
+export function InterestDetailsPanel({ requestId, activityOnly = false }: { requestId: string; activityOnly?: boolean }) {
   const [expanded, setExpanded] = useState(false);
-  return <section><button type="button" className="dashboard-secondary-action" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Hide interest details" : "View interest details"}</button>{expanded && <SubmittedInterestDetails requestId={requestId} />}</section>;
+  return <section><button type="button" className="dashboard-secondary-action" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{activityOnly ? expanded ? "Hide activity" : "Activity" : expanded ? "Hide interest details" : "View interest details"}</button>{expanded && <SubmittedInterestDetails requestId={requestId} activityOnly={activityOnly} />}</section>;
 }
 
-function SubmittedInterestDetails({ requestId }: { requestId: string }) {
+function SubmittedInterestDetails({ requestId, activityOnly }: { requestId: string; activityOnly: boolean }) {
   const [result, setResult] = useState<{ id: string; details?: InterestDetails; error?: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -32,6 +32,10 @@ function SubmittedInterestDetails({ requestId }: { requestId: string }) {
   if (!result || result.id !== requestId) return <p role="status">Loading interest details…</p>;
   if (!result.details) return <p role="alert">{result.error} <button type="button" className="dashboard-secondary-action" onClick={() => setAttempt(value => value + 1)}>Retry</button></p>;
   const details = result.details;
+  if (activityOnly) return <section className="dashboard-record-detail" aria-label="Interest activity">
+    <dl className="dashboard-detail-grid">{[["Received", timestamp(details.submittedAt)], ["Email verified", timestamp(details.verifiedAt)], ["Request status", interestStatusLabel(details.requestStatus)], ["Sharing status", sharingStatusLabel(details.accessStatus)]].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+    {details.history.length > 0 && <ol className="dashboard-detail-history">{details.history.map(event => <li key={event.id}><span>{event.eventType.replaceAll("_", " ")}</span><time dateTime={event.createdAt}>{timestamp(event.createdAt)}</time></li>)}</ol>}
+  </section>;
   const metadata = details.metadata || {};
   const candidate = metadata.candidate && typeof metadata.candidate === "object" && !Array.isArray(metadata.candidate) ? metadata.candidate as Record<string, unknown> : null;
   return <section className="dashboard-record-detail" aria-label="View interest details">

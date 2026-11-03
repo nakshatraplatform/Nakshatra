@@ -948,12 +948,12 @@ export default function DashboardClient({
             overview={relationshipOverview && relationshipCounts ? { ...relationshipOverview, counts: relationshipCounts } : relationshipOverview}
             loadFailed={relationshipsError}
             onRetry={refreshDashboard}
-            onDecision={(id, status, previous) => {
-              setRelationshipCounts(current => current ? { ...current,
+            onDecision={(id, status, previous, counts) => {
+              setRelationshipCounts(current => counts ?? (current ? { ...current,
                 awaiting: Math.max(0, current.awaiting + (status === "pending_review" ? 1 : 0) - (previous && ["new", "pending_review"].includes(previous) ? 1 : 0)),
-                setAside: Math.max(0, current.setAside + (status === "rejected" ? 1 : 0) - (previous === "rejected" ? 1 : 0)),
-                active: current.active + (status === "approved" ? 1 : 0),
-              } : current);
+                setAside: Math.max(0, current.setAside + (status === "set_aside" ? 1 : 0) - (previous === "set_aside" ? 1 : 0)),
+                active: current.active,
+              } : current));
               setInterestItems((current) =>
                 current.map((interest) =>
                   interest.id === id ? { ...interest, status } : interest
@@ -978,7 +978,7 @@ export default function DashboardClient({
             {viewerAccessAvailable ? (
               <section id="introduction-link" className="dashboard-glass dashboard-sharing-card scroll-mt-24" aria-label="Introduction link">
                 <h3 className="text-base font-semibold">Introduction link</h3>
-                <p className="dashboard-sharing-description">Anyone with this link can see your public introduction. After someone shows interest, you choose whether to email your published contacts.</p>
+                <p className="dashboard-sharing-description">Anyone with this link can see your public introduction. After someone verifies their email and shows interest, you decide whether to approve full portfolio viewing for 15 days.</p>
                 <div className="dashboard-share-link-row">
                   <code className="dashboard-share-url flex-1 overflow-x-auto rounded-lg bg-[var(--workspace-canvas)] px-4 py-2 text-sm text-[var(--workspace-muted)]">
                     {shareUrl}
@@ -1149,7 +1149,7 @@ export default function DashboardClient({
                   </section>
                   {readyForPublicationConsent ? <label className="mt-4 flex items-start gap-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-canvas)] p-4 text-sm leading-6">
                     <input type="checkbox" className="mt-2 h-5 w-5 shrink-0" checked={sensitiveDisclosureAccepted} onChange={(event) => setSensitiveDisclosureAccepted(event.target.checked)} />
-                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. New Show interest approvals email only the contacts I choose to publish. Existing approved private access remains until expiry or revocation. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
+                    <span>I consent to publish my saved introduction. My full name and marital status will be visible to anyone with my active link. Private details are available only to viewers I approve, for up to 15 days, and I can stop sharing earlier. <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a></span>
                   </label> : <p className="mt-4 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface-muted)] p-4 text-sm leading-6 text-[var(--workspace-muted)]">Complete the required details, liveness check and account setup to give publication consent here. Consent for the liveness check is requested separately.</p>}
                   <h3 className="mt-6 font-semibold">Optional previews</h3>
                   <div id="review-preview-links" className="mt-4 grid gap-4 lg:grid-cols-2">

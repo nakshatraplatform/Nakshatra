@@ -46,7 +46,7 @@ test("public trust explanation matches the publication exception and link contro
   await accessControls.locator("summary").click();
   await expect(accessControls).toContainText(/You can unpublish or replace your personal public link at any time/i);
   await expect(accessControls.getByText(/You can unpublish or replace your personal public link at any time/i)).toBeVisible();
-  await expect(accessControls).toContainText(/After a new Show interest request, you may email your chosen published contacts/i);
+  await expect(accessControls).toContainText(/After a verified Show interest request, you may approve full portfolio viewing/i);
   await expect(accessControls).toContainText(/replacing the link revokes those grants and stops the old URL from working/i);
   await page.screenshot({ path: testInfo.outputPath("trust-375-final.png"), fullPage: true, animations: "disabled" });
 });
