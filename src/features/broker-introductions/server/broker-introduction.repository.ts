@@ -1,14 +1,25 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { IntroductionShareCommand } from "./introduction-workspace.contract";
+import type { IntroductionFamilyUpdateCommand, IntroductionShareCommand } from "./introduction-workspace.contract";
 
 export class BrokerIntroductionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  actionWorkspace(workspaceRef: string, introductionRef: string) {
-    return this.supabase.rpc("resolve_brokerdesk_introduction_action", {
+  actionWorkspace(workspaceRef: string, introductionRef: string, includeResponses: boolean) {
+    const rpc = includeResponses ? "resolve_brokerdesk_introduction_action_with_responses" : "resolve_brokerdesk_introduction_action";
+    return this.supabase.rpc(rpc, {
       p_workspace_ref: workspaceRef, p_introduction_ref: introductionRef,
+    });
+  }
+
+  recordFamilyUpdate(workspaceRef: string, introductionRef: string, command: IntroductionFamilyUpdateCommand) {
+    const rpc = command.confirmFamilyAccess ? "record_introduction_family_update_with_family_consent" : "record_introduction_family_update";
+    return this.supabase.rpc(rpc, {
+      p_workspace_ref: workspaceRef, p_introduction_ref: introductionRef,
+      p_side: command.side, p_reported_status: command.status, p_reported_by: command.reportedBy,
+      p_channel: command.channel, p_comment: command.comment, p_consent_attested: command.consentAttested,
+      p_expected_version: command.expectedVersion, p_idempotency_key: command.idempotencyKey,
     });
   }
 
@@ -81,10 +92,11 @@ export class BrokerIntroductionRepository {
     });
   }
 
-  respond(introductionRef: string, response: string, comment: string, confirmCompleteAccess: boolean) {
-    return this.supabase.rpc("respond_to_broker_introduction", {
+  respond(introductionRef: string, response: string, comment: string, confirmCompleteAccess: boolean, confirmFamilyAccess?: true) {
+    const rpc = confirmFamilyAccess ? "respond_to_broker_introduction_with_family_consent" : "respond_to_broker_introduction";
+    return this.supabase.rpc(rpc, {
       p_introduction_ref: introductionRef,
-      p_session_token_hash: "",
+      ...(confirmFamilyAccess ? {} : { p_session_token_hash: "" }),
       p_response: response,
       p_comment: comment,
       p_confirm_complete_access: confirmCompleteAccess,

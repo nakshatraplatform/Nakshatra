@@ -91,7 +91,7 @@ and makes confirmed mutual interest useful:
    acceptance.
 3. Broker-linked customers may authorize up to three Family Viewers through
    their exact Google accounts. They may help review Broker Standard profiles,
-   but only the candidate can choose Interested or Decline.
+   and Family Viewer access is view-only. A broker can record a decision received from the candidate or a parent the candidate has authorized.
 4. When mutual interest begins, the eligible Family Viewers are fixed for that
    Introduction and may see the opposite Complete Portfolio for the same
    30-day window. A person added later does not inherit that access.

@@ -141,7 +141,11 @@ describe("broker introduction routes", () => {
     expect(resolve).toHaveBeenCalledWith(actor.supabase, introductionRef);
     const answered = await response(mutation("/response", { response: "accepted", comment: "Proceed", confirmCompleteAccess: true }), context);
     expect(answered.status).toBe(200);
-    expect(respond).toHaveBeenCalledWith(actor.supabase, introductionRef, "accepted", "Proceed", true);
+    expect(respond).toHaveBeenCalledWith(actor.supabase, introductionRef, "accepted", "Proceed", true, undefined);
+    expect((await response(mutation("/response", {
+      response: "accepted", confirmCompleteAccess: true, confirmFamilyAccess: true,
+    }), context)).status).toBe(200);
+    expect(respond).toHaveBeenLastCalledWith(actor.supabase, introductionRef, "accepted", "", true, true);
   });
 
   it("rejects malformed and cross-origin mutations without touching services", async () => {

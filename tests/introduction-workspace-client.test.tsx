@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 const getAction = vi.hoisted(() => vi.fn());
 const record = vi.hoisted(() => vi.fn());
+const recordUpdate = vi.hoisted(() => vi.fn());
 const activate = vi.hoisted(() => vi.fn());
-vi.mock("@/features/broker-introductions/client/broker-introduction.api", () => ({ getIntroductionAction: getAction, recordShareAction: record, markIntroductionShared: activate }));
+vi.mock("@/features/broker-introductions/client/broker-introduction.api", () => ({ getIntroductionAction: getAction, recordShareAction: record, markIntroductionShared: activate, recordFamilyUpdate: recordUpdate }));
 import { IntroductionActionWorkspace } from "../src/app/brokerdesk/w/[workspaceRef]/introductions/[introductionRef]/introduction-action-workspace";
 import { actionFixture, workspace, introduction, date } from "./introduction-workspace.fixture";
 const source = () => within(screen.getByRole("region", { name: "Customer A sharing actions" }));
@@ -30,6 +31,28 @@ describe("broker Introduction actions", () => {
     expect(source().getByText("Sharing started")).toBeVisible();
     expect(recipient().getByText("Not recorded yet")).toBeVisible();
     expect(screen.queryByText(/delivered successfully|message read/i)).not.toBeInTheDocument();
+  });
+  it("records a parent decision with explicit consent to the mutual disclosure", async () => {
+    const initial = actionFixture();
+    const side = initial.sides[0];
+    Object.assign(side, { canRecordResponse: true });
+    recordUpdate.mockResolvedValue({ available: true, rowVersion: 3, completeAccessExpiresAt: date });
+    const updated = actionFixture();
+    Object.assign(updated, { completeAccessExpiresAt: date });
+    getAction.mockResolvedValue(updated);
+
+    render(<IntroductionActionWorkspace workspaceRef={workspace} initial={initial} />);
+    fireEvent.click(source().getByText("Record a response or family update"));
+    fireEvent.change(source().getByLabelText("Response"), { target: { value: "accepted" } });
+    fireEvent.change(source().getByLabelText("Who responded?"), { target: { value: "authorized_parent" } });
+    fireEvent.change(source().getByLabelText("How did they respond?"), { target: { value: "phone" } });
+    expect(source().getByRole("checkbox", { name: /Protected Contact for 30 days/ })).toBeRequired();
+    fireEvent.click(source().getByRole("checkbox"));
+    fireEvent.click(source().getByRole("button", { name: "Save response" }));
+    await waitFor(() => expect(recordUpdate).toHaveBeenCalledExactlyOnceWith(workspace, introduction, expect.objectContaining({
+      side: "source", status: "accepted", reportedBy: "authorized_parent", channel: "phone", consentAttested: true,
+    })));
+    expect(record).not.toHaveBeenCalled();
   });
   it("activates an unshared Introduction before recording its side attempt", async () => {
     const initial = actionFixture(); initial.status = "created"; initial.canActivate = true;

@@ -126,10 +126,11 @@ export async function respondToBrokerIntroduction(
   introductionRef: string,
   response: "accepted" | "declined",
   comment: string,
-  confirmCompleteAccess: boolean
+  confirmCompleteAccess: boolean,
+  confirmFamilyAccess?: true
 ) {
   const result = await new BrokerIntroductionRepository(supabase)
-    .respond(introductionRef, response, comment, confirmCompleteAccess);
+    .respond(introductionRef, response, comment, confirmCompleteAccess, confirmFamilyAccess);
   return parseOrThrow(transitionSchema, result.data, result.error);
 }
 

@@ -6,6 +6,7 @@ const throttle = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth", () => ({ getApiUser: auth }));
 vi.mock("@/features/security/server/rate-limit.service", () => ({ enforceRateLimit: throttle }));
 vi.mock("@/lib/security/logging", () => ({ getRequestId: () => "request", logServerError: vi.fn() }));
+import { POST as recordFamilyUpdate } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/family-updates/route";
 import { GET as list } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/introduction-actions/route";
 import { GET as read } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/route";
 import { POST as share } from "../src/app/api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/share-actions/route";
@@ -36,7 +37,7 @@ describe("Introduction action boundaries", () => {
   });
   it("reads a strict safe projection through one RPC", async () => {
     await expect(resolveIntroductionAction(supabase as never, path)).resolves.toEqual(actionData);
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("resolve_brokerdesk_introduction_action", { p_workspace_ref: workspace, p_introduction_ref: introduction });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("resolve_brokerdesk_introduction_action_with_responses", { p_workspace_ref: workspace, p_introduction_ref: introduction });
     const response = await read(request(), context());
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
@@ -56,11 +57,51 @@ describe("Introduction action boundaries", () => {
       p_workspace_ref: workspace, p_introduction_ref: introduction, p_side: "source", p_action: "initiate", p_expected_version: 1, p_idempotency_key: command.idempotencyKey,
     });
   });
+  it("records an attested Interested decision with the workspace and side bound by the route", async () => {
+    const body = { side: "recipient", status: "accepted", reportedBy: "authorized_parent", channel: "phone",
+      comment: "  Spoke by phone  ", consentAttested: true, expectedVersion: 3, idempotencyKey: "nak205:response:00001" };
+    rpc.mockResolvedValue({ data: { available: true, rowVersion: 4, completeAccessExpiresAt: date }, error: null });
+    const response = await recordFamilyUpdate(post(body), context());
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("record_introduction_family_update", {
+      p_workspace_ref: workspace, p_introduction_ref: introduction, p_side: "recipient", p_reported_status: "accepted",
+      p_reported_by: "authorized_parent", p_channel: "phone", p_comment: "Spoke by phone", p_consent_attested: true,
+      p_expected_version: 3, p_idempotency_key: body.idempotencyKey,
+    });
+    expect((await recordFamilyUpdate(post({ ...body, confirmFamilyAccess: true }), context())).status).toBe(200);
+    expect(rpc).toHaveBeenLastCalledWith("record_introduction_family_update_with_family_consent", expect.objectContaining({
+      p_side: "recipient", p_consent_attested: true,
+    }));
+  });
+  it("blocks unconfirmed or unattributed decisions and respects database authorization", async () => {
+    const body = { side: "source", status: "accepted", reportedBy: "candidate", channel: "whatsapp",
+      comment: "", consentAttested: true, expectedVersion: 3, idempotencyKey: "nak205:response:00002" };
+    for (const invalid of [{ ...body, consentAttested: false }, { ...body, reportedBy: "family" }, { ...body, candidateId: "other" }]) {
+      expect((await recordFamilyUpdate(post(invalid), context())).status).toBe(400);
+    }
+    expect(rpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValue({ data: { available: false }, error: null });
+    expect((await recordFamilyUpdate(post(body), context())).status).toBe(403);
+  });
   it.each(["22023", "40001", "54000", "23505", "XX000"])("maps SQL failure %s without exposing database details", async code => {
     rpc.mockResolvedValue({ data: null, error: { code, message: "private SQL" } });
     const response = await share(post(), context());
     expect(response.status).toBe(code === "22023" ? 400 : code === "XX000" ? 503 : 409);
     expect(await response.text()).not.toContain("private SQL");
+  });
+  it("accepts PostgreSQL-sized notes containing supplementary Unicode characters", async () => {
+    const comment = "📞".repeat(1000);
+    const latestUpdate = { status: "needs_time", reportedBy: "family", channel: "phone", comment, recordedAt: date };
+    rpc.mockResolvedValue({ data: { ...actionData, sides: [{ ...actionData.sides[0], latestUpdate }, actionData.sides[1]] }, error: null });
+    const result = await resolveIntroductionAction(supabase as never, path);
+    expect(result.available && result.sides[0].latestUpdate?.comment).toBe(comment);
+    rpc.mockResolvedValueOnce({ data: actionData, error: null });
+    const legacyResponse = await read(request(), context());
+    expect(rpc).toHaveBeenLastCalledWith("resolve_brokerdesk_introduction_action", { p_workspace_ref: workspace, p_introduction_ref: introduction });
+    expect(await legacyResponse.json()).toEqual(actionData);
+    const expandedResponse = await read(request("?view=responses"), context());
+    expect((await expandedResponse.json()).sides[0].latestUpdate.comment).toBe(comment);
   });
   it("rejects extra private output, duplicate sides and oversized history", async () => {
     for (const data of [{ ...actionData, contact: "private" }, { ...actionData, sides: [actionData.sides[0], actionData.sides[0]] }, { ...actionData, timeline: Array(101).fill(actionData.timeline[0]) }]) {

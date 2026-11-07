@@ -38,13 +38,15 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
     event.preventDefault(); setPending(true); setError("");
     const form = new FormData(event.currentTarget);
     const responseValue = String(form.get("response"));
+    const confirmed = form.get("confirmCompleteAccess") === "on";
     const response = await fetch(`/api/v1/introductions/${encodeURIComponent(introductionRef)}/response`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         response: responseValue,
         comment: String(form.get("comment") || ""),
-        confirmCompleteAccess: form.get("confirmCompleteAccess") === "on",
+        confirmCompleteAccess: confirmed,
+        ...(confirmed && responseValue === "accepted" ? { confirmFamilyAccess: true } : {}),
       }),
     }).catch(() => null);
     const result = await response?.json().catch(() => null) as {
@@ -111,20 +113,20 @@ export function BrokerIntroductionClient({ introductionRef }: { introductionRef:
       photos={photos}
       horoscopeAttachment={horoscope}
       interestAction={<section className={styles.response}>
-        <h2>Your response</h2>
+        <h2>{introduction.response ? "Response for your side" : "Your response"}</h2>
         {pending && <LoadingStatus compact title="Recording your response" />}
         {needsLegacyConsentConfirmation ? <form onSubmit={respond}>
           <p>Your earlier Interested response was recorded before this disclosure rule existed. Confirm the updated meaning before Complete Portfolio access can begin.</p>
           <input type="hidden" name="response" value="accepted" />
           <input type="hidden" name="comment" value={introduction.responseComment ?? ""} />
-          <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, we will each see the other customer’s Complete Portfolio, including Protected Contact, for 30 days.</label>
+          <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, the other customer and their eligible Family Viewers can see my Complete Portfolio and Protected Contact for 30 days. The family viewers are set when both sides confirm interest.</label>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <button disabled={pending} type="submit">{pending ? "Recording…" : "Confirm Interested terms"}</button>
-        </form> : introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response}</strong>. {introduction.disclosureLevel === "complete" ? "Both customers are interested, so the Complete Portfolio and Protected Contact are now available for 30 days." : "Protected Contact remains hidden unless the other customer also chooses Interested."}</p> : <form onSubmit={respond}>
-          <p>Choose one response. Your broker can see it. Protected Contact remains hidden unless both customers choose Interested.</p>
+        </form> : introduction.response ? <p className={styles.recorded}>Response recorded: <strong>{introduction.response === "accepted" ? "Interested" : "Declined"}</strong>. {introduction.disclosureLevel === "complete" ? "Both sides confirmed interest. The Complete Portfolio and Protected Contact are available for the 30-day access window." : introduction.response === "accepted" ? "Protected Contact opens after both sides confirm interest and agree to share." : "This Introduction was declined."}</p> : <form onSubmit={respond}>
+          <p>Choose one response. Your broker can see it. Protected Contact opens after both sides confirm interest and agree to share.</p>
           <label><input required type="radio" name="response" value="accepted" onChange={() => setSelectedResponse("accepted")} /> Interested in continuing</label>
           <label><input required type="radio" name="response" value="declined" onChange={() => setSelectedResponse("declined")} /> Decline respectfully</label>
-          {selectedResponse === "accepted" && <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, we will each see the other customer’s Complete Portfolio, including Protected Contact, for 30 days.</label>}
+          {selectedResponse === "accepted" && <label><input required type="checkbox" name="confirmCompleteAccess" /> I understand that if the other customer also chooses Interested, the other customer and their eligible Family Viewers can see my Complete Portfolio and Protected Contact for 30 days. The family viewers are set when both sides confirm interest.</label>}
           <label>Optional note<textarea name="comment" maxLength={1000} rows={4} /></label>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <button disabled={pending} type="submit">{pending ? "Recording…" : "Submit response"}</button>

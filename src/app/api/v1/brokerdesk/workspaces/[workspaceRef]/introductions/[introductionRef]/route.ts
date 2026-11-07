@@ -21,7 +21,9 @@ export async function GET(request: Request, context: Context) {
     if (auth.status !== "authenticated") return privateIntroductionResponse(apiAuthFailureResponse(auth));
     const limited = await enforceRateLimit(auth.supabase, request, "brokerdesk_introduction_read");
     if (limited) return privateIntroductionResponse(limited);
-    const result = await resolveIntroductionAction(auth.supabase, path.data);
+    // Retain the original strict response for browser bundles loaded before NAK-205.
+    const includeResponses = new URL(request.url).searchParams.get("view") === "responses";
+    const result = await resolveIntroductionAction(auth.supabase, path.data, includeResponses);
     return NextResponse.json(result, { status: result.available ? 200 : 403, headers });
   } catch (error) { return introductionWorkspaceFailure(error, request); }
 }

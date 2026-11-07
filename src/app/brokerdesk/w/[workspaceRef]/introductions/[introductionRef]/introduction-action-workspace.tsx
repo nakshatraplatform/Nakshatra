@@ -4,15 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { Copy, MessageCircle, CheckCircle2, BellRing, RefreshCw } from "lucide-react";
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
-import { getIntroductionAction, markIntroductionShared, recordShareAction } from "@/features/broker-introductions/client/broker-introduction.api";
-import type { IntroductionAction, IntroductionShareCommand } from "@/features/broker-introductions/server/introduction-workspace.contract";
+import { getIntroductionAction, markIntroductionShared, recordFamilyUpdate, recordShareAction } from "@/features/broker-introductions/client/broker-introduction.api";
+import type { IntroductionAction, IntroductionFamilyUpdateCommand, IntroductionShareCommand } from "@/features/broker-introductions/server/introduction-workspace.contract";
 import { createCanonicalAppUrl } from "@/lib/security/redirect";
+import { FamilyUpdateForm, familyChannelLabels, familySourceLabels, familyUpdateLabels } from "./family-update-form";
 import styles from "../introductions.module.css";
 
 const shareLabels = { not_started: "Not recorded yet", initiated: "Sharing started", broker_confirmed: "Broker confirmed sharing" };
 const eventLabels: Record<IntroductionAction["timeline"][number]["type"], string> = {
   created: "Introduction created", shared: "Private link activated", claimed: "Recipient access verified",
-  response_submitted: "Candidate response received", complete_access_confirmed: "Complete access consent recorded",
+  response_submitted: "Response recorded", complete_access_confirmed: "Complete access consent recorded",
   mutual_access_granted: "Both interested — Complete access granted", revoked: "Introduction closed", expired: "Introduction expired",
   share_initiated: "Sharing started", share_confirmed: "Broker confirmed sharing", reminder_initiated: "Reminder started",
 };
@@ -29,6 +30,23 @@ export function IntroductionActionWorkspace({ workspaceRef, initial }: { workspa
     try { setData(await getIntroductionAction(workspaceRef, data.introductionRef)); setNeedsRefresh(false); }
     catch (error) { setNeedsRefresh(true); setMessage(error instanceof Error ? error.message : "Refresh the page and try again."); }
     finally { setPending(false); }
+  }
+
+  async function recordResponse(command: IntroductionFamilyUpdateCommand) {
+    setPending(true); setMessage("");
+    let saved = false;
+    try {
+      const result = await recordFamilyUpdate(workspaceRef, data.introductionRef, command);
+      saved = true;
+      setData(await getIntroductionAction(workspaceRef, data.introductionRef));
+      setNeedsRefresh(false);
+      setMessage(result.completeAccessExpiresAt ? "Response saved. Complete Portfolio access is open to both candidates." : "Response or family update saved.");
+    } catch (error) {
+      setNeedsRefresh(true);
+      setMessage(saved ? "Response saved. Refresh to see the latest progress."
+        : error instanceof Error ? error.message : "The response could not be saved. Refresh and try again.");
+    } finally { setPending(false); }
+    return saved;
   }
 
   async function share(side: IntroductionAction["sides"][number], action: IntroductionShareCommand["action"], delivery: "copy" | "whatsapp" | "manual") {
@@ -65,7 +83,8 @@ export function IntroductionActionWorkspace({ workspaceRef, initial }: { workspa
 
   return <>
     <h1>{data.sides.map(side => side.name).join(" & ")}</h1>
-    <p>Share separately with each family. Only the candidates can choose Interested or Decline.</p>
+    <p>Share separately with each family. Record decisions you receive from the candidate or their authorized parent.</p>
+    {data.completeAccessExpiresAt && <p>Scheduled end of the candidates&apos; Complete Portfolio access window: {dateLabel(data.completeAccessExpiresAt)}.</p>}
     <p>Response period ends {dateLabel(data.expiresAt)}. Opening WhatsApp or copying a link does not confirm delivery or that it was read.</p>
     <div className={styles.buttons}><button type="button" onClick={refresh} disabled={pending}><RefreshCw /> Refresh progress</button></div>
     {message && <p className={styles.notice} role="status">{message}</p>}
@@ -77,6 +96,12 @@ export function IntroductionActionWorkspace({ workspaceRef, initial }: { workspa
         {side.initiatedAt && <div><dt>First sharing attempt</dt><dd>{dateLabel(side.initiatedAt)}</dd></div>}
         {side.confirmedAt && <div><dt>Broker confirmed on</dt><dd>{dateLabel(side.confirmedAt)}</dd></div>}
         <div><dt>Reminders started</dt><dd>{side.reminderCount}{side.lastRemindedAt ? ` · Latest ${dateLabel(side.lastRemindedAt)}` : ""}</dd></div>
+        {side.latestUpdate && <div>
+          <dt>Latest broker record</dt>
+          <dd>{familyUpdateLabels[side.latestUpdate.status]} · {familySourceLabels[side.latestUpdate.reportedBy]} · {familyChannelLabels[side.latestUpdate.channel]}</dd>
+          {side.latestUpdate.comment && <dd>{side.latestUpdate.comment}</dd>}
+          <dd><time dateTime={side.latestUpdate.recordedAt}>{dateLabel(side.latestUpdate.recordedAt)}</time></dd>
+        </div>}
       </dl>
       {side.canShare && (data.status !== "created" || data.canActivate) ? <div className={styles.buttons}>
         <button disabled={pending || needsRefresh} type="button" onClick={() => share(side, "initiate", "whatsapp")}><MessageCircle /> Share on WhatsApp</button>
@@ -87,6 +112,7 @@ export function IntroductionActionWorkspace({ workspaceRef, initial }: { workspa
         ? "Ask an authorized sender in your team to activate this Introduction first."
         : "Sharing is unavailable. Check the customer mandates and your workspace permissions."}</p>}
       <Link className={styles.actionLink} href={`/brokerdesk/w/${workspaceRef}/customers/${side.relationshipRef}`}>Open customer</Link>
+      {side.canRecordResponse && <FamilyUpdateForm key={side.latestUpdate?.recordedAt} side={side.side} version={data.rowVersion} disabled={pending || needsRefresh} onRecord={recordResponse} />}
     </section>)}</div>
     <p>Reminders are available for an unanswered side after a sharing attempt, at most once every 24 hours. Complete Portfolio access stays private to authorized participants.</p>
     <section className={styles.card}><h2>Introduction history</h2><p>Latest 100 events from this workspace. Sharing confirmations are recorded by the broker.</p>

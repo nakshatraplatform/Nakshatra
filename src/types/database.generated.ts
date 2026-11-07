@@ -1479,6 +1479,12 @@ isOneToOne: false
                            } |
 { Args: { "p_attempt_id": string,"p_payload_digest": string,"p_provider_event_hash": string,"p_provider_session_ref": string,"p_provider_subject_ref": string,"p_workflow_id": string }; Returns: boolean
                            },
+"record_introduction_family_update":
+{ Args: { "p_channel": string,"p_comment": string,"p_consent_attested": boolean,"p_expected_version": number,"p_idempotency_key": string,"p_introduction_ref": string,"p_reported_by": string,"p_reported_status": string,"p_side": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"record_introduction_family_update_with_family_consent":
+{ Args: { "p_channel": string,"p_comment": string,"p_consent_attested": boolean,"p_expected_version": number,"p_idempotency_key": string,"p_introduction_ref": string,"p_reported_by": string,"p_reported_status": string,"p_side": string,"p_workspace_ref": string }; Returns: Json
+                           },
 "record_introduction_share_action":
 { Args: { "p_action": string,"p_expected_version": number,"p_idempotency_key": string,"p_introduction_ref": string,"p_side": string,"p_workspace_ref": string }; Returns: Json
                            },
@@ -1583,6 +1589,9 @@ isOneToOne: false
 "resolve_brokerdesk_introduction_action":
 { Args: { "p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
                            },
+"resolve_brokerdesk_introduction_action_with_responses":
+{ Args: { "p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
 "resolve_brokerdesk_introduction_actions":
 { Args: { "p_before_created_at"?: string,"p_before_ref"?: string,"p_limit"?: number,"p_workspace_ref": string }; Returns: Json
                            },
@@ -1600,6 +1609,12 @@ isOneToOne: false
                            },
 "resolve_customer_broker_relationships":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"resolve_family_introduction":
+{ Args: { "p_introduction_ref": string }; Returns: Json
+                           },
+"resolve_family_introduction_asset":
+{ Args: { "p_actor": string,"p_asset": string,"p_introduction_ref": string,"p_session_id": string }; Returns: Json
                            },
 "resolve_family_introductions":
 { Args: { "p_before_created_at"?: string,"p_before_ref"?: string,"p_limit"?: number }; Returns: Json
@@ -1624,6 +1639,9 @@ isOneToOne: false
                            },
 "respond_to_broker_introduction":
 { Args: { "p_comment": string,"p_confirm_complete_access": boolean,"p_introduction_ref": string,"p_response": string,"p_session_token_hash": string }; Returns: Json
+                           },
+"respond_to_broker_introduction_with_family_consent":
+{ Args: { "p_comment": string,"p_confirm_complete_access": boolean,"p_introduction_ref": string,"p_response": string }; Returns: Json
                            },
 "retry_candidate_liveness_verification":
 { Args: { "p_management_token_hash": string,"p_token_hash": string }; Returns: {

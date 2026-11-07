@@ -185,14 +185,11 @@ access when mutual interest begins.
 
 | Column | Type / rule | Purpose |
 | --- | --- | --- |
-| `id` | `uuid` primary key | Internal key |
 | `introduction_id` | FK Introduction, cascade | Grant owner |
-| `family_viewer_id` | FK Family Viewer, restrict | Frozen verified viewer |
+| `family_viewer_id` | FK Family Viewer, cascade | Frozen verified viewer |
 | `participant_side` | `source` or `recipient` | Candidate represented by this viewer |
 | `granted_at` | timestamp equal to mutual transition time | Freeze evidence |
 | `revoked_at` | nullable timestamp | Immediate per-viewer revocation |
-| `revocation_reason` | controlled nullable value | `viewer_removed`, `relationship_inactive`, `introduction_revoked`, `readiness_lost`, or `expired` |
-| `created_at`, `updated_at` | timestamps | Operations |
 
 The unique key is `(introduction_id, family_viewer_id)`. The grant does not copy
 an expiry timestamp or portfolio payload: the Introduction's
@@ -203,7 +200,8 @@ than trusting `participant_side` alone.
 
 Later roster additions never create rows for an already-mutual Introduction.
 Removing a viewer marks every active grant for that viewer revoked in the same
-transaction. Expiry may be computed from the Introduction during reads and
+transaction. A bilateral Introduction closes permanently when either mandate
+is paused or terminated, even if its response deadline already passed. Expiry may be computed from the Introduction during reads and
 materialized as a revocation event by an idempotent worker later.
 
 ### 5. `broker_introduction_share_states`
@@ -232,35 +230,37 @@ infer missing state.
 NAK-204 implements this state table and its guarded workspace locally. Reminder
 attempts require a waiting side, previous sharing attempt/confirmation, current
 response window, a 24-hour cooldown and fewer than 30 reminders. Legacy link
-activation backfills neither side as shared. NAK-205 owns family reports; until
-then the workspace projection contains responses and controlled timeline events
+activation backfills neither side as shared. Before NAK-205, the workspace projection contained responses and controlled timeline events
 without family reports or comments. The combined branch passed local
 Supabase PostgreSQL 17 replay, pgTAP, concurrency and generated-type comparison.
 
 ### 6. `broker_introduction_family_updates`
 
-This append-only, tenant-private table stores what a broker heard from a family.
-It is never merged into the candidate response columns.
+This append-only, tenant-private table stores what a broker heard outside the
+app. A broker may record an authoritative decision from the candidate or a
+parent previously authorized by the candidate, with explicit disclosure
+consent for Interested. The command applies that decision separately to the
+canonical Introduction. Informal feedback and notes stay in the private table.
 
 | Column | Type / rule | Purpose |
 | --- | --- | --- |
 | `id` | `uuid` primary key | Internal key |
-| `update_ref` | opaque `fup_` reference, unique | Safe command/result identifier |
 | `organization_id` | tenant FK | Agency boundary |
 | `introduction_id` | composite organization/Introduction FK | Introduction lineage |
 | `participant_side` | `source` or `recipient` | Family being discussed |
-| `reported_status` | controlled value | `interested`, `declined`, `needs_time`, `callback_requested`, `no_response`, or `other` |
+| `reported_status` | controlled value | `accepted` (Interested), `declined`, `needs_time`, `callback_requested`, `no_response`, or `other` |
 | `channel` | controlled value | `whatsapp`, `phone`, `in_person`, or `other` |
-| `family_viewer_id` | nullable FK | Used only when the reporting person is a known authorized viewer on that side |
+| `reported_by` | controlled value | Candidate, candidate-authorized parent, or family member |
+| `consent_attested` | boolean | Required for a candidate's or authorized parent's decision |
 | `internal_comment` | nullable, trimmed, at most 1,000 chars | Sensitive agency note; never sent or logged |
-| `recorded_by` | FK auth user | Broker actor |
-| `created_at` | timestamp | Immutable ordering |
+| `recorded_by` | nullable FK auth user | Broker actor while the account exists |
+| `recorded_at` | timestamp | Immutable ordering |
 
-Corrections append another update. The latest update is selected by
-`created_at DESC, id DESC`; earlier records remain auditable. No free text is
+Follow-up reports append while the side is unanswered. A final response is
+immutable. The latest report is selected by
+`recorded_at DESC, id DESC`; earlier records remain auditable. No free text is
 placed in Introduction event JSON, analytics, notification payloads, or error
-logs. Candidate confirmation continues through the existing authoritative
-Introduction response command.
+logs. Candidates can still respond directly through the existing Introduction response command.
 
 ### Data minimization and cryptography
 
@@ -323,7 +323,7 @@ Required additional indexes:
 | Introductions | `(broker_client_id, created_at DESC, id DESC)` identity-bound partial | Candidate/family source-side history across agencies |
 | Introductions | `(recipient_broker_client_id, created_at DESC, id DESC)` identity-bound partial | Candidate/family recipient-side history across agencies |
 | Frozen grants | `(family_viewer_id, introduction_id)` active partial | Family Complete authorization |
-| Frozen grants | `(introduction_id, participant_side)` active partial | Opposite-family count and revocation |
+| Frozen grants | `(introduction_id, family_viewer_id)` primary key | Exact viewer reauthorization |
 | Share states | primary/unique `(introduction_id, participant_side)` | Action workspace |
 | Share states | `(organization_id, share_state, updated_at, introduction_id)` pending partial | Broker work queue |
 | Family updates | `(organization_id, introduction_id, participant_side, created_at DESC, id DESC)` | Latest update and timeline |
@@ -386,8 +386,8 @@ already supports these commands safely.
 | `public.propose_candidate_family_viewer` | new `family_viewers.propose` | Same-workspace active relationship, bounded fields and queue; generic acknowledgement only; never activates access or exposes cross-agency duplication |
 | `public.resolve_brokerdesk_family_setup` | `family_viewers.propose` plus resource scope and active V3 mandate | Safe active-viewer aggregate only; proposal history withheld to prevent insertion/deduplication membership probing |
 | `public.record_introduction_share_action` | new `introductions.manage_sharing` | Side validation, optimistic version, honest state transition, audit event |
-| `public.record_introduction_family_update` | new `introductions.record_family_update` | Same-tenant/side validation, append update, safe event, optional candidate notification |
-| `public.resolve_brokerdesk_introduction_action` | `customers.read` and scoped Introduction access | Both share states, candidate responses, latest family reports, safe timeline, allowed actions |
+| `public.record_introduction_family_update` | new `introductions.record_family_update` | Same-tenant and side validation, attestation, append private report, and apply a final response through the shared mutual-access transition |
+| `public.resolve_brokerdesk_introduction_action_with_responses` | Scoped `customers.read`, plus `introductions.record_family_update` for private notes | Both share states, current responses, latest permitted reports, safe timeline and allowed actions |
 
 Do not overload `introductions.record_response` for a family report. Its name is
 too close to authoritative candidate consent. Add explicit capabilities and
@@ -620,8 +620,8 @@ unrelated numeric pull-request number. Linear is not part of this workflow.
 | NAK-202 | Assisted customer onboarding readiness, email status, WhatsApp handoff, and family proposal UI | `feat/nak-202-assisted-customer-onboarding` |
 | NAK-203 | Read-only Family Viewer dashboard and cross-broker bounded projections | `feat/nak-203-family-introduction-dashboard` |
 | NAK-204 | Introduction action workspace with side-specific share state, reminders, and timeline | `feat/nak-204-introduction-action-workspace` |
-| NAK-205 | Agency-private family updates and candidate-confirmation prompts | `feat/nak-205-family-update-confirmation` |
-| NAK-206 | V3 Family Viewer Broker Standard access and frozen mutual-interest Complete grants | `feat/nak-206-family-disclosure-grants` |
+| NAK-205 | Agency-private family updates and broker-recorded off-app decisions with mutual consent | `feat/nak-205-broker-recorded-responses` |
+| NAK-206 | V3 Family Viewer Broker Standard access and frozen mutual-interest Complete grants | `feat/nak-205-broker-recorded-responses` |
 | NAK-207 | Revocation workers, security tests, query-plan evidence, recovery drills, and bounded pilot gate | `security/nak-207-brokerdesk-pilot-hardening` |
 
 Do not combine these automatically. A work item may be split if migration or

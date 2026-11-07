@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(63);
+select plan(89);
 
 select pg_temp.create_auth_actor('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001','broker@nak78.test');
 select pg_temp.create_auth_actor('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002','customer-a@nak78.test');
@@ -231,6 +231,68 @@ update app_private.broker_client_mandates set revoked_at=now() where broker_clie
 set local role authenticated;
 select is(pg_temp.action()->>'available','false','opposite mandate revocation removes read authority');
 select is(pg_temp.share('source','initiate',1,'nak204:firstattempt')->>'available','false','idempotent replay rechecks current authority');
+reset role;
+-- NAK-205 uses the same verified candidates, scoped workspace and V3 mandates.
+update app_private.broker_client_mandates set revoked_at=null
+where broker_client_id='78800000-0000-4000-8000-000000000002';
+update app_private.broker_introductions set source_response=null,source_responded_at=null,status='shared',row_version=20
+where introduction_ref='bir_'||lpad('55',32,'0');
+
+create function pg_temp.family_update(s text, outcome text, speaker text, attested boolean, v bigint, k text, org integer default 1)
+returns jsonb language sql as $$
+select public.record_introduction_family_update(pg_temp.workspace(org),'bir_'||lpad('55',32,'0'),
+  s,outcome,speaker,'phone','Agency-only fixture note',attested,v,k);
+$$;
+select ok(not has_table_privilege('authenticated','app_private.broker_introduction_family_updates','select'),'agency notes cannot be read directly');
+select ok(not has_function_privilege('authenticated','app_private.start_broker_complete_access(uuid,uuid,text)','execute'),'private transition cannot be called by an authenticated client');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
+select is(pg_temp.family_update('source','accepted','candidate',true,20,'nak205:wrongagency',2)->>'available','false','wrong agency cannot record consent');
+select throws_ok($$select pg_temp.family_update('source','accepted','candidate',false,20,'nak205:noattestation')$$,
+  '22023','candidate or authorized parent consent is required','interest without disclosure attestation is rejected');
+select throws_ok($$select pg_temp.family_update('source','accepted','family',true,20,'nak205:familydenied')$$,
+  '22023','candidate or authorized parent consent is required','ordinary family feedback does not authorize disclosure');
+select is(pg_temp.family_update('source','needs_time','family',false,20,'nak205:needs-time00')->>'rowVersion','21','family feedback is saved without confirming interest');
+select is(pg_temp.action()#>>'{sides,0,response}',null,'family feedback leaves the candidate response open');
+select throws_ok($$select pg_temp.family_update('source','accepted','candidate',true,20,'nak205:staleversion')$$,
+  '40001','response state changed; refresh and retry','stale response command is rejected');
+select is(pg_temp.family_update('source','accepted','candidate',true,21,'nak205:firstinterest')->>'completeAccessExpiresAt',null,
+  'one side cannot open Complete access');
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->>'disclosureLevel','broker_standard','candidate can still see only Broker Standard after one interest');
+select is(pg_temp.family_update('recipient','accepted','candidate',true,22,'nak205:customerdeny')->>'available','false','candidate cannot impersonate a broker recorder');
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
+create temporary table recorded_mutual as select pg_temp.family_update('recipient','accepted','authorized_parent',true,22,'nak205:mutualinterest') result;
+select ok((select result->>'completeAccessExpiresAt' is not null from recorded_mutual),'authorized parent consent opens mutual access without another response');
+select is(pg_temp.family_update('recipient','accepted','authorized_parent',true,22,'nak205:mutualinterest'),
+  (select result from recorded_mutual),'retry returns the original result');
+select throws_ok($$select pg_temp.family_update('recipient','declined','authorized_parent',true,22,'nak205:mutualinterest')$$,
+  '22023','response record key conflict','retry key cannot be reused to change the outcome');
+select is(public.resolve_brokerdesk_introduction_action_with_responses(pg_temp.workspace(1),'bir_'||lpad('55',32,'0'))
+  #>>'{sides,1,latestUpdate,reportedBy}','authorized_parent','workspace shows the source of the recorded decision');
+select ok(pg_temp.action()::text not like '%Agency-only fixture note%','legacy workspace DTO excludes private report text');
+select is(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->>'available','false','recording decisions gives no portfolio access to the broker');
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000002','78100000-0000-4000-8000-000000000002');
+select is(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->>'disclosureLevel','complete','candidate sees the pinned Complete Portfolio after mutual interest');
+select ok(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->'data'?'contact','Complete access includes Protected Contact for the candidate');
+select ok(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)::text not like '%Agency-only fixture note%','candidate never sees private agency notes');
+reset role;
+select is((select count(*)::integer from app_private.broker_introduction_events where event_type='mutual_access_granted'),1,
+  'broker consent starts exactly one mutual transition');
+select is((select count(*)::integer from app_private.broker_introduction_family_updates),3,'successful records are append-only and retry adds no duplicate');
+select ok((select complete_access_expires_at=mutual_interest_confirmed_at+interval '30 days'
+  from app_private.broker_introductions where introduction_ref='bir_'||lpad('55',32,'0')),'broker transition uses the canonical 30-day window');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000003','78100000-0000-4000-8000-000000000003');
+select is(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->>'disclosureLevel','complete','the other candidate also receives Complete access');
+select ok(public.resolve_broker_introduction('bir_'||lpad('55',32,'0'),null)->'data'?'contact','the other candidate receives Protected Contact');
+reset role;
+update app_private.broker_introductions set revoked_at=now()
+where introduction_ref='bir_'||lpad('55',32,'0');
+set local role authenticated;
+select pg_temp.set_authenticated_claims('78000000-0000-4000-8000-000000000001','78100000-0000-4000-8000-000000000001');
+select is(public.resolve_brokerdesk_introduction_action_with_responses(pg_temp.workspace(1),'bir_'||lpad('55',32,'0'))->>'completeAccessExpiresAt',
+  null,'revoked Introduction no longer advertises active Complete access');
 reset role;
 select * from finish();
 rollback;
