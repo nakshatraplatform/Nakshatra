@@ -1,9 +1,31 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { IntroductionShareCommand } from "./introduction-workspace.contract";
 
 export class BrokerIntroductionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
+
+  actionWorkspace(workspaceRef: string, introductionRef: string) {
+    return this.supabase.rpc("resolve_brokerdesk_introduction_action", {
+      p_workspace_ref: workspaceRef, p_introduction_ref: introductionRef,
+    });
+  }
+
+  recordShareAction(workspaceRef: string, introductionRef: string, command: IntroductionShareCommand) {
+    return this.supabase.rpc("record_introduction_share_action", {
+      p_workspace_ref: workspaceRef, p_introduction_ref: introductionRef,
+      p_side: command.side, p_action: command.action, p_expected_version: command.expectedVersion,
+      p_idempotency_key: command.idempotencyKey,
+    });
+  }
+
+  actionList(workspaceRef: string, query: { limit: number; beforeCreatedAt?: string; beforeRef?: string }) {
+    return this.supabase.rpc("resolve_brokerdesk_introduction_actions", {
+      p_workspace_ref: workspaceRef, p_limit: query.limit,
+      p_before_created_at: query.beforeCreatedAt, p_before_ref: query.beforeRef,
+    });
+  }
 
   recipients(workspaceRef: string, relationshipRef: string) {
     return this.supabase.rpc("resolve_broker_introduction_recipients", {

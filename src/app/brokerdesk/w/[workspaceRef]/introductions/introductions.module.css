@@ -1,0 +1,23 @@
+.shell { min-height: 100vh; background: var(--workspace-canvas); color: var(--workspace-ink); }
+.main { max-width: 1100px; padding: 2.5rem 1.25rem 5rem; margin: 0 auto; }
+.main h1 { font-family: var(--font-portfolio-display), system-ui, sans-serif; font-size: clamp(1.8rem, 4vw, 2.7rem); margin: .5rem 0 1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.main h2 { font-size: 1.2rem; margin: 0; overflow-wrap: anywhere; }
+.main p { color: var(--workspace-muted); line-height: 1.65; }
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.list { list-style: none; padding: 0; display: grid; gap: 1rem; margin: 1.5rem 0; }
+.card { padding: 1.5rem; border: 1px solid var(--workspace-border); border-radius: 1rem; background: var(--workspace-surface); min-width: 0; }
+.cardHeading { display: flex; justify-content: space-between; gap: .75rem; align-items: start; flex-wrap: wrap; }
+.badge { display: inline-block; padding: .3rem .65rem; font-size: .8rem; border-radius: 2rem; background: var(--workspace-surface-muted); }
+.sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.details { display: grid; gap: .9rem; margin: 1.25rem 0; }
+.details dt { font-size: .8rem; color: var(--workspace-muted); }
+.details dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
+.buttons { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1rem 0; }
+.buttons button, .actionLink { display: inline-flex; justify-content: center; align-items: center; gap: .4rem; min-height: 44px; border: 1px solid var(--workspace-border); border-radius: .65rem; padding: .65rem .85rem; font-size: .9rem; font-weight: 600; text-decoration: none; color: var(--workspace-ink); background: var(--workspace-surface-muted); cursor: pointer; }
+.buttons button:disabled { opacity: .55; cursor: not-allowed; }
+.buttons button:focus-visible, .actionLink:focus-visible { outline: 2px solid var(--workspace-ink); outline-offset: 3px; }
+.buttons svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+.notice { border-left: 3px solid var(--workspace-ink); padding: 1rem; background: var(--workspace-surface-muted); }
+.timeline { padding-left: 1.25rem; display: grid; gap: .75rem; }
+.timeline time { display: block; color: var(--workspace-muted); font-size: .85rem; }
+@media (max-width: 700px) { .sides { grid-template-columns: 1fr; } .main { padding-top: 1.5rem; } .card { padding: 1.1rem; } .buttons button { flex: 1 1 45%; } }

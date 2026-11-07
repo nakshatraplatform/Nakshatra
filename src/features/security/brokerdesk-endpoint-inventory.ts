@@ -8,7 +8,7 @@ export const brokerdeskEndpointInventoryItemSchema = z.object({
   method: httpMethodSchema,
   path: z.string().startsWith("/api/v1/"),
   owner: z.string().min(1),
-  audience: z.enum(["broker_member", "customer", "worker"]),
+  audience: z.enum(["broker_member", "customer", "family_viewer", "worker"]),
   authentication: z.enum(["live_session", "worker_identity", "public_same_origin"]),
   capability: z.string().min(1).nullable(),
   resourceScope: z.enum([

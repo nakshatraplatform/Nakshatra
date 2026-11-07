@@ -5,7 +5,9 @@ import { ArrowLeft, CalendarClock, LockKeyhole, MapPin, ShieldCheck, UserRound, 
 import { getAuthenticatedUser } from "@/lib/auth";
 import { resolveBrokerdeskCustomer } from "@/features/broker-relationships/server/customer-invitation.service";
 import { listBrokerIntroductions, listBrokerPortfolioNotices, listEligibleBrokerIntroductionRecipients } from "@/features/broker-introductions/server/broker-introduction.service";
+import { resolveBrokerdeskFamilySetup } from "@/features/family-viewers/server/family-viewer.service";
 import { BrokerIntroductionPanel } from "./broker-introduction-panel";
+import { FamilyViewerPanel } from "./family-viewer-panel";
 import styles from "./brokerdesk-customer-detail.module.css";
 
 export const metadata = { title: "Customer relationship · VivIntro BrokerDesk", robots: { index: false, follow: false } };
@@ -20,10 +22,11 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
   const { supabase } = await getAuthenticatedUser();
   const customer = await resolveBrokerdeskCustomer(supabase, workspaceRef, relationshipRef);
   if (!customer.available) return <main className={styles.unavailable}><div className="app-header-actions"><ThemeSwitch /></div><h1>Customer unavailable</h1><p>This relationship may not exist, may not be assigned to you, or may no longer permit access.</p><Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Return to customers</Link></main>;
-  const [introductionResult, noticeResult, eligibleRecipientResult] = await Promise.all([
+  const [introductionResult, noticeResult, eligibleRecipientResult, familySetup] = await Promise.all([
     listBrokerIntroductions(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
     listBrokerPortfolioNotices(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
     listEligibleBrokerIntroductionRecipients(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
+    resolveBrokerdeskFamilySetup(supabase, workspaceRef, relationshipRef).catch(() => ({ available: false as const })),
   ]);
 
   return <div className={styles.shell}>
@@ -40,6 +43,7 @@ export default async function BrokerdeskCustomerDetailPage({ params }: {
       </section>
       <section className={styles.panel}><div className={styles.panelTitle}><Users /><div><h2>Assigned team</h2><p>Only assigned employees and workspace-wide owners or admins can work with this customer.</p></div></div>{customer.assignedTeam.length === 0 ? <p className={styles.empty}>No broker or coordinator is assigned yet.</p> : customer.assignedTeam.map((member) => <article className={styles.member} key={member.memberRef}><div className={styles.smallAvatar}><UserRound /></div><div><strong>{member.displayName}</strong><span>{member.rolePreset}</span></div></article>)}</section>
       <section className={styles.panel}><div className={styles.panelTitle}><ShieldCheck /><div><h2>Available work</h2><p>Actions are calculated from your role, assignment, and the customer&apos;s current mandate.</p></div></div><div className={styles.permissions}><span className={customer.actions.canReviewPortfolio ? styles.allowed : styles.blocked}>{customer.actions.canReviewPortfolio ? "Portfolio review allowed" : "Portfolio review unavailable"}</span><span className={customer.actions.canCreateIntroduction ? styles.allowed : styles.blocked}>{customer.actions.canCreateIntroduction ? "Introduction setup allowed" : "Introduction setup unavailable"}</span></div></section>
+      {familySetup.available && <FamilyViewerPanel workspaceRef={workspaceRef} relationshipRef={relationshipRef} setup={familySetup} />}
       <BrokerIntroductionPanel
         workspaceRef={workspaceRef}
         relationshipRef={relationshipRef}

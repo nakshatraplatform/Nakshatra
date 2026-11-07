@@ -1479,6 +1479,9 @@ isOneToOne: false
                            } |
 { Args: { "p_attempt_id": string,"p_payload_digest": string,"p_provider_event_hash": string,"p_provider_session_ref": string,"p_provider_subject_ref": string,"p_workflow_id": string }; Returns: boolean
                            },
+"record_introduction_share_action":
+{ Args: { "p_action": string,"p_expected_version": number,"p_idempotency_key": string,"p_introduction_ref": string,"p_side": string,"p_workspace_ref": string }; Returns: Json
+                           },
 "record_portfolio_payment_event":
 { Args: { "p_payload_hash": string,"p_payment_expires_at"?: string,"p_payment_reference"?: string,"p_payment_status": string,"p_plan_code": string,"p_portfolio_id": string,"p_provider": string,"p_provider_event_id": string }; Returns: Json
                            },
@@ -1574,6 +1577,15 @@ isOneToOne: false
 "resolve_brokerdesk_dashboard":
 { Args: { "p_workspace_ref": string }; Returns: Json
                            },
+"resolve_brokerdesk_family_setup":
+{ Args: { "p_relationship_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"resolve_brokerdesk_introduction_action":
+{ Args: { "p_introduction_ref": string,"p_workspace_ref": string }; Returns: Json
+                           },
+"resolve_brokerdesk_introduction_actions":
+{ Args: { "p_before_created_at"?: string,"p_before_ref"?: string,"p_limit"?: number,"p_workspace_ref": string }; Returns: Json
+                           },
 "resolve_brokerdesk_onboarding":
 { Args: { "p_workspace_ref": string }; Returns: Json
                            },
@@ -1588,6 +1600,9 @@ isOneToOne: false
                            },
 "resolve_customer_broker_relationships":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"resolve_family_introductions":
+{ Args: { "p_before_created_at"?: string,"p_before_ref"?: string,"p_limit"?: number }; Returns: Json
                            },
 "resolve_guest_approved_portfolio":
 { Args: { "p_horoscope"?: boolean,"p_proof_hash": string,"p_share_token": string }; Returns: Json

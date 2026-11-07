@@ -8,6 +8,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { resolveCustomerBrokerRelationships } from "@/features/broker-relationships/server/customer-invitation.service";
 import styles from "./brokers.module.css";
 import { CustomerBrokerCard } from "./customer-broker-card";
+import { resolveCandidateFamilyRoster } from "@/features/family-viewers/server/family-viewer.service";
+import { FamilyViewerManager } from "./family-viewer-manager";
 
 export const metadata = { title: "My brokers · VivIntro", robots: { index: false, follow: false } };
 
@@ -21,9 +23,18 @@ export default async function CustomerBrokersPage() {
       <Suspense fallback={<LoadingStatus title="Loading your broker relationships" state="connecting" />}>
         <BrokerRelationships supabase={supabase} />
       </Suspense>
+      <Suspense fallback={<LoadingStatus title="Loading family representatives" state="connecting" />}>
+        <FamilyRepresentatives supabase={supabase} />
+      </Suspense>
       <p className={styles.privacy}><LockKeyhole /> Only you can see this complete list.</p>
     </main>
   </CustomerAppFrame>;
+}
+
+async function FamilyRepresentatives({ supabase }: { supabase: Awaited<ReturnType<typeof getAuthenticatedUser>>["supabase"] }) {
+  const result = await resolveCandidateFamilyRoster(supabase).catch(() => null);
+  if (!result) return <DataLoadError title="We could not load your family representatives." />;
+  return result.available ? <FamilyViewerManager roster={result} /> : null;
 }
 
 async function BrokerRelationships({ supabase }: { supabase: Awaited<ReturnType<typeof getAuthenticatedUser>>["supabase"] }) {

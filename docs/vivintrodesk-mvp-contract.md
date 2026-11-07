@@ -1,7 +1,7 @@
 # VivIntroDesk MVP product, business, and engineering contract
 
-Status: **authoritative current contract**, reconciled through merged NAK-79
-and the approved family-assisted V1 decisions on 22 October 2026. When an older
+Status: **authoritative current contract**, reconciled through merged NAK-201
+and the approved family-assisted V1 decisions, reconciled with main on 5 November 2026. When an older
 BrokerDesk plan, prototype, feature record, or chat summary conflicts with this
 file, this file wins. See
 [the document map](./vivintrodesk-document-map.md) before using historical plans.
@@ -55,7 +55,7 @@ Introduction, preventing duplicate or reversed sends by different employees.
 | Broker Introduction opened by either selected signed-in customer | Other customer's Broker Standard Profile | Hidden | Hidden | Visible when published | Independent accept/decline |
 | Broker Introduction opened signed-out or by anyone else | Nothing; sign-in or neutral unavailable state | Hidden | Hidden | Hidden | Not allowed |
 | Personal VivIntro link | Detailed Introduction; guest account not required | Hidden | Hidden | Per existing B2C rules | Existing B2C flow |
-| Personally approved access | Complete Portfolio | Visible for the approved period | Existing Complete rules | Per existing Complete rules | Existing B2C flow |
+| Personally approved access | Published approved portfolio after explicit owner review; accountless viewer verifies the approved email | Visible for the approved period | Existing approved projection rules | Per existing approved rules | Existing B2C flow; 15-day grant |
 
 Broker Standard is generated from the published Complete data. It is not an
 editable copy and a broker cannot select its fields. It includes ordinary
@@ -98,6 +98,9 @@ review profiles, while preserving the candidate's final authority.
   with at most three active Family Viewers excluding the candidate.
 - A broker may collect family details during in-office registration and may
   propose a viewer, but the proposal grants no access.
+- Broker proposal acknowledgements are generic. Proposal insertion and history
+  are withheld from brokers so email deduplication cannot expose private roster
+  membership. Brokers see only the permitted active-viewer aggregate.
 - The candidate must approve the proposal and re-enter the family member's full
   email. VivIntro hashes it and requires an exact match with the broker's
   proposal before sending an invitation; the raw address is request-scoped and
@@ -138,6 +141,11 @@ This restriction applies only to BrokerDesk Introductions. The personal
 VivIntro `/p/<opaque-token>` flow deliberately remains guest-viewable and keeps
 its existing B2C progressive-disclosure rules.
 
+PR #144 adds accountless approved personal viewing with email verification and
+a browser-scoped proof. That proof is restricted to its personal portfolio
+grant. It cannot activate a Family Viewer or authorize a BrokerDesk Introduction.
+Broker participants and Family Viewers retain their authenticated-session rules.
+
 ## Explicitly deferred
 
 - cross-broker discovery, notification or coordination;
@@ -170,11 +178,19 @@ Merged on `main`:
 - transactionally queued Broker Introduction, response, mutual-interest,
   revocation and expiry notifications through the provider-neutral outbox.
 
-In progress on NAK-201: the private candidate-owned Family Viewer roster,
-broker proposal/candidate approval lifecycle, exact Google-email activation,
+Merged in NAK-201: the private candidate-owned Family Viewer roster, broker
+proposal/candidate approval lifecycle, exact Google-email activation,
 three-viewer limit, sole-primary rule, revocation and bounded owner projection.
-This slice grants no Introduction or portfolio access; those remain later
-authorization phases.
+This foundation grants no Introduction or portfolio access; those remain later
+authorization phases. NAK-202 implements the assisted-onboarding application
+slice on the combined feature branch, with local database validation complete
+and human review remaining before merge.
+
+NAK-203 implements a read-only family Introduction metadata dashboard on its
+feature branch carrying NAK-202. It shows supported candidate labels, lifecycle
+states and dates under live V3 authority. Family profile payloads and frozen
+Complete grants remain NAK-206 work. The combined NAK-202/203/204 branch
+passed the Supabase PostgreSQL 17 database job locally.
 
 ## Verification provider decision
 
@@ -182,9 +198,11 @@ The intended Didit workflow is a hosted facial biometric and liveness check,
 without an ID-document verification module. VivIntro must not request or copy a
 physical identity card, identity-document image, or document number. This is a
 locked product/privacy direction, but it is not yet production-ready: the
-current provider request and older runbooks still contain document-oriented
-configuration and must be reconciled and verified against Didit's supported
-workflow before Didit is enabled. See
+candidate provider implementation already uses liveness-only sessions. Older
+runbooks still contain superseded face-match and document guidance. Verify
+provider sandbox, signed decisions, retention/deletion and worker evidence before
+pilot activation. Representative verification has a separate contract; do not
+infer candidate identity-document collection from its provider configuration. See
 [the liveness-only decision](./identity-verification/liveness-only-decision.md).
 
 The legacy one-recipient device-pass path is retired for new Introductions and
@@ -192,21 +210,26 @@ its active credentials are revoked/scrubbed by NAK-78.
 
 ## Recommended next implementation sequence
 
-1. **Complete NAK-201 identity foundation.** Replay the complete three-migration
-   chain and the complete pgTAP suite against the real Postgres runtime before
-   merge.
-2. **Build NAK-202 assisted onboarding.** Add the candidate and broker proposal
-   screens, candidate email re-entry and exact-hash approval, server-owned
-   invitation-token creation, email delivery status and manual WhatsApp handoff
-   without granting portfolio access or persisting the raw family email.
-3. **Build NAK-203 read-only family dashboard.** Resolve only the activated
+1. **Review NAK-202 assisted onboarding.** The local migration replay and pgTAP
+   passed on the combined branch. The
+   application implementation includes candidate and broker proposal screens,
+   exact-email approval, Google-only activation, honest delivery status and a
+   manual WhatsApp handoff without portfolio access or raw-email persistence.
+2. **Build NAK-203 read-only family dashboard.** Resolve only the activated
    viewer's bounded cross-broker Introduction list; keep candidate responses
    authoritative.
-4. **Reconcile Didit liveness-only verification.** Remove document-oriented
-   provider inputs and copy, validate the exact provider decision contract, and
-   complete biometric retention/deletion and consent evidence before activation.
-5. **Pilot operations.** Add only the minimum operator activation, expiry worker,
+   NAK-203 is implemented locally and passed the combined database job.
+   NAK-204 now adds the broker's bounded Introduction list and action workspace,
+   sharing attempts and manual confirmations for each side, waiting-side
+   reminders and safe history. Opening WhatsApp never proves delivery/read.
+   Family reports/comments remain NAK-205; family portfolio access remains
+   NAK-206. See the current feature records for validation and rollout gates.
+3. **Verify existing Didit liveness-only operations.** Reconcile stale runbooks
+   against the current candidate workflow, validate sandbox decisions and worker
+   recovery, and complete retention/deletion and consent evidence before pilot
+   activation. Representative verification remains a separate workflow.
+4. **Pilot operations.** Add only the minimum operator activation, expiry worker,
    monitoring, and two-broker staging evidence needed for a bounded pilot.
-6. **Broker UX refinement.** Validate dashboard, customer selection, response
+5. **Broker UX refinement.** Validate dashboard, customer selection, response
    follow-up, and mobile/WhatsApp handoff with real brokers before adding Tasks,
    analytics, recommendations, questionnaires, or payments.

@@ -50,7 +50,7 @@ const COPY = {
   },
 } as const;
 
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({ mode, googleOnly = false }: { mode: Mode; googleOnly?: boolean }) {
   const hydrated = useHydrated();
   const [screen, setScreen] = useState<Screen>("credentials");
   const [email, setEmail] = useState("");
@@ -71,7 +71,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const requestedRedirect = sanitizeInternalRedirect(searchParams.get("redirect"));
   const brokerdeskContinuation = isBrokerdeskAuthRedirect(requestedRedirect);
   const redirectPath = requestedRedirect;
-  const copy = brokerdeskContinuation
+  const copy = googleOnly
+    ? {
+        ...COPY.login,
+        eyebrow: "Private family invitation",
+        title: "Continue with Google",
+        body: "Use the exact Google account that received the invitation. Email and password sign-in cannot activate family access.",
+      }
+    : brokerdeskContinuation
     ? mode === "login"
       ? {
           ...COPY.login,
@@ -237,8 +244,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <div className="app-header-actions"><ThemeSwitch /><Link href="/" className="account-home">Back to home</Link></div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="account-main" data-compact={brokerdeskContinuation ? "true" : undefined} data-mode={mode}>
-        {!brokerdeskContinuation && (
+      <main id="main-content" tabIndex={-1} className="account-main" data-compact={brokerdeskContinuation || googleOnly ? "true" : undefined} data-mode={mode}>
+        {!brokerdeskContinuation && !googleOnly && (
           <aside className="account-context" aria-label="VivIntro access model">
             <p className="account-context-kicker">One current introduction</p>
             <h2>{mode === "signup" ? "Begin privately. Share only when you are ready." : "Return to your introduction and its conversations."}</h2>
@@ -275,7 +282,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </div>
               )}
 
-              <form onSubmit={handleCredentials} className="account-form">
+              {!googleOnly && <form onSubmit={handleCredentials} className="account-form">
                 <AuthField id={`${mode}-email`} label="Email address" type="email" autoComplete="email" value={email} onChange={setEmail} placeholder="you@example.com" />
                 <div className="account-field">
                   <label htmlFor={`${mode}-password`}>Password</label>
@@ -312,9 +319,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   {pendingAction === "credentials" ? "Please wait..." : copy.primaryAction}
                   {pendingAction !== "credentials" && <ArrowRight aria-hidden="true" />}
                 </button>
-              </form>
+              </form>}
 
-              <div className="account-divider" aria-hidden="true"><span /><small>or</small><span /></div>
+              {!googleOnly && <div className="account-divider" aria-hidden="true"><span /><small>or</small><span /></div>}
               {mode === "signup" ? (
                 <SocialLoginButton onClick={handleGoogle} disabled={pendingAction !== null} pending={pendingAction === "google"} />
               ) : (
@@ -325,7 +332,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               )}
 
               {(error || authErrorMessage) && <p id={errorId} className="account-error" role="alert">{error || authErrorMessage}</p>}
-              <p className="account-alt">{copy.altPrompt} <Link href={alternateHref} className="account-link">{copy.altCta}</Link></p>
+              {!googleOnly && <p className="account-alt">{copy.altPrompt} <Link href={alternateHref} className="account-link">{copy.altCta}</Link></p>}
               {mode === "signup" && (
                 <p className="account-legal">
                   By creating an account, you agree to our <Link href="/terms">Terms</Link> and acknowledge our <Link href="/privacy">Privacy Policy</Link>.

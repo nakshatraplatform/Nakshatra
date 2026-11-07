@@ -6,12 +6,12 @@
   invitation secrets, private schema changes, concurrency limits, and public
   `security definer` RPCs.
 - Documentation mode: Full.
-- Branch: `feat/nak-201-family-viewer-identity-foundation`, synchronized to
-  `origin/main` at `cc817c9` on 22 October 2026.
-- Current step: schema, guarded commands, generated RPC types and database
-  contract tests are implemented. Hosted migration replay, full pgTAP and
-  concurrency execution, generated-type drift, and human/PR review of the
-  post-review corrections remain before merge.
+- Branch: `feat/nak-201-family-viewer-identity-foundation`; merged through
+  PR #130 as `fa01bc9` on 22 October 2026.
+- Current step: complete. Schema, guarded commands, generated RPC types,
+  database contract tests, hosted migration replay, full pgTAP, concurrency,
+  generated-type drift and PR review passed before merge. NAK-202 owns the
+  application routes and assisted-onboarding interface.
 - Sources of truth:
   [`vivintrodesk-mvp-contract.md`](../../vivintrodesk-mvp-contract.md) and the
   [`family-assisted data architecture`](../../vivintrodesk-family-assisted-data-architecture.md).

@@ -3,6 +3,7 @@
 import { LoadingStatus } from "@/components/loading/LoadingStatus";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Copy, Link2, MessageCircleQuestion, Send, XCircle } from "lucide-react";
 import type { BrokerIntroductionItem, BrokerPortfolioNotice, EligibleBrokerIntroductionRecipient } from "@/features/broker-introductions/server/broker-introduction.contract";
 import { acknowledgePortfolioUpdate, createIntroduction, flagPortfolioUpdate, markIntroductionShared, revokeIntroduction } from "@/features/broker-introductions/client/broker-introduction.api";
@@ -27,7 +28,8 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setPendingTarget("create"); setPending(true); setMessage("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const result = await createIntroduction(workspaceRef, {
         relationshipRef,
@@ -56,7 +58,7 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
         rowVersion: result.rowVersion,
         createdAt: new Date().toISOString(),
       }, ...items]);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (error) { setMessage(error instanceof Error ? error.message : "The introduction could not be created."); }
     finally { setPending(false); }
   }
@@ -133,9 +135,11 @@ export function BrokerIntroductionPanel({ workspaceRef, relationshipRef, canCrea
       {pending && pendingTarget === "create" && <LoadingStatus compact title="Creating your private introduction" />}
       {created && <div className={styles.createdLink}><strong>Customer-only introduction link</strong>{pending && pendingTarget === "activate" && <LoadingStatus compact title="Activating your private link" />}<code>{created.introductionUrl}</code><button disabled={pending} type="button" onClick={activateAndCopy}><Copy /> Activate and copy</button><small>Only the selected customer can open this link after signing in to VivIntro. Forwarding the URL does not grant anyone else access.</small></div>}
       {message && <p className={styles.notice} role="status">{message}</p>}
+      {created && <Link href={`/brokerdesk/w/${workspaceRef}/introductions/${created.introductionRef}`}>Open Introduction actions</Link>}
       <div className={styles.timeline}>{introductions.length === 0 ? <p className={styles.empty}>No broker introductions yet.</p> : introductions.map((item) => <article className={styles.introductionRow} key={item.introductionRef}>
         <div>{item.sourceResponse === "accepted" && item.recipientResponse === "accepted" ? <CheckCircle2 /> : item.sourceResponse === "declined" || item.recipientResponse === "declined" ? <XCircle /> : <Link2 />}<span><strong>{item.recipientLabel}</strong><small>Selected customer: {item.sourceResponse ?? "waiting"} · {item.recipientLabel}: {item.recipientResponse ?? "waiting"}</small><small>Version {item.versionNumber} · {item.status} · respond by {new Date(item.expiresAt).toLocaleDateString()}</small>{item.completeAccessExpiresAt && <small>Mutual-interest Complete access until {new Date(item.completeAccessExpiresAt).toLocaleDateString()}</small>}{item.recipientResponseComment && <em>“{item.recipientResponseComment}”</em>}</span></div>
         {pending && pendingTarget === item.introductionRef && <LoadingStatus compact title="Revoking this introduction" />}
+        <Link href={`/brokerdesk/w/${workspaceRef}/introductions/${item.introductionRef}`}>Introduction actions</Link>
         {!['revoked','expired'].includes(item.status) && <button disabled={pending} type="button" onClick={() => revoke(item)}>Revoke</button>}
       </article>)}</div>
     </section>

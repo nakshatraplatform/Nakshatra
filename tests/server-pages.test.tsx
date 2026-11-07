@@ -84,7 +84,11 @@ vi.mock("@/components/templates", () => ({
     <div data-testid="template" data-photo-alts={JSON.stringify(props.photos?.map(photo => photo.alt))}>{props.data.personal.name}:{props.accessMode}{props.interestAction}</div>
   ),
 }));
-vi.mock("@/components/auth/AuthForm", () => ({ AuthForm: ({ mode }: { mode: string }) => <div>auth:{mode}</div> }));
+vi.mock("@/components/auth/AuthForm", () => ({
+  AuthForm: ({ mode, googleOnly }: { mode: string; googleOnly?: boolean }) => (
+    <div>auth:{mode}:{googleOnly ? "google-only" : "all-methods"}</div>
+  ),
+}));
 vi.mock("@/app/pilot-access/pilot-access-client", () => ({
   default: (props: { initialStep: string; initialError?: string | null; initialState?: unknown }) => (
     <div data-testid="pilot-access-props">{JSON.stringify(props)}</div>
@@ -464,14 +468,25 @@ describe("static app surfaces", () => {
     const layout = RootLayout({ children: <main>child</main> });
     expect(layout.props.lang).toBe("en");
     const { rerender } = render(await LoginPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByText("auth:login")).toBeInTheDocument();
+    expect(screen.getByText("auth:login:all-methods")).toBeInTheDocument();
     rerender(await SignupPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByText("auth:signup")).toBeInTheDocument();
+    expect(screen.getByText("auth:signup:all-methods")).toBeInTheDocument();
     rerender(<CustomerAppFrame currentPage="dashboard" loadingTitle="Getting your portfolio ready" className="dashboard-shell"><main>Ready content</main></CustomerAppFrame>);
     expect(screen.getByRole("navigation", { name: "Customer pages" })).toBeInTheDocument();
     expect(screen.getByText("Ready content")).toBeVisible();
     rerender(<PreviewLoading />);
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+  });
+
+  it("narrows only the family invitation continuation to Google", async () => {
+    const family = render(await LoginPage({
+      searchParams: Promise.resolve({ redirect: "/join/family", method: "google" }),
+    }));
+    expect(screen.getByText("auth:login:google-only")).toBeInTheDocument();
+    family.rerender(await LoginPage({
+      searchParams: Promise.resolve({ redirect: "/dashboard", method: "google" }),
+    }));
+    expect(screen.getByText("auth:login:all-methods")).toBeInTheDocument();
   });
 
   it("redirects a live authenticated session away from login and signup", async () => {
