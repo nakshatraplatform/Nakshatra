@@ -56,7 +56,7 @@ export function BrokerdeskDashboardClient({ dashboard }: { dashboard: AvailableD
             <span>{action.customerName} · {new Date(action.occurredAt).toLocaleString()}</span>
             {action.responseComment && <p>“{action.responseComment}”</p>}
           </div>
-          <div className={styles.buttons}>{pendingKey === key && <LoadingStatus compact title="Saving this follow-up" />}<Link href={`/brokerdesk/w/${dashboard.workspaceRef}/customers/${action.relationshipRef}`}>View customer</Link>{canComplete && <button disabled={Boolean(pendingKey)} type="button" onClick={() => complete(index)}>{pendingKey === key ? "Saving…" : "Mark complete"}</button>}</div>
+          <div className={styles.buttons}>{pendingKey === key && <LoadingStatus compact title="Saving this follow-up" />}{action.introductionRef && <Link href={`/brokerdesk/w/${dashboard.workspaceRef}/introductions/${action.introductionRef}`}>Open Introduction</Link>}<Link href={`/brokerdesk/w/${dashboard.workspaceRef}/customers/${action.relationshipRef}`}>View customer</Link>{canComplete && <button disabled={Boolean(pendingKey)} type="button" onClick={() => complete(index)}>{pendingKey === key ? "Saving…" : "Mark complete"}</button>}</div>
         </article>;
       })}</div>}
     </section>

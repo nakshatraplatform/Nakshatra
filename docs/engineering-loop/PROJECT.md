@@ -1,5 +1,11 @@
 # VivIntro / Nakshatra project map
 
+- [NAK-204 Introduction action workspace](features/nak-204-introduction-action-workspace.md):
+  local B2B list/detail pages, guarded per-side sharing and manual reminder
+  attempts, safe history, version fences and idempotency. The combined
+  NAK-202/203/204 snapshot passed the local Supabase PostgreSQL 17 database
+  job on 7 November 2026, including 127 migrations and 2,201 pgTAP assertions.
+
 - [Member interest and reciprocal sharing](features/member-interest-sharing.md): one-action published member disclosure, inline reciprocal acceptance, distinct defer/decline, and submitted-only visitor review. Draft app #144 requires Draft DB #143 first; see current verification and release blockers in the feature record.
 
 - [Accountless interest and contact sharing](features/accountless-interest-and-contact-sharing.md):
@@ -131,6 +137,17 @@ Product: VivIntro lets marriage prospects create, publish and selectively share 
 - `src/features/portfolio/server/` and `src/components/templates/` consume publication and public-badge state. BrokerDesk representative verification is a separate subject type; the candidate-only scheduler excludes its queued work, while the legacy shared worker/RPC remains compatible.
 
 ## Relevant feature status
+
+- [NAK-203 family dashboard](features/nak-203-family-introduction-dashboard.md)
+  implements the read-only authenticated `/family` list and bounded metadata
+  RPC on its feature branch, carrying NAK-202. Portfolio disclosure belongs
+  to NAK-206. The NAK-204 record contains the passing combined database run.
+
+- [NAK-202 assisted onboarding](features/nak-202-assisted-customer-onboarding.md):
+  uncommitted implementation reconciled to main `c675159` (PR #144) on
+  5 November 2026. Adds broker proposals, candidate roster management and exact
+  Google-email activation. Family Introduction reads remain deferred. Personal
+  accountless approved viewing remains governed by its separate proof and grant.
 
 - [NAK-201 Family Viewer identity foundation](features/nak-201-family-viewer-identity-foundation.md):
   adds the candidate-owned, cross-broker roster authority beneath the approved

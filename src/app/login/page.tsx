@@ -14,16 +14,21 @@ export const metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect?: string | string[] | undefined }>;
+  searchParams: Promise<{
+    redirect?: string | string[] | undefined;
+    method?: string | string[] | undefined;
+  }>;
 }) {
   const auth = await getApiUser();
-  const requested = (await searchParams).redirect;
+  const params = await searchParams;
+  const requested = params.redirect;
   const destination = sanitizeInternalRedirect(typeof requested === "string" ? requested : undefined);
   if (auth.status === "authenticated") redirect(destination);
+  const googleOnly = destination === "/join/family" && params.method === "google";
 
   return (
     <Suspense fallback={<PageLoading title="Preparing sign-in" />}>
-      <AuthForm mode="login" />
+      <AuthForm mode="login" googleOnly={googleOnly} />
     </Suspense>
   );
 }

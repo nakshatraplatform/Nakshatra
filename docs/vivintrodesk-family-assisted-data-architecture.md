@@ -229,6 +229,14 @@ Opening a native share sheet may transition only to `initiated`. There is no
 created atomically with the Introduction so the action workspace never has to
 infer missing state.
 
+NAK-204 implements this state table and its guarded workspace locally. Reminder
+attempts require a waiting side, previous sharing attempt/confirmation, current
+response window, a 24-hour cooldown and fewer than 30 reminders. Legacy link
+activation backfills neither side as shared. NAK-205 owns family reports; until
+then the workspace projection contains responses and controlled timeline events
+without family reports or comments. The combined branch passed local
+Supabase PostgreSQL 17 replay, pgTAP, concurrency and generated-type comparison.
+
 ### 6. `broker_introduction_family_updates`
 
 This append-only, tenant-private table stores what a broker heard from a family.
@@ -376,7 +384,7 @@ already supports these commands safely.
 | RPC | Capability | Transactional responsibility |
 | --- | --- | --- |
 | `public.propose_candidate_family_viewer` | new `family_viewers.propose` | Same-workspace active relationship, bounded fields and queue; generic acknowledgement only; never activates access or exposes cross-agency duplication |
-| `public.resolve_brokerdesk_family_setup` | `customers.read` plus resource scope | Own-workspace proposal state and safe aggregate counts; never another broker's provenance |
+| `public.resolve_brokerdesk_family_setup` | `family_viewers.propose` plus resource scope and active V3 mandate | Safe active-viewer aggregate only; proposal history withheld to prevent insertion/deduplication membership probing |
 | `public.record_introduction_share_action` | new `introductions.manage_sharing` | Side validation, optimistic version, honest state transition, audit event |
 | `public.record_introduction_family_update` | new `introductions.record_family_update` | Same-tenant/side validation, append update, safe event, optional candidate notification |
 | `public.resolve_brokerdesk_introduction_action` | `customers.read` and scoped Introduction access | Both share states, candidate responses, latest family reports, safe timeline, allowed actions |
@@ -459,7 +467,7 @@ applicable authorization window closes.
 | Method and path | Purpose |
 | --- | --- |
 | `POST /api/v1/brokerdesk/workspaces/[workspaceRef]/customers/[relationshipRef]/family-proposals` | Propose, but never authorize, a Family Viewer |
-| `GET /api/v1/brokerdesk/workspaces/[workspaceRef]/customers/[relationshipRef]` | Extend current detail with own proposal status and safe roster count |
+| `GET /api/v1/brokerdesk/workspaces/[workspaceRef]/customers/[relationshipRef]/family-viewers` | Safe active-viewer count under V3 authority, with insertion-sensitive proposal history withheld |
 | `GET /api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]` | Introduction action workspace projection |
 | `POST /api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/share-actions` | Record side-specific initiated/confirmed/reminder action |
 | `POST /api/v1/brokerdesk/workspaces/[workspaceRef]/introductions/[introductionRef]/family-updates` | Append a reported status and private comment |

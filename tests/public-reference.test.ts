@@ -4,6 +4,8 @@ import {
   brokerIntroductionRouteRefSchema,
   brokerPortfolioNoticeRefSchema,
   customerIntroductionCaseRefSchema,
+  familyViewerInvitationRefSchema,
+  familyViewerRefSchema,
   importRefSchema,
   invitationRefSchema,
   memberRefSchema,
@@ -26,6 +28,8 @@ describe("BrokerDesk public references", () => {
     [importRefSchema, `imp_${RANDOM_HEX}`],
     [invitationRefSchema, `inv_${RANDOM_HEX}`],
     [memberRefSchema, `mbr_${RANDOM_HEX}`],
+    [familyViewerRefSchema, `fvw_${RANDOM_HEX}`],
+    [familyViewerInvitationRefSchema, `fvi_${RANDOM_HEX}`],
   ])("accepts its own opaque reference type", (schema, value) => {
     expect(schema.parse(value)).toBe(value);
   });

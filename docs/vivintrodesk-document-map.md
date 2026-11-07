@@ -1,6 +1,6 @@
 # VivIntroDesk document map
 
-Last reconciled: 22 October 2026
+Last reconciled: 7 November 2026
 
 This map tells contributors and agents which VivIntroDesk documents are current
 contracts and which are retained only for history. Do not combine incompatible
@@ -20,17 +20,28 @@ rules from multiple generations of the design.
    [`NAK-79`](./engineering-loop/features/nak-79-mutual-interest-complete-access.md),
    [`NAK-200`](./engineering-loop/features/nak-200-v3-consent-rbac-foundation.md),
    [`NAK-201`](./engineering-loop/features/nak-201-family-viewer-identity-foundation.md),
+   [`NAK-202`](./engineering-loop/features/nak-202-assisted-customer-onboarding.md),
+   [`NAK-203`](./engineering-loop/features/nak-203-family-introduction-dashboard.md),
+   [`NAK-204`](./engineering-loop/features/nak-204-introduction-action-workspace.md),
    or [`NAK-208`](./engineering-loop/features/nak-208-vivintrodesk-ui-wireframes.md).
 4. Current source, migrations, and tests. Documentation never overrides the
    implemented security boundary silently; reconcile any mismatch explicitly.
 
 ## Current supporting documents
 
+- [`NAK-202 database evidence`](./engineering-loop/features/nak-202-database-validation.md)
+  records supplemental PostgreSQL execution and the B2C baseline comparison.
+  The [NAK-204 validation record](./engineering-loop/features/nak-204-introduction-action-workspace.md#supabase-postgresql-17-database-validation-7-november-2026)
+  contains the passing Supabase PostgreSQL 17 database job for the combined branch.
+
 - [`creator-publication-and-introduction-lifecycle.md`](./creator-publication-and-introduction-lifecycle.md)
   defines publication readiness shared by personal and broker flows.
 - [`dashboard-relationship-lifecycle.md`](./dashboard-relationship-lifecycle.md)
   defines the personal B2C approval lifecycle; it is not the broker response
   state machine.
+- [`guest-approved-portfolio-viewing-app.md`](./engineering-loop/features/guest-approved-portfolio-viewing-app.md)
+  describes the merged accountless personal viewing flow from PR #144. Personal
+  browser proofs do not authorize BrokerDesk or Family Viewer access.
 - [`structured-location-capture.md`](./engineering-loop/features/structured-location-capture.md)
   defines the coordinate-free India/US location-entry and persistence contract.
 - [`hierarchical-location-matching.md`](./engineering-loop/features/hierarchical-location-matching.md)
@@ -39,7 +50,13 @@ rules from multiple generations of the design.
   defines the planned family-assisted tables, constraints, indexes, RPCs,
   endpoints, query shapes, migration order, and performance evidence. NAK-200
   is merged; NAK-201 implements only its candidate-owned identity and roster
-  foundation. Later Introduction access and UI slices remain deferred.
+  foundation. NAK-201 is merged; NAK-202 implements the assisted onboarding
+  pages, delivery handoff and application adapters on the combined feature
+  branch, with local database validation complete.
+  NAK-203 adds the authenticated family metadata dashboard on the combined
+  feature branch. Family portfolio disclosure remains deferred to NAK-206.
+  NAK-204 adds the broker Introduction action list/workspace, per-side manual
+  sharing records and reminder attempts locally on the combined branch.
 - [`vivintrodesk-business-model-family-review.md`](./vivintrodesk-business-model-family-review.md)
   is a plain-language explanation for family, friends, and pilot brokers.
 - [`design/brokerdesk/nak-208-vivintrodesk-ui-contract.md`](../design/brokerdesk/nak-208-vivintrodesk-ui-contract.md)

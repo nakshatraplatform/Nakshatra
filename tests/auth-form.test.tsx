@@ -129,6 +129,20 @@ describe("AuthForm", () => {
     expect(continueToAuthProvider).toHaveBeenCalledWith("https://accounts.google.test/oauth");
   });
 
+  it("offers only Google for the family-viewer identity continuation", async () => {
+    searchParams.get.mockImplementation((key: string) => key === "redirect" ? "/join/family" : null);
+    startAuthentication.mockResolvedValueOnce({
+      ok: true,
+      body: { url: "https://accounts.google.test/oauth" },
+    });
+    render(<AuthForm mode="login" googleOnly />);
+    expect(screen.getByRole("heading", { name: "Continue with Google" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    expect(startAuthentication).toHaveBeenCalledWith({ method: "google", redirect: "/join/family" });
+  });
+
   it("keeps signup provider pending and error states on the outlined Google button", async () => {
     let finish!: (value: { ok: boolean; body: { error: string } }) => void;
     startAuthentication.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));

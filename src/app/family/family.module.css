@@ -1,0 +1,80 @@
+.shell {
+  min-height: 100vh;
+  background: var(--workspace-canvas);
+  color: var(--workspace-ink);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 20px max(24px, calc((100vw - 1080px) / 2));
+  border-bottom: 1px solid var(--workspace-border);
+  background: var(--workspace-surface);
+}
+
+.header nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 14px;
+}
+
+.header a:focus-visible, .next:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 5px;
+}
+
+.main {
+  width: min(100% - 40px, 920px);
+  margin: auto;
+  padding: 52px 0;
+}
+
+.eyebrow {
+  color: var(--workspace-muted);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.main h1 {
+  margin: 12px 0;
+  font-size: clamp(30px, 5vw, 44px);
+  font-family: var(--font-portfolio-display), system-ui, sans-serif;
+}
+
+.lead, .note {
+  max-width: 680px;
+  line-height: 1.65;
+  color: var(--workspace-muted);
+}
+
+.note { margin-top: 18px; font-size: 14px; }
+.list { list-style: none; padding: 0; display: grid; gap: 16px; margin: 32px 0; }
+
+.card, .empty {
+  border: 1px solid var(--workspace-border);
+  border-radius: 14px;
+  padding: 24px;
+  background: var(--workspace-surface);
+}
+
+.empty { margin-top: 32px; }
+.empty h2, .card h2 { font-size: 19px; margin: 0; }
+.empty p, .card p { margin-top: 12px; color: var(--workspace-muted); overflow-wrap: anywhere; }
+.cardHeading { display: flex; justify-content: space-between; gap: 16px; align-items: start; flex-wrap: wrap; }
+.status { font-size: 12px; background: var(--workspace-surface-muted); padding: 6px 10px; border-radius: 8px; }
+.dates { display: flex; flex-wrap: wrap; gap: 16px 40px; margin: 20px 0 0; }
+.dates dt { font-size: 12px; color: var(--workspace-muted); }
+.dates dd { margin: 5px 0 0; font-size: 14px; }
+.next { display: inline-flex; padding: 12px 18px; border: 1px solid var(--workspace-border); border-radius: 9px; background: var(--workspace-surface); }
+
+@media (max-width: 600px) {
+  .header { align-items: start; flex-direction: column; padding: 18px 20px; }
+  .header nav { width: 100%; justify-content: space-between; gap: 12px; }
+  .main { padding-top: 32px; }
+  .card, .empty { padding: 20px; }
+}

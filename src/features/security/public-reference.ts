@@ -24,6 +24,8 @@ export const invitationRefSchema = referenceSchema("inv").brand<"InvitationRef">
 export const memberRefSchema = referenceSchema("mbr").brand<"MemberRef">();
 export const portfolioVersionRefSchema = referenceSchema("pvr").brand<"PortfolioVersionRef">();
 export const brokerPortfolioNoticeRefSchema = referenceSchema("bpn").brand<"BrokerPortfolioNoticeRef">();
+export const familyViewerRefSchema = referenceSchema("fvw").brand<"FamilyViewerRef">();
+export const familyViewerInvitationRefSchema = referenceSchema("fvi").brand<"FamilyViewerInvitationRef">();
 
 export type WorkspaceRef = z.infer<typeof workspaceRefSchema>;
 export type BrokerCustomerRelationshipRef = z.infer<
@@ -41,3 +43,5 @@ export type InvitationRef = z.infer<typeof invitationRefSchema>;
 export type MemberRef = z.infer<typeof memberRefSchema>;
 export type PortfolioVersionRef = z.infer<typeof portfolioVersionRefSchema>;
 export type BrokerPortfolioNoticeRef = z.infer<typeof brokerPortfolioNoticeRefSchema>;
+export type FamilyViewerRef = z.infer<typeof familyViewerRefSchema>;
+export type FamilyViewerInvitationRef = z.infer<typeof familyViewerInvitationRefSchema>;

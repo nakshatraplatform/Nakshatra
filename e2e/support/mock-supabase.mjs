@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { createHmac } from "node:crypto";
 import { memberOwnerToken, approvedViewerToken, approvedViewerUser, publishedOwnerToken, publishedOwnerUser, legacyOwnerToken, legacyOwnerUser, draftOwnerToken, draftOwnerUser, themeTestToken, themeTestUser, loadingTestToken } from "./theme-session.mjs";
 import { recoveryTestToken } from "./recovery-session.mjs";
+import { introductionWorkspaceFixture } from "./introduction-workspace-fixture.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.E2E_SUPABASE_PORT || 54329);
@@ -385,7 +386,42 @@ const server = createServer((request, response) => {
       privacy_mode: "balanced", visibility_settings: {}, created_at: "2026-10-06T00:00:00Z", updated_at: "2026-10-06T00:00:00Z",
     });
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/rpc/resolve_family_introductions") {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => {
+        const query = JSON.parse(body || "{}");
+        const older = Boolean(query.p_before_ref);
+        return sendJson(response, 200, {
+          available: true,
+          introductions: [{
+            introductionRef: "bir_" + (older ? "b" : "a").repeat(32),
+            candidateNames: [query.p_limit === 1 ? "A".repeat(180) : "Family fixture candidate"],
+            status: older ? "expired" : "active",
+            createdAt: older ? "2026-10-01T12:00:00Z" : "2026-11-01T12:00:00Z",
+            responseDueAt: older ? "2026-10-16T12:00:00Z" : "2026-11-16T12:00:00Z",
+          }],
+          nextCursor: older ? null : {
+            createdAt: "2026-11-01T12:00:00Z", introductionRef: "bir_" + "a".repeat(32),
+          },
+        });
+      });
+    }
     if (url.pathname === "/rest/v1/rpc/resolve_customer_broker_relationships") return sendJson(response, 200, { available: true, relationships: [] });
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_introduction_action") return sendJson(response, 200, introductionWorkspaceFixture);
+    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_introduction_actions") {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      return request.on("end", () => {
+        const older = Boolean(JSON.parse(body || "{}").p_before_ref);
+        return sendJson(response, 200, {
+          available: true, introductions: [{ introductionRef: "bir_" + "a".repeat(32),
+            sourceName: "Family fixture customer A", recipientName: "Family fixture customer B",
+            status: older ? "expired" : "shared", createdAt: "2026-11-01T12:00:00Z", expiresAt: "2026-11-16T12:00:00Z" }],
+          nextCursor: older ? null : { createdAt: "2026-11-01T12:00:00Z", introductionRef: "bir_" + "a".repeat(32) },
+        });
+      });
+    }
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_bootstrap") return sendJson(response, 200, { workspaces: [], nextAction: "create_workspace" });
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_dashboard") return sendJson(response, 200, {
       available: true, workspaceRef: `wrk_${"e".repeat(32)}`, workspaceName: "Fixture agency",

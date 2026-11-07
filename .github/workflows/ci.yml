@@ -200,6 +200,11 @@ jobs:
           PGPASSWORD: postgres
           PGDATABASE: postgres
 
+      - name: Verify concurrent Introduction sharing operations
+        env:
+          INTRODUCTION_SHARE_TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:db:introduction-sharing-concurrency:local
+
       - name: Generate public database types from the clean local database
         id: database_types
         run: npx supabase gen types typescript --local --schema public > "$RUNNER_TEMP/database.generated.ts"

@@ -25,6 +25,7 @@ export default async function BrokerdeskDashboardPage({ params }: {
   return <div className={styles.shell}>
     <BrokerDeskHeader sticky>
       <Link href={`/brokerdesk/w/${workspaceRef}/customers`}>Customers</Link>
+      <Link href={`/brokerdesk/w/${workspaceRef}/introductions`}>Introductions</Link>
       <Link href={`/brokerdesk/w/${workspaceRef}/settings/team`}>Team</Link>
     </BrokerDeskHeader>
     <BrokerdeskDashboardClient dashboard={dashboard} />
