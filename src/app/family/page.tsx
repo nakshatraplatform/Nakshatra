@@ -53,6 +53,8 @@ function FamilyIntroductionList({ data }: { data: FamilyDashboard }) {
           <span className={styles.status}>{statusLabels[item.status]}</span>
         </div>
         <p>Supporting {item.candidateNames.join(" and ")}</p>
+        {item.status !== "closed" && item.status !== "expired" &&
+          <Link href={`/family/introductions/${item.introductionRef}`} prefetch={false}>Open profile</Link>}
         <dl className={styles.dates}>
           <div><dt>Created on</dt><dd><time dateTime={item.createdAt}>{dateLabel(item.createdAt)}</time></dd></div>
           <div><dt>Response period ends</dt><dd><time dateTime={item.responseDueAt}>{dateLabel(item.responseDueAt)}</time></dd></div>
@@ -83,7 +85,7 @@ export default async function FamilyDashboardPage({ searchParams }: {
       <p className={styles.eyebrow}>Family support</p>
       <h1>Your family introductions</h1>
       <p className={styles.lead}>Follow the introductions for the family members who invited you. The candidate decides whether to show interest or decline.</p>
-      <p className={styles.note}>This dashboard shows introduction progress. Portfolio viewing will be available in a later update.</p>
+      <p className={styles.note}>Open an introduction to see the profile you have permission to view.</p>
       {!input.success
         ? <section className={styles.empty}><h2>This page link is incomplete</h2><Link href="/family">Return to the first page</Link></section>
         : data ? <FamilyIntroductionList data={data} />

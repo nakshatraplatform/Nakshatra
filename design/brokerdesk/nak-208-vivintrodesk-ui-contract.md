@@ -33,10 +33,10 @@ must preserve these rules:
   workspace's activity;
 - one candidate-level Family Viewer roster covers all active broker mandates;
 - a broker may propose a family member but cannot authorize that person;
-- only the authenticated candidate may submit Interested or Decline;
-- family reports are operational context, never candidate consent;
+- the candidate may respond directly, and a scoped broker may record an off-app decision from the candidate or their authorized parent under NAK-205;
+- informal family reports remain operational context. Interested requires explicit consent to mutual Complete Portfolio and Protected Contact disclosure;
 - any response controls inside this standalone prototype are visibly labelled
-  candidate-session simulations and must not exist as broker runtime actions;
+  candidate-session simulations. Broker runtime uses a separately labelled recording form with the source, channel and attestation;
 - A-side and B-side WhatsApp sharing are tracked independently;
 - Broker Standard excludes Protected Contact, financial and restricted data;
 - mutual interest starts one 30-day Complete access period;
@@ -258,7 +258,7 @@ implementation must wait for the corresponding server authority and projection:
 - NAK-202 before broker family proposal and assisted-onboarding actions;
 - NAK-203 before the Family Viewer dashboard;
 - NAK-204 before side-specific sharing and Introduction action workspace;
-- NAK-205 before family reports and confirmation prompts;
+- NAK-205 before private family reports and attested off-app decisions;
 - NAK-206 before Family Viewer disclosure; and
 - NAK-207 before pilot release.
 
@@ -273,7 +273,7 @@ The UI must never temporarily emulate missing authorization in client code.
 5. Create an Introduction and share with each family independently.
 6. Record a family report and confirm that it did not change the candidate
    response.
-7. Submit one candidate response and explain why Complete access is closed.
-8. Submit the second Interested response and identify the separate 30-day
+7. Record one attested Interested decision and explain why Complete access is closed.
+8. Record the second attested Interested decision and identify the separate 30-day
    access period and frozen viewer counts.
 9. Repeat the core flow at 390 px and 320 px without hidden actions.

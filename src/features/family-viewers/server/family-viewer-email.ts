@@ -37,7 +37,7 @@ export async function sendFamilyViewerInvitationEmail(input: unknown) {
       "You have been invited by a VivIntro customer to join as a family viewer.",
       "",
       "Complete setup now. VivIntro will notify you when an eligible broker Introduction is available to view.",
-      "Only the candidate can submit Interested or Decline.",
+      "Family Viewer access gives you no permission to submit Interested or Decline.",
       "",
       `Open your private invitation: ${parsed.data.invitationUrl}`,
       "",

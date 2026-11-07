@@ -61,17 +61,18 @@ const state = async () => JSON.parse(await query(`select jsonb_object_agg(partic
   from app_private.broker_introduction_share_states where introduction_id=(select id from app_private.broker_introductions where introduction_ref='${refs.introductionRef}')`));
 const countEvents = async () => Number(await query(`select count(*) from app_private.broker_introduction_events where introduction_id=(select id from app_private.broker_introductions where introduction_ref='${refs.introductionRef}') and event_type in ('share_initiated','share_confirmed','reminder_initiated')`));
 
-async function overlap(first, second) {
+async function overlap(first, second, { firstClaims = claims, secondClaims = claims, waitForDeadline, holdSeconds = 2 } = {}) {
   const name = `intro-sharing-${randomUUID()}`;
   // Keep the first transaction open after the command has acquired its locks.
-  const held = query(`begin; set local statement_timeout='12s'; ${claims} ${first} select pg_sleep(2); commit;`, name, true);
+  const held = query(`begin; set local statement_timeout='12s'; ${firstClaims} ${first} select pg_sleep(${holdSeconds}); commit;`, name, true);
   held.catch(() => {});
   const until = Date.now() + 10_000;
   while (await query(`select count(*) from pg_stat_activity where application_name='${name}' and wait_event='PgSleep'`) !== "1") {
     if (Date.now() >= until) { await held; throw new Error("First transaction did not reach its held-lock phase"); }
     await delay(25);
   }
-  const competing = query(`begin; set local statement_timeout='12s'; ${claims} ${second} commit;`, "intro-sharing-competing", true);
+  if (waitForDeadline) await waitForDeadline();
+  const competing = query(`begin; set local statement_timeout='12s'; ${secondClaims} ${second} commit;`, "intro-sharing-competing", true);
   competing.catch(() => {});
   const blockedUntil = Date.now() + 1000;
   let blocked = false;
@@ -105,3 +106,70 @@ assert.ok(separate.every(result => result.status === "fulfilled"), "different si
 assert.deepEqual(await state(), { source: 4, recipient: 2 });
 assert.equal(await countEvents(), 4);
 console.log("Introduction sharing concurrency passed: duplicate retry, stale version and independent-side overlap.");
+
+// A response can acquire the Introduction row before the response deadline
+// while a later source-side pause begins after it. The pause must wait and
+// permanently revoke the Complete window written by the in-flight response.
+const sourceUser = mapped("78000000-0000-4000-8000-000000000002");
+const sourceSession = mapped("78100000-0000-4000-8000-000000000002");
+const recipientUser = mapped("78000000-0000-4000-8000-000000000003");
+const recipientSession = mapped("78100000-0000-4000-8000-000000000003");
+const sourceRelationship = mapped("78800000-0000-4000-8000-000000000001");
+const actorClaims = (user, sessionId) => `set local role authenticated; select pg_temp.set_authenticated_claims('${user}','${sessionId}');`;
+const sourceClaims = actorClaims(sourceUser, sourceSession);
+const recipientClaims = actorClaims(recipientUser, recipientSession);
+const respond = `select public.respond_to_broker_introduction_with_family_consent('${refs.introductionRef}','accepted','',true);`;
+const relationshipRef = await query(`update public.broker_clients set claimed_at=starts_at where id='${sourceRelationship}' returning relationship_ref`);
+assert.match(relationshipRef, /^bcr_[0-9a-f]{32}$/);
+const manage = (action) => `select public.manage_customer_broker_consent('${relationshipRef}','${action}','mandate:${randomUUID()}');`;
+await query(`begin; ${sourceClaims} ${respond} commit;`, "intro-consent-first", true);
+await query(`update app_private.broker_introductions set expires_at=clock_timestamp()+interval '3 seconds' where introduction_ref='${refs.introductionRef}'`);
+async function waitForDeadline() {
+  const stop = Date.now() + 5_000;
+  while (await query(`select expires_at<=clock_timestamp() from app_private.broker_introductions where introduction_ref='${refs.introductionRef}'`) !== "t") {
+    if (Date.now() >= stop) throw new Error("The response deadline did not pass");
+    await delay(30);
+  }
+}
+const concurrentPause = await overlap(respond, manage("pause"), {
+  firstClaims: recipientClaims, secondClaims: sourceClaims, holdSeconds: 7, waitForDeadline,
+});
+assert.ok(concurrentPause.every(result => result.status === "fulfilled"), "mutual response and pause must both finish");
+assert.match(concurrentPause[0].value, /"disclosureLevel": "complete"/);
+assert.match(concurrentPause[1].value, /"relationshipStatus": "paused"/);
+await query(`begin; ${sourceClaims} ${manage("renew")} commit;`, "intro-consent-renew", true);
+const afterRenewal = await query(`begin; ${recipientClaims}
+  select public.resolve_broker_introduction('${refs.introductionRef}',null)->>'available'; commit;`, "intro-consent-after-renew", true);
+assert.equal(afterRenewal.split(/\r?\n/).at(-1), "false", "renewal must never restore the in-flight Complete window");
+console.log("Introduction consent concurrency passed: a pause at the response deadline revokes an in-flight Complete window.");
+
+// Reverse the lock order. The responder starts before expiry but reaches the
+// command while a post-deadline pause holds the expired pending row.
+await query(`update app_private.broker_introductions set revoked_at=null,
+  response=null,responded_at=null,recipient_complete_access_confirmed_at=null,
+  recipient_family_complete_consented=false,mutual_interest_confirmed_at=null,
+  complete_access_expires_at=null,expires_at=clock_timestamp()+interval '3 seconds'
+  where introduction_ref='${refs.introductionRef}'`);
+const queuedResponse = query(`begin; ${recipientClaims} select pg_sleep(5); ${respond} commit;`, "intro-consent-queued", true);
+queuedResponse.catch(() => {});
+await waitForDeadline();
+const heldPause = query(`begin; ${sourceClaims} ${manage("pause")} select pg_sleep(5); commit;`, "intro-consent-hold-pause", true);
+heldPause.catch(() => {});
+const waitLimit = Date.now() + 4500;
+let queued = false;
+while (Date.now() < waitLimit) {
+  queued = await query(`select exists(select 1 from pg_stat_activity holder,pg_stat_activity waiter
+    where holder.application_name='intro-consent-hold-pause' and waiter.application_name='intro-consent-queued'
+    and holder.pid=any(pg_blocking_pids(waiter.pid)))`) === "t";
+  if (queued) break;
+  await delay(25);
+}
+const [staleResponse, pauseResult] = await Promise.all([queuedResponse, heldPause]);
+assert.ok(queued, "the pre-deadline response transaction must wait on the post-deadline pause");
+assert.match(staleResponse, /"available": false/);
+assert.match(pauseResult, /"relationshipStatus": "paused"/);
+await query(`begin; ${sourceClaims} ${manage("renew")} commit;`, "intro-consent-renew-after-stale", true);
+const afterStale = await query(`select mutual_interest_confirmed_at is null and complete_access_expires_at is null
+  from app_private.broker_introductions where introduction_ref='${refs.introductionRef}'`);
+assert.equal(afterStale, "t", "a stale response cannot open Complete after pause or renewal");
+console.log("Introduction consent concurrency passed: a pre-deadline transaction cannot respond after waiting on a post-deadline pause.");

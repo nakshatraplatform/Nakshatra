@@ -27,7 +27,8 @@ export async function POST(request: Request, context: Context) {
       introductionRef,
       body.data.response,
       body.data.comment,
-      body.data.confirmCompleteAccess
+      body.data.confirmCompleteAccess,
+      body.data.confirmFamilyAccess
     ), { headers });
   } catch (error) {
     if (error instanceof RequestSecurityError) return requestSecurityErrorResponse(error);

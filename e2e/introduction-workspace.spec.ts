@@ -14,7 +14,7 @@ test("broker opens an Introduction, confirms only one side, and sees honest shar
     data.sides[0].rowVersion = 2; data.sides[0].canRemind = true;
     await route.fulfill({ json: { available: true, side: "source", shareState: "broker_confirmed", rowVersion: 2 } });
   });
-  await page.route(/\/api\/v1\/brokerdesk\/workspaces\/[^/]+\/introductions\/bir_[0-9a-f]{32}$/, route => route.fulfill({ json: data }));
+  await page.route(/\/api\/v1\/brokerdesk\/workspaces\/[^/]+\/introductions\/bir_[0-9a-f]{32}\?view=responses$/, route => route.fulfill({ json: data }));
   await page.goto(base);
   await expect(page.getByRole("heading", { name: "Introductions", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Older Introductions" }).click();

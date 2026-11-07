@@ -67,7 +67,8 @@ describe("broker introduction recipient client", () => {
     }), { status: 200 })));
     render(<BrokerIntroductionClient introductionRef={introductionRef} />);
     await screen.findByText("Complete Portfolio · mutual interest confirmed");
-    expect(screen.getByText(/Complete Portfolio and Protected Contact are now available for 30 days/)).toBeInTheDocument();
+    expect(screen.getByText(/Complete Portfolio and Protected Contact are available for the 30-day access window/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Response for your side" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit response" })).not.toBeInTheDocument();
   });
 

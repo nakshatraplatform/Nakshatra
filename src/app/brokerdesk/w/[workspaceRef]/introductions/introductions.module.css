@@ -20,4 +20,14 @@
 .notice { border-left: 3px solid var(--workspace-ink); padding: 1rem; background: var(--workspace-surface-muted); }
 .timeline { padding-left: 1.25rem; display: grid; gap: .75rem; }
 .timeline time { display: block; color: var(--workspace-muted); font-size: .85rem; }
+.responseForm { margin-top: 1rem; }
+.responseForm summary { padding: .65rem 0; cursor: pointer; font-weight: 600; }
+.responseForm fieldset { display: grid; gap: .75rem; border: 0; padding: 0; min-width: 0; }
+.responseForm label { display: grid; gap: .3rem; }
+.responseForm select, .responseForm textarea {
+  width: 100%; min-height: 44px; padding: .5rem; border: 1px solid var(--workspace-border);
+  border-radius: .45rem; color: var(--workspace-ink); background: var(--workspace-surface);
+}
+.responseForm .attestation { display: flex; align-items: flex-start; gap: .6rem; }
+.attestation input { flex-shrink: 0; margin-top: .3rem; }
 @media (max-width: 700px) { .sides { grid-template-columns: 1fr; } .main { padding-top: 1.5rem; } .card { padding: 1.1rem; } .buttons button { flex: 1 1 45%; } }

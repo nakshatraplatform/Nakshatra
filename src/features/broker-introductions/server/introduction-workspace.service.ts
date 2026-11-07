@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { workspaceRefSchema } from "@/features/security/public-reference";
 import {
   introductionActionSchema, introductionShareCommandSchema, introductionShareResultSchema,
+  introductionFamilyUpdateCommandSchema, introductionFamilyUpdateResultSchema,
   introductionWorkspaceListSchema, introductionWorkspacePathSchema, introductionWorkspaceQuerySchema,
 } from "./introduction-workspace.contract";
 import { BrokerIntroductionRepository } from "./broker-introduction.repository";
@@ -26,9 +27,9 @@ function resultOrError<T>(schema: z.ZodType<T>, result: { data: unknown; error: 
   return parsed.data;
 }
 
-export async function resolveIntroductionAction(supabase: SupabaseClient, input: unknown) {
+export async function resolveIntroductionAction(supabase: SupabaseClient, input: unknown, includeResponses = true) {
   const path = introductionWorkspacePathSchema.parse(input);
-  const result = await new BrokerIntroductionRepository(supabase).actionWorkspace(path.workspaceRef, path.introductionRef);
+  const result = await new BrokerIntroductionRepository(supabase).actionWorkspace(path.workspaceRef, path.introductionRef, includeResponses);
   return resultOrError(introductionActionSchema, result);
 }
 
@@ -37,6 +38,13 @@ export async function recordIntroductionShareAction(supabase: SupabaseClient, pa
   const command = introductionShareCommandSchema.parse(commandInput);
   const result = await new BrokerIntroductionRepository(supabase).recordShareAction(path.workspaceRef, path.introductionRef, command);
   return resultOrError(introductionShareResultSchema, result);
+}
+
+export async function recordIntroductionFamilyUpdate(supabase: SupabaseClient, pathInput: unknown, commandInput: unknown) {
+  const path = introductionWorkspacePathSchema.parse(pathInput);
+  const command = introductionFamilyUpdateCommandSchema.parse(commandInput);
+  const result = await new BrokerIntroductionRepository(supabase).recordFamilyUpdate(path.workspaceRef, path.introductionRef, command);
+  return resultOrError(introductionFamilyUpdateResultSchema, result);
 }
 
 export async function resolveIntroductionWorkspaceList(supabase: SupabaseClient, workspaceRef: string, queryInput: unknown = {}) {

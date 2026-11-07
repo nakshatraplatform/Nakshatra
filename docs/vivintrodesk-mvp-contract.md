@@ -107,16 +107,22 @@ review profiles, while preserving the candidate's final authority.
   is not stored in the roster or invitation. The family member must then sign
   in with that exact invited Google email before access becomes active.
 - An active Family Viewer may view the same opposite Broker Standard Profile as
-  the candidate while the Introduction is active.
-- Only the authenticated candidate can submit the authoritative Interested or
-  Decline response. A broker may record a bounded family conversation update,
-  but that update cannot mutate or stand in for the candidate's response.
-- When both candidates choose Interested, the then-eligible Family Viewers are
-  frozen for that Introduction. Those viewers may see the opposite pinned
-  Complete Portfolio for the same 30-day window as the candidate.
+  the candidate before mutual interest while responses are still open.
+- Candidates may respond directly. A scoped broker may also record a final
+  response received from the candidate or a parent the candidate authorized
+  for that decision. The broker attests to the source and, for Interested,
+  explicit consent to disclose the Complete Portfolio and Protected Contact
+  to the other candidate and their eligible Family Viewers for 30 days if
+  interest is mutual. No repeat in-app response is required.
+  Informal family feedback and private broker notes remain separate.
+- When both sides confirm Interested and Complete disclosure, the existing
+  candidate Complete access window begins. Eligible Family Viewers with
+  consent from the candidate whose portfolio they would see are frozen at that
+  moment. Older candidate-only consent never opens family Complete access.
 - Adding a Family Viewer later does not grant access to an already-mutual
-  Introduction. Removal, mandate termination, revocation and expiry fail
-  closed.
+  Introduction. Removing a viewer, revoking an Introduction or expiring its
+  window ends the affected access. A pause on either mandate closes the old
+  Complete window permanently, including after mandate renewal.
 - Before mutual interest, each candidate may see the count of active Family
   Viewers authorized by the opposite candidate, but never their names, email
   addresses or phone numbers.
@@ -188,8 +194,7 @@ and human review remaining before merge.
 
 NAK-203 implements a read-only family Introduction metadata dashboard on its
 feature branch carrying NAK-202. It shows supported candidate labels, lifecycle
-states and dates under live V3 authority. Family profile payloads and frozen
-Complete grants remain NAK-206 work. The combined NAK-202/203/204 branch
+states and dates under live V3 authority. NAK-206 adds the private profile resolver and frozen Complete grants. The combined NAK-202/203/204 branch
 passed the Supabase PostgreSQL 17 database job locally.
 
 ## Verification provider decision
@@ -222,8 +227,8 @@ its active credentials are revoked/scrubbed by NAK-78.
    NAK-204 now adds the broker's bounded Introduction list and action workspace,
    sharing attempts and manual confirmations for each side, waiting-side
    reminders and safe history. Opening WhatsApp never proves delivery/read.
-   Family reports/comments remain NAK-205; family portfolio access remains
-   NAK-206. See the current feature records for validation and rollout gates.
+   NAK-205 records off-app responses. NAK-206 adds read-only family portfolio
+   access and closes old Complete windows permanently on mandate pause. See the current feature records for validation and rollout gates.
 3. **Verify existing Didit liveness-only operations.** Reconcile stale runbooks
    against the current candidate workflow, validate sandbox decisions and worker
    recovery, and complete retention/deletion and consent evidence before pilot

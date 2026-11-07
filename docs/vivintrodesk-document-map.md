@@ -23,6 +23,8 @@ rules from multiple generations of the design.
    [`NAK-202`](./engineering-loop/features/nak-202-assisted-customer-onboarding.md),
    [`NAK-203`](./engineering-loop/features/nak-203-family-introduction-dashboard.md),
    [`NAK-204`](./engineering-loop/features/nak-204-introduction-action-workspace.md),
+   [`NAK-205`](./engineering-loop/features/nak-205-broker-recorded-responses.md),
+   [`NAK-206`](./engineering-loop/features/nak-206-frozen-family-introduction-access.md),
    or [`NAK-208`](./engineering-loop/features/nak-208-vivintrodesk-ui-wireframes.md).
 4. Current source, migrations, and tests. Documentation never overrides the
    implemented security boundary silently; reconcile any mismatch explicitly.

@@ -97,7 +97,7 @@ export function FamilyViewerManager({ roster }: { roster: AvailableRoster }) {
   }
 
   return <section className={styles.familySection} aria-labelledby="family-viewers-title">
-    <div className={styles.familyHeading}><div className={styles.icon}><UsersRound /></div><div><p className={styles.eyebrow}>Broker-linked profiles only</p><h2 id="family-viewers-title">Family representatives</h2><p>Up to three people can help review broker introductions. Only you can respond Interested or Decline.</p></div><span className={styles.status}>{roster.activeCount} of 3 active</span></div>
+    <div className={styles.familyHeading}><div className={styles.icon}><UsersRound /></div><div><p className={styles.eyebrow}>Broker-linked profiles only</p><h2 id="family-viewers-title">Family representatives</h2><p>Up to three people can help review broker introductions. Family Viewer access is view-only.</p></div><span className={styles.status}>{roster.activeCount} of 3 active</span></div>
     <form className={styles.familyForm} onSubmit={add}>
       <label>Name<input name="displayName" required maxLength={120} autoComplete="name" /></label>
       <label>Google email<input name="email" type="email" required maxLength={254} autoComplete="email" /></label>

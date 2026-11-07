@@ -8,7 +8,11 @@ test("activated family dashboard shows metadata and navigates older pages", asyn
   await expect(page.getByText("Supporting Family fixture candidate")).toBeVisible();
   await expect(page.getByText("Awaiting responses", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /interested|decline|accept/i })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /view profile|complete portfolio/i })).toHaveCount(0);
+  await page.getByRole("link", { name: "Open profile" }).click();
+  await expect(page.getByRole("heading", { name: "Broker Standard Profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /interested|decline|accept/i })).toHaveCount(0);
+  expect(await page.locator('meta[name="robots"]').getAttribute("content")).toContain("noindex");
+  await page.getByRole("link", { name: "Back to family introductions" }).click();
   await page.getByRole("link", { name: "Older introductions" }).click();
   await expect(page.getByText("Response period ended")).toBeVisible();
   await expect(page.getByRole("link", { name: "Older introductions" })).toHaveCount(0);

@@ -24,13 +24,40 @@ const status = z.enum(["created", "shared", "responded", "revoked", "expired"]);
 const shareState = z.enum(["not_started", "initiated", "broker_confirmed"]);
 const date = z.iso.datetime({ offset: true });
 const unavailable = z.object({ available: z.literal(false) }).strict();
+const reportedStatus = z.enum(["accepted", "declined", "needs_time", "callback_requested", "no_response", "other"]);
+const reportedBy = z.enum(["candidate", "authorized_parent", "family"]);
+const channel = z.enum(["phone", "whatsapp", "in_person", "other"]);
+const familyComment = z.string().refine(value => [...value].length <= 1000, "Use up to 1,000 characters.");
+export const introductionFamilyUpdateCommandSchema = z.object({
+  side: z.enum(["source", "recipient"]),
+  status: reportedStatus,
+  reportedBy,
+  channel,
+  comment: z.string().trim().pipe(familyComment),
+  consentAttested: z.boolean(),
+  confirmFamilyAccess: z.literal(true).optional(),
+  expectedVersion: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  idempotencyKey: idempotencyKeySchema,
+}).strict().refine(value => {
+  const decision = value.status === "accepted" || value.status === "declined";
+  return value.consentAttested === decision && (!decision || value.reportedBy !== "family") && (!value.confirmFamilyAccess || value.status === "accepted");
+}, { message: "Confirm the candidate's or authorized parent's decision." });
+
+export const introductionFamilyUpdateResultSchema = z.discriminatedUnion("available", [
+  unavailable,
+  z.object({ available: z.literal(true), rowVersion: z.number().int().positive(), completeAccessExpiresAt: date.nullable() }).strict(),
+]);
+
+const familyUpdate = z.object({
+  status: reportedStatus, reportedBy, channel, comment: familyComment.nullable(), recordedAt: date,
+}).strict();
 const cursor = z.object({ createdAt: date, introductionRef: brokerIntroductionRouteRefSchema }).strict();
 export const introductionActionSchema = z.discriminatedUnion("available", [
   unavailable,
   z.object({
     available: z.literal(true), introductionRef: brokerIntroductionRouteRefSchema,
     status, rowVersion: z.number().int().positive(),
-    createdAt: date, expiresAt: date, canActivate: z.boolean(),
+    createdAt: date, expiresAt: date, canActivate: z.boolean(), completeAccessExpiresAt: date.nullable().optional(),
     sides: z.array(z.object({
       side: z.enum(["source", "recipient"]),
       name: z.string().min(1).max(180),
@@ -39,6 +66,7 @@ export const introductionActionSchema = z.discriminatedUnion("available", [
       shareState, initiatedAt: date.nullable(), confirmedAt: date.nullable(),
       lastRemindedAt: date.nullable(), reminderCount: z.number().int().min(0).max(30),
       rowVersion: z.number().int().positive(), canShare: z.boolean(), canRemind: z.boolean(),
+      canRecordResponse: z.boolean().optional(), latestUpdate: familyUpdate.nullable().optional(),
     }).strict()).length(2).refine(sides => new Set(sides.map(side => side.side)).size === 2),
     timeline: z.array(z.object({
       type: z.enum(["created", "shared", "claimed", "response_submitted", "complete_access_confirmed",
@@ -67,4 +95,5 @@ export const introductionWorkspaceListSchema = z.discriminatedUnion("available",
   }).strict(),
 ]);
 export type IntroductionShareCommand = z.infer<typeof introductionShareCommandSchema>;
+export type IntroductionFamilyUpdateCommand = z.infer<typeof introductionFamilyUpdateCommandSchema>;
 export type IntroductionAction = Extract<z.infer<typeof introductionActionSchema>, { available: true }>;

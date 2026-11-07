@@ -13,6 +13,10 @@ export class FamilyViewerRepository {
     });
   }
 
+  introduction(introductionRef: string) {
+    return this.supabase.rpc("resolve_family_introduction", { p_introduction_ref: introductionRef });
+  }
+
   resolveBrokerdeskSetup(workspaceRef: string, relationshipRef: string) {
     return this.supabase.rpc("resolve_brokerdesk_family_setup", {
       p_workspace_ref: workspaceRef,

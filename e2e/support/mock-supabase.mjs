@@ -386,6 +386,11 @@ const server = createServer((request, response) => {
       privacy_mode: "balanced", visibility_settings: {}, created_at: "2026-10-06T00:00:00Z", updated_at: "2026-10-06T00:00:00Z",
     });
     if (["/rest/v1/rpc/is_current_session_active", "/rest/v1/rpc/current_user_can_create_portfolio"].includes(url.pathname)) return sendJson(response, 200, true);
+    if (url.pathname === "/rest/v1/rpc/resolve_family_introduction") return sendJson(response, 200, {
+      available: true, introductionRef: "bir_" + "a".repeat(32), disclosureLevel: "broker_standard",
+      data: { privacy_mode: "balanced", personal: { name: "Opposite family fixture" } },
+      media: [], horoscope: null, templateId: 1, sunSign: null, expiresAt: "2026-11-16T12:00:00Z", versionNumber: 2,
+    });
     if (url.pathname === "/rest/v1/rpc/resolve_family_introductions") {
       let body = "";
       request.on("data", chunk => { body += chunk; });
@@ -408,7 +413,7 @@ const server = createServer((request, response) => {
       });
     }
     if (url.pathname === "/rest/v1/rpc/resolve_customer_broker_relationships") return sendJson(response, 200, { available: true, relationships: [] });
-    if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_introduction_action") return sendJson(response, 200, introductionWorkspaceFixture);
+    if (["/rest/v1/rpc/resolve_brokerdesk_introduction_action", "/rest/v1/rpc/resolve_brokerdesk_introduction_action_with_responses"].includes(url.pathname)) return sendJson(response, 200, introductionWorkspaceFixture);
     if (url.pathname === "/rest/v1/rpc/resolve_brokerdesk_introduction_actions") {
       let body = "";
       request.on("data", chunk => { body += chunk; });

@@ -132,8 +132,9 @@ export const brokerIntroductionResponseSchema = z.object({
   response: z.enum(["accepted", "declined"]),
   comment: z.string().trim().max(1000).default(""),
   confirmCompleteAccess: z.boolean().default(false),
+  confirmFamilyAccess: z.literal(true).optional(),
 }).strict().superRefine((value, context) => {
-  if (value.response === "accepted" && !value.confirmCompleteAccess) {
+  if ((value.response === "accepted" && !value.confirmCompleteAccess) || (value.confirmFamilyAccess && value.response !== "accepted")) {
     context.addIssue({
       code: "custom",
       path: ["confirmCompleteAccess"],

@@ -1,13 +1,13 @@
 "use client";
 
 import type { BrokerIntroductionItem } from "@/features/broker-introductions/server/broker-introduction.contract";
-import { introductionActionSchema, introductionShareResultSchema, type IntroductionShareCommand } from "../server/introduction-workspace.contract";
+import { introductionActionSchema, introductionFamilyUpdateResultSchema, introductionShareResultSchema, type IntroductionFamilyUpdateCommand, type IntroductionShareCommand } from "../server/introduction-workspace.contract";
 
 const introductionPath = (workspaceRef: string, introductionRef: string) =>
   `/api/v1/brokerdesk/workspaces/${encodeURIComponent(workspaceRef)}/introductions/${encodeURIComponent(introductionRef)}`;
 
 export async function getIntroductionAction(workspaceRef: string, introductionRef: string) {
-  const response = await fetch(introductionPath(workspaceRef, introductionRef), { cache: "no-store" });
+  const response = await fetch(`${introductionPath(workspaceRef, introductionRef)}?view=responses`, { cache: "no-store" });
   if (!response.ok) throw new Error("Refresh the page to check your current access.");
   const parsed = introductionActionSchema.safeParse(await response.json());
   if (!parsed.success || !parsed.data.available) throw new Error("This Introduction is no longer available.");
@@ -18,6 +18,13 @@ export async function recordShareAction(workspaceRef: string, introductionRef: s
   const data = await command<unknown>(`${introductionPath(workspaceRef, introductionRef)}/share-actions`, "POST", input);
   const parsed = introductionShareResultSchema.safeParse(data);
   if (!parsed.success || !parsed.data.available) throw new Error("This sharing action is no longer available. Refresh the page.");
+  return parsed.data;
+}
+
+export async function recordFamilyUpdate(workspaceRef: string, introductionRef: string, input: IntroductionFamilyUpdateCommand) {
+  const data = await command<unknown>(`${introductionPath(workspaceRef, introductionRef)}/family-updates`, "POST", input);
+  const parsed = introductionFamilyUpdateResultSchema.safeParse(data);
+  if (!parsed.success || !parsed.data.available) throw new Error("This response could not be recorded. Refresh and try again.");
   return parsed.data;
 }
 
