@@ -20,8 +20,11 @@ test("verified guest refresh unlocks only after approval and loses access after 
   await context.request.post(`${mockOrigin}/__test/guest-viewing`, { data: { proofHash, approved: true } });
   await page.reload();
   await expect(page.getByText("private-guest@example.test", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in to open private files" })).toBeVisible();
+  const file = await context.request.get("/p/e2e-portfolio-token/files/horoscope");
+  expect(file.status()).toBe(404);
   await page.goto("/p/e2e-portfolio-token/horoscope");
-  await expect(page.getByRole("heading", { name: /Original horoscope/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
   await context.request.post(`${mockOrigin}/__test/guest-viewing`, { data: { proofHash, approved: false } });
   await page.reload();
   await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
@@ -37,6 +40,8 @@ test("forwarded viewing URL stays public until the approved email is verified on
   });
   await page.goto("/p/e2e-portfolio-token/view");
   await expect(page.getByRole("heading", { name: "View the portfolio shared with you" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in to open private files" }))
+    .toHaveAttribute("href", "/login?redirect=%2Fp%2Fe2e-portfolio-token");
   await expect(page.getByText("private-guest@example.test", { exact: true })).toHaveCount(0);
   await page.getByLabel("Approved email address").fill("guest@example.test");
   await page.getByRole("button", { name: "Send viewing code" }).click();

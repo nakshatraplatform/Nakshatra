@@ -7,6 +7,7 @@ import { z } from "zod/v4";
 import type { Database, Json } from "@/types/database.generated";
 import { portfolioDraftSchema } from "@/types/portfolio";
 import { sendResendEmail } from "./resend.provider";
+import { notificationAppOrigin } from "./notification-origin";
 
 const relationshipType = z.enum([
   "vivara_published", "interest_received",
@@ -39,7 +40,6 @@ const claimedJob = z.object({
   broker_introduction_id: z.uuid().nullable().optional().default(null),
   payload: z.custom<Json>(),
 });
-const appOrigin = z.url().transform((value) => new URL(value).origin);
 
 type Client = SupabaseClient<Database>;
 type Job = z.infer<typeof claimedJob>;
@@ -201,7 +201,8 @@ async function renderJob(supabase: Client, job: Job, origin: string) {
 
 /** Claims and delivers durable relationship notifications without mixing in pilot-access jobs. */
 export async function processRelationshipNotifications(supabase: Client, limit = 10, transport?: typeof fetch) {
-  const origin = appOrigin.parse(process.env.NEXT_PUBLIC_APP_URL);
+  const origin = notificationAppOrigin();
+  if (!origin) throw new Error("EMAIL_APP_ORIGIN_INVALID");
   const { data, error } = await supabase.rpc("claim_relationship_notification_outbox", { p_limit: limit });
   if (error) throw error;
   const jobs = z.array(claimedJob).parse(data || []);

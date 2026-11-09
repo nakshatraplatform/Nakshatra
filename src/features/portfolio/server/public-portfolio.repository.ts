@@ -38,14 +38,4 @@ export class PublicPortfolioRepository {
   recordView(token: string) {
     return this.supabase.rpc("record_public_portfolio_view", { p_share_token: token });
   }
-
-  createHoroscopeUrl(
-    path: string,
-    expiresInSeconds: number,
-    download?: string
-  ) {
-    return this.supabase.storage
-      .from("horoscopes")
-      .createSignedUrl(path, expiresInSeconds, download ? { download } : undefined);
-  }
 }

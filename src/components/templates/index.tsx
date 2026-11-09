@@ -12,6 +12,7 @@ export interface TemplateProps {
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
+  privateFilesAction?: ReactNode;
   viewingOwnPortfolio?: boolean;
 }
 
@@ -32,6 +33,7 @@ export function BiodataTemplate(
       photos={props.photos}
       horoscopeAttachment={props.horoscopeAttachment}
       interestAction={props.interestAction}
+      privateFilesAction={props.privateFilesAction}
       viewingOwnPortfolio={props.viewingOwnPortfolio}
     />
   );

@@ -106,6 +106,22 @@ its retention, account-deletion and provider-cleanup queues.
 GitHub secrets do not populate Vercel or Vault. Redeploy after changing Vercel
 environment values. Preserve the recipient HMAC key: rotating it without a
 suppression migration loses continuity of bounced/complained recipient checks.
+An accountless interest code is sent directly. A verified guest submission
+queues an owner notice in the relationship outbox and a requester receipt in the
+guest outbox. Approval queues the access email in the guest outbox. All three
+depend on the shared production maintenance scheduler. If protected health
+shows `enabled=false` and no recorded runs, check scheduler activation even when
+`emailDelivery.configured=true` and codes arrive. Review the queued mail,
+retention and deletion work before authorizing the first backlog drain.
+Guest jobs older than 24 hours are ineligible for automatic delivery. Their
+expired delivery status can keep guest mail health degraded until retention
+removes the records, even while new messages send successfully.
+If the relationship worker fails before claiming mail, check that the deployed
+Production value of `NEXT_PUBLIC_APP_URL` is the full HTTPS URL
+`https://www.vivintro.com` and redeploy the setting. The shared origin resolver
+uses the canonical site as a fallback on Vercel Production and exposes an
+unusable origin in protected health for other deployments.
+
 Supabase Auth emails (verification/reset) are a separate SMTP/Auth delivery path.
 
 After authorized activation, publish a synthetic user's first Vivara and submit
@@ -135,15 +151,15 @@ before this migration. Historical reconciliation requires separate provider evid
 
 ## Storage proof and residual access
 
-Approved viewers resolve allowed descriptors with their authenticated session.
-Only the server signs protected bytes, with TTL capped to 300 seconds and the
-remaining grant time. Owner upload/preview and public derivatives retain their
-existing policies. Browser users cannot choose a protected signing path or TTL.
+The personal Vivara file route requires a signed-in, confirmed account with a
+current approval on each GET. The application streams only the authorized
+object and marks the response private and non-cacheable. Accountless email
+verification still opens the approved profile details. Opening private photos or
+the original horoscope requires signing in with the approved email.
 
-Previously issued bearer URLs remain usable until expiry. Revocation blocks new
-authorization; it does not recall already downloaded bytes or immediately revoke
-old signed URLs, including long-lived URLs issued before rollout. Assess previously
-issued capabilities separately; never promise immediate byte recall.
+Previously issued signed URLs expire on their original schedule. Account
+revocation denies new file requests. Recipients can retain files already opened
+or downloaded. Owners still use the existing authenticated editor preview path.
 
 `scripts/verify-protected-storage.mjs` is an isolated **loopback-only** proof for
 project `nak74-readiness` on port 55421. Supply its local JWT/anon/service values

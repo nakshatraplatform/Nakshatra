@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { horoscopeFormatLabel } from "@/features/horoscope/server/horoscope.contract";
-import { resolveApprovedHoroscope } from "@/features/portfolio/server/public-portfolio.service";
-import { readGuestViewingProof } from "@/features/access/server/guest-viewing-cookie";
+import { approvedFileHref, resolveApprovedHoroscope } from "@/features/portfolio/server/public-portfolio.service";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
 export default async function HoroscopePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = await createClient();
-  const horoscope = await resolveApprovedHoroscope(supabase, token, { guestProofHash: await readGuestViewingProof(token) });
+  const horoscope = await resolveApprovedHoroscope(supabase, token);
   if (!horoscope) return notFound();
 
   return (
@@ -48,9 +47,8 @@ export default async function HoroscopePage({ params }: { params: Promise<{ toke
         </div>
 
         <section className="flex min-h-[60vh] items-start justify-center overflow-auto rounded-2xl border border-[color:var(--ui-on-action)]/10 bg-[color:var(--workspace-canvas)] p-3 sm:p-6" aria-label="Horoscope image viewer">
-          {/* The image is served from a grant-bounded owner/approved-viewer signed URL. */}
           {/* oxlint-disable-next-line nextjs/no-img-element */}
-          <img src={horoscope.signedUrl} alt="Scanned original horoscope" className="h-auto max-w-full rounded-sm shadow-xl" referrerPolicy="no-referrer" />
+          <img src={approvedFileHref(token, "horoscope")} alt="Scanned original horoscope" className="h-auto max-w-full rounded-sm shadow-xl" referrerPolicy="no-referrer" />
         </section>
       </div>
     </main>

@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path=public,extensions;
 \ir auth-fixtures.psql
-select plan(42);
+select plan(55);
 select pg_temp.create_auth_actor(
   'd1000000-0000-4000-8000-000000000001',
   'd1100000-0000-4000-8000-000000000001','guest-owner@fixture.test');
@@ -101,6 +101,13 @@ select is(public.resolve_guest_approved_portfolio('abc',repeat('1',64)),null::js
 reset role;
 select is((select count(*)::integer from auth.users where email='new-guest@fixture.test'),0,'remembered viewing creates no Auth user');
 select is((select count(*)::integer from app_private.guest_portfolio_proofs),1,'only successful verification created a proof');
+select is((select count(*)::integer from app_private.notification_outbox o
+  join public.interest_requests r on r.id=o.interest_request_id
+  where r.viewer_email='new-guest@fixture.test' and o.notification_type='new_introduction'
+    and o.recipient_user_id='d1000000-0000-4000-8000-000000000001'),1,'guest submission queues one owner notice');
+select is((select count(*)::integer from app_private.guest_interest_mail_outbox
+  where kind='receipt' and recipient_email='new-guest@fixture.test'),1,'guest submission queues one receipt to the verified address');
+
 set local role authenticated;
 select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
 select is(public.decide_interest_portfolio_reviewed('d5000000-0000-4000-8000-000000000001',public.get_owner_relationship_page()#>>'{disclosure,revision}'),'already_approved','active legacy Auth grant is not duplicated or converted');
@@ -196,5 +203,42 @@ select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','
 select is(public.decide_interest_portfolio_reviewed((select id from public.interest_requests where viewer_email='contact-only@fixture.test'),public.get_owner_relationship_page()#>>'{disclosure,revision}'),'approved','previous contact approval requires fresh full-disclosure approval');
 reset role;
 select is((select count(*)::integer from auth.users where email in ('contact-only@fixture.test','recover-guest@fixture.test','new-guest@fixture.test')),0,'all guest verification and approval paths remain accountless');
+-- An account with the already approved guest email can open private files.
+insert into public.portfolio_horoscopes(portfolio_id,storage_path,mime_type,file_extension,byte_size,published_at)
+values('d3000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000001/horoscope.webp',
+  'image/webp','webp',1024,now());
+select pg_temp.create_auth_actor('d1000000-0000-4000-8000-000000000003','d1100000-0000-4000-8000-000000000003','contact-only@fixture.test');
+select pg_temp.create_auth_actor('d1000000-0000-4000-8000-000000000004','d1100000-0000-4000-8000-000000000004','forwarded-to@fixture.test');
+select ok(not has_function_privilege('anon','public.resolve_approved_horoscope(text)','EXECUTE'),'anonymous callers cannot resolve a document path');
+select ok(not has_function_privilege('authenticated','app_private.resolve_signed_in_guest_approval(text,boolean)','EXECUTE'),'signed-in callers cannot bypass the public boundary');
+
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000004','d1100000-0000-4000-8000-000000000004');
+select is(public.resolve_approved_portfolio('abc'),null::jsonb,'forwarded link does not authorize photos for another account');
+select is(public.resolve_approved_horoscope('abc'),null::jsonb,'forwarded link does not authorize the document for another account');
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000003','d1100000-0000-4000-8000-000000000003');
+select is(public.resolve_approved_portfolio('abc')#>>'{media,0,accessPath}',
+  'd1000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000001/hero.webp','matching approved account resolves the photo');
+select is(public.resolve_approved_horoscope('abc')->>'accessPath',
+  'd1000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000001/horoscope.webp','matching approved account resolves the document');
+select is(public.resolve_approved_horoscope('another-link'),null::jsonb,'approval does not transfer to another portfolio');
+reset role;
+
+update auth.users set email_confirmed_at=null where id='d1000000-0000-4000-8000-000000000003';
+set local role authenticated;
+select is(public.resolve_approved_portfolio('abc'),null::jsonb,'unconfirmed email cannot inherit a guest approval');
+reset role;
+update auth.users set email_confirmed_at=now() where id='d1000000-0000-4000-8000-000000000003';
+create temp table signed_in_guest_grant as select g.id from public.reveal_grants g
+  join app_private.guest_portfolio_grant_recipients b on b.grant_id=g.id where b.recipient_email='contact-only@fixture.test';
+grant select on signed_in_guest_grant to authenticated;
+set local role authenticated;
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000001','d1100000-0000-4000-8000-000000000001');
+select is(public.manage_reveal_grant((select id from signed_in_guest_grant),'revoke')->>'status','revoked','owner revokes the guest approval');
+select pg_temp.set_authenticated_claims('d1000000-0000-4000-8000-000000000003','d1100000-0000-4000-8000-000000000003');
+select is(public.resolve_approved_portfolio('abc'),null::jsonb,'the same approved account loses photo access on revocation');
+select is(public.resolve_approved_horoscope('abc'),null::jsonb,'the same approved account loses document access on revocation');
+reset role;
 select * from finish();
 rollback;

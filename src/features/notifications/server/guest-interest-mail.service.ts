@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 import type { Database } from "@/types/database.generated";
 import { sendResendEmail } from "./resend.provider";
+import { notificationAppOrigin } from "./notification-origin";
 
 const jobSchema = z.object({
   id: z.uuid(), interest_request_id: z.uuid(), kind: z.enum(["receipt", "approved_contact", "approved_access", "declined"]),
@@ -59,9 +60,9 @@ function contactMessage(payload: unknown) {
 
 function viewingMessage(payload: unknown) {
   const access = z.object({ grantId: z.uuid(), shareToken: z.string().regex(/^[A-Za-z0-9_-]{3,160}$/), expiresAt: z.iso.datetime({ offset: true }) }).parse(payload);
-  const origin = new URL(z.url().parse(process.env.NEXT_PUBLIC_APP_URL));
-  if (origin.protocol !== "https:" && origin.hostname !== "127.0.0.1" && origin.hostname !== "localhost") throw new Error("ACCESS_EMAIL_INVALID");
-  const link = new URL(`/p/${encodeURIComponent(access.shareToken)}/view`, origin.origin).toString();
+  const origin = notificationAppOrigin();
+  if (!origin) throw new Error("EMAIL_APP_ORIGIN_INVALID");
+  const link = new URL(`/p/${encodeURIComponent(access.shareToken)}/view`, origin).toString();
   return { subject: "A full portfolio has been shared with you", text: `The person you contacted through VivIntro approved your full portfolio viewing.\n\nView the portfolio: ${link}\n\nViewing ends on ${access.expiresAt}. The owner can stop sharing earlier. Your previously verified browser can also refresh the original Vivara link. On another browser or device, verify the same email that received this message. Forwarding this link alone does not transfer access. No VivIntro account or application sign-in is created.` };
 }
 
@@ -102,6 +103,8 @@ export async function processGuestInterestMail(
       if (caught instanceof Error && caught.message === "CONTACT_PAYLOAD_INVALID") {
         code = "CONTACT_PAYLOAD_INVALID";
         retryable = false;
+      } else if (caught instanceof Error && caught.message === "EMAIL_APP_ORIGIN_INVALID") {
+        code = caught.message;
       }
     }
     const completion = await rpc("complete_guest_interest_mail", {

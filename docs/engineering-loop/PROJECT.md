@@ -1,5 +1,8 @@
 # VivIntro / Nakshatra project map
 
+- [Personal approved files and interest email recovery](features/personal-approved-files.md)
+  covers per-request media authorization, guest sign-in and the disabled production mail scheduler.
+
 - [NAK-204 Introduction action workspace](features/nak-204-introduction-action-workspace.md):
   local B2B list/detail pages, guarded per-side sharing and manual reminder
   attempts, safe history, version fences and idempotency. The combined
