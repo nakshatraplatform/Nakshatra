@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendResendEmail = vi.hoisted(() => vi.fn());
 vi.mock("@/features/notifications/server/resend.provider", () => ({ sendResendEmail }));
@@ -9,7 +9,38 @@ describe("relationship notification delivery", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://vivintro.test");
+    vi.stubEnv("VERCEL_ENV", "");
     sendResendEmail.mockResolvedValue({ status: "accepted", providerMessageId: "11111111-1111-4111-8111-111111111111" });
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("delivers the guest owner notice with the canonical production origin when the configured origin is malformed", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "www.vivintro.com");
+    const rpc = vi.fn().mockResolvedValueOnce({ data: [{
+      notification_ref: "ntf_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      recipient_user_id: "44444444-4444-4444-8444-444444444444",
+      notification_type: "new_introduction", attempt_count: 1,
+      interest_request_id: "55555555-5555-4555-8555-555555555555", grant_id: null, payload: {},
+    }], error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: "sent", error: null });
+    const client = { rpc, auth: { admin: { getUserById: vi.fn().mockResolvedValue({
+      data: { user: { email: "owner@example.test" } }, error: null,
+    }) } } };
+    await expect(processRelationshipNotifications(client as never)).resolves.toMatchObject({ sent: 1, failed: 0 });
+    expect(sendResendEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to: "owner@example.test", subject: "Someone has shown interest",
+      text: expect.stringContaining("https://www.vivintro.com/dashboard"),
+    }), undefined, client);
+  });
+
+  it("leaves jobs unclaimed when a non-production origin is invalid", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://vivintro.test");
+    const rpc = vi.fn();
+    await expect(processRelationshipNotifications({ rpc } as never)).rejects.toThrow("EMAIL_APP_ORIGIN_INVALID");
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("sends an identity-bound Complete Portfolio link and completes the outbox job", async () => {

@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           </div>
           <div>
             <dt className="font-semibold text-[color:var(--workspace-ink)]">Approved-viewing cookie — up to 15 days</dt>
-            <dd>After a visitor verifies their email, an essential, protected cookie remembers that browser for one portfolio. It creates no account or VivIntro sign-in. Private viewing still requires the owner’s current approval and stops when the grant expires, is withdrawn, or the introduction is unpublished. Another browser must verify the approved email again. We store a hash of the proof; expired proofs and verification challenges are removed by scheduled retention.</dd>
+            <dd>After a visitor verifies their email, an essential, protected cookie remembers that browser for one portfolio. It creates no account or VivIntro sign-in. Private viewing still requires the owner’s current approval and stops when the grant expires, is withdrawn, or the introduction is unpublished. Another browser can verify the approved email again to read shared details. Private photos and documents require a signed-in account with the approved email. We store a hash of the proof; expired proofs and verification challenges are removed by scheduled retention.</dd>
           </div>
           <div>
             <dt className="font-semibold text-[color:var(--workspace-ink)]">Account-deletion security cookies — 10 minutes each</dt>

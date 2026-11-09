@@ -345,7 +345,7 @@ describe("celestial union portfolio", () => {
 
     const context = screen.getByLabelText("Private sharing details");
     expect(within(context).getByText("Private sharing")).toBeInTheDocument();
-    expect(within(context).getByText(/Shared with your signed-in account by the introduction owner/)).toBeInTheDocument();
+    expect(within(context).getByText(/The introduction owner approved this view/)).toBeInTheDocument();
     expect(within(context).getByText(/Expires Jan 2, 2030/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Liveness checked\. A live person/)).toBeInTheDocument();
     expect(screen.getByText("Liveness checked")).toBeInTheDocument();

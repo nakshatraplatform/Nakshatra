@@ -15,7 +15,7 @@ import { PublicPortfolioRepository } from "./public-portfolio.repository";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { guestViewingRpc } from "@/features/access/server/guest-viewing-proof";
 
-type SigningOptions = { createSigningClient?: () => SupabaseClient; guestProofHash?: string | null };
+type GuestViewingOptions = { createGuestClient?: () => SupabaseClient; guestProofHash?: string | null };
 
 /** Stored descriptors must not change object identity when the SDK constructs a URL. */
 function canonicalStoragePath(path: string) {
@@ -26,14 +26,31 @@ function canonicalStoragePath(path: string) {
 export interface PortfolioView extends ResolvedPortfolio {
   accessMode: "public" | "approved";
   photos: PortfolioPhoto[];
+  filesRequireApprovedAccount: boolean;
 }
 
 export type PublicPortfolioAvailability = "active" | "expired" | "unavailable";
 
-/** Caps a private signed capability at five minutes without allowing it to outlive its reveal grant. */
-export function privateCapabilityTtl(expiresAt: string, now = Date.now()) {
-  const remainingSeconds = Math.floor((Date.parse(expiresAt) - now) / 1000);
-  return remainingSeconds > 0 ? Math.min(5 * 60, remainingSeconds) : null;
+function approvalIsCurrent(expiresAt?: string) {
+  return Boolean(expiresAt && Date.parse(expiresAt) > Date.now());
+}
+
+export const approvedPhotoKeyPattern = /^[A-Za-z0-9_-]{1,64}$/;
+
+export function approvedFileHref(token: string, file: string) {
+  return `/p/${encodeURIComponent(token)}/files/${encodeURIComponent(file)}`;
+}
+
+async function resolveAccountApproval(repository: PublicPortfolioRepository, token: string) {
+  const { data, error } = await repository.resolveApproved(token);
+  const parsed = resolvedPortfolioSchema.safeParse(data);
+  return !error && parsed.success && approvalIsCurrent(parsed.data.accessExpiresAt) ? parsed.data : null;
+}
+
+/** Match the opaque photo key only inside the current account's authorized projection. */
+export async function resolveApprovedPhoto(supabase: SupabaseClient, token: string, key: string) {
+  const approved = await resolveAccountApproval(new PublicPortfolioRepository(supabase), token);
+  return approved?.media.find(item => item.key === key && canonicalStoragePath(item.accessPath)) ?? null;
 }
 
 /** Resolves one exact public token without exposing direct table reads to the caller. */
@@ -65,50 +82,40 @@ export async function resolvePublicPortfolioAvailability(
   return "expired";
 }
 
-/** Resolves an approved projection only when the authenticated viewer has an active full grant. */
+/** A remembered guest may read approved details. Only account approval reveals private file links. */
 export async function resolvePortfolioView(
   supabase: SupabaseClient,
   token: string,
   authenticated: boolean,
-  { createSigningClient = createServiceRoleClient, guestProofHash }: SigningOptions = {}
+  { createGuestClient = createServiceRoleClient, guestProofHash }: GuestViewingOptions = {}
 ): Promise<PortfolioView | null> {
-  const repository = new PublicPortfolioRepository(supabase);
   const publicPortfolio = await resolvePublicPortfolio(supabase, token);
   if (!publicPortfolio) return null;
 
-  let resolved = publicPortfolio;
-  const identityVerified = publicPortfolio.identityVerified;
-  let accessMode: PortfolioView["accessMode"] = "public";
-  if (authenticated) {
-    const { data } = await repository.resolveApproved(token);
-    const approved = resolvedPortfolioSchema.safeParse(data);
-    if (approved.success && approved.data.accessExpiresAt && privateCapabilityTtl(approved.data.accessExpiresAt)) {
-      resolved = approved.data;
-      accessMode = "approved";
-    }
-  }
-  if (accessMode === "public" && guestProofHash) {
-    const { data, error } = await guestViewingRpc(createSigningClient())("resolve_guest_approved_portfolio", {
+  const accountApproval = authenticated
+    ? await resolveAccountApproval(new PublicPortfolioRepository(supabase), token)
+    : null;
+  let approved = accountApproval;
+  if (!approved && guestProofHash) {
+    const { data, error } = await guestViewingRpc(createGuestClient())("resolve_guest_approved_portfolio", {
       p_share_token: token, p_proof_hash: guestProofHash,
     });
-    const approved = resolvedPortfolioSchema.safeParse(data);
-    if (!error && approved.success && approved.data.accessExpiresAt && privateCapabilityTtl(approved.data.accessExpiresAt)) {
-      resolved = approved.data;
-      accessMode = "approved";
-    }
+    const parsed = resolvedPortfolioSchema.safeParse(data);
+    if (!error && parsed.success && approvalIsCurrent(parsed.data.accessExpiresAt)) approved = parsed.data;
   }
 
   return {
-    ...resolved,
-    identityVerified,
-    accessMode,
-    photos: await createSafePhotoUrls(
-      accessMode === "approved" ? createSigningClient() : supabase,
-      resolved.media,
-      accessMode === "approved" && resolved.accessExpiresAt
-        ? privateCapabilityTtl(resolved.accessExpiresAt)
-        : 60 * 60
-    ),
+    ...(approved ?? publicPortfolio),
+    identityVerified: publicPortfolio.identityVerified,
+    accessMode: approved ? "approved" : "public",
+    filesRequireApprovedAccount: !accountApproval && Boolean(approved && (approved.horoscope || approved.media.some(
+      item => !publicPortfolio.media.some(publicItem => publicItem.accessPath === item.accessPath)
+    ))),
+    horoscope: accountApproval?.horoscope,
+    photos: accountApproval
+      ? accountApproval.media.filter(item => approvedPhotoKeyPattern.test(item.key) && canonicalStoragePath(item.accessPath))
+        .map(item => portfolioPhoto(item, approvedFileHref(token, `photo-${item.key}`)))
+      : await createPublicPhotoUrls(supabase, publicPortfolio.media),
   };
 }
 
@@ -133,59 +140,33 @@ export async function isPortfolioOwner(
   return !error && Boolean(data);
 }
 
-/** Resolves and signs an approved horoscope for five minutes. */
-export async function resolveApprovedHoroscope(
-  supabase: SupabaseClient,
-  token: string,
-  { createSigningClient = createServiceRoleClient, guestProofHash }: SigningOptions = {}
-): Promise<(ApprovedHoroscope & { signedUrl: string }) | null> {
-  const repository = new PublicPortfolioRepository(supabase);
-  const initial = await repository.resolveApprovedHoroscope(token);
-  let data: unknown = initial.data;
-  let unavailable = Boolean(initial.error);
-  if ((unavailable || !data) && guestProofHash) {
-    const guest = await guestViewingRpc(createSigningClient())("resolve_guest_approved_portfolio", {
-      p_share_token: token, p_proof_hash: guestProofHash, p_horoscope: true,
-    });
-    data = guest.data; unavailable = Boolean(guest.error);
-  }
-  if (unavailable || !data) return null;
+/** Resolve the document for the current account. Storage access is handled only by the file route. */
+export async function resolveApprovedHoroscope(supabase: SupabaseClient, token: string): Promise<ApprovedHoroscope | null> {
+  const { data, error } = await new PublicPortfolioRepository(supabase).resolveApprovedHoroscope(token);
   const parsed = approvedHoroscopeSchema.safeParse(data);
-  if (!parsed.success || !canonicalStoragePath(parsed.data.accessPath)) return null;
-  const ttl = privateCapabilityTtl(parsed.data.accessExpiresAt);
-  if (!ttl) return null;
-  // Authorization stays on the viewer client. Privilege is used only for the
-  // exact descriptor returned above, never for a path supplied by a browser.
-  const signed = await new PublicPortfolioRepository(createSigningClient()).createHoroscopeUrl(
-    parsed.data.accessPath,
-    ttl,
-    undefined
-  );
-  return signed.data?.signedUrl ? { ...parsed.data, signedUrl: signed.data.signedUrl } : null;
+  return !error && parsed.success && canonicalStoragePath(parsed.data.accessPath) && approvalIsCurrent(parsed.data.accessExpiresAt)
+    ? parsed.data : null;
 }
 
-/** Converts only RPC-authorized media paths into temporary browser URLs. */
-async function createSafePhotoUrls(
-  supabase: SupabaseClient,
-  media: PublicMediaDescriptor[],
-  expiresInSeconds: number | null
-): Promise<PortfolioPhoto[]> {
-  if (!expiresInSeconds) return [];
+async function createPublicPhotoUrls(supabase: SupabaseClient, media: PublicMediaDescriptor[]): Promise<PortfolioPhoto[]> {
   const authorized = media.filter(item => canonicalStoragePath(item.accessPath));
-  const urls = await signPhotoPaths(supabase, authorized.map(item => item.accessPath), expiresInSeconds);
-  return authorized.flatMap((item): PortfolioPhoto[] => {
+  const urls = await signPhotoPaths(supabase, authorized.map(item => item.accessPath), 60 * 60);
+  return authorized.flatMap(item => {
     const url = urls.get(item.accessPath);
-    if (!url) return [];
-    return [{
-      id: item.key,
-      src: url,
-      alt: item.altText || "Portfolio photo",
-      mediaType: item.mediaType,
-      width: item.width,
-      height: item.height,
-      aspectRatio: item.aspectRatio || (item.width && item.height ? item.width / item.height : undefined),
-      orientation: item.orientation || classifyPhotoOrientation(item.width, item.height),
-      presentation: item.presentation,
-    }];
+    return url ? [portfolioPhoto(item, url)] : [];
   });
+}
+
+function portfolioPhoto(item: PublicMediaDescriptor, src: string): PortfolioPhoto {
+  return {
+    id: item.key,
+    src,
+    alt: item.altText || "Portfolio photo",
+    mediaType: item.mediaType,
+    width: item.width,
+    height: item.height,
+    aspectRatio: item.aspectRatio || (item.width && item.height ? item.width / item.height : undefined),
+    orientation: item.orientation || classifyPhotoOrientation(item.width, item.height),
+    presentation: item.presentation,
+  };
 }

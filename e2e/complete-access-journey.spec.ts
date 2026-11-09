@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { approvedViewerCookie } from "./support/theme-session.mjs";
+import { approvedViewerCookie, publishedOwnerCookie } from "./support/theme-session.mjs";
 
 const activeGrant = "11111111-1111-4111-8111-111111111111";
 const expiredGrant = "22222222-2222-4222-8222-222222222222";
@@ -25,6 +25,17 @@ test("shared details reveals protected contact only to the confirmed recipient",
     await page.evaluate(() => { (document.activeElement as HTMLElement | null)?.blur(); window.scrollTo(0, 0); });
     await page.screenshot({ path: testInfo.outputPath("approved-complete-mobile.png"), fullPage: true, animations: "disabled" });
   }
+
+  const photoUrl = await gallery.getByAltText("Protected portrait").getAttribute("src");
+  expect(photoUrl).toMatch(/^\/p\/e2e-portfolio-token\/files\/photo-/);
+  const horoscopeUrl = "/p/e2e-portfolio-token/files/horoscope";
+  const fileResponse = await context.request.get(horoscopeUrl, { maxRedirects: 0 });
+  expect(fileResponse.status()).toBe(200);
+  expect(fileResponse.headers()["content-type"]).toBe("image/webp");
+  expect(fileResponse.headers()["cache-control"]).toContain("no-store");
+  await context.addCookies([publishedOwnerCookie]);
+  expect((await context.request.get(photoUrl!)).status()).toBe(404);
+  expect((await context.request.get(horoscopeUrl)).status()).toBe(404);
 
   await context.clearCookies();
   await page.reload();

@@ -34,6 +34,7 @@ interface CelestialUnionProps {
   photos?: PortfolioPhoto[];
   horoscopeAttachment?: PortfolioHoroscopeAttachment;
   interestAction?: ReactNode;
+  privateFilesAction?: ReactNode;
   viewingOwnPortfolio?: boolean;
 }
 
@@ -68,6 +69,7 @@ export default function CelestialUnion({
   photos = [],
   horoscopeAttachment,
   interestAction,
+  privateFilesAction,
   viewingOwnPortfolio = false,
 }: CelestialUnionProps) {
   const appearance = getCelestialAppearance(data.style);
@@ -602,9 +604,10 @@ export default function CelestialUnion({
           <div>
             <strong>Private sharing</strong>
             <span>
-              Shared with your signed-in account by the introduction owner
+              The introduction owner approved this view
               {accessExpiresAt ? ` · Expires ${formatAccessExpiry(accessExpiresAt)}` : ""}
             </span>
+            {privateFilesAction}
           </div>
         </aside>
       )}

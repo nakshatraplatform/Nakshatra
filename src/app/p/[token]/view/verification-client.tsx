@@ -38,7 +38,11 @@ export function GuestPortfolioVerification({ token }: { token: string }) {
   return <section className="w-full max-w-lg rounded-2xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] p-6 sm:p-9">
     <div className="mb-7 flex justify-center"><VivIntroBrand variant="stacked" displayWidth={132} /></div>
     <h1 className="text-2xl font-semibold">View the portfolio shared with you</h1>
-    <p className="mt-3 leading-7 text-[var(--workspace-muted)]">Verify the email the owner approved. This remembers viewing on this browser only; it creates no account or VivIntro sign-in.</p>
+    <p className="mt-3 leading-7 text-[var(--workspace-muted)]">Verify the approved email to view shared profile details on this browser.</p>
+    <p className="mt-3 text-sm leading-6 text-[var(--workspace-muted)]">
+      To open private photos or documents, use a VivIntro account with the approved email.{" "}
+      <Link className="underline underline-offset-4" href={`/login?redirect=${encodeURIComponent(`/p/${encodeURIComponent(token)}`)}`}>Sign in to open private files</Link>
+    </p>
     <form className="mt-6" onSubmit={submit}>
       <fieldset className="space-y-5" disabled={!hydrated} aria-busy={!hydrated}>
       {!hydrated && <p role="status">Preparing secure form…</p>}

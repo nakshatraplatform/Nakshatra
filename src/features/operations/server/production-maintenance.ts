@@ -12,6 +12,7 @@ import { resendConfigurationReady } from "@/features/notifications/server/resend
 import { recipientHmacConfigured } from "@/features/notifications/server/delivery.runtime.mjs";
 import { resendWebhookConfigured } from "@/features/notifications/server/resend-webhook";
 import { sendResendEmail } from "@/features/notifications/server/resend.provider";
+import { notificationAppOrigin } from "@/features/notifications/server/notification-origin";
 import { processGuestInterestMail } from "@/features/notifications/server/guest-interest-mail.service";
 import { createIdentityVerificationWorker } from "../../../../scripts/identity-verification-worker.mjs";
 import { processDeletedProviderCleanup } from "../../../../scripts/deleted-provider-cleanup.mjs";
@@ -116,7 +117,7 @@ export async function productionHealth() {
   if (error || expiryError || emailError || guestError || !guest || typeof guest !== "object" || Array.isArray(guest) || !("healthy" in guest) || !data || typeof data !== "object" || Array.isArray(data)
     || !expiry || typeof expiry !== "object" || Array.isArray(expiry)
     || !email || typeof email !== "object" || Array.isArray(email)) throw new Error("HEALTH_UNAVAILABLE");
-  const configured = recipientHmacConfigured() && resendWebhookConfigured() && resendConfigurationReady() && guestVerificationConfigured();
+  const configured = Boolean(notificationAppOrigin()) && recipientHmacConfigured() && resendWebhookConfigured() && resendConfigurationReady() && guestVerificationConfigured();
   return { ...data, healthy: data.healthy === true && expiry.healthy === true && email.healthy === true && guest.healthy === true && configured,
     expiryReminders: expiry, emailDelivery: { ...email, configured }, guestViewing: guest };
 }

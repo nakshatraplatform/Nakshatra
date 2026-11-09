@@ -357,7 +357,7 @@ describe("public portfolio pages", () => {
     expect(JSON.parse(screen.getByTestId("template").getAttribute("data-photo-alts")!)).toEqual(["Photo of Aditi, 1 of 2", "Walking in the garden"]);
   });
 
-  it("keeps the separate horoscope image viewer gated with a grant-bounded URL", async () => {
+  it("keeps the separate horoscope image viewer behind an application file route", async () => {
     mocks.outcomes.resolve_approved_horoscope = { data: null };
     await expect(HoroscopePage({ params: Promise.resolve({ token: "token" }) })).rejects.toThrow("NOT_FOUND");
 
@@ -372,8 +372,8 @@ describe("public portfolio pages", () => {
     } };
     render(await HoroscopePage({ params: Promise.resolve({ token: "token" }) }));
     expect(screen.getByRole("heading", { name: /original horoscope/i })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /scanned original horoscope/i })).toHaveAttribute("src", "https://signed.test/hero");
-    expect(mocks.signedUrl).toHaveBeenCalledWith("owner/portfolio-1/private.webp", expect.any(Number), undefined);
+    expect(screen.getByRole("img", { name: /scanned original horoscope/i })).toHaveAttribute("src", "/p/token/files/horoscope");
+    expect(mocks.signedUrl).not.toHaveBeenCalled();
   });
 
   it("generates privacy-minimised Open Graph images without signing hero media", async () => {

@@ -102,7 +102,15 @@ export default async function PublicBiodataPage({ params }: Props) {
       }))}
       viewingOwnPortfolio={viewingOwnPortfolio}
       horoscopeAttachment={horoscopeAttachment}
-      interestAction={portfolio.accessMode === "public" || Boolean(verifiedEmail) && !viewingOwnPortfolio ? <div><InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} />{!viewingOwnPortfolio && portfolio.accessMode === "public" && <p className="mt-4 text-center text-sm"><Link href={`/p/${encodeURIComponent(token)}/view`} className="underline underline-offset-4">Already approved? Verify to view the full portfolio</Link></p>}</div> : undefined}
+      privateFilesAction={portfolio.filesRequireApprovedAccount ? (
+        <p className="mt-1">
+          Private photos and documents require a VivIntro account with the approved email address.{" "}
+          {authData.user
+            ? <Link href="/account" className="underline underline-offset-4">Manage your signed-in account</Link>
+            : <Link href={`/login?redirect=${encodeURIComponent(`/p/${token}`)}`} className="underline underline-offset-4">Sign in to open private files</Link>}
+        </p>
+      ) : undefined}
+      interestAction={portfolio.accessMode === "public" || Boolean(verifiedEmail) && !viewingOwnPortfolio ? <div><InterestRequestModal appearance={getCelestialAppearance(portfolio.data.style)} portfolioToken={token} profileName={portfolio.data.personal.name || "the profile owner"} profileSummary={[portfolio.data.career?.title, formatPortfolioLocation(portfolio.data.personal)].filter(Boolean).join(" · ")} authenticated={Boolean(verifiedEmail)} verifiedEmail={verifiedEmail} isOwner={viewingOwnPortfolio} />{!viewingOwnPortfolio && portfolio.accessMode === "public" && <p className="mt-4 text-center text-sm"><Link href={`/p/${encodeURIComponent(token)}/view`} className="underline underline-offset-4">Already approved? Verify to view shared details</Link></p>}</div> : undefined}
     />
   );
 }

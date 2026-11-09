@@ -7,6 +7,8 @@ import { introductionWorkspaceFixture } from "./introduction-workspace-fixture.m
 const host = "127.0.0.1";
 const port = Number(process.env.E2E_SUPABASE_PORT || 54329);
 const guestViewingProofs = new Map();
+// Synthetic WebP bytes for the server-to-server download path.
+const protectedFileFixture = Buffer.from("UklGRj4AAABXRUJQVlA4IDIAAAAQAwCdASoYACQAPm02l0ikIyIhJWgAgA2JaQAAKUiSCAAA/vS+7/dJ+p/ohQMq/i4AAA==", "base64");
 const portfolioId = "11111111-1111-4111-8111-111111111111";
 const authenticatedAccessToken = "e2e-authenticated-user-token";
 const authenticatedUser = {
@@ -315,9 +317,9 @@ const server = createServer((request, response) => {
       if (url.pathname.endsWith("resolve_guest_approved_portfolio")) {
         if (input.p_share_token !== "e2e-portfolio-token" || guestViewingProofs.get(input.p_proof_hash) !== true) return sendJson(response, 200, null);
         const expiresAt = new Date(Date.now() + 3 * 86_400_000).toISOString();
-        if (input.p_horoscope) return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: expiresAt });
         return sendJson(response, 200, { ...resolvedPortfolio(false), data: { ...publicSnapshot.data,
-          contact: { contact_person: "Approved family contact", phone: "+1 555 010 0200", email: "private-guest@example.test" } }, accessExpiresAt: expiresAt });
+          contact: { contact_person: "Approved family contact", phone: "+1 555 010 0200", email: "private-guest@example.test" } },
+          horoscope: { fileExtension: "webp" }, accessExpiresAt: expiresAt });
       }
       const viewing = url.pathname.endsWith("complete_guest_portfolio_access_verification");
       const expected = createHmac("sha256", "loopback-only-viewing-verification-key".repeat(2))
@@ -574,7 +576,7 @@ const server = createServer((request, response) => {
         },
         media: resolvedPortfolio(false).media.map((item) => ({
           ...item,
-          accessPath: publicMediaWithPreviews[item.sortOrder].storage_path,
+          accessPath: publicMediaWithPreviews[item.sortOrder].storage_path.replace(/\.svg$/, ".webp"),
           presentation: "clear",
         })),
         accessExpiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
@@ -592,6 +594,11 @@ const server = createServer((request, response) => {
       if (request.headers.authorization !== `Bearer ${approvedViewerToken}` || JSON.parse(body || "{}").p_share_token !== "e2e-portfolio-token") return sendJson(response, 200, null);
       return sendJson(response, 200, { accessPath: "e2e/horoscope.webp", mimeType: "image/webp", fileExtension: "webp", profileName: "Aditi Rao", accessExpiresAt: new Date(Date.now() + 3 * 86_400_000).toISOString() });
     });
+  }
+  if (request.method === "GET" && /^\/storage\/v1\/object\/(?:authenticated\/)?(?:photos|horoscopes)\//.test(url.pathname)
+    && request.headers.authorization === "Bearer e2e-loopback-only-service-role-key") {
+    response.writeHead(200, { "Content-Type": "image/webp", "Content-Length": protectedFileFixture.length });
+    return response.end(protectedFileFixture);
   }
   if (request.method === "POST" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendJson(response, 200, { signedURL: `${url.pathname.replace("/storage/v1", "")}?token=e2e` });
   if (request.method === "GET" && url.pathname.startsWith("/storage/v1/object/sign/horoscopes/")) return sendPortfolioImage(response, url.pathname);

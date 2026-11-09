@@ -20,6 +20,8 @@ import { POST } from "@/app/api/internal/production-maintenance/route";
 const secret = "x".repeat(32);
 const request = () => new Request("https://app.test/internal", { headers: { authorization: `Bearer ${secret}` } });
 beforeEach(() => {
+  vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://vivintro.test");
+  vi.stubEnv("VERCEL_ENV", "");
   vi.stubEnv("GUEST_INTEREST_OTP_SECRET", "synthetic-guest-verification-key-32-characters");
   vi.stubEnv("RESEND_API_KEY", "synthetic-key"); vi.stubEnv("RESEND_FROM_EMAIL", "notifications@example.test");
   vi.stubEnv("EMAIL_RECIPIENT_HMAC_KEY", "synthetic-independent-32-plus-character-key");
@@ -214,4 +216,10 @@ it("reports deferred and rejected maintenance tasks with a safe operation and di
   expect(mocks.report).toHaveBeenCalledWith("maintenance.providerCleanup", expect.any(Error), { code: "TASK_FAILED", reference });
   expect(mocks.report).toHaveBeenCalledTimes(2);
   expect(result.tasks?.livenessEmail).toBe("completed");
+});
+
+it("marks mail configuration unhealthy when the link origin is unusable outside production", async () => {
+  vi.stubEnv("NEXT_PUBLIC_APP_URL", "www.vivintro.test");
+  mocks.rpc.mockResolvedValue({ data: { healthy: true }, error: null });
+  expect(await productionHealth()).toMatchObject({ healthy: false, emailDelivery: { configured: false } });
 });

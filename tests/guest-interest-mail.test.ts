@@ -98,6 +98,17 @@ describe("guest interest mail worker", () => {
     expect(email.text).not.toContain("chosen@example.test");
     vi.unstubAllEnvs();
   });
+  it("builds guest approval links on the canonical site in Vercel production when configuration is missing", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
+    rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"
+      ? [{ ...job, kind: "approved_access", contact_payload: { grantId: job.interest_request_id, shareToken: "guest-portfolio", expiresAt: "2026-11-16T12:00:00+00:00" } }] : true, error: null }));
+    try {
+      expect(await processGuestInterestMail({ rpc } as never)).toEqual({ claimed: 1, failed: 0 });
+      expect(send.mock.calls[0][0].text).toContain("https://www.vivintro.com/p/guest-portfolio/view");
+    } finally { vi.unstubAllEnvs(); }
+  });
+
   it.each(["http://www.vivintro.com", "ftp://example.test", "not-a-url"])("refuses an unsafe configured approval-email origin (%s)", async origin => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", origin);
     rpc.mockImplementation(async (name: string) => ({ data: name === "claim_guest_interest_mail"

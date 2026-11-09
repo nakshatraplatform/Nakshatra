@@ -23,7 +23,6 @@ import {
   rateLimitActionSchema,
   rateLimitResponse,
 } from "../src/features/security/server/rate-limit.service";
-import { privateCapabilityTtl } from "../src/features/portfolio/server/public-portfolio.service";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -297,14 +296,5 @@ describe("database-backed rate limits", () => {
     expect(denied?.headers.get("Retry-After")).toBe("42");
     expect(rateLimitResponse(0).headers.get("Retry-After")).toBe("1");
     expect(rateLimitActionSchema.safeParse("unknown_action").success).toBe(false);
-  });
-});
-
-describe("grant-bounded capabilities", () => {
-  it("caps signed URLs at five minutes and rejects expired grants", () => {
-    const now = Date.parse("2026-08-17T00:00:00.000Z");
-    expect(privateCapabilityTtl("2026-08-17T00:20:00.000Z", now)).toBe(300);
-    expect(privateCapabilityTtl("2026-08-17T00:01:30.000Z", now)).toBe(90);
-    expect(privateCapabilityTtl("2026-08-16T23:59:59.000Z", now)).toBeNull();
   });
 });
